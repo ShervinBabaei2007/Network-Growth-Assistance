@@ -14,12 +14,12 @@ The app never scrapes LinkedIn, never automates invitations and never asks for L
 | 4 | Prioritization and the daily queue | Done |
 | 5 | Daily job and LinkedIn data export import | Done |
 | 6 | Connection-note suggestions | Done |
-| 7 | Analytics and end-to-end tests | Next |
-| 8 | Deployment | Planned |
+| 7 | Analytics and end-to-end tests | Done |
+| 8 | Deployment | Next |
 
 ## Stack
 
-Next.js 16 (App Router, Cache Components), TypeScript, Tailwind v4, shadcn/ui (Base UI), Supabase (Postgres, Auth, RLS), Zod, Vitest, pgTAP.
+Next.js 16 (App Router, Cache Components), TypeScript, Tailwind v4, shadcn/ui (Base UI), Recharts, Supabase (Postgres, Auth, RLS), Zod, Vitest, pgTAP, Playwright. Optional: Anthropic SDK for note rewrites.
 
 ## Local setup
 
@@ -44,6 +44,7 @@ npm run typecheck
 npm run lint
 npm test          # Vitest unit tests
 npm run test:db   # pgTAP: RLS isolation and data constraints (needs db:start)
+npm run test:e2e  # Playwright end to end (needs db:start; starts or reuses the dev server)
 npm run build
 ```
 
