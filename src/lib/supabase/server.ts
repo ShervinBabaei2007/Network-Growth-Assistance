@@ -1,11 +1,14 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { publicEnv } from "@/lib/env";
 import type { Database } from "./database.types";
 
 /** Per-request client acting as the signed-in user; row-level security applies. */
 export async function createClient() {
+  // Session checks compare token expiry with the clock, so this is always request-time work.
+  await connection();
   const env = publicEnv();
   const cookieStore = await cookies();
 

@@ -8,25 +8,34 @@ import { createClient } from "@/lib/supabase/server";
 
 export type SignInState = { status: "idle" | "sent" | "error"; message?: string };
 
-const signInSchema = z.object({
-  email: z.email("Enter a valid email address."),
-  next: z.string().optional(),
-});
+const signInSchema = z.object({ email: z.email("Enter a valid email address.") });
+
+/** The `next` parameter of the login page the form was submitted from. */
+function nextFromReferer(referer: string | null, origin: string): string | null {
+  if (!referer) return null;
+  try {
+    const url = new URL(referer);
+    return url.origin === origin ? url.searchParams.get("next") : null;
+  } catch {
+    return null;
+  }
+}
 
 export async function sendMagicLink(_prev: SignInState, formData: FormData): Promise<SignInState> {
-  const parsed = signInSchema.safeParse({
-    email: formData.get("email"),
-    next: formData.get("next") ?? undefined,
-  });
+  const parsed = signInSchema.safeParse({ email: formData.get("email") });
   if (!parsed.success) {
     return { status: "error", message: parsed.error.issues[0]?.message };
   }
 
-  const origin = (await headers()).get("origin");
+  const requestHeaders = await headers();
+  const origin = requestHeaders.get("origin");
   if (!origin) return { status: "error", message: "Could not determine the site address." };
 
   const callback = new URL("/auth/callback", origin);
-  callback.searchParams.set("next", safeNextPath(parsed.data.next));
+  callback.searchParams.set(
+    "next",
+    safeNextPath(nextFromReferer(requestHeaders.get("referer"), origin)),
+  );
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({

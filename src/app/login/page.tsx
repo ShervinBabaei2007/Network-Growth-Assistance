@@ -15,26 +15,24 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
-          <Suspense fallback={<LoginForm />}>
-            <LoginBody searchParams={searchParams} />
+          <Suspense fallback={null}>
+            <LinkError searchParams={searchParams} />
           </Suspense>
+          <LoginForm />
         </CardContent>
       </Card>
     </main>
   );
 }
 
-async function LoginBody({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
+// Only the error notice depends on the URL, so the form itself is part of the static
+// shell and works the moment it appears. The action reads `next` from the Referer.
+async function LinkError({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
   const params = await searchParams;
-  const next = typeof params.next === "string" ? params.next : undefined;
+  if (params.error !== "link") return null;
   return (
-    <>
-      {params.error === "link" ? (
-        <p className="text-sm text-destructive" role="alert">
-          That sign-in link is invalid or has expired. Request a new one.
-        </p>
-      ) : null}
-      <LoginForm next={next} />
-    </>
+    <p className="text-sm text-destructive" role="alert">
+      That sign-in link is invalid or has expired. Request a new one.
+    </p>
   );
 }

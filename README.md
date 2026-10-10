@@ -9,8 +9,9 @@ The app never scrapes LinkedIn, never automates invitations and never asks for L
 | Phase | Scope | State |
 |---|---|---|
 | 1 | Foundation: Next.js, Supabase schema + RLS, magic-link auth, app shell | Done |
-| 2 | Dashboard: progress, discipline and university targets, connection snapshots | Next |
-| 3–8 | Candidates, prioritization, daily job, notes, analytics, deployment | Planned |
+| 2 | Dashboard: progress, discipline and university targets, connection snapshots, settings | Done |
+| 3 | Candidate management: records, search, dedupe, classification, status, CSV import | Next |
+| 4–8 | Prioritization, daily job, notes, analytics, deployment | Planned |
 
 ## Stack
 
@@ -58,4 +59,4 @@ After changing a migration, run `npm run db:reset` and then `npm run db:types` t
 
 The schema is in `supabase/migrations/`. Every table is scoped to its owner by row-level security. Signing up creates default settings and the targets: 250 per discipline, including 125 at U of T and 125 at UBC. SFU and Waterloo are additional candidate pools and don't raise the 1,000 total.
 
-Only accepted invitations count toward targets. Pending invitations are tracked separately, and the database allows only one open invitation per person.
+Only accepted invitations count toward targets, and only when they were accepted on or after the project start date, the candidate's school and program are both confirmed, and the person wasn't already a connection. The counting rules live in `src/lib/progress/` with unit tests. Day and week figures use the time zone in Settings, and weeks start on Monday. Pending invitations are tracked separately, and the database allows only one open invitation per person.

@@ -1,0 +1,25 @@
+import { z } from "zod";
+
+export type FormState = { status: "idle" | "saved" | "error"; message?: string };
+
+export const saved = (message?: string): FormState => ({ status: "saved", message });
+export const failed = (message: string): FormState => ({ status: "error", message });
+
+/** First validation message from a Zod error, for showing next to a form. */
+export const firstIssue = (error: z.ZodError) => error.issues[0]?.message ?? "Check the values and try again.";
+
+const blankToNull = (v: unknown) => (v === "" || v === null || v === undefined ? null : v);
+
+/** A whole number from a form field; blank becomes null when optional. */
+export const formInt = (label: string, { min = 0, max = 1_000_000 } = {}) =>
+  z.coerce
+    .number({ error: `${label} must be a number.` })
+    .int(`${label} must be a whole number.`)
+    .min(min, `${label} must be at least ${min}.`)
+    .max(max, `${label} must be at most ${max.toLocaleString("en-CA")}.`);
+
+export const optionalFormInt = (label: string, opts?: { min?: number; max?: number }) =>
+  z.preprocess(blankToNull, formInt(label, opts).nullable());
+
+export const formDate = (label: string) =>
+  z.string().regex(/^\d{4}-\d{2}-\d{2}$/, `${label} must be a date.`);

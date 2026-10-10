@@ -150,7 +150,15 @@ isOneToOne: false
                 }
           }
           Views: {
-            [_ in never]: never
+            "candidate_category_counts": {
+                  Row: {
+                    "candidate_count": number | null,"classified": boolean | null,"discipline": Database["public"]['Enums']["discipline"] | null,"status": Database["public"]['Enums']["candidate_status"] | null,"university": Database["public"]['Enums']["university"] | null,"user_id": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                }
           }
           Functions: {
             [_ in never]: never
