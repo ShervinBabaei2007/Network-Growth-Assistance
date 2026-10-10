@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
@@ -54,6 +55,7 @@ async function QueueContent() {
     if (items.error || settings.error || stale.error) throw new Error("load");
     data = { plan, progress, items: items.data, settings: settings.data, stale: stale.data, notesUsed };
   } catch (e) {
+    unstable_rethrow(e); // let Next.js postpone/redirect signals through
     console.error("[queue] load failed:", e instanceof Error ? e.message : e);
     return <LoadError what="today's queue" />;
   }

@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { LoadError } from "@/components/load-error";
 import { MeterLegend, ProgressMeter } from "@/components/progress-meter";
@@ -35,7 +36,8 @@ async function UniversityProgress() {
   try {
     const supabase = await createClient();
     progress = await loadProgress(supabase, await currentUserId(supabase));
-  } catch {
+  } catch (e) {
+    unstable_rethrow(e); // let Next.js postpone/redirect signals through
     return <LoadError what="university progress" />;
   }
   const { disciplines } = progress;

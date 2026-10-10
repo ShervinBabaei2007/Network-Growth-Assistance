@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -37,7 +38,8 @@ async function OverviewContent() {
     ]);
     progress = p;
     paused = settings?.paused ?? false;
-  } catch {
+  } catch (e) {
+    unstable_rethrow(e); // let Next.js postpone/redirect signals through
     return <LoadError what="your progress" />;
   }
 

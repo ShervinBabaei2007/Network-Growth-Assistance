@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { DailyBars, NetworkLine } from "@/components/charts";
@@ -70,6 +71,7 @@ async function AnalyticsContent() {
   try {
     data = await load(await createClient());
   } catch (e) {
+    unstable_rethrow(e); // let Next.js postpone/redirect signals through
     console.error("[analytics] load failed:", e instanceof Error ? e.message : e);
     return <LoadError what="analytics" />;
   }
