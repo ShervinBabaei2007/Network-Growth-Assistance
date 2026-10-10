@@ -66,3 +66,10 @@ export function isValidTimeZone(timeZone: string): boolean {
     return false;
   }
 }
+
+/** "YYYY-MM-DDTHH:mm" read as wall-clock time in the zone → instant. */
+export function localDateTimeToInstant(local: string, timeZone: string): Date {
+  const [date, time = "12:00"] = local.split("T");
+  const [h, m] = time.split(":").map(Number);
+  return new Date(startOfLocalDay(date, timeZone).getTime() + (h * 60 + m) * 60_000);
+}

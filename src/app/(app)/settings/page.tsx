@@ -4,6 +4,7 @@ import {
   moveDiscipline,
   pauseOutreach,
   resumeOutreach,
+  runDailyJobNow,
   updateGoal,
   updatePlanning,
   updateTargets,
@@ -43,9 +44,10 @@ export default function SettingsPage() {
 
 async function SettingsContent() {
   const supabase = await createClient();
-  const [{ data: s, error }, { data: targets }] = await Promise.all([
+  const [{ data: s, error }, { data: targets }, { data: runs }] = await Promise.all([
     supabase.from("settings").select("*").single(),
     supabase.from("targets").select("discipline, university, target_count"),
+    supabase.from("job_runs").select("run_date, status, stats, error, finished_at").order("run_date", { ascending: false }).limit(7),
   ]);
   if (error || !s) return <LoadError what="your settings" />;
 
@@ -142,6 +144,31 @@ async function SettingsContent() {
             Count UBC Okanagan as UBC
           </label>
         </ActionForm>
+      </Section>
+
+      <Section
+        title="Daily job"
+        description="Runs once a day on the server: classifies new candidates, marks older invitations as pending, rebuilds the queue and checks for shortfalls. It never contacts LinkedIn."
+      >
+        <div className="grid gap-3 text-sm">
+          {runs && runs.length > 0 ? (
+            <ul className="grid gap-1">
+              {runs.map((r) => {
+                const st = r.stats as { queued?: number; reclassified?: number } | null;
+                return (
+                  <li key={r.run_date}>
+                    <span className="font-medium">{r.run_date}</span> · {r.status}
+                    {r.status === "succeeded" && st ? ` · ${st.queued ?? 0} queued, ${st.reclassified ?? 0} classified` : ""}
+                    {r.status === "failed" && r.error ? ` · ${r.error}` : ""}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-muted-foreground">No runs yet.</p>
+          )}
+          <ActionForm action={runDailyJobNow} submitLabel="Run now" variant="outline" size="sm" />
+        </div>
       </Section>
 
       <Section

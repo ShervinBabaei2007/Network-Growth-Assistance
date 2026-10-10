@@ -374,8 +374,9 @@ function readMapping(formData: FormData): ColumnMapping {
 
 /** Dry run first (mode=preview), then the same input again with mode=import. */
 export async function importCandidatesCsv(_: CsvPreview, formData: FormData): Promise<CsvPreview> {
-  const csv = formData.get("csv");
-  if (typeof csv !== "string" || !csv.trim()) return { status: "error", message: "Choose a CSV file first." };
+  const file = formData.get("file");
+  const csv = file instanceof File && file.size > 0 ? await file.text() : "";
+  if (!csv.trim()) return { status: "error", message: "Choose a CSV file first." };
   if (csv.length > MAX_CSV_BYTES) return { status: "error", message: "The file is larger than 2 MB. Split it into smaller files." };
 
   const rows = parseCsv(csv);

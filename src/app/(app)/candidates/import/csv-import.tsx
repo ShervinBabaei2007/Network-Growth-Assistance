@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
 import { NativeSelect } from "@/components/native-select";
 import { Button } from "@/components/ui/button";
@@ -11,34 +11,23 @@ import { CANDIDATE_FIELDS, type CandidateField } from "@/lib/imports/candidates-
 import { importCandidatesCsv, type CsvPreview } from "../actions";
 
 export function CsvImport() {
-  const [csv, setCsv] = useState("");
-  const [fileName, setFileName] = useState("");
   const [state, action, pending] = useActionState<CsvPreview, FormData>(importCandidatesCsv, { status: "idle" });
   const showMapping = state.headers && state.status !== "imported";
 
   return (
-    <form action={action} className="grid gap-4">
+    // Keep the chosen file after Preview so Import can send it again.
+    <form action={action} onReset={(e) => e.preventDefault()} className="grid gap-4">
       <div className="grid gap-1.5">
         <Label htmlFor="file">CSV file</Label>
-        <Input
-          id="file"
-          type="file"
-          accept=".csv,text/csv"
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            setFileName(file?.name ?? "");
-            setCsv(file ? await file.text() : "");
-          }}
-        />
+        <Input id="file" name="file" type="file" accept=".csv,text/csv" required />
         <p className="text-xs text-muted-foreground">
           Needs a header row with at least a name and a LinkedIn profile URL. Up to 5,000 rows and 2 MB.
         </p>
       </div>
-      <input type="hidden" name="csv" value={csv} />
 
       {showMapping ? (
         <fieldset className="grid gap-3 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-4">
-          <legend className="px-1 text-sm font-medium">Columns in {fileName || "your file"}</legend>
+          <legend className="px-1 text-sm font-medium">Columns in your file</legend>
           <input type="hidden" name="mapped" value="1" />
           {(Object.keys(CANDIDATE_FIELDS) as CandidateField[]).map((field) => (
             <div key={field} className="grid gap-1.5">
@@ -99,7 +88,7 @@ export function CsvImport() {
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" name="mode" value="preview" variant={state.status === "preview" ? "outline" : "default"} disabled={!csv || pending}>
+        <Button type="submit" name="mode" value="preview" variant={state.status === "preview" ? "outline" : "default"} disabled={pending}>
           {pending ? "Checking…" : state.headers ? "Preview again" : "Preview"}
         </Button>
         {state.status === "preview" && (state.newRows ?? 0) > 0 ? (

@@ -129,7 +129,11 @@ async function OverviewContent() {
           Pipeline
         </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-          <StatTile label="Tracked accepted" value={overall.trackedAccepted} hint="Count toward targets" />
+          <StatTile
+            label="Tracked accepted"
+            value={overall.trackedAccepted}
+            hint={overall.fromExport ? `Count toward targets · ${overall.fromExport} via LinkedIn export` : "Count toward targets"}
+          />
           <StatTile label="Invitations pending" value={overall.pending} hint="Not counted until accepted" />
           <StatTile label="Awaiting review" value={overall.awaitingReview} />
           <StatTile label="Ready for outreach" value={overall.readyForOutreach} hint="Approved, not invited" />

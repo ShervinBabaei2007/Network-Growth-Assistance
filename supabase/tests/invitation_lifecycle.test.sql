@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(16);
 
 insert into auth.users (id, email)
 values
@@ -40,6 +40,9 @@ select ok(
   (select resolved_at = sent_at from public.invitations),
   'an acceptance dated before the send time is clamped to the send time');
 select is((select status::text from public.candidates where profile_key = 'ada'), 'connected', 'accepted → connected');
+select ok(
+  (select connected_via = 'invitation' and connected_at = (select resolved_at from public.invitations) from public.candidates where profile_key = 'ada'),
+  'acceptance records when and how the connection happened');
 
 select throws_ok(
   $$select public.resolve_invitation('aaaaaaaa-0000-0000-0000-000000000001', 'declined')$$,
@@ -49,6 +52,8 @@ select lives_ok(
   $$select public.delete_invitation('aaaaaaaa-0000-0000-0000-000000000001')$$,
   'a mistaken invitation can be removed');
 select is((select status::text from public.candidates where profile_key = 'ada'), 'approved', 'and the person returns to approved');
+select ok((select connected_at is null and connected_via is null from public.candidates where profile_key = 'ada'),
+  'removing the invitation clears the connection it created');
 
 -- Another user cannot act on these candidates.
 set local request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';

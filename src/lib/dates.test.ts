@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, isValidTimeZone, localDate, startOfLocalDay, weekStart } from "./dates";
+import { addDays, isValidTimeZone, localDate, localDateTimeToInstant, startOfLocalDay, weekStart } from "./dates";
 
 describe("localDate", () => {
   it("uses the user's time zone, not UTC", () => {
@@ -59,5 +59,11 @@ describe("isValidTimeZone", () => {
   it("accepts IANA names and rejects junk", () => {
     expect(isValidTimeZone("America/Toronto")).toBe(true);
     expect(isValidTimeZone("Mars/Olympus")).toBe(false);
+  });
+});
+
+describe("localDateTimeToInstant", () => {
+  it("reads wall-clock time in the zone", () => {
+    expect(localDateTimeToInstant("2026-10-02T15:04", "America/Toronto").toISOString()).toBe("2026-10-02T19:04:00.000Z");
   });
 });

@@ -31,6 +31,17 @@ export type ProgressInput = {
     classified: boolean;
     preexisting: boolean;
   }[];
+  /**
+   * Connections confirmed by LinkedIn's export with no invitation logged. They count
+   * like acceptances but are not part of invitation activity or the acceptance rate.
+   */
+  exportConnections?: {
+    connectedAt: string;
+    discipline: Discipline | null;
+    university: University | null;
+    classified: boolean;
+    preexisting: boolean;
+  }[];
   candidateCounts: {
     discipline: Discipline | null;
     university: University | null;
@@ -132,6 +143,18 @@ export function computeProgress(input: ProgressInput) {
     }
   }
 
+  let fromExport = 0;
+  for (const c of input.exportConnections ?? []) {
+    if (c.preexisting || localDate(c.connectedAt, tz) < settings.projectStartDate) continue;
+    if (c.classified && c.discipline && c.university) {
+      trackedAccepted++;
+      fromExport++;
+      tally(c.discipline, c.university).accepted++;
+    } else {
+      acceptedNeedsClassification++;
+    }
+  }
+
   let awaitingReview = 0;
   let readyForOutreach = 0;
   for (const row of input.candidateCounts) {
@@ -215,6 +238,8 @@ export function computeProgress(input: ProgressInput) {
           ? null
           : percentOf(Math.max(0, additionalSinceStart), growthGoal),
       trackedAccepted,
+      /** Part of trackedAccepted that came from the LinkedIn export rather than an invitation. */
+      fromExport,
       acceptedNeedsClassification,
       pending,
       pendingUnclassified,

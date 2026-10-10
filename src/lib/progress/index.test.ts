@@ -125,6 +125,39 @@ describe("computeProgress: what counts toward targets", () => {
   });
 });
 
+describe("computeProgress: connections confirmed by the LinkedIn export", () => {
+  const exp = (extra: Partial<NonNullable<ProgressInput["exportConnections"]>[number]> = {}) => ({
+    connectedAt: "2026-10-05T16:00:00Z",
+    discipline: "mech" as const,
+    university: "waterloo" as const,
+    classified: true,
+    preexisting: false,
+    ...extra,
+  });
+
+  it("counts new, classified ones toward targets without inventing invitation activity", () => {
+    const p = computeProgress(input({ exportConnections: [exp()] }));
+    expect(p.overall).toMatchObject({ trackedAccepted: 1, fromExport: 1 });
+    expect(p.disciplines.find((d) => d.discipline === "mech")?.acceptedAdditional).toBe(1);
+    expect(p.outcomes.accepted).toBe(0);
+    expect(p.activity.acceptedThisWeek).toBe(0);
+  });
+
+  it("applies the same start-date, pre-existing and classification rules", () => {
+    const p = computeProgress(
+      input({
+        exportConnections: [
+          exp({ connectedAt: "2026-09-20T16:00:00Z" }),
+          exp({ preexisting: true }),
+          exp({ classified: false }),
+        ],
+      }),
+    );
+    expect(p.overall.trackedAccepted).toBe(0);
+    expect(p.overall.acceptedNeedsClassification).toBe(1);
+  });
+});
+
 describe("computeProgress: priority and focus", () => {
   it("focuses the first discipline in priority order with an unmet target", () => {
     const targets = defaultTargets().map((t) =>

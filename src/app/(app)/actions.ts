@@ -257,3 +257,21 @@ export async function resumeOutreach(): Promise<FormState> {
   refresh();
   return saved("Outreach resumed.");
 }
+
+/** Runs the daily job now for the signed-in user only (same code as the scheduled run). */
+export async function runDailyJobNow(): Promise<FormState> {
+  const ctx = await context();
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const { runDailyJobForUser } = await import("@/lib/jobs/daily");
+  try {
+    // The user id comes from the verified session, never from the form.
+    const r = await runDailyJobForUser(createAdminClient(), ctx.userId, { force: true });
+    refresh();
+    if (r.status === "failed") return failed("The job failed. Details are in the run history below.");
+    if (r.status === "skipped") return saved("A run is already in progress.");
+    const st = r.stats!;
+    return saved(`Done: ${st.queued} queued, ${st.reclassified} classified, ${st.markedPending} marked pending.`);
+  } catch {
+    return failed("Couldn't run the job. Try again.");
+  }
+}

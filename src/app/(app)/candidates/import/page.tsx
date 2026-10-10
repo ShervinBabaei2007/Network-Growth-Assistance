@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Suspense } from "react";
+import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 import { CsvImport } from "./csv-import";
+import { ExportImport } from "./export-import";
 
 export const metadata = { title: "Import · Network Growth" };
 
@@ -12,6 +16,23 @@ export default function ImportPage() {
         <ArrowLeft className="size-4" aria-hidden /> Candidates
       </Link>
       <h1 className="text-xl font-semibold">Import</h1>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>LinkedIn data export</CardTitle>
+          <CardDescription>
+            LinkedIn&apos;s official copy of your data: Settings → Data privacy → Get a copy of
+            your data → Connections and Invitations. It updates acceptances, records invitations you
+            sent without logging, and refreshes your network total. Email addresses in the file are
+            ignored and never stored. You see what will change before anything is saved.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Suspense fallback={null}>
+            <ExportImportForUser />
+          </Suspense>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -28,4 +49,10 @@ export default function ImportPage() {
       </Card>
     </div>
   );
+}
+
+async function ExportImportForUser() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("settings").select("timezone").single();
+  return <ExportImport today={localDate(new Date(), data?.timezone ?? "America/Vancouver")} />;
 }

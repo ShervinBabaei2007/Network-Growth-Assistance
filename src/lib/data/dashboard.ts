@@ -40,6 +40,30 @@ async function loadInvitations(supabase: Client, userId: string): Promise<Progre
   }
 }
 
+async function loadExportConnections(supabase: Client, userId: string): Promise<NonNullable<ProgressInput["exportConnections"]>> {
+  const rows: NonNullable<ProgressInput["exportConnections"]> = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("candidates")
+      .select("id, connected_at, discipline, university, university_confidence, discipline_confidence, is_preexisting_connection")
+      .eq("user_id", userId)
+      .eq("connected_via", "export")
+      .order("id")
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    for (const c of data) {
+      rows.push({
+        connectedAt: c.connected_at!,
+        discipline: c.discipline,
+        university: c.university,
+        classified: c.university_confidence === "confirmed" && c.discipline_confidence === "confirmed",
+        preexisting: c.is_preexisting_connection,
+      });
+    }
+    if (data.length < PAGE_SIZE) return rows;
+  }
+}
+
 async function countDiscoveredSince(supabase: Client, userId: string, since: Date): Promise<number> {
   const { count, error } = await supabase
     .from("candidates")
@@ -69,7 +93,7 @@ export async function loadProgress(supabase: Client, userId: string, at?: Date) 
   if (settingsError) throw settingsError;
 
   const today = localDate(now, settings.timezone);
-  const [targets, snapshot, counts, invitations, discoveredToday, discoveredThisWeek] =
+  const [targets, snapshot, counts, invitations, discoveredToday, discoveredThisWeek, exportConnections] =
     await Promise.all([
       supabase.from("targets").select("discipline, university, target_count").eq("user_id", userId),
       supabase
@@ -86,6 +110,7 @@ export async function loadProgress(supabase: Client, userId: string, at?: Date) 
       loadInvitations(supabase, userId),
       countDiscoveredSince(supabase, userId, startOfLocalDay(today, settings.timezone)),
       countDiscoveredSince(supabase, userId, startOfLocalDay(weekStart(today), settings.timezone)),
+      loadExportConnections(supabase, userId),
     ]);
   for (const result of [targets, snapshot, counts]) if (result.error) throw result.error;
 
@@ -110,6 +135,7 @@ export async function loadProgress(supabase: Client, userId: string, at?: Date) 
         }
       : null,
     invitations,
+    exportConnections,
     // View columns are typed nullable; group-by keys other than discipline/university never are.
     candidateCounts: (counts.data ?? []).map((r) => ({
       discipline: r.discipline,
