@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
 import { ExternalLink, Upload } from "lucide-react";
@@ -17,6 +18,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DISCIPLINE_LABELS, STATUS_LABELS, UNIVERSITY_LABELS, type CandidateStatus, type Discipline, type University } from "@/lib/domain";
+import { currentUserId, loadProgress } from "@/lib/data/dashboard";
+import { searchLinks } from "@/lib/prioritize/search-links";
 import { createClient } from "@/lib/supabase/server";
 import { QuickAddForm } from "./quick-add";
 import { QuickCapture } from "./quick-capture";
@@ -39,8 +42,9 @@ export default function CandidatesPage({ searchParams }: PageProps<"/candidates"
         <CardHeader>
           <CardTitle>Quick capture from LinkedIn search</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="grid gap-4">
           <Suspense fallback={null}>
+            <SearchShortcuts />
             <QuickCaptureForUser />
           </Suspense>
         </CardContent>
@@ -249,4 +253,40 @@ async function QuickCaptureForUser() {
   const supabase = await createClient();
   const { data } = await supabase.from("settings").select("count_ubco_as_ubc, auto_approve").single();
   return <QuickCapture countUbcoAsUbc={data?.count_ubco_as_ubc ?? true} autoApprove={data?.auto_approve ?? false} />;
+}
+
+/** One-click LinkedIn searches for the categories that still need people, most important first. */
+async function SearchShortcuts() {
+  let links;
+  try {
+    const supabase = await createClient();
+    links = searchLinks((await loadProgress(supabase, await currentUserId(supabase))).disciplines);
+  } catch (e) {
+    unstable_rethrow(e);
+    return null; // shortcuts are a convenience; the paste box still works without them
+  }
+  if (links.length === 0) return null;
+
+  return (
+    <nav aria-label="LinkedIn search shortcuts" className="grid gap-2">
+      <p className="text-sm font-medium">1. Open a search on LinkedIn</p>
+      <ul className="flex flex-wrap gap-2">
+        {links.map((l) => (
+          <li key={`${l.discipline}-${l.university}`}>
+            <a
+              href={l.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: l.isAlternate ? "ghost" : "outline", size: "sm" })}
+            >
+              {l.label}
+              {l.remaining !== null ? <span className="text-muted-foreground">· {l.remaining} to go</span> : <span className="text-muted-foreground">· extra</span>}
+              <ExternalLink aria-hidden />
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p className="text-sm font-medium">2. Press Ctrl+A, Ctrl+C there, then paste below</p>
+    </nav>
+  );
 }
