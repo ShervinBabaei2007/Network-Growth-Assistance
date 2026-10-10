@@ -1,9 +1,25 @@
 import { z } from "zod";
 
-export type FormState = { status: "idle" | "saved" | "error"; message?: string };
+export type FormState = {
+  status: "idle" | "saved" | "error";
+  message?: string;
+  /** Optional link shown with the message, e.g. to an existing duplicate record. */
+  href?: string;
+  hrefLabel?: string;
+};
 
-export const saved = (message?: string): FormState => ({ status: "saved", message });
-export const failed = (message: string): FormState => ({ status: "error", message });
+export const saved = (message?: string, link?: { href: string; label: string }): FormState => ({
+  status: "saved",
+  message,
+  href: link?.href,
+  hrefLabel: link?.label,
+});
+export const failed = (message: string, link?: { href: string; label: string }): FormState => ({
+  status: "error",
+  message,
+  href: link?.href,
+  hrefLabel: link?.label,
+});
 
 /** First validation message from a Zod error, for showing next to a form. */
 export const firstIssue = (error: z.ZodError) => error.issues[0]?.message ?? "Check the values and try again.";

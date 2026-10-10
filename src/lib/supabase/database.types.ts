@@ -161,7 +161,15 @@ isOneToOne: false
                 }
           }
           Functions: {
-            [_ in never]: never
+            "delete_invitation":
+{ Args: { "p_candidate_id": string }; Returns: undefined
+                           },
+"record_invitation_sent":
+{ Args: { "p_candidate_id": string,"p_note_text"?: string,"p_sent_at"?: string,"p_source"?: Database["public"]['Enums']["record_source"] }; Returns: string
+                           },
+"resolve_invitation":
+{ Args: { "p_candidate_id": string,"p_outcome": Database["public"]['Enums']["invitation_outcome"],"p_resolved_at"?: string }; Returns: undefined
+                           }
           }
           Enums: {
             "candidate_source": "manual"|"csv"|"linkedin_export","candidate_status": "new"|"awaiting_review"|"approved"|"invitation_sent"|"invitation_pending"|"connected"|"declined_withdrawn"|"not_a_match"|"do_not_contact","classification_confidence": "confirmed"|"needs_review","degree_level": "undergraduate"|"masters"|"doctoral"|"alumni"|"other","discipline": "ce"|"ee"|"mech"|"cs","invitation_outcome": "pending"|"accepted"|"declined"|"withdrawn","job_status": "running"|"succeeded"|"failed","queue_item_state": "queued"|"sent"|"skipped","record_source": "manual"|"linkedin_export","university": "uoft"|"ubc"|"sfu"|"waterloo"

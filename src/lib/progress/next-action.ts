@@ -40,7 +40,7 @@ export function nextAction(progress: Progress, paused: boolean): NextAction {
       kind: "classify-accepted",
       title: `Confirm the school and program for ${overall.acceptedNeedsClassification} accepted connection${overall.acceptedNeedsClassification === 1 ? "" : "s"}`,
       detail: "They don't count toward any target until both are confirmed.",
-      href: "/candidates",
+      href: "/candidates?status=connected&review=1",
     };
   }
   if (!focus) {
@@ -66,7 +66,7 @@ export function nextAction(progress: Progress, paused: boolean): NextAction {
       kind: "review-candidates",
       title: `Review ${overall.awaitingReview} candidate${overall.awaitingReview === 1 ? "" : "s"}`,
       detail: "Approve the ones who fit before they can be queued.",
-      href: "/candidates",
+      href: "/candidates?status=awaiting_review",
     };
   }
   return {

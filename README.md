@@ -10,8 +10,9 @@ The app never scrapes LinkedIn, never automates invitations and never asks for L
 |---|---|---|
 | 1 | Foundation: Next.js, Supabase schema + RLS, magic-link auth, app shell | Done |
 | 2 | Dashboard: progress, discipline and university targets, connection snapshots, settings | Done |
-| 3 | Candidate management: records, search, dedupe, classification, status, CSV import | Next |
-| 4–8 | Prioritization, daily job, notes, analytics, deployment | Planned |
+| 3 | Candidate management: records, search, dedupe, classification, status, CSV import | Done |
+| 4 | Prioritization and the daily queue | Next |
+| 5–8 | Daily job, notes, analytics, deployment | Planned |
 
 ## Stack
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -28,11 +28,15 @@ export const NAV_ITEMS = [
 ] as const;
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
-  const pathname = usePathname();
+  return <NavList pathname={usePathname()} onNavigate={onNavigate} />;
+}
+
+/** The links themselves; `pathname` is null while the current route is still unknown. */
+function NavList({ pathname, onNavigate }: { pathname: string | null; onNavigate?: () => void }) {
   return (
     <nav className="grid gap-1" aria-label="Main">
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-        const active = pathname === href || pathname.startsWith(`${href}/`);
+        const active = pathname !== null && (pathname === href || pathname.startsWith(`${href}/`));
         return (
           <Link
             key={href}
@@ -54,7 +58,12 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function SidebarNav() {
-  return <NavLinks />;
+  // The active highlight depends on the URL, which dynamic routes only know at request time.
+  return (
+    <Suspense fallback={<NavList pathname={null} />}>
+      <NavLinks />
+    </Suspense>
+  );
 }
 
 export function MobileNav() {

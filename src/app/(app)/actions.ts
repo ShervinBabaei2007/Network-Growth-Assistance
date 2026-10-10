@@ -13,32 +13,11 @@ import {
   saved,
   type FormState,
 } from "@/lib/form-state";
-import { createClient } from "@/lib/supabase/server";
-import type { Json } from "@/lib/supabase/database.types";
+import { actionContext as context, logActivity as log } from "@/lib/server/action-context";
 
 // LinkedIn caps a member's network at 30,000 connections.
 const MAX_CONNECTIONS = 30_000;
 const DISCIPLINES = Object.keys(DISCIPLINE_LABELS) as Discipline[];
-
-async function context() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  const userId = data?.claims.sub;
-  if (!userId) throw new Error("Not signed in");
-  const { data: settings, error } = await supabase
-    .from("settings")
-    .select("timezone, discipline_priority")
-    .single();
-  if (error) throw error;
-  return { supabase, userId, settings };
-}
-
-type Ctx = Awaited<ReturnType<typeof context>>;
-
-async function log(ctx: Ctx, kind: string, payload: { [key: string]: Json | undefined } = {}) {
-  // Logging must never block the user's change, so failures are ignored here.
-  await ctx.supabase.from("activity_logs").insert({ user_id: ctx.userId, kind, payload });
-}
 
 /** A snapshot time for a chosen local date: now for today, local noon for past dates. */
 function snapshotInstant(date: string, timeZone: string): string | FormState {

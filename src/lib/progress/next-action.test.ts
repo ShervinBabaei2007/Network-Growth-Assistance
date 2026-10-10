@@ -52,7 +52,7 @@ describe("nextAction", () => {
         },
       ],
     });
-    expect(nextAction(p, false)).toMatchObject({ kind: "classify-accepted", href: "/candidates" });
+    expect(nextAction(p, false)).toMatchObject({ kind: "classify-accepted", href: "/candidates?status=connected&review=1" });
   });
 
   it("sends people to the queue when approved candidates are waiting", () => {
