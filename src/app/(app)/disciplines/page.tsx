@@ -3,7 +3,7 @@ import { LoadError } from "@/components/load-error";
 import { MeterLegend, ProgressMeter } from "@/components/progress-meter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { loadProgress } from "@/lib/data/dashboard";
+import { currentUserId, loadProgress } from "@/lib/data/dashboard";
 import { DISCIPLINE_LABELS } from "@/lib/domain";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,7 +28,8 @@ export default function DisciplinesPage() {
 async function DisciplineCards() {
   let progress;
   try {
-    progress = await loadProgress(await createClient());
+    const supabase = await createClient();
+    progress = await loadProgress(supabase, await currentUserId(supabase));
   } catch {
     return <LoadError what="discipline progress" />;
   }

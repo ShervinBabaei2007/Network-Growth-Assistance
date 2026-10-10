@@ -8,7 +8,7 @@ import { StatTile } from "@/components/stat-tile";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { loadProgress } from "@/lib/data/dashboard";
+import { currentUserId, loadProgress } from "@/lib/data/dashboard";
 import { DISCIPLINE_LABELS } from "@/lib/domain";
 import { nextAction } from "@/lib/progress/next-action";
 import { createClient } from "@/lib/supabase/server";
@@ -32,7 +32,7 @@ async function OverviewContent() {
   let paused = false;
   try {
     const [p, { data: settings }] = await Promise.all([
-      loadProgress(supabase),
+      loadProgress(supabase, await currentUserId(supabase)),
       supabase.from("settings").select("paused").single(),
     ]);
     progress = p;

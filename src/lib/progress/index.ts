@@ -100,6 +100,8 @@ export function computeProgress(input: ProgressInput) {
   let pending = 0;
   let pendingUnclassified = 0;
   const activity = { sentToday: 0, sentThisWeek: 0, acceptedToday: 0, acceptedThisWeek: 0 };
+  // Every resolved invitation, classified or not, for the acceptance rate.
+  const outcomes = { accepted: 0, declined: 0, withdrawn: 0 };
 
   for (const inv of input.invitations) {
     const sentOn = localDate(inv.sentAt, tz);
@@ -115,6 +117,7 @@ export function computeProgress(input: ProgressInput) {
       continue;
     }
 
+    outcomes[inv.outcome]++;
     if (inv.outcome !== "accepted" || !inv.resolvedAt) continue;
     const acceptedOn = localDate(inv.resolvedAt, tz);
     if (acceptedOn === today) activity.acceptedToday++;
@@ -218,6 +221,7 @@ export function computeProgress(input: ProgressInput) {
       awaitingReview,
       readyForOutreach,
     },
+    outcomes,
     activity: { ...activity, discoveredToday: input.discovered.today, discoveredThisWeek: input.discovered.thisWeek },
     disciplines,
     focus: disciplines.find((d) => d.isFocus) ?? null,

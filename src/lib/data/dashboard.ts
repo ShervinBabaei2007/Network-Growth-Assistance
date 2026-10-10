@@ -10,7 +10,7 @@ type Client = SupabaseClient<Database>;
 // PostgREST returns at most 1,000 rows per request by default.
 const PAGE_SIZE = 1000;
 
-async function loadInvitations(supabase: Client): Promise<ProgressInput["invitations"]> {
+async function loadInvitations(supabase: Client, userId: string): Promise<ProgressInput["invitations"]> {
   const rows: ProgressInput["invitations"] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await supabase
@@ -18,6 +18,7 @@ async function loadInvitations(supabase: Client): Promise<ProgressInput["invitat
       .select(
         "id, outcome, sent_at, resolved_at, candidates!inner(discipline, university, university_confidence, discipline_confidence, is_preexisting_connection)",
       )
+      .eq("user_id", userId)
       .order("id")
       .range(from, from + PAGE_SIZE - 1);
     if (error) throw error;
@@ -39,17 +40,22 @@ async function loadInvitations(supabase: Client): Promise<ProgressInput["invitat
   }
 }
 
-async function countDiscoveredSince(supabase: Client, since: Date): Promise<number> {
+async function countDiscoveredSince(supabase: Client, userId: string, since: Date): Promise<number> {
   const { count, error } = await supabase
     .from("candidates")
     .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
     .gte("discovered_at", since.toISOString());
   if (error) throw error;
   return count ?? 0;
 }
 
-/** Loads everything the dashboard needs for the signed-in user (RLS scopes every query). */
-export async function loadProgress(supabase: Client, at?: Date) {
+/**
+ * Loads everything the dashboard needs for one user. Every query filters by
+ * user_id explicitly so this is also safe with the service-role client used by
+ * the daily job; with the signed-in client, RLS applies as well.
+ */
+export async function loadProgress(supabase: Client, userId: string, at?: Date) {
   // Reading the clock makes this request-time work; tell Next.js before doing it.
   if (!at) await connection();
   const now = at ?? new Date();
@@ -58,25 +64,28 @@ export async function loadProgress(supabase: Client, at?: Date) {
     .select(
       "overall_target, baseline_connections, project_start_date, timezone, discipline_priority",
     )
+    .eq("user_id", userId)
     .single();
   if (settingsError) throw settingsError;
 
   const today = localDate(now, settings.timezone);
   const [targets, snapshot, counts, invitations, discoveredToday, discoveredThisWeek] =
     await Promise.all([
-      supabase.from("targets").select("discipline, university, target_count"),
+      supabase.from("targets").select("discipline, university, target_count").eq("user_id", userId),
       supabase
         .from("connection_snapshots")
         .select("total_connections, recorded_at")
+        .eq("user_id", userId)
         .order("recorded_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
       supabase
         .from("candidate_category_counts")
-        .select("discipline, university, status, classified, candidate_count"),
-      loadInvitations(supabase),
-      countDiscoveredSince(supabase, startOfLocalDay(today, settings.timezone)),
-      countDiscoveredSince(supabase, startOfLocalDay(weekStart(today), settings.timezone)),
+        .select("discipline, university, status, classified, candidate_count")
+        .eq("user_id", userId),
+      loadInvitations(supabase, userId),
+      countDiscoveredSince(supabase, userId, startOfLocalDay(today, settings.timezone)),
+      countDiscoveredSince(supabase, userId, startOfLocalDay(weekStart(today), settings.timezone)),
     ]);
   for (const result of [targets, snapshot, counts]) if (result.error) throw result.error;
 
@@ -111,4 +120,12 @@ export async function loadProgress(supabase: Client, at?: Date) {
     })),
     discovered: { today: discoveredToday, thisWeek: discoveredThisWeek },
   });
+}
+
+/** The signed-in user's id, for pages that call the loaders. */
+export async function currentUserId(supabase: Client): Promise<string> {
+  const { data } = await supabase.auth.getClaims();
+  const id = data?.claims.sub;
+  if (!id) throw new Error("Not signed in");
+  return id;
 }

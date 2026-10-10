@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { loadProgress } from "@/lib/data/dashboard";
+import { currentUserId, loadProgress } from "@/lib/data/dashboard";
 import { DISCIPLINE_LABELS, PRIMARY_UNIVERSITIES, UNIVERSITY_LABELS } from "@/lib/domain";
 import { ADDITIONAL_UNIVERSITIES } from "@/lib/progress";
 import { createClient } from "@/lib/supabase/server";
@@ -33,7 +33,8 @@ export default function UniversitiesPage() {
 async function UniversityProgress() {
   let progress;
   try {
-    progress = await loadProgress(await createClient());
+    const supabase = await createClient();
+    progress = await loadProgress(supabase, await currentUserId(supabase));
   } catch {
     return <LoadError what="university progress" />;
   }
