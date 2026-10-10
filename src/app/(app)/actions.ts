@@ -275,3 +275,28 @@ export async function runDailyJobNow(): Promise<FormState> {
     return failed("Couldn't run the job. Try again.");
   }
 }
+
+const profileSchema = z.object({
+  mySchool: z.string().trim().max(200, "Keep the school under 200 characters."),
+  myProgram: z.string().trim().max(200, "Keep the program under 200 characters."),
+  myInterests: z.string().trim().max(300, "Keep interests under 300 characters."),
+});
+
+/** What the user says about themselves, used only to word connection notes. */
+export async function updateNoteProfile(_: FormState, formData: FormData): Promise<FormState> {
+  const parsed = profileSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return failed(firstIssue(parsed.error));
+  const ctx = await context();
+  const { error } = await ctx.supabase
+    .from("settings")
+    .update({
+      my_school_text: parsed.data.mySchool || null,
+      my_program_text: parsed.data.myProgram || null,
+      my_interests: parsed.data.myInterests || null,
+    })
+    .eq("user_id", ctx.userId);
+  if (error) return failed("Couldn't save. Try again.");
+  await log(ctx, "settings.profile");
+  refresh();
+  return saved("Saved. New queue items will use it; refresh today's queue to update existing ones.");
+}

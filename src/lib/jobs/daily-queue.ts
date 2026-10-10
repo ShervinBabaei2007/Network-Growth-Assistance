@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadProgress } from "@/lib/data/dashboard";
+import { suggestNote } from "@/lib/notes";
 import { planQueue, type EligibleCandidate } from "@/lib/prioritize";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -83,6 +84,7 @@ export async function buildTodaysQueue(supabase: Client, userId: string, now?: D
 
   const kept = todays.filter((r) => r.state !== "queued").length;
   if (plan.items.length > 0) {
+    const notes = await draftNotes(supabase, userId, plan.items.map((i) => i.candidateId));
     const { error } = await supabase.from("daily_queue").upsert(
       plan.items.map((i) => ({
         user_id: userId,
@@ -91,6 +93,7 @@ export async function buildTodaysQueue(supabase: Client, userId: string, now?: D
         rank: kept + i.rank,
         reason: i.reason,
         is_alternate: i.isAlternate,
+        note_draft: notes.get(i.candidateId) ?? null,
       })),
       { onConflict: "user_id,queue_date,candidate_id", ignoreDuplicates: true },
     );
@@ -98,4 +101,35 @@ export async function buildTodaysQueue(supabase: Client, userId: string, now?: D
   }
 
   return { plan, today, queued: plan.items.length };
+}
+
+/** Template note drafts for the queued people (no AI here; that's on request only). */
+async function draftNotes(supabase: Client, userId: string, candidateIds: string[]) {
+  const [{ data: me, error: meError }, { data: people, error }] = await Promise.all([
+    supabase.from("settings").select("my_school_text, my_program_text, my_interests, note_char_limit").eq("user_id", userId).single(),
+    supabase
+      .from("candidates")
+      .select("id, full_name, university, discipline, raw_program_text, notes")
+      .eq("user_id", userId)
+      .in("id", candidateIds),
+  ]);
+  if (meError) throw meError;
+  if (error) throw error;
+  return new Map(
+    people.map((c) => [
+      c.id,
+      suggestNote(
+        {
+          candidateId: c.id,
+          fullName: c.full_name,
+          university: c.university,
+          discipline: c.discipline,
+          programText: c.raw_program_text,
+          candidateNotes: c.notes,
+          me: { school: me.my_school_text, program: me.my_program_text, interests: me.my_interests },
+        },
+        me.note_char_limit,
+      ),
+    ]),
+  );
 }

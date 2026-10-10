@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentUserId } from "@/lib/data/dashboard";
-import { localDate } from "@/lib/dates";
+import { localDate, startOfLocalDay } from "@/lib/dates";
+import { aiNotesEnabled } from "@/lib/notes/claude";
 import { DISCIPLINE_LABELS, SHORT_UNIVERSITY, type Discipline } from "@/lib/domain";
 import { computeTodaysPlan } from "@/lib/jobs/daily-queue";
 import { MIN_RESOLVED_FOR_RATE, type Shortfall } from "@/lib/prioritize";
@@ -39,24 +40,27 @@ async function QueueContent() {
   try {
     const userId = await currentUserId(supabase);
     const { plan, progress } = await computeTodaysPlan(supabase, userId);
-    const { data: settingsRow } = await supabase.from("settings").select("stale_pending_days").single();
-    const [items, settings, stale] = await Promise.all([
+    const { data: settingsRow } = await supabase.from("settings").select("stale_pending_days, timezone").single();
+    const [items, settings, stale, notesUsed] = await Promise.all([
       supabase
         .from("daily_queue")
         .select("id, rank, reason, is_alternate, state, note_draft, candidate_id, candidates(full_name, profile_url, role, university, discipline, notes)")
         .eq("queue_date", progress.today)
         .order("rank"),
-      supabase.from("settings").select("daily_invite_target, weekly_invite_cap, stale_pending_days, timezone, note_char_limit").single(),
+      supabase.from("settings").select("daily_invite_target, weekly_invite_cap, stale_pending_days, timezone, note_char_limit, monthly_note_allowance").single(),
       loadStalePending(supabase, settingsRow?.stale_pending_days ?? 21),
+      countNotesThisMonth(supabase, progress.today, settingsRow?.timezone ?? "America/Vancouver"),
     ]);
     if (items.error || settings.error || stale.error) throw new Error("load");
-    data = { plan, progress, items: items.data, settings: settings.data, stale: stale.data };
+    data = { plan, progress, items: items.data, settings: settings.data, stale: stale.data, notesUsed };
   } catch (e) {
     console.error("[queue] load failed:", e instanceof Error ? e.message : e);
     return <LoadError what="today's queue" />;
   }
 
-  const { plan, progress, items, settings } = data;
+  const { plan, progress, items, settings, notesUsed } = data;
+  const notesLeft = settings.monthly_note_allowance === null ? null : Math.max(0, settings.monthly_note_allowance - notesUsed);
+  const aiEnabled = aiNotesEnabled();
   const tz = settings.timezone;
   const stale = data.stale;
   const open = items.filter((i) => i.state === "queued");
@@ -131,7 +135,14 @@ async function QueueContent() {
                     <ActionForm action={markQueueItemSent} submitLabel="Mark sent" size="sm" className="min-w-0 flex-1">
                       <input type="hidden" name="queueId" value={item.id} />
                       <input type="hidden" name="candidateId" value={item.candidate_id} />
-                      <NoteField id={`note-${item.id}`} defaultValue={item.note_draft ?? ""} limit={settings.note_char_limit} />
+                      <NoteField
+                        id={`note-${item.id}`}
+                        queueId={item.id}
+                        defaultValue={item.note_draft ?? ""}
+                        limit={settings.note_char_limit}
+                        aiEnabled={aiEnabled}
+                        notesLeft={notesLeft}
+                      />
                     </ActionForm>
                     <ActionForm action={skipQueueItem} submitLabel="Skip today" variant="outline" size="sm">
                       <input type="hidden" name="queueId" value={item.id} />
@@ -225,6 +236,17 @@ function groupByDiscipline(shortfalls: Shortfall[]) {
   const groups = new Map<Discipline, Shortfall[]>();
   for (const s of shortfalls) groups.set(s.discipline, [...(groups.get(s.discipline) ?? []), s]);
   return [...groups.entries()];
+}
+
+/** Invitations sent with a personalized note since the 1st of this month (local time). */
+async function countNotesThisMonth(supabase: Awaited<ReturnType<typeof createClient>>, today: string, tz: string) {
+  const { count, error } = await supabase
+    .from("invitations")
+    .select("id", { count: "exact", head: true })
+    .eq("had_note", true)
+    .gte("sent_at", startOfLocalDay(`${today.slice(0, 7)}-01`, tz).toISOString());
+  if (error) throw error;
+  return count ?? 0;
 }
 
 /** Pending invitations sent more than `days` days ago, oldest first. */

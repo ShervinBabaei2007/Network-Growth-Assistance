@@ -13,8 +13,9 @@ The app never scrapes LinkedIn, never automates invitations and never asks for L
 | 3 | Candidate management: records, search, dedupe, classification, status, CSV import | Done |
 | 4 | Prioritization and the daily queue | Done |
 | 5 | Daily job and LinkedIn data export import | Done |
-| 6 | Connection-note suggestions | Next |
-| 7–8 | Analytics, deployment | Planned |
+| 6 | Connection-note suggestions | Done |
+| 7 | Analytics and end-to-end tests | Next |
+| 8 | Deployment | Planned |
 
 ## Stack
 

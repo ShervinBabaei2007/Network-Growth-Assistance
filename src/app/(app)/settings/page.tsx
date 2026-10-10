@@ -5,6 +5,7 @@ import {
   pauseOutreach,
   resumeOutreach,
   runDailyJobNow,
+  updateNoteProfile,
   updateGoal,
   updatePlanning,
   updateTargets,
@@ -143,6 +144,23 @@ async function SettingsContent() {
             <input type="checkbox" name="countUbcoAsUbc" defaultChecked={s.count_ubco_as_ubc} className="size-4 accent-primary" />
             Count UBC Okanagan as UBC
           </label>
+        </ActionForm>
+      </Section>
+
+      <Section
+        title="About you (for connection notes)"
+        description="Suggested notes only mention what you enter here and what's on the candidate's record. Nothing is invented."
+      >
+        <ActionForm action={updateNoteProfile} submitLabel="Save">
+          <Field id="mySchool" label="Your school">
+            <Input id="mySchool" name="mySchool" maxLength={200} defaultValue={s.my_school_text ?? ""} placeholder="e.g. BCIT" />
+          </Field>
+          <Field id="myProgram" label="Your program">
+            <Input id="myProgram" name="myProgram" maxLength={200} defaultValue={s.my_program_text ?? ""} placeholder="e.g. Computer Systems Technology" />
+          </Field>
+          <Field id="myInterests" label="Interests to mention (optional)">
+            <Input id="myInterests" name="myInterests" maxLength={300} defaultValue={s.my_interests ?? ""} placeholder="e.g. embedded systems and robotics" />
+          </Field>
         </ActionForm>
       </Section>
 
