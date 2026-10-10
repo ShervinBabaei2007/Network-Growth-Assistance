@@ -20,7 +20,7 @@ const PAGE = `
     <div class="primary-subtitle">Computer Engineering Student at <strong>UBC</strong></div>
     <div class="secondary-subtitle">Vancouver, British Columbia, Canada</div>
     <p>Current: Robotics Lead at UBC Thunderbots</p>
-    <div>Jane Doe and 3 other mutual connections</div>
+    <div><span><a href="https://www.linkedin.com/in/jane-mutual"><span>Jane Doe</span></a>, <a href="/in/raj-mutual/">Raj K</a> and 3 other mutual connections</span></div>
     <button><span>Connect</span></button>
   </div></li>
   <li><div class="entity-result">
@@ -59,6 +59,10 @@ describe("captureFromHtml", () => {
     expect(people[0].details).toEqual(["Current: Robotics Lead at UBC Thunderbots"]);
   });
 
+  it("ignores links to mutual connections (they're already your connections)", () => {
+    expect(people.some((p) => p.key === "jane-mutual" || p.key === "raj-mutual")).toBe(false);
+  });
+
   it("ignores the nav bar's link to your own profile and hidden members", () => {
     expect(people.some((p) => p.name === "Me" || p.key === "me-myself")).toBe(false);
     expect(people.some((p) => /member/i.test(p.name))).toBe(false);
@@ -83,6 +87,15 @@ describe("profile links resolved against another origin", () => {
 });
 
 describe("existing connections", () => {
+  it("skips 'is a mutual connection' links on People you may know cards", () => {
+    const people = captureFromHtml(
+      `<ul><li><a href="https://www.linkedin.com/in/pymk-x"><span>Pat Kim</span></a><div>CS at SFU</div>
+         <div><a href="https://www.linkedin.com/in/my-friend">Sam Lee</a> is a mutual connection</div></li></ul>`,
+      new DOMParser(),
+    );
+    expect(people.map((p) => p.key)).toEqual(["pymk-x"]);
+  });
+
   it("flags 1st-degree people in search results", () => {
     const people = captureFromHtml(
       `<ul><li><a href="https://www.linkedin.com/in/friend-1"><span aria-hidden="true">Old Friend</span></a>

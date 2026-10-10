@@ -68,14 +68,29 @@ function textLines(el: Element): string[] {
   return lines;
 }
 
+const MUTUAL = /\bmutual connections?\b|\bis a mutual\b|\bare mutual\b/i;
+
+/**
+ * True for links inside LinkedIn's "Sam, Alex and 3 other mutual connections"
+ * line. Those people are already your connections, not search results. Only text
+ * sitting directly beside the link counts, never text nested elsewhere in the card.
+ */
+function isMutualConnectionLink(a: Element): boolean {
+  const besideText = (el: Element | null) =>
+    el ? [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent ?? "").join(" ") : "";
+  const parent = a.parentElement;
+  return MUTUAL.test(`${besideText(parent)} ${besideText(parent?.parentElement ?? null)}`);
+}
+
 /** The smallest ancestor that holds one person's result and nobody else's. */
 function personContainer(link: Element, keyOf: (a: Element) => string | null): Element {
   const key = keyOf(link);
   let el: Element = link;
   for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+    // Mutual-connection links sit inside a result card; they don't end it.
     const others = [...parent.querySelectorAll("a[href]")].some((a) => {
       const k = keyOf(a);
-      return k !== null && k !== key;
+      return k !== null && k !== key && !isMutualConnectionLink(a);
     });
     if (others) break;
     el = parent;
@@ -96,8 +111,9 @@ export function extractBlocks(root: ParentNode & { ownerDocument?: Document | nu
   const seen = new Map<string, CaptureBlock>();
   for (const a of root.querySelectorAll("a[href]")) {
     const key = keyOf(a);
-    // Site navigation (e.g. the "Me" link to your own profile) is never a result.
-    if (!key || a.closest("nav,header,footer")) continue;
+    // Site navigation (e.g. the "Me" link to your own profile) and mutual
+    // connections (people you're already connected to) are never results.
+    if (!key || a.closest("nav,header,footer") || isMutualConnectionLink(a)) continue;
     const container = personContainer(a, keyOf);
     const block = { href: a.getAttribute("href")!, lines: textLines(container) };
     const prev = seen.get(key);
@@ -114,7 +130,7 @@ const NOISE = [
   /^•?\s*(1st|2nd|3rd\+?)( degree connection)?$/i,
   /^(1st|2nd|3rd\+?) degree connection$/i,
   /^(connect|message|follow|following|pending|invite sent|send inmail|more|save)$/i,
-  /mutual connections?/i,
+  MUTUAL,
   /^[\d,.]+k?\+? followers?$/i,
   /^•$/,
   /^(premium|open to work|hiring|provides services)$/i,
