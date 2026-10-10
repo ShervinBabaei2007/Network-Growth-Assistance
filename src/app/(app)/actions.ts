@@ -130,12 +130,14 @@ const planningSchema = z.object({
   stalePendingDays: formInt("Stale invitation age", { min: 1, max: 365 }),
   timezone: z.string().refine(isValidTimeZone, "Choose a valid time zone."),
   countUbcoAsUbc: z.preprocess((v) => v === "on", z.boolean()),
+  autoApprove: z.preprocess((v) => v === "on", z.boolean()),
 });
 
 export async function updatePlanning(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = planningSchema.safeParse({
     ...Object.fromEntries(formData),
     countUbcoAsUbc: formData.get("countUbcoAsUbc"),
+    autoApprove: formData.get("autoApprove"),
   });
   if (!parsed.success) return failed(firstIssue(parsed.error));
   const d = parsed.data;
@@ -151,6 +153,7 @@ export async function updatePlanning(_: FormState, formData: FormData): Promise<
       stale_pending_days: d.stalePendingDays,
       timezone: d.timezone,
       count_ubco_as_ubc: d.countUbcoAsUbc,
+      auto_approve: d.autoApprove,
     })
     .eq("user_id", ctx.userId);
   if (error) return failed("Couldn't save planning settings. Try again.");

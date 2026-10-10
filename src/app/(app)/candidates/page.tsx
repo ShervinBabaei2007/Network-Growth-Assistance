@@ -247,6 +247,6 @@ function Filter({
 
 async function QuickCaptureForUser() {
   const supabase = await createClient();
-  const { data } = await supabase.from("settings").select("count_ubco_as_ubc").single();
-  return <QuickCapture countUbcoAsUbc={data?.count_ubco_as_ubc ?? true} />;
+  const { data } = await supabase.from("settings").select("count_ubco_as_ubc, auto_approve").single();
+  return <QuickCapture countUbcoAsUbc={data?.count_ubco_as_ubc ?? true} autoApprove={data?.auto_approve ?? false} />;
 }

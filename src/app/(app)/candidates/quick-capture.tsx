@@ -26,7 +26,7 @@ function nameFromSlug(key: string) {
     .join(" ");
 }
 
-export function QuickCapture({ countUbcoAsUbc }: { countUbcoAsUbc: boolean }) {
+export function QuickCapture({ countUbcoAsUbc, autoApprove }: { countUbcoAsUbc: boolean; autoApprove: boolean }) {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [approve, setApprove] = useState(true);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
@@ -61,7 +61,8 @@ export function QuickCapture({ countUbcoAsUbc }: { countUbcoAsUbc: boolean }) {
       return {
         ...p,
         name: p.name || nameFromSlug(p.key),
-        include: true,
+        // Existing connections can't be invited again, so they're left out.
+        include: !p.alreadyConnected,
         existing: false,
         university: uni.confidence === "confirmed" ? uni.value : null,
         discipline: disc.confidence === "confirmed" ? disc.value : null,
@@ -80,7 +81,7 @@ export function QuickCapture({ countUbcoAsUbc }: { countUbcoAsUbc: boolean }) {
     setRows((cur) => cur?.map((r) => (r.include && r[field] === null ? { ...r, [field]: value } : r)) ?? null);
   };
 
-  const selected = rows?.filter((r) => r.include && !r.existing) ?? [];
+  const selected = rows?.filter((r) => r.include && !r.existing && !r.alreadyConnected) ?? [];
   const ready = selected.filter((r) => r.university && r.discipline).length;
 
   const save = () =>
@@ -132,7 +133,8 @@ export function QuickCapture({ countUbcoAsUbc }: { countUbcoAsUbc: boolean }) {
         <div className="grid gap-3">
           <div className="flex flex-wrap items-end gap-3 text-sm">
             <p className="mr-auto">
-              <strong>{rows.length}</strong> found · {rows.filter((r) => r.existing).length} already in your list ·{" "}
+              <strong>{rows.length}</strong> found · {rows.filter((r) => r.alreadyConnected).length} already connected ·{" "}
+              {rows.filter((r) => r.existing).length} already in your list ·{" "}
               {pending && !rows.some((r) => r.existing) ? "checking…" : `${ready} of ${selected.length} selected are fully recognised`}
             </p>
             <label className="grid gap-1 text-xs">
@@ -161,19 +163,20 @@ export function QuickCapture({ countUbcoAsUbc }: { countUbcoAsUbc: boolean }) {
 
           <ul className="grid gap-2">
             {rows.map((r) => (
-              <li key={r.key} className={`grid gap-2 rounded-lg border p-2 sm:grid-cols-[auto_1fr_8rem_12rem] sm:items-center ${r.existing ? "opacity-50" : ""}`}>
+              <li key={r.key} className={`grid gap-2 rounded-lg border p-2 sm:grid-cols-[auto_1fr_8rem_12rem] sm:items-center ${r.existing || r.alreadyConnected ? "opacity-50" : ""}`}>
                 <input
                   type="checkbox"
                   aria-label={`Include ${r.name}`}
                   checked={r.include}
-                  disabled={r.existing}
+                  disabled={r.existing || r.alreadyConnected}
                   onChange={(e) => update(r.key, { include: e.target.checked })}
                   className="size-4 accent-primary"
                 />
                 <div className="grid min-w-0 gap-0.5">
                   <Input aria-label="Name" value={r.name} onChange={(e) => update(r.key, { name: e.target.value })} className="h-7" />
                   <p className="truncate text-xs text-muted-foreground" title={r.headline ?? ""}>
-                    {r.existing ? <Badge variant="outline">Already in your list</Badge> : null} {r.headline ?? "No headline"}
+                    {r.alreadyConnected ? <Badge variant="outline">Already connected</Badge> : r.existing ? <Badge variant="outline">Already in your list</Badge> : null}{" "}
+                    {r.headline ?? "No headline"}
                   </p>
                 </div>
                 <NativeSelect aria-label={`School for ${r.name}`} value={r.university ?? ""} onChange={(e) => update(r.key, { university: (e.target.value || null) as University | null })}>
@@ -200,10 +203,14 @@ export function QuickCapture({ countUbcoAsUbc }: { countUbcoAsUbc: boolean }) {
             <Button onClick={save} disabled={pending || selected.length === 0}>
               {pending ? "Saving…" : `Add ${selected.length} ${selected.length === 1 ? "person" : "people"}`}
             </Button>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={approve} onChange={(e) => setApprove(e.target.checked)} className="size-4 accent-primary" />
-              Approve the ones with school and program set
-            </label>
+            {autoApprove ? (
+              <p className="text-sm text-muted-foreground">Auto-approve is on: rows with school and program set are approved.</p>
+            ) : (
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={approve} onChange={(e) => setApprove(e.target.checked)} className="size-4 accent-primary" />
+                Approve the ones with school and program set
+              </label>
+            )}
             <Button variant="ghost" onClick={() => setRows(null)}>
               Cancel
             </Button>

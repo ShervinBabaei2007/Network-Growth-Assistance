@@ -109,7 +109,7 @@ export async function addCandidate(_: FormState, formData: FormData): Promise<Fo
       university_confidence: c.university.confidence,
       discipline_confidence: c.discipline.confidence,
       source: "manual",
-      status: d.approve && classified ? "approved" : "awaiting_review",
+      status: (d.approve || ctx.settings.auto_approve) && classified ? "approved" : "awaiting_review",
     })
     .select("id")
     .single();
@@ -120,7 +120,7 @@ export async function addCandidate(_: FormState, formData: FormData): Promise<Fo
   refresh();
 
   const link = { href: `/candidates/${row.id}`, label: "Open record" };
-  if (d.approve && !classified) {
+  if ((d.approve || ctx.settings.auto_approve) && !classified) {
     return saved(
       "Added for review: the school or program needs confirming before it can be approved.",
       link,
@@ -180,8 +180,12 @@ export async function confirmClassification(_: FormState, formData: FormData): P
       discipline,
       university_confidence: university ? "confirmed" : "needs_review",
       discipline_confidence: discipline ? "confirmed" : "needs_review",
-      // An approved person whose category is cleared goes back to review.
+      // An approved person whose category is cleared goes back to review; with
+      // auto-approve on, confirming both fields approves someone still in review.
       ...(current?.status === "approved" && !confirmedBoth ? { status: "awaiting_review" as const } : {}),
+      ...(ctx.settings.auto_approve && confirmedBoth && (current?.status === "new" || current?.status === "awaiting_review")
+        ? { status: "approved" as const }
+        : {}),
     })
     .eq("id", id);
   if (error) return failed("Couldn't save the classification. Try again.");
@@ -419,7 +423,7 @@ export async function importCandidatesCsv(_: CsvPreview, formData: FormData): Pr
   if (formData.get("mode") !== "import") return { status: "preview", ...summary };
   if (fresh.length === 0) return { status: "error", message: "Nothing new to import.", ...summary };
 
-  const approve = formData.get("approveConfirmed") === "on";
+  const approve = formData.get("approveConfirmed") === "on" || ctx.settings.auto_approve;
   for (let i = 0; i < fresh.length; i += 500) {
     const chunk = fresh.slice(i, i + 500).map(({ classificationNote: _note, ...d }) => ({
       ...d,
@@ -503,7 +507,7 @@ export async function addCapturedPeople(
       university_confidence: r.university ? ("confirmed" as const) : ("needs_review" as const),
       discipline_confidence: r.discipline ? ("confirmed" as const) : ("needs_review" as const),
       source: "manual" as const,
-      status: approve && classified ? ("approved" as const) : ("awaiting_review" as const),
+      status: (approve || ctx.settings.auto_approve) && classified ? ("approved" as const) : ("awaiting_review" as const),
     });
   }
   if (records.length === 0) return { ok: false, message: "None of these rows has a valid LinkedIn profile link." };

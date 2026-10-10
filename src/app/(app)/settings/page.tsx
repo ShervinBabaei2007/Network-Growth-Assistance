@@ -141,6 +141,15 @@ async function SettingsContent() {
               </datalist>
             </Field>
           </div>
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" name="autoApprove" defaultChecked={s.auto_approve} className="mt-0.5 size-4 accent-primary" />
+            <span>
+              Approve automatically when school and program are recognised
+              <span className="block text-xs text-muted-foreground">
+                Skips the review step for clear matches. Unclear ones still wait for you.
+              </span>
+            </span>
+          </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="countUbcoAsUbc" defaultChecked={s.count_ubco_as_ubc} className="size-4 accent-primary" />
             Count UBC Okanagan as UBC

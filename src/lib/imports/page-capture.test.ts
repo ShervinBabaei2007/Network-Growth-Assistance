@@ -82,6 +82,42 @@ describe("profile links resolved against another origin", () => {
   });
 });
 
+describe("existing connections", () => {
+  it("flags 1st-degree people in search results", () => {
+    const people = captureFromHtml(
+      `<ul><li><a href="https://www.linkedin.com/in/friend-1"><span aria-hidden="true">Old Friend</span></a>
+         <span><span aria-hidden="true"> • 1st</span><span>1st degree connection</span></span><div>CS at UBC</div></li>
+       <li><a href="https://www.linkedin.com/in/stranger-2"><span aria-hidden="true">New Person</span></a>
+         <span aria-hidden="true"> • 2nd</span><div>CS at UBC</div></li></ul>`,
+      new DOMParser(),
+    );
+    expect(people.map((p) => [p.name, p.alreadyConnected])).toEqual([
+      ["Old Friend", true],
+      ["New Person", false],
+    ]);
+  });
+
+  it("flags everyone on the connections page", () => {
+    const people = captureFromHtml(
+      `<ul><li><a href="https://www.linkedin.com/in/conn-a/"><span>Conn A</span></a><span>Software Engineer at Acme</span>
+         <time>Connected on October 5, 2026</time><button>Message</button></li></ul>`,
+      new DOMParser(),
+    );
+    expect(people).toMatchObject([{ name: "Conn A", headline: "Software Engineer at Acme", alreadyConnected: true }]);
+  });
+
+  it("reads 'People you may know' cards without their buttons", () => {
+    const people = captureFromHtml(
+      `<section><h2>People you may know from University of British Columbia</h2><ul>
+         <li><a href="https://www.linkedin.com/in/pymk-1/"><img alt=""><span>Pat Kim</span><span>Electrical Engineering student at UBC</span></a>
+           <span>Based on your profile</span><span>Sam and 4 other mutual connections</span><button>Connect</button><button>Dismiss</button></li>
+       </ul></section>`,
+      new DOMParser(),
+    );
+    expect(people).toMatchObject([{ name: "Pat Kim", headline: "Electrical Engineering student at UBC", alreadyConnected: false }]);
+  });
+});
+
 describe("captureFromText", () => {
   it("pulls profile links out of plain text", () => {
     const r = captureFromText("see linkedin.com/in/one and https://ca.linkedin.com/in/Two/?x=1\nhttps://www.linkedin.com/company/acme");

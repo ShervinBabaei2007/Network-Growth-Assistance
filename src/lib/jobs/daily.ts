@@ -57,7 +57,7 @@ async function claim(db: Client, userId: string, runDate: string, force: boolean
   return taken.length > 0;
 }
 
-async function reclassifyNew(db: Client, userId: string, countUbcoAsUbc: boolean): Promise<number> {
+async function reclassifyNew(db: Client, userId: string, countUbcoAsUbc: boolean, autoApprove: boolean): Promise<number> {
   const { data, error } = await db
     .from("candidates")
     .select("id, raw_school_text, raw_program_text")
@@ -67,6 +67,7 @@ async function reclassifyNew(db: Client, userId: string, countUbcoAsUbc: boolean
   if (error) throw error;
   for (const c of data) {
     const r = classifyCandidate(c.raw_school_text, c.raw_program_text, { countUbcoAsUbc });
+    const recognised = r.university.confidence === "confirmed" && r.discipline.confidence === "confirmed";
     const { error: upError } = await db
       .from("candidates")
       .update({
@@ -74,7 +75,7 @@ async function reclassifyNew(db: Client, userId: string, countUbcoAsUbc: boolean
         discipline: r.discipline.value,
         university_confidence: r.university.confidence,
         discipline_confidence: r.discipline.confidence,
-        status: "awaiting_review",
+        status: autoApprove && recognised ? "approved" : "awaiting_review",
       })
       .eq("id", c.id)
       .eq("user_id", userId);
@@ -123,13 +124,13 @@ async function countStalePending(db: Client, userId: string, days: number): Prom
 async function runSteps(db: Client, userId: string, now: Date): Promise<DailyStats> {
   const { data: s, error } = await db
     .from("settings")
-    .select("timezone, count_ubco_as_ubc, stale_pending_days")
+    .select("timezone, count_ubco_as_ubc, stale_pending_days, auto_approve")
     .eq("user_id", userId)
     .single();
   if (error) throw error;
 
   const today = localDate(now, s.timezone);
-  const reclassified = await reclassifyNew(db, userId, s.count_ubco_as_ubc);
+  const reclassified = await reclassifyNew(db, userId, s.count_ubco_as_ubc, s.auto_approve);
   const markedPending = await markOlderSentAsPending(db, userId, startOfLocalDay(today, s.timezone));
   // Stops preparing candidates for completed categories and respects pause/limits.
   const { plan, queued } = await buildTodaysQueue(db, userId, now);

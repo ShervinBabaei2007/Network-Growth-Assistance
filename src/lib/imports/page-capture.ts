@@ -17,6 +17,8 @@ export type CapturedPerson = {
   headline: string | null;
   /** Extra context LinkedIn shows, e.g. "Current: Student at UBC". */
   details: string[];
+  /** LinkedIn marks them as a 1st-degree connection, or shows when you connected. */
+  alreadyConnected: boolean;
 };
 
 /**
@@ -118,7 +120,14 @@ const NOISE = [
   /^(premium|open to work|hiring|provides services)$/i,
   // Navigation bar text that ends up in a whole-page copy.
   /^(me|home|my network|jobs|messaging|notifications|for business|try premium.*|skip to (main )?content)$/i,
+  // "People you may know" and connections-page controls.
+  /^(dismiss|ignore|accept|show all|see all|remove connection|connected)$/i,
+  /^based on (your|their) /i,
+  /^connected (on |\d)/i,
 ];
+
+// "1st", "• 1st", "1st degree connection", and the connections page's "Connected on October 5, 2026".
+const FIRST_DEGREE = [/(^|[\s•])1st( degree connection)?$/i, /^connected (on |\d)/i];
 
 const isNoise = (line: string) => NOISE.some((r) => r.test(line));
 
@@ -129,6 +138,7 @@ export function parseBlocks(blocks: CaptureBlock[]): CapturedPerson[] {
     const url = profileFromHref(b.href);
     if (!url.ok || people.has(url.key)) continue;
 
+    const alreadyConnected = b.lines.some((l) => FIRST_DEGREE.some((r) => r.test(l.trim())));
     const lines = b.lines
       .map((l) => l.replace(/\s*•\s*(1st|2nd|3rd\+?)\s*$/i, "").trim())
       .filter((l) => l && !isNoise(l));
@@ -140,7 +150,7 @@ export function parseBlocks(blocks: CaptureBlock[]): CapturedPerson[] {
     const rest = unique.filter((l) => l !== nameLine);
     const details = rest.filter((l) => /^(current|past|summary|skills):/i.test(l));
     const headline = rest.find((l) => !details.includes(l)) ?? null;
-    people.set(url.key, { key: url.key, url: url.url, name: nameLine, headline, details });
+    people.set(url.key, { key: url.key, url: url.url, name: nameLine, headline, details, alreadyConnected });
   }
   return [...people.values()];
 }
@@ -156,7 +166,7 @@ export function captureFromText(text: string): CapturedPerson[] {
   const out = new Map<string, CapturedPerson>();
   for (const m of text.matchAll(/(?:https?:\/\/)?(?:[\w-]+\.)?linkedin\.com\/(?:mwlite\/)?in\/[^\s"'<>)]+/gi)) {
     const r = normalizeProfileUrl(m[0]);
-    if (r.ok && !out.has(r.key)) out.set(r.key, { key: r.key, url: r.url, name: "", headline: null, details: [] });
+    if (r.ok && !out.has(r.key)) out.set(r.key, { key: r.key, url: r.url, name: "", headline: null, details: [], alreadyConnected: false });
   }
   return [...out.values()];
 }
