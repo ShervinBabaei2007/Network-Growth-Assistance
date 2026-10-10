@@ -5,6 +5,7 @@ import {
   pauseOutreach,
   resumeOutreach,
   runDailyJobNow,
+  deleteAccount,
   updateNoteProfile,
   updateGoal,
   updatePlanning,
@@ -186,6 +187,22 @@ async function SettingsContent() {
             <p className="text-muted-foreground">No runs yet.</p>
           )}
           <ActionForm action={runDailyJobNow} submitLabel="Run now" variant="outline" size="sm" />
+        </div>
+      </Section>
+
+      <Section
+        title="Your data"
+        description="Everything is stored only for your account. Your LinkedIn password, cookies and export email addresses are never stored."
+      >
+        <div className="grid gap-4 text-sm">
+          <a href="/api/export" className="underline underline-offset-4" download>
+            Download all my data (JSON)
+          </a>
+          <ActionForm action={deleteAccount} submitLabel="Delete my account and data" variant="destructive">
+            <Field id="confirmDelete" label="Type DELETE to permanently remove your account and every record">
+              <Input id="confirmDelete" name="confirm" autoComplete="off" />
+            </Field>
+          </ActionForm>
         </div>
       </Section>
 

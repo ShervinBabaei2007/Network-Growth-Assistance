@@ -15,7 +15,16 @@ The app never scrapes LinkedIn, never automates invitations and never asks for L
 | 5 | Daily job and LinkedIn data export import | Done |
 | 6 | Connection-note suggestions | Done |
 | 7 | Analytics and end-to-end tests | Done |
-| 8 | Deployment | Next |
+| 8 | Production hardening, data export/deletion, deployment guide | Done |
+
+To deploy, follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+## How a day works
+
+1. The daily job (or **Run now**) classifies new candidates, marks older invitations as pending and builds today's queue. It works in your discipline priority order, U of T and UBC first, with SFU and Waterloo as labelled alternates. It stays within your daily target and pause setting.
+2. On **Daily Queue**, open each profile on LinkedIn and send the invitation yourself, with the suggested note if you like. Then press **Mark sent**.
+3. When someone accepts, mark it on their record, or import LinkedIn's data export to update everyone at once.
+4. **Overview**, **Disciplines**, **Universities** and **Analytics** update from what you've recorded. Nothing is estimated or invented.
 
 ## Stack
 
@@ -56,7 +65,7 @@ After changing a migration, run `npm run db:reset` and then `npm run db:types` t
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | public | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | public | Browser/server key; access is enforced by RLS |
-| `SUPABASE_SECRET_KEY` | server only | Bypasses RLS; used only by the daily job |
+| `SUPABASE_SECRET_KEY` | server only | Bypasses RLS; used only by the daily job (cron and Run now) and account deletion, always for the verified user |
 | `CRON_SECRET` | server only | Authenticates Vercel Cron calls to `/api/cron/daily` |
 | `ANTHROPIC_API_KEY` | server only, optional | Claude rewrites of connection-note drafts |
 

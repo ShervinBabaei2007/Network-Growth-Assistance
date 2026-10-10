@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isValidTimeZone, localDate, startOfLocalDay } from "@/lib/dates";
 import { DISCIPLINE_LABELS, type Discipline, type University } from "@/lib/domain";
@@ -299,4 +300,19 @@ export async function updateNoteProfile(_: FormState, formData: FormData): Promi
   await log(ctx, "settings.profile");
   refresh();
   return saved("Saved. New queue items will use it; refresh today's queue to update existing ones.");
+}
+
+/**
+ * Permanently deletes the signed-in user's account. Every table references the
+ * auth user with ON DELETE CASCADE, so all of their data goes with it.
+ */
+export async function deleteAccount(_: FormState, formData: FormData): Promise<FormState> {
+  if (formData.get("confirm") !== "DELETE") return failed("Type DELETE to confirm.");
+  const ctx = await context();
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  // The id comes from the verified session, never from the form.
+  const { error } = await createAdminClient().auth.admin.deleteUser(ctx.userId);
+  if (error) return failed("Couldn't delete the account. Try again.");
+  await ctx.supabase.auth.signOut();
+  redirect("/login");
 }
