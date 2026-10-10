@@ -57,6 +57,13 @@ function tiers(f: NoteFacts): string[][] {
           `${hi} fellow ${school} student here, in ${me.program}. Would be great to connect with someone in ${program}.`,
         ]
       : [],
+    // With interests, say what draws you to their field; used when it fits the limit.
+    me.program && me.school && me.interests && area
+      ? [
+          `${hi} I'm ${article(me.program)} ${me.program} student at ${me.school}, interested in ${me.interests}. I'd like to connect with people in ${area}.`,
+          `${hi} I study ${me.program} at ${me.school} and I'm into ${me.interests}. Would be great to connect with someone in ${area}.`,
+        ]
+      : [],
     me.program && me.school && area && school
       ? [
           `${hi} I'm ${article(me.program)} ${me.program} student at ${me.school} with a strong interest in ${area}. I'd like to connect and learn from your experience at ${school}.`,

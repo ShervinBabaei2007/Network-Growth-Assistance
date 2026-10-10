@@ -41,6 +41,18 @@ describe("suggestNote", () => {
     expect(n).toBe("Hi, I'd be glad to connect and follow your work.");
   });
 
+  it("mentions your interests when they fit, and falls back when they don't", () => {
+    const withInterests = facts({ me: { school: "BCIT", program: "Computer Systems Technology", interests: "embedded systems and cloud infrastructure" } });
+    const n = suggestNote(withInterests, 200);
+    expect(n).toContain("embedded systems and cloud infrastructure");
+    expect(n.length).toBeLessThanOrEqual(200);
+    expect(checkNote(n, withInterests, 200)).toEqual({ ok: true });
+    // Too long to include interests: the program/school wording is used instead.
+    const tight = suggestNote(withInterests, 140);
+    expect(tight).not.toContain("embedded");
+    expect(tight.length).toBeLessThanOrEqual(140);
+  });
+
   it("is deterministic per candidate", () => {
     expect(suggestNote(facts(), 200)).toBe(suggestNote(facts(), 200));
   });
