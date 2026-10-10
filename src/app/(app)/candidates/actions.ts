@@ -469,8 +469,9 @@ const capturedSchema = z
       name: z.string().trim().min(1, "Every row needs a name.").max(200),
       headline: z.string().trim().max(300).nullable(),
       details: z.string().trim().max(600).nullable(),
-      university: z.enum(UNIVERSITIES).nullable(),
-      discipline: z.enum(DISCIPLINES).nullable(),
+      // Quick capture only adds people whose school and program are known.
+      university: z.enum(UNIVERSITIES, "Every row needs a school."),
+      discipline: z.enum(DISCIPLINES, "Every row needs a program."),
     }),
   )
   .min(1, "Select at least one person.")

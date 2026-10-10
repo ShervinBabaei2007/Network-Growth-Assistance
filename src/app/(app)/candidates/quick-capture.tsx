@@ -30,7 +30,8 @@ export function QuickCapture({ countUbcoAsUbc, autoApprove }: { countUbcoAsUbc: 
   const [rows, setRows] = useState<Row[] | null>(null);
   const [approve, setApprove] = useState(true);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [pending, startTransition] = useTransition(); // saving
+  const [checking, startChecking] = useTransition(); // looking up who's already in the list
   const pasteRef = useRef<HTMLTextAreaElement>(null);
   const refocus = useRef(false);
 
@@ -58,31 +59,53 @@ export function QuickCapture({ countUbcoAsUbc, autoApprove }: { countUbcoAsUbc: 
       const uni = classifyUniversity(context, { countUbcoAsUbc });
       // The program comes from the headline only: "Past:" lines can mention other fields.
       const disc = classifyDiscipline(p.headline, uni.value);
+      const university = uni.confidence === "confirmed" ? uni.value : null;
+      const discipline = disc.confidence === "confirmed" ? disc.value : null;
       return {
         ...p,
         name: p.name || nameFromSlug(p.key),
-        // Existing connections can't be invited again, so they're left out.
-        include: !p.alreadyConnected,
+        // Only people with a recognised school and program are added; existing
+        // connections can't be invited again, so they're left out too.
+        include: !p.alreadyConnected && university !== null && discipline !== null,
         existing: false,
-        university: uni.confidence === "confirmed" ? uni.value : null,
-        discipline: disc.confidence === "confirmed" ? disc.value : null,
+        university,
+        discipline,
       };
     });
     setRows(prepared);
-    startTransition(async () => {
+    startChecking(async () => {
       const existing = new Set(await findExistingProfiles(prepared.map((r) => r.key)));
       setRows((cur) => cur?.map((r) => (existing.has(r.key) ? { ...r, existing: true, include: false } : r)) ?? null);
     });
   };
 
-  const update = (key: string, patch: Partial<Row>) => setRows((cur) => cur?.map((r) => (r.key === key ? { ...r, ...patch } : r)) ?? null);
+  const addable = (r: Row) => !r.existing && !r.alreadyConnected && r.university !== null && r.discipline !== null;
+  const update = (key: string, patch: Partial<Row>) =>
+    setRows(
+      (cur) =>
+        cur?.map((r) => {
+          if (r.key !== key) return r;
+          const next = { ...r, ...patch };
+          // Setting school or program includes the row once both are known; clearing one excludes it.
+          return "university" in patch || "discipline" in patch ? { ...next, include: addable(next) } : next;
+        }) ?? null,
+    );
   const fillBlank = (field: "university" | "discipline", value: string) => {
     if (!value) return;
-    setRows((cur) => cur?.map((r) => (r.include && r[field] === null ? { ...r, [field]: value } : r)) ?? null);
+    setRows(
+      (cur) =>
+        cur?.map((r) => {
+          if (r.existing || r.alreadyConnected || r[field] !== null) return r;
+          const next = { ...r, [field]: value };
+          return { ...next, include: addable(next) };
+        }) ?? null,
+    );
   };
+  const missing = (r: Row) =>
+    r.university === null && r.discipline === null ? "Needs school and program" : r.university === null ? "Needs school" : r.discipline === null ? "Needs program" : null;
 
-  const selected = rows?.filter((r) => r.include && !r.existing && !r.alreadyConnected) ?? [];
-  const ready = selected.filter((r) => r.university && r.discipline).length;
+  const selected = rows?.filter((r) => r.include && addable(r)) ?? [];
+  const incomplete = rows?.filter((r) => !r.existing && !r.alreadyConnected && missing(r)).length ?? 0;
 
   const save = () =>
     startTransition(async () => {
@@ -92,8 +115,9 @@ export function QuickCapture({ countUbcoAsUbc, autoApprove }: { countUbcoAsUbc: 
           name: r.name,
           headline: r.headline,
           details: r.details.join(" · ") || null,
-          university: r.university,
-          discipline: r.discipline,
+          // `selected` only holds rows where both are set (see addable).
+          university: r.university!,
+          discipline: r.discipline!,
         })),
         approve,
       );
@@ -135,7 +159,7 @@ export function QuickCapture({ countUbcoAsUbc, autoApprove }: { countUbcoAsUbc: 
             <p className="mr-auto">
               <strong>{rows.length}</strong> found · {rows.filter((r) => r.alreadyConnected).length} already connected ·{" "}
               {rows.filter((r) => r.existing).length} already in your list ·{" "}
-              {pending && !rows.some((r) => r.existing) ? "checking…" : `${ready} of ${selected.length} selected are fully recognised`}
+              {checking ? "checking your list…" : `${selected.length} ready to add · ${incomplete} missing school or program`}
             </p>
             <label className="grid gap-1 text-xs">
               School for rows without one
@@ -168,14 +192,20 @@ export function QuickCapture({ countUbcoAsUbc, autoApprove }: { countUbcoAsUbc: 
                   type="checkbox"
                   aria-label={`Include ${r.name}`}
                   checked={r.include}
-                  disabled={r.existing || r.alreadyConnected}
+                  disabled={!addable(r)}
                   onChange={(e) => update(r.key, { include: e.target.checked })}
                   className="size-4 accent-primary"
                 />
                 <div className="grid min-w-0 gap-0.5">
                   <Input aria-label="Name" value={r.name} onChange={(e) => update(r.key, { name: e.target.value })} className="h-7" />
                   <p className="truncate text-xs text-muted-foreground" title={r.headline ?? ""}>
-                    {r.alreadyConnected ? <Badge variant="outline">Already connected</Badge> : r.existing ? <Badge variant="outline">Already in your list</Badge> : null}{" "}
+                    {r.alreadyConnected ? (
+                      <Badge variant="outline">Already connected</Badge>
+                    ) : r.existing ? (
+                      <Badge variant="outline">Already in your list</Badge>
+                    ) : missing(r) ? (
+                      <Badge variant="outline">{missing(r)}</Badge>
+                    ) : null}{" "}
                     {r.headline ?? "No headline"}
                   </p>
                 </div>
@@ -200,7 +230,7 @@ export function QuickCapture({ countUbcoAsUbc, autoApprove }: { countUbcoAsUbc: 
           </ul>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={save} disabled={pending || selected.length === 0}>
+            <Button onClick={save} disabled={pending || checking || selected.length === 0}>
               {pending ? "Saving…" : `Add ${selected.length} ${selected.length === 1 ? "person" : "people"}`}
             </Button>
             {autoApprove ? (
@@ -216,7 +246,7 @@ export function QuickCapture({ countUbcoAsUbc, autoApprove }: { countUbcoAsUbc: 
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Rows without a school or program are saved for review and won&apos;t be queued until you confirm them.
+            Only people with both a school and a program are added. To include someone else, set theirs above.
           </p>
         </div>
       )}
