@@ -24,6 +24,7 @@ test("main flow: sign in → add → approve → queue → sent → accepted →
 
   // Add a candidate and approve in one go
   await page.goto("/candidates");
+  await page.getByText("Add one person by hand").click();
   await page.getByLabel("LinkedIn profile URL").fill("https://ca.linkedin.com/in/e2e-ada/?trk=x");
   await page.getByLabel("Name", { exact: true }).fill("Ada E2E");
   await page.getByLabel("School (as shown on the profile)").fill("University of British Columbia");
@@ -60,6 +61,7 @@ test("main flow: sign in → add → approve → queue → sent → accepted →
 
 test("the same profile can't be added twice", async ({ page }) => {
   await signIn(page, uniqueEmail("dupe"), "/candidates");
+  await page.getByText("Add one person by hand").click();
   const add = async (url: string) => {
     await page.getByLabel("LinkedIn profile URL").fill(url);
     await page.getByLabel("Name", { exact: true }).fill("Dupe Person");

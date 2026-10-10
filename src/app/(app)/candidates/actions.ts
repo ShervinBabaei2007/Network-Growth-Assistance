@@ -445,3 +445,78 @@ export async function importCandidatesCsv(_: CsvPreview, formData: FormData): Pr
     ...summary,
   };
 }
+
+// ---------------------------------------------------------------- paste capture
+
+/** Which of these profile keys are already in the list (for the capture preview). */
+export async function findExistingProfiles(keys: string[]): Promise<string[]> {
+  const parsed = z.array(z.string().min(1).max(200)).max(500).safeParse(keys);
+  if (!parsed.success || parsed.data.length === 0) return [];
+  const ctx = await actionContext();
+  const { data, error } = await ctx.supabase.from("candidates").select("profile_key").in("profile_key", parsed.data);
+  if (error) return [];
+  return data.map((r) => r.profile_key);
+}
+
+const capturedSchema = z
+  .array(
+    z.object({
+      url: z.string().max(500),
+      name: z.string().trim().min(1, "Every row needs a name.").max(200),
+      headline: z.string().trim().max(300).nullable(),
+      details: z.string().trim().max(600).nullable(),
+      university: z.enum(UNIVERSITIES).nullable(),
+      discipline: z.enum(DISCIPLINES).nullable(),
+    }),
+  )
+  .min(1, "Select at least one person.")
+  .max(200, "Add at most 200 people at a time.");
+
+/**
+ * Saves people captured from a pasted LinkedIn page. School and program are
+ * confirmed only when set in the preview (by the automatic match or by the user);
+ * anything left blank stays in review.
+ */
+export async function addCapturedPeople(
+  rows: z.input<typeof capturedSchema>,
+  approve: boolean,
+): Promise<{ ok: true; added: number; approved: number; skipped: number } | { ok: false; message: string }> {
+  const parsed = capturedSchema.safeParse(rows);
+  if (!parsed.success) return { ok: false, message: firstIssue(parsed.error) };
+  const ctx = await actionContext();
+
+  const records = [];
+  for (const r of parsed.data) {
+    const url = normalizeProfileUrl(r.url);
+    if (!url.ok) continue;
+    const classified = r.university !== null && r.discipline !== null;
+    records.push({
+      user_id: ctx.userId,
+      full_name: r.name,
+      profile_url: url.url,
+      profile_key: url.key,
+      role: r.headline,
+      raw_school_text: [r.headline, r.details].filter(Boolean).join(" · ") || null,
+      raw_program_text: r.headline,
+      university: r.university,
+      discipline: r.discipline,
+      university_confidence: r.university ? ("confirmed" as const) : ("needs_review" as const),
+      discipline_confidence: r.discipline ? ("confirmed" as const) : ("needs_review" as const),
+      source: "manual" as const,
+      status: approve && classified ? ("approved" as const) : ("awaiting_review" as const),
+    });
+  }
+  if (records.length === 0) return { ok: false, message: "None of these rows has a valid LinkedIn profile link." };
+
+  // ignoreDuplicates: people already in the list are left untouched.
+  const { data, error } = await ctx.supabase
+    .from("candidates")
+    .upsert(records, { onConflict: "user_id,profile_key", ignoreDuplicates: true })
+    .select("status");
+  if (error) return { ok: false, message: "Couldn't save. Try again." };
+
+  const approved = data.filter((r) => r.status === "approved").length;
+  await logActivity(ctx, "candidate.captured", { added: data.length, approved });
+  refresh();
+  return { ok: true, added: data.length, approved, skipped: parsed.data.length - data.length };
+}

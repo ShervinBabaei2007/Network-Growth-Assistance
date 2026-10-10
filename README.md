@@ -21,6 +21,7 @@ To deploy, follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## How a day works
 
+0. **Add people fast:** on a LinkedIn people search (for example "Computer Engineering" with the School filter set to UBC), press Ctrl+A then Ctrl+C. On **Candidates → Quick capture**, press Ctrl+V. Everyone on the page appears with school and program filled in where their headline says them. Fix any blanks, then press **Add**. Repeat for the next results page. Only what you copied is read; the app never fetches anything from LinkedIn.
 1. The daily job (or **Run now**) classifies new candidates, marks older invitations as pending and builds today's queue. It works in your discipline priority order, U of T and UBC first, with SFU and Waterloo as labelled alternates. It stays within your daily target and pause setting.
 2. On **Daily Queue**, open each profile on LinkedIn and send the invitation yourself, with the suggested note if you like. Then press **Mark sent**.
 3. When someone accepts, mark it on their record, or import LinkedIn's data export to update everyone at once.

@@ -5,7 +5,7 @@ import { CategoryLabel, StatusBadge } from "@/components/candidate-badges";
 import { LoadError } from "@/components/load-error";
 import { NativeSelect } from "@/components/native-select";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,6 +19,7 @@ import {
 import { DISCIPLINE_LABELS, STATUS_LABELS, UNIVERSITY_LABELS, type CandidateStatus, type Discipline, type University } from "@/lib/domain";
 import { createClient } from "@/lib/supabase/server";
 import { QuickAddForm } from "./quick-add";
+import { QuickCapture } from "./quick-capture";
 
 export const metadata = { title: "Candidates · Network Growth" };
 
@@ -34,11 +35,22 @@ export default function CandidatesPage({ searchParams }: PageProps<"/candidates"
         </Link>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick capture from LinkedIn search</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Suspense fallback={null}>
+            <QuickCaptureForUser />
+          </Suspense>
+        </CardContent>
+      </Card>
+
       <Card id="add">
-        <details className="group" open>
+        <details className="group">
           <summary className="cursor-pointer list-none px-4 [&::-webkit-details-marker]:hidden">
             <CardTitle className="flex items-center justify-between">
-              Add a candidate
+              Add one person by hand
               <span className="text-sm font-normal text-muted-foreground group-open:hidden">Show</span>
               <span className="hidden text-sm font-normal text-muted-foreground group-open:inline">Hide</span>
             </CardTitle>
@@ -231,4 +243,10 @@ function Filter({
       </NativeSelect>
     </div>
   );
+}
+
+async function QuickCaptureForUser() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("settings").select("count_ubco_as_ubc").single();
+  return <QuickCapture countUbcoAsUbc={data?.count_ubco_as_ubc ?? true} />;
 }
