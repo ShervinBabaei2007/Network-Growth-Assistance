@@ -10,12 +10,15 @@ import { createClient } from "@/lib/supabase/server";
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-full flex-1">
-      <aside className="hidden w-56 shrink-0 border-r p-4 md:block">
-        <p className="mb-4 px-3 font-semibold">Network Growth</p>
+      <aside className="hidden w-56 shrink-0 border-r bg-sidebar p-4 md:block">
+        <p className="mb-4 flex items-center gap-2 px-3 font-semibold">
+          <span aria-hidden className="size-2.5 rounded-full bg-primary" />
+          Network Growth
+        </p>
         <SidebarNav />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-2 border-b px-4 py-2">
+        <header className="flex items-center justify-between gap-2 border-b bg-card px-4 py-2">
           <div className="flex min-w-0 items-center gap-2">
             <div className="md:hidden">
               <MobileNav />
@@ -34,7 +37,10 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={null}>
           <PauseBanner />
         </Suspense>
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        {/* Content stays a readable width on large monitors instead of spanning the whole screen. */}
+        <main className="flex-1 px-4 py-5 md:px-8 md:py-8">
+          <div className="mx-auto w-full max-w-6xl">{children}</div>
+        </main>
       </div>
     </div>
   );

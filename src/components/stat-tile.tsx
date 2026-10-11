@@ -12,7 +12,7 @@ export function StatTile({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-lg border p-3", className)}>
+    <div className={cn("rounded-lg border bg-card p-3", className)}>
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 text-2xl font-semibold">
         {value === null ? <span className="text-muted-foreground">—</span> : formatValue(value)}

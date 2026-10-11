@@ -187,7 +187,7 @@ export function QuickCapture({ countUbcoAsUbc, autoApprove }: { countUbcoAsUbc: 
 
           <ul className="grid gap-2">
             {rows.map((r) => (
-              <li key={r.key} className={`grid gap-2 rounded-lg border p-2 sm:grid-cols-[auto_1fr_8rem_12rem] sm:items-center ${r.existing || r.alreadyConnected ? "opacity-50" : ""}`}>
+              <li key={r.key} className={`grid gap-2 rounded-lg border bg-card p-2 sm:grid-cols-[auto_1fr_8rem_12rem] sm:items-center ${r.existing || r.alreadyConnected ? "opacity-50" : ""}`}>
                 <input
                   type="checkbox"
                   aria-label={`Include ${r.name}`}

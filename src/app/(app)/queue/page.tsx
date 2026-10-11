@@ -157,7 +157,7 @@ async function QueueContent() {
           })}
         </section>
       ) : items.length > 0 ? (
-        <p className="rounded-lg border p-4 text-sm">Today&apos;s queue is done. Nice work.</p>
+        <p className="rounded-lg border bg-card p-4 text-sm">Today&apos;s queue is done. Nice work.</p>
       ) : null}
 
       {done.length > 0 ? (

@@ -126,7 +126,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
       <h2 id="list-heading" className="sr-only">
         Candidate list
       </h2>
-      <form className="grid gap-3 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-6" role="search">
+      <form className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:grid-cols-6" role="search">
         <div className="grid gap-1.5 lg:col-span-2">
           <Label htmlFor="q">Search</Label>
           <Input id="q" name="q" defaultValue={q} placeholder="Name, school, program, role" />
@@ -151,7 +151,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
       </p>
 
       {data.length === 0 ? (
-        <p className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
+        <p className="rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground">
           {q || status || discipline || university || review
             ? "No candidates match these filters."
             : "No candidates yet. Add people you find through LinkedIn search, or import a list."}

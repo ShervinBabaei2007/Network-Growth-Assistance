@@ -137,7 +137,7 @@ async function History() {
           const counters = (s.counters ?? {}) as { verified?: number; possible?: number };
           const criteria = NetworkingCriteria.safeParse(s.criteria);
           return (
-            <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+            <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-3">
               <div className="grid min-w-0 gap-1">
                 <Link href={`/discover/${s.id}`} className="truncate font-medium underline-offset-4 hover:underline">
                   {s.original_query}

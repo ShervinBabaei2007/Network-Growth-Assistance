@@ -79,7 +79,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
       <h2 id="people-heading" className="sr-only">
         Saved people
       </h2>
-      <form role="search" className="grid gap-3 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-5">
+      <form role="search" className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:grid-cols-5">
         <div className="grid gap-1.5 lg:col-span-2">
           <Label htmlFor="q">Search</Label>
           <Input id="q" name="q" defaultValue={q} placeholder="Name, company, role, notes" />
@@ -116,7 +116,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
       </p>
 
       {data.length === 0 ? (
-        <p className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
+        <p className="rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground">
           {q || status || tag || due ? "Nobody matches these filters." : "No saved people yet. Run a search in Discover and save the people worth meeting."}
         </p>
       ) : (

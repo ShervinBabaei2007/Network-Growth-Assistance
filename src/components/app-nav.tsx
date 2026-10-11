@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   BookUser,
+  Briefcase,
   Contact,
   GraduationCap,
   LayoutDashboard,
@@ -26,6 +27,7 @@ export const NAV_ITEMS = [
   { href: "/candidates", label: "Candidates", icon: Users },
   { href: "/discover", label: "Discover", icon: Telescope },
   { href: "/people", label: "People", icon: BookUser },
+  { href: "/jobs", label: "Jobs", icon: Briefcase },
   { href: "/connections", label: "Connections", icon: Contact },
   { href: "/disciplines", label: "Disciplines", icon: Shapes },
   { href: "/universities", label: "Universities", icon: GraduationCap },
@@ -51,7 +53,7 @@ function NavList({ pathname, onNavigate }: { pathname: string | null; onNavigate
             aria-current={active ? "page" : undefined}
             className={cn(
               "flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-              active && "bg-muted font-medium text-foreground",
+              active && "bg-sidebar-accent font-medium text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
             )}
           >
             <Icon className="size-4" aria-hidden />

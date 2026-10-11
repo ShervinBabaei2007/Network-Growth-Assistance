@@ -98,7 +98,7 @@ function Filters({ sp }: { sp: Record<string, string | string[] | undefined> }) 
     </div>
   );
   return (
-    <details className="rounded-lg border p-3" open={["institution", "program", "company", "role", "location", "gradYear", "minScore", "connection", "confidence"].some((k) => one(sp[k]))}>
+    <details className="rounded-lg border bg-card p-3" open={["institution", "program", "company", "role", "location", "gradYear", "minScore", "connection", "confidence"].some((k) => one(sp[k]))}>
       <summary className="cursor-pointer text-sm font-medium">Filter results</summary>
       <form role="search" className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {text("institution", "Institution")}
@@ -158,7 +158,7 @@ function CardList({ people, searchId, review }: { people: Card[]; searchId: stri
 function Group({ title, count, children, open = false, hint }: { title: string; count: number; children: ReactNode; open?: boolean; hint?: string }) {
   if (count === 0) return null;
   return (
-    <details className="group grid gap-3 rounded-lg border p-3" open={open}>
+    <details className="group grid gap-3 rounded-lg border bg-card p-3" open={open}>
       <summary className="cursor-pointer text-sm font-medium">
         {title} ({count})
       </summary>
@@ -186,7 +186,7 @@ function Results({ view, results, filtering }: { view: SearchView; results: Sear
       </h2>
 
       {finished && verified.length === 0 ? (
-        <div className="grid gap-2 rounded-lg border p-6 text-sm">
+        <div className="grid gap-2 rounded-lg border bg-card p-6 text-sm">
           <p className="font-medium">{filtering ? "No verified matches with these filters." : "No strong matches yet."}</p>
           {!filtering ? (
             <>

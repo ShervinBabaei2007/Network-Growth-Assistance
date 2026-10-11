@@ -10,7 +10,7 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
   }, [error]);
 
   return (
-    <div role="alert" className="grid max-w-md gap-3 rounded-lg border p-4">
+    <div role="alert" className="grid max-w-md gap-3 rounded-lg border bg-card p-4">
       <p className="font-medium">Something went wrong loading this page.</p>
       <p className="text-sm text-muted-foreground">
         Nothing you entered was lost. Try again; if it keeps happening, sign out and back in.

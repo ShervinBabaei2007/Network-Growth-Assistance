@@ -66,7 +66,7 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
   const current = VISIBLE_STAGES.indexOf(view.stage as (typeof VISIBLE_STAGES)[number]);
 
   return (
-    <section aria-labelledby="progress-heading" className="grid gap-3 rounded-lg border p-4">
+    <section aria-labelledby="progress-heading" className="grid gap-3 rounded-lg border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="progress-heading" className="text-sm font-semibold">
           {running ? "Researching…" : view.status === "completed" ? "Research complete" : view.status === "cancelled" ? "Search cancelled" : "Search stopped"}

@@ -26,7 +26,7 @@ export function CsvImport() {
       </div>
 
       {showMapping ? (
-        <fieldset className="grid gap-3 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-4">
+        <fieldset className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:grid-cols-4">
           <legend className="px-1 text-sm font-medium">Columns in your file</legend>
           <input type="hidden" name="mapped" value="1" />
           {(Object.keys(CANDIDATE_FIELDS) as CandidateField[]).map((field) => (
@@ -46,7 +46,7 @@ export function CsvImport() {
       ) : null}
 
       {state.status === "preview" || state.status === "imported" || (state.status === "error" && state.totalRows !== undefined) ? (
-        <div className="grid gap-3 rounded-lg border p-3 text-sm" aria-live="polite">
+        <div className="grid gap-3 rounded-lg border bg-card p-3 text-sm" aria-live="polite">
           <p>
             {state.totalRows} rows · <strong>{state.newRows} new</strong> · {state.duplicates} already in your list ·{" "}
             {state.issues?.length ?? 0} skipped · {state.needsReview} of the new ones need review

@@ -127,7 +127,7 @@ async function ConnectionList({ searchParams }: Pick<PageProps<"/connections">, 
       </p>
 
       {data.length === 0 ? (
-        <p className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
+        <p className="rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground">
           {q ? "No connections match." : "No known connections yet. Import your Connections.csv so Discover can skip people you already know."}
         </p>
       ) : (
@@ -193,7 +193,7 @@ async function ConnectionList({ searchParams }: Pick<PageProps<"/connections">, 
       ) : null}
 
       {total > 0 ? (
-        <details className="rounded-lg border p-3 text-sm">
+        <details className="rounded-lg border bg-card p-3 text-sm">
           <summary className="cursor-pointer font-medium">Delete all known connections</summary>
           <div className="mt-3 grid gap-2">
             <p className="text-muted-foreground">Removes the whole imported list from this app. People you saved from research are kept.</p>

@@ -45,7 +45,7 @@ export function ConnectionsImport() {
       </div>
 
       {state.header?.length && effective ? (
-        <fieldset className="grid gap-3 rounded-lg border p-3">
+        <fieldset className="grid gap-3 rounded-lg border bg-card p-3">
           <legend className="px-1 text-sm font-medium">Columns{state.isLinkedInExport ? " (LinkedIn export recognized)" : ""}</legend>
           <input type="hidden" name="customMapping" value={mapping ? "1" : "0"} />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -99,7 +99,7 @@ export function ConnectionsImport() {
       ) : null}
 
       {c && state.status !== "error" ? (
-        <ul className="grid gap-1 rounded-lg border p-3 text-sm" aria-live="polite">
+        <ul className="grid gap-1 rounded-lg border bg-card p-3 text-sm" aria-live="polite">
           <li>{c.rows.toLocaleString("en-CA")} people in the file</li>
           <li>{c.add.toLocaleString("en-CA")} new known connection(s) to add</li>
           <li>{c.update.toLocaleString("en-CA")} existing record(s) to update with new details</li>
