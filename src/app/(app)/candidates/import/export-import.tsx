@@ -32,6 +32,7 @@ export function ExportImport({ today }: { today: string }) {
       {s ? (
         <ul className="grid gap-1 rounded-lg border p-3 text-sm" aria-live="polite">
           {s.totalConnections !== null ? <li>Network total: {s.totalConnections.toLocaleString("en-CA")} connections (recorded as a snapshot)</li> : null}
+          {s.knownConnectionsToSave > 0 ? <li>{s.knownConnectionsToSave.toLocaleString("en-CA")} known connection(s) to add or update, so Discover skips people you already know</li> : null}
           <li>{s.invitationsToRecord} sent invitation(s) to record for people already in your list</li>
           <li>{s.acceptancesToRecord} pending invitation(s) LinkedIn now shows as connections → accepted</li>
           <li>

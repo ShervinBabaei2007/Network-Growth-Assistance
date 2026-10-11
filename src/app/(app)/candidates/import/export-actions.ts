@@ -2,6 +2,8 @@
 
 import { refresh } from "next/cache";
 import { classifyCandidate } from "@/lib/classify";
+import { applyConnectionImport, planImport } from "@/lib/connections/import";
+import { normalizeName, splitName } from "@/lib/text/names";
 import { localDate, localDateTimeToInstant } from "@/lib/dates";
 import {
   parseConnectionsCsv,
@@ -24,6 +26,8 @@ export type ExportSummary = {
   newOther: number;
   pendingMissingFromExport: number;
   incomingIgnored: number;
+  /** Rows of Connections.csv that will be added to (or update) your known 1st-degree connections. */
+  knownConnectionsToSave: number;
 };
 
 export type ExportState = {
@@ -107,7 +111,29 @@ export async function importLinkedInExport(_: ExportState, formData: FormData): 
     newOther: plan.newConnections.length - targetSchool.length,
     pendingMissingFromExport: plan.pendingMissingFromExport,
     incomingIgnored: invitations?.incoming ?? 0,
+    knownConnectionsToSave: 0,
   };
+  // The same file also fills your known 1st-degree connections, used to skip people you know in Discover.
+  const knownPlan = connections
+    ? await planImport(
+        ctx.supabase,
+        connections.rows.map((c) => {
+          const split = splitName(c.fullName);
+          return {
+            fullName: c.fullName,
+            firstName: split.first,
+            lastName: split.last,
+            normalizedName: normalizeName(c.fullName) || c.key,
+            company: c.company || null,
+            position: c.position || null,
+            linkedinUrl: c.url,
+            linkedinKey: c.key,
+            connectedOn: c.connectedOn,
+          };
+        }),
+      )
+    : null;
+  summary.knownConnectionsToSave = knownPlan ? knownPlan.insert.length + knownPlan.update.length : 0;
   if (formData.get("mode") !== "import") return { status: "preview", summary };
 
   const noon = (date: string | null) => localDateTimeToInstant(`${date ?? exportDate}T12:00`, tz).toISOString();
@@ -176,6 +202,8 @@ export async function importLinkedInExport(_: ExportState, formData: FormData): 
     });
     if (error) failures++;
   }
+
+  if (knownPlan) failures += await applyConnectionImport(ctx.supabase, ctx.userId, knownPlan, "linkedin_export");
 
   await logActivity(ctx, "import.linkedin_export", { ...summary, failures });
   refresh();
