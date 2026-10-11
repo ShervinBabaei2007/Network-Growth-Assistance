@@ -1,27 +1,13 @@
 import type { Discipline, University } from "@/lib/domain";
+import { clean, has, hasAny } from "@/lib/text/match";
 
 export type Confidence = "confirmed" | "needs_review";
 
 export type Classified<T> = { value: T | null; confidence: Confidence; reason: string };
 
-/** Lowercase, unify "&"/punctuation and collapse spaces so aliases match reliably. */
-function clean(text: string | null | undefined): string {
-  return ` ${(text ?? "")
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9+]+/g, " ")
-    .trim()} `;
-}
-
-/** True if `phrase` occurs in the cleaned text as whole words. */
-const has = (text: string, phrase: string) => text.includes(` ${phrase} `);
-const hasAny = (text: string, phrases: readonly string[]) => phrases.some((p) => has(text, p));
-
 // ---------------------------------------------------------------- universities
 
-const UNIVERSITY_ALIASES: Record<University, readonly string[]> = {
+export const UNIVERSITY_ALIASES: Record<University, readonly string[]> = {
   uoft: [
     "university of toronto",
     "u of t",
@@ -40,7 +26,7 @@ const UNIVERSITY_ALIASES: Record<University, readonly string[]> = {
 const UBCO_ALIASES = ["ubc okanagan", "ubco", "university of british columbia okanagan"];
 
 // Names that contain a target school's words but are a different institution.
-const LOOKALIKES = ["toronto metropolitan", "wilfrid laurier", "waterloo region", "conestoga"];
+export const LOOKALIKES = ["toronto metropolitan", "wilfrid laurier", "waterloo region", "conestoga"];
 
 export function classifyUniversity(
   text: string | null | undefined,
@@ -83,7 +69,7 @@ export function classifyUniversity(
 
 // ---------------------------------------------------------------- disciplines
 
-const DISCIPLINE_ALIASES: Record<Discipline, readonly string[]> = {
+export const DISCIPLINE_ALIASES: Record<Discipline, readonly string[]> = {
   ce: ["computer engineering", "computer eng", "comp eng", "compe", "cpen", "cpe"],
   ee: ["electrical engineering", "electrical eng", "elec eng", "electronics engineering", "electrical"],
   mech: ["mechatronics", "mechatronic", "mechatronics engineering", "mechatronic systems engineering", "mechatronics option"],
@@ -91,7 +77,7 @@ const DISCIPLINE_ALIASES: Record<Discipline, readonly string[]> = {
 };
 
 // Program names that span more than one target discipline.
-const AMBIGUOUS_PROGRAMS = [
+export const AMBIGUOUS_PROGRAMS = [
   "electrical and computer engineering",
   "electrical computer engineering",
   "ece",
