@@ -119,16 +119,260 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"settings": {
+                },"known_connections": {
                   Row: {
-                    "auto_approve": boolean,"baseline_connections": number | null,"count_ubco_as_ubc": boolean,"created_at": string,"daily_invite_target": number | null,"discipline_priority": (Database["public"]['Enums']["discipline"])[],"monthly_note_allowance": number | null,"my_interests": string | null,"my_program_text": string | null,"my_school_text": string | null,"note_char_limit": number,"overall_target": number,"pause_reason": string | null,"paused": boolean,"paused_at": string | null,"project_start_date": string,"stale_pending_days": number,"timezone": string,"updated_at": string,"user_id": string,"weekly_invite_cap": number | null
+                    "company": string | null,"connected_on": string | null,"created_at": string,"first_name": string | null,"full_name": string,"id": string,"last_name": string | null,"linkedin_key": string | null,"linkedin_url": string | null,"normalized_name": string,"position": string | null,"source": Database["public"]['Enums']["known_connection_source"],"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"count_ubco_as_ubc"?: boolean,"created_at"?: string,"daily_invite_target"?: number | null,"discipline_priority"?: (Database["public"]['Enums']["discipline"])[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"note_char_limit"?: number,"overall_target"?: number,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null
+                    "company"?: string | null,"connected_on"?: string | null,"created_at"?: string,"first_name"?: string | null,"full_name": string,"id"?: string,"last_name"?: string | null,"linkedin_key"?: string | null,"linkedin_url"?: string | null,"normalized_name": string,"position"?: string | null,"source"?: Database["public"]['Enums']["known_connection_source"],"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"count_ubco_as_ubc"?: boolean,"created_at"?: string,"daily_invite_target"?: number | null,"discipline_priority"?: (Database["public"]['Enums']["discipline"])[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"note_char_limit"?: number,"overall_target"?: number,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null
+                    "company"?: string | null,"connected_on"?: string | null,"created_at"?: string,"first_name"?: string | null,"full_name"?: string,"id"?: string,"last_name"?: string | null,"linkedin_key"?: string | null,"linkedin_url"?: string | null,"normalized_name"?: string,"position"?: string | null,"source"?: Database["public"]['Enums']["known_connection_source"],"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"network_connection_overrides": {
+                  Row: {
+                    "created_at": string,"id": string,"identity_signature": string,"known_connection_id": string | null,"same_person": boolean,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"identity_signature": string,"known_connection_id"?: string | null,"same_person": boolean,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"identity_signature"?: string,"known_connection_id"?: string | null,"same_person"?: boolean,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "network_connection_overrides_known_connection_id_user_id_fkey"
+      columns: ["known_connection_id","user_id"]
+isOneToOne: false
+      referencedRelation: "known_connections"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"network_feedback": {
+                  Row: {
+                    "created_at": string,"id": string,"kind": Database["public"]['Enums']["person_feedback_kind"],"person_id": string,"search_id": string | null,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"kind": Database["public"]['Enums']["person_feedback_kind"],"person_id": string,"search_id"?: string | null,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["person_feedback_kind"],"person_id"?: string,"search_id"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "network_feedback_person_id_user_id_fkey"
+      columns: ["person_id","user_id"]
+isOneToOne: false
+      referencedRelation: "network_people"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "network_feedback_search_id_user_id_fkey"
+      columns: ["search_id","user_id"]
+isOneToOne: false
+      referencedRelation: "network_searches"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"network_interactions": {
+                  Row: {
+                    "body": string | null,"created_at": string,"id": string,"kind": string,"occurred_at": string,"person_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "body"?: string | null,"created_at"?: string,"id"?: string,"kind": string,"occurred_at"?: string,"person_id": string,"user_id"?: string
+                  }
+                  Update: {
+                    "body"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"occurred_at"?: string,"person_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "network_interactions_person_id_user_id_fkey"
+      columns: ["person_id","user_id"]
+isOneToOne: false
+      referencedRelation: "network_people"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"network_people": {
+                  Row: {
+                    "candidate_id": string | null,"category": string | null,"confidence_score": number | null,"conversation_angle": string | null,"created_at": string,"crm_status": Database["public"]['Enums']["network_person_status"],"current_company": string | null,"current_title": string | null,"first_name": string | null,"full_name": string,"github_login": string | null,"github_url": string | null,"headline": string | null,"id": string,"identity_keys": (string)[],"known_connection_id": string | null,"known_match_confidence": number | null,"known_match_state": Database["public"]['Enums']["known_match_state"],"last_name": string | null,"linkedin_key": string | null,"linkedin_url": string | null,"location": string | null,"networking_value_score": number | null,"normalized_name": string,"notes": string | null,"personal_website": string | null,"possible_duplicate_of": string | null,"proximity": Database["public"]['Enums']["network_proximity"],"reason_for_connecting": string | null,"reasons": (string)[],"relevance_score": number | null,"reminder_at": string | null,"saved": boolean,"score_breakdown": NonNullable<Json>,"tags": (string)[],"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "candidate_id"?: string | null,"category"?: string | null,"confidence_score"?: number | null,"conversation_angle"?: string | null,"created_at"?: string,"crm_status"?: Database["public"]['Enums']["network_person_status"],"current_company"?: string | null,"current_title"?: string | null,"first_name"?: string | null,"full_name": string,"github_login"?: string | null,"github_url"?: string | null,"headline"?: string | null,"id"?: string,"identity_keys"?: (string)[],"known_connection_id"?: string | null,"known_match_confidence"?: number | null,"known_match_state"?: Database["public"]['Enums']["known_match_state"],"last_name"?: string | null,"linkedin_key"?: string | null,"linkedin_url"?: string | null,"location"?: string | null,"networking_value_score"?: number | null,"normalized_name": string,"notes"?: string | null,"personal_website"?: string | null,"possible_duplicate_of"?: string | null,"proximity"?: Database["public"]['Enums']["network_proximity"],"reason_for_connecting"?: string | null,"reasons"?: (string)[],"relevance_score"?: number | null,"reminder_at"?: string | null,"saved"?: boolean,"score_breakdown"?: NonNullable<Json>,"tags"?: (string)[],"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "candidate_id"?: string | null,"category"?: string | null,"confidence_score"?: number | null,"conversation_angle"?: string | null,"created_at"?: string,"crm_status"?: Database["public"]['Enums']["network_person_status"],"current_company"?: string | null,"current_title"?: string | null,"first_name"?: string | null,"full_name"?: string,"github_login"?: string | null,"github_url"?: string | null,"headline"?: string | null,"id"?: string,"identity_keys"?: (string)[],"known_connection_id"?: string | null,"known_match_confidence"?: number | null,"known_match_state"?: Database["public"]['Enums']["known_match_state"],"last_name"?: string | null,"linkedin_key"?: string | null,"linkedin_url"?: string | null,"location"?: string | null,"networking_value_score"?: number | null,"normalized_name"?: string,"notes"?: string | null,"personal_website"?: string | null,"possible_duplicate_of"?: string | null,"proximity"?: Database["public"]['Enums']["network_proximity"],"reason_for_connecting"?: string | null,"reasons"?: (string)[],"relevance_score"?: number | null,"reminder_at"?: string | null,"saved"?: boolean,"score_breakdown"?: NonNullable<Json>,"tags"?: (string)[],"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "network_people_candidate_id_user_id_fkey"
+      columns: ["candidate_id","user_id"]
+isOneToOne: false
+      referencedRelation: "candidates"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "network_people_known_connection_id_user_id_fkey"
+      columns: ["known_connection_id","user_id"]
+isOneToOne: false
+      referencedRelation: "known_connections"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "network_people_possible_duplicate_of_user_id_fkey"
+      columns: ["possible_duplicate_of","user_id"]
+isOneToOne: false
+      referencedRelation: "network_people"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"network_person_facts": {
+                  Row: {
+                    "confidence": Database["public"]['Enums']["evidence_confidence"],"created_at": string,"extracted_text": string,"field": Database["public"]['Enums']["network_fact_field"],"id": string,"person_id": string,"query_id": string | null,"source_id": string | null,"source_title": string | null,"source_url": string,"user_id": string,"value": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "confidence": Database["public"]['Enums']["evidence_confidence"],"created_at"?: string,"extracted_text": string,"field": Database["public"]['Enums']["network_fact_field"],"id"?: string,"person_id": string,"query_id"?: string | null,"source_id"?: string | null,"source_title"?: string | null,"source_url": string,"user_id"?: string,"value": string
+                  }
+                  Update: {
+                    "confidence"?: Database["public"]['Enums']["evidence_confidence"],"created_at"?: string,"extracted_text"?: string,"field"?: Database["public"]['Enums']["network_fact_field"],"id"?: string,"person_id"?: string,"query_id"?: string | null,"source_id"?: string | null,"source_title"?: string | null,"source_url"?: string,"user_id"?: string,"value"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "network_person_facts_person_id_user_id_fkey"
+      columns: ["person_id","user_id"]
+isOneToOne: false
+      referencedRelation: "network_people"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "network_person_facts_query_id_user_id_fkey"
+      columns: ["query_id","user_id"]
+isOneToOne: false
+      referencedRelation: "network_search_queries"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "network_person_facts_source_id_user_id_fkey"
+      columns: ["source_id","user_id"]
+isOneToOne: false
+      referencedRelation: "network_sources"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"network_search_cache": {
+                  Row: {
+                    "created_at": string,"expires_at": string,"id": string,"provider": string,"query_hash": string,"results": NonNullable<Json>,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"expires_at": string,"id"?: string,"provider": string,"query_hash": string,"results": NonNullable<Json>,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"expires_at"?: string,"id"?: string,"provider"?: string,"query_hash"?: string,"results"?: NonNullable<Json>,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"network_search_people": {
+                  Row: {
+                    "confidence_score": number | null,"created_at": string,"id": string,"person_id": string,"query_id": string | null,"reasons": (string)[],"relevance_score": number | null,"score_breakdown": NonNullable<Json>,"search_id": string,"tier": Database["public"]['Enums']["search_person_tier"],"tier_reason": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "confidence_score"?: number | null,"created_at"?: string,"id"?: string,"person_id": string,"query_id"?: string | null,"reasons"?: (string)[],"relevance_score"?: number | null,"score_breakdown"?: NonNullable<Json>,"search_id": string,"tier"?: Database["public"]['Enums']["search_person_tier"],"tier_reason"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "confidence_score"?: number | null,"created_at"?: string,"id"?: string,"person_id"?: string,"query_id"?: string | null,"reasons"?: (string)[],"relevance_score"?: number | null,"score_breakdown"?: NonNullable<Json>,"search_id"?: string,"tier"?: Database["public"]['Enums']["search_person_tier"],"tier_reason"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "network_search_people_person_id_user_id_fkey"
+      columns: ["person_id","user_id"]
+isOneToOne: false
+      referencedRelation: "network_people"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "network_search_people_query_id_user_id_fkey"
+      columns: ["query_id","user_id"]
+isOneToOne: false
+      referencedRelation: "network_search_queries"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "network_search_people_search_id_user_id_fkey"
+      columns: ["search_id","user_id"]
+isOneToOne: false
+      referencedRelation: "network_searches"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"network_search_queries": {
+                  Row: {
+                    "created_at": string,"error": string | null,"executed_at": string | null,"family": string,"id": string,"provider": string,"query": string,"result_count": number | null,"search_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"error"?: string | null,"executed_at"?: string | null,"family": string,"id"?: string,"provider": string,"query": string,"result_count"?: number | null,"search_id": string,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"error"?: string | null,"executed_at"?: string | null,"family"?: string,"id"?: string,"provider"?: string,"query"?: string,"result_count"?: number | null,"search_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "network_search_queries_search_id_user_id_fkey"
+      columns: ["search_id","user_id"]
+isOneToOne: false
+      referencedRelation: "network_searches"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"network_searches": {
+                  Row: {
+                    "budget": NonNullable<Json>,"counters": NonNullable<Json>,"created_at": string,"criteria": Json | null,"error": string | null,"finished_at": string | null,"id": string,"lease_until": string | null,"metrics": NonNullable<Json>,"original_query": string,"parent_search_id": string | null,"stage": string,"started_at": string | null,"state": NonNullable<Json>,"status": Database["public"]['Enums']["network_search_status"],"target_count": number,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "budget"?: NonNullable<Json>,"counters"?: NonNullable<Json>,"created_at"?: string,"criteria"?: Json | null,"error"?: string | null,"finished_at"?: string | null,"id"?: string,"lease_until"?: string | null,"metrics"?: NonNullable<Json>,"original_query": string,"parent_search_id"?: string | null,"stage"?: string,"started_at"?: string | null,"state"?: NonNullable<Json>,"status"?: Database["public"]['Enums']["network_search_status"],"target_count": number,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "budget"?: NonNullable<Json>,"counters"?: NonNullable<Json>,"created_at"?: string,"criteria"?: Json | null,"error"?: string | null,"finished_at"?: string | null,"id"?: string,"lease_until"?: string | null,"metrics"?: NonNullable<Json>,"original_query"?: string,"parent_search_id"?: string | null,"stage"?: string,"started_at"?: string | null,"state"?: NonNullable<Json>,"status"?: Database["public"]['Enums']["network_search_status"],"target_count"?: number,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "network_searches_parent_search_id_user_id_fkey"
+      columns: ["parent_search_id","user_id"]
+isOneToOne: false
+      referencedRelation: "network_searches"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"network_sources": {
+                  Row: {
+                    "expires_at": string,"fetched_at": string,"id": string,"links": (string)[],"provider": string,"text_excerpt": string | null,"title": string | null,"url": string,"url_hash": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "expires_at": string,"fetched_at"?: string,"id"?: string,"links"?: (string)[],"provider": string,"text_excerpt"?: string | null,"title"?: string | null,"url": string,"url_hash": string,"user_id"?: string
+                  }
+                  Update: {
+                    "expires_at"?: string,"fetched_at"?: string,"id"?: string,"links"?: (string)[],"provider"?: string,"text_excerpt"?: string | null,"title"?: string | null,"url"?: string,"url_hash"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"settings": {
+                  Row: {
+                    "auto_approve": boolean,"baseline_connections": number | null,"count_ubco_as_ubc": boolean,"created_at": string,"daily_invite_target": number | null,"discipline_priority": (Database["public"]['Enums']["discipline"])[],"monthly_note_allowance": number | null,"my_interests": string | null,"my_program_text": string | null,"my_school_text": string | null,"networking_goal": string | null,"note_char_limit": number,"overall_target": number,"pause_reason": string | null,"paused": boolean,"paused_at": string | null,"project_start_date": string,"stale_pending_days": number,"timezone": string,"updated_at": string,"user_id": string,"weekly_invite_cap": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"count_ubco_as_ubc"?: boolean,"created_at"?: string,"daily_invite_target"?: number | null,"discipline_priority"?: (Database["public"]['Enums']["discipline"])[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"note_char_limit"?: number,"overall_target"?: number,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null
+                  }
+                  Update: {
+                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"count_ubco_as_ubc"?: boolean,"created_at"?: string,"daily_invite_target"?: number | null,"discipline_priority"?: (Database["public"]['Enums']["discipline"])[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"note_char_limit"?: number,"overall_target"?: number,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null
                   }
                   Relationships: [
                     
@@ -172,7 +416,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "candidate_source": "manual"|"csv"|"linkedin_export","candidate_status": "new"|"awaiting_review"|"approved"|"invitation_sent"|"invitation_pending"|"connected"|"declined_withdrawn"|"not_a_match"|"do_not_contact","classification_confidence": "confirmed"|"needs_review","connection_source": "invitation"|"export","degree_level": "undergraduate"|"masters"|"doctoral"|"alumni"|"other","discipline": "ce"|"ee"|"mech"|"cs","invitation_outcome": "pending"|"accepted"|"declined"|"withdrawn","job_status": "running"|"succeeded"|"failed","queue_item_state": "queued"|"sent"|"skipped","record_source": "manual"|"linkedin_export","university": "uoft"|"ubc"|"sfu"|"waterloo"
+            "candidate_source": "manual"|"csv"|"linkedin_export","candidate_status": "new"|"awaiting_review"|"approved"|"invitation_sent"|"invitation_pending"|"connected"|"declined_withdrawn"|"not_a_match"|"do_not_contact","classification_confidence": "confirmed"|"needs_review","connection_source": "invitation"|"export","degree_level": "undergraduate"|"masters"|"doctoral"|"alumni"|"other","discipline": "ce"|"ee"|"mech"|"cs","evidence_confidence": "high"|"medium"|"low","invitation_outcome": "pending"|"accepted"|"declined"|"withdrawn","job_status": "running"|"succeeded"|"failed","known_connection_source": "csv"|"linkedin_export"|"manual","known_match_state": "none"|"auto_hidden"|"needs_review"|"confirmed_same"|"confirmed_different","network_fact_field": "institution"|"program"|"degree"|"grad_year"|"role"|"company"|"location"|"github"|"website"|"linkedin","network_person_status": "discovered"|"shortlisted"|"ready_to_connect"|"connection_sent_manually"|"connected"|"replied"|"follow_up"|"archived"|"not_relevant","network_proximity": "connected"|"not_connected"|"unknown"|"manual_second"|"manual_third","network_search_status": "queued"|"running"|"completed"|"failed"|"cancelled","person_feedback_kind": "great_match"|"not_relevant"|"already_connected"|"wrong_person"|"wrong_program","queue_item_state": "queued"|"sent"|"skipped","record_source": "manual"|"linkedin_export","search_person_tier": "verified"|"possible"|"hidden_connected"|"rejected","university": "uoft"|"ubc"|"sfu"|"waterloo"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -292,7 +536,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "candidate_source": ["manual", "csv", "linkedin_export"],"candidate_status": ["new", "awaiting_review", "approved", "invitation_sent", "invitation_pending", "connected", "declined_withdrawn", "not_a_match", "do_not_contact"],"classification_confidence": ["confirmed", "needs_review"],"connection_source": ["invitation", "export"],"degree_level": ["undergraduate", "masters", "doctoral", "alumni", "other"],"discipline": ["ce", "ee", "mech", "cs"],"invitation_outcome": ["pending", "accepted", "declined", "withdrawn"],"job_status": ["running", "succeeded", "failed"],"queue_item_state": ["queued", "sent", "skipped"],"record_source": ["manual", "linkedin_export"],"university": ["uoft", "ubc", "sfu", "waterloo"]
+            "candidate_source": ["manual", "csv", "linkedin_export"],"candidate_status": ["new", "awaiting_review", "approved", "invitation_sent", "invitation_pending", "connected", "declined_withdrawn", "not_a_match", "do_not_contact"],"classification_confidence": ["confirmed", "needs_review"],"connection_source": ["invitation", "export"],"degree_level": ["undergraduate", "masters", "doctoral", "alumni", "other"],"discipline": ["ce", "ee", "mech", "cs"],"evidence_confidence": ["high", "medium", "low"],"invitation_outcome": ["pending", "accepted", "declined", "withdrawn"],"job_status": ["running", "succeeded", "failed"],"known_connection_source": ["csv", "linkedin_export", "manual"],"known_match_state": ["none", "auto_hidden", "needs_review", "confirmed_same", "confirmed_different"],"network_fact_field": ["institution", "program", "degree", "grad_year", "role", "company", "location", "github", "website", "linkedin"],"network_person_status": ["discovered", "shortlisted", "ready_to_connect", "connection_sent_manually", "connected", "replied", "follow_up", "archived", "not_relevant"],"network_proximity": ["connected", "not_connected", "unknown", "manual_second", "manual_third"],"network_search_status": ["queued", "running", "completed", "failed", "cancelled"],"person_feedback_kind": ["great_match", "not_relevant", "already_connected", "wrong_person", "wrong_program"],"queue_item_state": ["queued", "sent", "skipped"],"record_source": ["manual", "linkedin_export"],"search_person_tier": ["verified", "possible", "hidden_connected", "rejected"],"university": ["uoft", "ubc", "sfu", "waterloo"]
           }
         }
 } as const

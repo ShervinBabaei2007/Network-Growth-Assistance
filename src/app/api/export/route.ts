@@ -1,7 +1,25 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-const TABLES = ["settings", "targets", "candidates", "invitations", "connection_snapshots", "daily_queue", "job_runs", "activity_logs"] as const;
+const TABLES = [
+  "settings",
+  "targets",
+  "candidates",
+  "invitations",
+  "connection_snapshots",
+  "daily_queue",
+  "job_runs",
+  "activity_logs",
+  "known_connections",
+  "network_searches",
+  "network_search_queries",
+  "network_people",
+  "network_person_facts",
+  "network_search_people",
+  "network_interactions",
+  "network_feedback",
+  "network_connection_overrides",
+] as const;
 const PAGE = 1000;
 
 /** Downloads everything stored for the signed-in user as one JSON file. */
