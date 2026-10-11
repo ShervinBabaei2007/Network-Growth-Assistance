@@ -46,7 +46,9 @@ Or create an empty private repository on github.com and push to it.
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | The publishable key |
    | `SUPABASE_SECRET_KEY` | The secret key. Server only, never expose it. |
    | `CRON_SECRET` | A long random string, e.g. from `openssl rand -hex 32` |
-   | `ANTHROPIC_API_KEY` | Optional. Leave unset to keep Claude suggestions off. |
+   | `ANTHROPIC_API_KEY` | Optional. Leave unset to keep Claude suggestions off. Discover needs it to read web pages and explain matches. |
+   | `BRAVE_SEARCH_API_KEY` | Optional. Enables Discover's public web search. |
+   | `GITHUB_TOKEN` | Optional. A token with no scopes; raises GitHub's rate limit for Discover. |
 
 3. Deploy.
 
@@ -84,7 +86,14 @@ These are from the providers' pricing pages at the time of writing. Check the cu
   - Pay-as-you-go. A note rewrite is a few hundred tokens on `claude-opus-5-5` at low effort, roughly a third of a cent each.
   - The app caps rewrites at 25 per user per day.
 
-Running costs are $0 apart from optional Claude rewrites.
+- **Discover**
+  - Works with no keys at all: GitHub and ORCID are free public APIs, and their data is read without AI. Set a free `GITHUB_TOKEN`; without it GitHub allows only about one search an hour.
+  - Each user can run 20 searches a day, one at a time. A search is capped at 30 queries, 100 pages and 60 AI calls.
+  - Brave Search bills per query; at most 30 per search, fewer when cached (search results are cached for 3 days).
+  - Page reading uses `claude-haiku-4-5` (one call per relevant page). Understanding the request and explaining the top matches use `claude-opus-5-5` at low effort.
+  - Research runs in steps of up to 60 seconds, driven by the results page while it's open. Closing the tab pauses a search; reopening it continues. A search left for 10 minutes is cancelled when you start a new one.
+
+Running costs are $0 apart from optional Claude, Brave and GitHub usage.
 
 ## Operating it
 
@@ -97,6 +106,8 @@ Running costs are $0 apart from optional Claude rewrites.
 ## Using LinkedIn responsibly
 
 The app never logs in to LinkedIn, scrapes it or sends anything for you. You open each profile and send each invitation yourself.
+
+Discover follows the same rule. Every web query excludes linkedin.com, and the page fetcher refuses LinkedIn hosts (including redirects to them). A LinkedIn link that appears in a public source is kept only as a link for you to open. It never infers 2nd or 3rd degree; only you can mark that. Logs from discovery contain ids and counts, never names or imported contacts.
 
 LinkedIn limits how many invitations an account can send and how many personalized notes a free account gets per month. The limits vary by account and change over time, so the app assumes none. Enter the numbers you plan to stay under in **Settings → Daily planning**.
 
