@@ -27,14 +27,19 @@ export const MODELS: Record<LlmTier, string> = {
 };
 
 export class AnthropicLLM implements LLMProvider {
-  readonly enabled = Boolean(process.env.ANTHROPIC_API_KEY);
+  readonly enabled: boolean;
   readonly usage: LlmUsage = { calls: 0, inputTokens: 0, outputTokens: 0 };
   private client: Anthropic | null = null;
+
+  /** Uses the server's ANTHROPIC_API_KEY, or a user's own key when given. */
+  constructor(private readonly apiKey?: string) {
+    this.enabled = Boolean(apiKey ?? process.env.ANTHROPIC_API_KEY);
+  }
 
   async structured<S extends z.ZodType>({ tier, system, user, schema, maxTokens = 8000 }: { tier: LlmTier; system: string; user: string; schema: S; maxTokens?: number }): Promise<LlmResult<z.infer<S>>> {
     if (!this.enabled) return { ok: false, reason: "AI isn't configured on this server." };
     // Research steps must finish within the route limit (60 s), so calls are capped and retried once.
-    this.client ??= new Anthropic({ timeout: 40_000, maxRetries: 1 });
+    this.client ??= new Anthropic({ apiKey: this.apiKey ?? process.env.ANTHROPIC_API_KEY, timeout: 40_000, maxRetries: 1 });
     this.usage.calls++;
     try {
       const format = betaZodOutputFormat(schema);

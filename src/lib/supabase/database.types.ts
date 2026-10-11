@@ -37,6 +37,20 @@ export type Database = {
                   Relationships: [
                     
                   ]
+                },"ai_usage": {
+                  Row: {
+                    "day": string,"used": number,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "day": string,"used"?: number,"user_id": string
+                  }
+                  Update: {
+                    "day"?: string,"used"?: number,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"candidates": {
                   Row: {
                     "connected_at": string | null,"connected_via": Database["public"]['Enums']["connection_source"] | null,"created_at": string,"degree_level": Database["public"]['Enums']["degree_level"] | null,"discipline": Database["public"]['Enums']["discipline"] | null,"discipline_confidence": Database["public"]['Enums']["classification_confidence"],"discovered_at": string,"full_name": string,"grad_year": number | null,"id": string,"is_preexisting_connection": boolean,"notes": string | null,"profile_key": string,"profile_url": string,"raw_program_text": string | null,"raw_school_text": string | null,"role": string | null,"source": Database["public"]['Enums']["candidate_source"],"status": Database["public"]['Enums']["candidate_status"],"university": Database["public"]['Enums']["university"] | null,"university_confidence": Database["public"]['Enums']["classification_confidence"],"updated_at": string,"user_id": string
@@ -85,6 +99,20 @@ isOneToOne: false
       referencedColumns: ["id","user_id"]
     }
                   ]
+                },"employers": {
+                  Row: {
+                    "added_by": string | null,"ats": Database["public"]['Enums']["ats_kind"],"board_token": string,"canada_jobs": number,"careers_url": string | null,"created_at": string,"etag": string | null,"failures": number,"id": string,"last_crawled_at": string | null,"last_error": string | null,"name": string,"next_crawl_at": string,"status": Database["public"]['Enums']["employer_status"],"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "added_by"?: string | null,"ats": Database["public"]['Enums']["ats_kind"],"board_token": string,"canada_jobs"?: number,"careers_url"?: string | null,"created_at"?: string,"etag"?: string | null,"failures"?: number,"id"?: string,"last_crawled_at"?: string | null,"last_error"?: string | null,"name": string,"next_crawl_at"?: string,"status"?: Database["public"]['Enums']["employer_status"],"updated_at"?: string
+                  }
+                  Update: {
+                    "added_by"?: string | null,"ats"?: Database["public"]['Enums']["ats_kind"],"board_token"?: string,"canada_jobs"?: number,"careers_url"?: string | null,"created_at"?: string,"etag"?: string | null,"failures"?: number,"id"?: string,"last_crawled_at"?: string | null,"last_error"?: string | null,"name"?: string,"next_crawl_at"?: string,"status"?: Database["public"]['Enums']["employer_status"],"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"invitations": {
                   Row: {
                     "candidate_id": string,"created_at": string,"had_note": boolean,"id": string,"note_text": string | null,"outcome": Database["public"]['Enums']["invitation_outcome"],"resolved_at": string | null,"sent_at": string,"source": Database["public"]['Enums']["record_source"],"updated_at": string,"user_id": string
@@ -105,6 +133,66 @@ isOneToOne: false
       referencedColumns: ["id","user_id"]
     }
                   ]
+                },"job_crawl_runs": {
+                  Row: {
+                    "boards": number,"closed_jobs": number,"embedded": number,"failed": number,"finished_at": string | null,"id": string,"new_jobs": number,"not_modified": number,"started_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "boards"?: number,"closed_jobs"?: number,"embedded"?: number,"failed"?: number,"finished_at"?: string | null,"id"?: string,"new_jobs"?: number,"not_modified"?: number,"started_at"?: string
+                  }
+                  Update: {
+                    "boards"?: number,"closed_jobs"?: number,"embedded"?: number,"failed"?: number,"finished_at"?: string | null,"id"?: string,"new_jobs"?: number,"not_modified"?: number,"started_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"job_matches": {
+                  Row: {
+                    "created_at": string,"exclusion_reasons": (string)[],"fit_score": number,"id": string,"job_id": string,"method": string,"requirement_results": NonNullable<Json>,"resume_id": string,"summary": string | null,"tier": Database["public"]['Enums']["job_fit_tier"],"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"exclusion_reasons"?: (string)[],"fit_score": number,"id"?: string,"job_id": string,"method": string,"requirement_results"?: NonNullable<Json>,"resume_id": string,"summary"?: string | null,"tier": Database["public"]['Enums']["job_fit_tier"],"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"exclusion_reasons"?: (string)[],"fit_score"?: number,"id"?: string,"job_id"?: string,"method"?: string,"requirement_results"?: NonNullable<Json>,"resume_id"?: string,"summary"?: string | null,"tier"?: Database["public"]['Enums']["job_fit_tier"],"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "job_matches_job_id_fkey"
+      columns: ["job_id"]
+isOneToOne: false
+      referencedRelation: "jobs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "job_matches_resume_id_user_id_fkey"
+      columns: ["resume_id","user_id"]
+isOneToOne: false
+      referencedRelation: "resumes"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"job_requirements": {
+                  Row: {
+                    "category": string,"degree_level": string | null,"embedding": string | null,"idx": number,"job_id": string,"kind": string,"text": string,"years": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "category": string,"degree_level"?: string | null,"embedding"?: string | null,"idx": number,"job_id": string,"kind": string,"text": string,"years"?: number | null
+                  }
+                  Update: {
+                    "category"?: string,"degree_level"?: string | null,"embedding"?: string | null,"idx"?: number,"job_id"?: string,"kind"?: string,"text"?: string,"years"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "job_requirements_job_id_fkey"
+      columns: ["job_id"]
+isOneToOne: false
+      referencedRelation: "jobs"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"job_runs": {
                   Row: {
                     "error": string | null,"finished_at": string | null,"id": string,"job": string,"run_date": string,"started_at": string,"stats": NonNullable<Json>,"status": Database["public"]['Enums']["job_status"],"user_id": string
@@ -118,6 +206,46 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"job_user_states": {
+                  Row: {
+                    "applied_at": string | null,"job_id": string,"status": Database["public"]['Enums']["job_user_status"],"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "applied_at"?: string | null,"job_id": string,"status": Database["public"]['Enums']["job_user_status"],"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "applied_at"?: string | null,"job_id"?: string,"status"?: Database["public"]['Enums']["job_user_status"],"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "job_user_states_job_id_fkey"
+      columns: ["job_id"]
+isOneToOne: false
+      referencedRelation: "jobs"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"jobs": {
+                  Row: {
+                    "apply_url": string,"city": string | null,"closed_at": string | null,"company": string | null,"created_at": string,"date_source": string,"department": string | null,"description": string,"employer_id": string | null,"employment_type": string | null,"external_id": string,"first_seen_at": string,"fts": unknown,"id": string,"last_seen_at": string,"location_text": string | null,"posted_at": string,"province": string | null,"remote": boolean,"salary": string | null,"title": string,"updated_at": string,"user_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "apply_url": string,"city"?: string | null,"closed_at"?: string | null,"company"?: string | null,"created_at"?: string,"date_source"?: string,"department"?: string | null,"description"?: string,"employer_id"?: string | null,"employment_type"?: string | null,"external_id": string,"first_seen_at"?: string,"fts"?: never,"id"?: string,"last_seen_at"?: string,"location_text"?: string | null,"posted_at": string,"province"?: string | null,"remote"?: boolean,"salary"?: string | null,"title": string,"updated_at"?: string,"user_id"?: string | null
+                  }
+                  Update: {
+                    "apply_url"?: string,"city"?: string | null,"closed_at"?: string | null,"company"?: string | null,"created_at"?: string,"date_source"?: string,"department"?: string | null,"description"?: string,"employer_id"?: string | null,"employment_type"?: string | null,"external_id"?: string,"first_seen_at"?: string,"fts"?: never,"id"?: string,"last_seen_at"?: string,"location_text"?: string | null,"posted_at"?: string,"province"?: string | null,"remote"?: boolean,"salary"?: string | null,"title"?: string,"updated_at"?: string,"user_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "jobs_employer_id_fkey"
+      columns: ["employer_id"]
+isOneToOne: false
+      referencedRelation: "employers"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"known_connections": {
                   Row: {
@@ -363,19 +491,73 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"settings": {
+                },"resume_lines": {
                   Row: {
-                    "auto_approve": boolean,"baseline_connections": number | null,"count_ubco_as_ubc": boolean,"created_at": string,"daily_invite_target": number | null,"discipline_priority": (Database["public"]['Enums']["discipline"])[],"monthly_note_allowance": number | null,"my_interests": string | null,"my_program_text": string | null,"my_school_text": string | null,"networking_goal": string | null,"note_char_limit": number,"overall_target": number,"pause_reason": string | null,"paused": boolean,"paused_at": string | null,"project_start_date": string,"stale_pending_days": number,"timezone": string,"updated_at": string,"user_id": string,"weekly_invite_cap": number | null
+                    "embedding": string | null,"line_id": string,"resume_id": string,"text": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"count_ubco_as_ubc"?: boolean,"created_at"?: string,"daily_invite_target"?: number | null,"discipline_priority"?: (Database["public"]['Enums']["discipline"])[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"note_char_limit"?: number,"overall_target"?: number,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null
+                    "embedding"?: string | null,"line_id": string,"resume_id": string,"text": string,"user_id"?: string
                   }
                   Update: {
-                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"count_ubco_as_ubc"?: boolean,"created_at"?: string,"daily_invite_target"?: number | null,"discipline_priority"?: (Database["public"]['Enums']["discipline"])[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"note_char_limit"?: number,"overall_target"?: number,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null
+                    "embedding"?: string | null,"line_id"?: string,"resume_id"?: string,"text"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "resume_lines_resume_id_user_id_fkey"
+      columns: ["resume_id","user_id"]
+isOneToOne: false
+      referencedRelation: "resumes"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"resumes": {
+                  Row: {
+                    "created_at": string,"facts": NonNullable<Json>,"file_name": string | null,"id": string,"is_active": boolean,"label": string,"parsed_with": string,"profile": NonNullable<Json>,"raw_text": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"facts"?: NonNullable<Json>,"file_name"?: string | null,"id"?: string,"is_active"?: boolean,"label": string,"parsed_with": string,"profile": NonNullable<Json>,"raw_text": string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"facts"?: NonNullable<Json>,"file_name"?: string | null,"id"?: string,"is_active"?: boolean,"label"?: string,"parsed_with"?: string,"profile"?: NonNullable<Json>,"raw_text"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     
+                  ]
+                },"settings": {
+                  Row: {
+                    "auto_approve": boolean,"baseline_connections": number | null,"count_ubco_as_ubc": boolean,"created_at": string,"daily_invite_target": number | null,"discipline_priority": (Database["public"]['Enums']["discipline"])[],"job_exclude_keywords": (string)[],"job_provinces": (string)[],"job_seniority": string,"job_titles": (string)[],"monthly_note_allowance": number | null,"my_interests": string | null,"my_program_text": string | null,"my_school_text": string | null,"networking_goal": string | null,"note_char_limit": number,"overall_target": number,"pause_reason": string | null,"paused": boolean,"paused_at": string | null,"project_start_date": string,"stale_pending_days": number,"timezone": string,"updated_at": string,"user_id": string,"weekly_invite_cap": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"count_ubco_as_ubc"?: boolean,"created_at"?: string,"daily_invite_target"?: number | null,"discipline_priority"?: (Database["public"]['Enums']["discipline"])[],"job_exclude_keywords"?: (string)[],"job_provinces"?: (string)[],"job_seniority"?: string,"job_titles"?: (string)[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"note_char_limit"?: number,"overall_target"?: number,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null
+                  }
+                  Update: {
+                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"count_ubco_as_ubc"?: boolean,"created_at"?: string,"daily_invite_target"?: number | null,"discipline_priority"?: (Database["public"]['Enums']["discipline"])[],"job_exclude_keywords"?: (string)[],"job_provinces"?: (string)[],"job_seniority"?: string,"job_titles"?: (string)[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"note_char_limit"?: number,"overall_target"?: number,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"tailored_documents": {
+                  Row: {
+                    "created_at": string,"edited": Json | null,"generated": NonNullable<Json>,"guard_report": NonNullable<Json>,"id": string,"kind": Database["public"]['Enums']["tailored_doc_kind"],"match_id": string,"method": string,"mode": Database["public"]['Enums']["tailor_mode"],"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"edited"?: Json | null,"generated": NonNullable<Json>,"guard_report"?: NonNullable<Json>,"id"?: string,"kind": Database["public"]['Enums']["tailored_doc_kind"],"match_id": string,"method"?: string,"mode"?: Database["public"]['Enums']["tailor_mode"],"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"edited"?: Json | null,"generated"?: NonNullable<Json>,"guard_report"?: NonNullable<Json>,"id"?: string,"kind"?: Database["public"]['Enums']["tailored_doc_kind"],"match_id"?: string,"method"?: string,"mode"?: Database["public"]['Enums']["tailor_mode"],"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "tailored_documents_match_id_user_id_fkey"
+      columns: ["match_id","user_id"]
+isOneToOne: false
+      referencedRelation: "job_matches"
+      referencedColumns: ["id","user_id"]
+    }
                   ]
                 },"targets": {
                   Row: {
@@ -387,6 +569,20 @@ isOneToOne: false
                   }
                   Update: {
                     "created_at"?: string,"discipline"?: Database["public"]['Enums']["discipline"],"id"?: string,"target_count"?: number,"university"?: Database["public"]['Enums']["university"] | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"user_ai": {
+                  Row: {
+                    "own_key_ciphertext": string | null,"own_key_hint": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "own_key_ciphertext"?: string | null,"own_key_hint"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "own_key_ciphertext"?: string | null,"own_key_hint"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -405,8 +601,29 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "delete_invitation":
+            "consume_ai_quota":
+{ Args: { "p_limit": number,"p_user": string }; Returns: boolean
+                           },
+"delete_invitation":
 { Args: { "p_candidate_id": string }; Returns: undefined
+                           },
+"line_relevance":
+{ Args: { "p_job": string,"p_resume": string }; Returns: {
+              "line_id": string,"similarity": number
+            }[]
+                           },
+"match_jobs":
+{ Args: { "p_jobs": (string)[],"p_resume": string }; Returns: {
+              "idx": number,"job_id": string,"line_id": string,"similarity": number
+            }[]
+                           },
+"pending_requirement_embeddings":
+{ Args: { "p_limit": number }; Returns: {
+              "idx": number,"job_id": string,"text": string
+            }[]
+                           },
+"prune_jobs":
+{ Args: Record<PropertyKey, never>; Returns: number
                            },
 "record_invitation_sent":
 { Args: { "p_candidate_id": string,"p_note_text"?: string,"p_sent_at"?: string,"p_source"?: Database["public"]['Enums']["record_source"] }; Returns: string
@@ -416,7 +633,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "candidate_source": "manual"|"csv"|"linkedin_export","candidate_status": "new"|"awaiting_review"|"approved"|"invitation_sent"|"invitation_pending"|"connected"|"declined_withdrawn"|"not_a_match"|"do_not_contact","classification_confidence": "confirmed"|"needs_review","connection_source": "invitation"|"export","degree_level": "undergraduate"|"masters"|"doctoral"|"alumni"|"other","discipline": "ce"|"ee"|"mech"|"cs","evidence_confidence": "high"|"medium"|"low","invitation_outcome": "pending"|"accepted"|"declined"|"withdrawn","job_status": "running"|"succeeded"|"failed","known_connection_source": "csv"|"linkedin_export"|"manual","known_match_state": "none"|"auto_hidden"|"needs_review"|"confirmed_same"|"confirmed_different","network_fact_field": "institution"|"program"|"degree"|"grad_year"|"role"|"company"|"location"|"github"|"website"|"linkedin","network_person_status": "discovered"|"shortlisted"|"ready_to_connect"|"connection_sent_manually"|"connected"|"replied"|"follow_up"|"archived"|"not_relevant","network_proximity": "connected"|"not_connected"|"unknown"|"manual_second"|"manual_third","network_search_status": "queued"|"running"|"completed"|"failed"|"cancelled","person_feedback_kind": "great_match"|"not_relevant"|"already_connected"|"wrong_person"|"wrong_program","queue_item_state": "queued"|"sent"|"skipped","record_source": "manual"|"linkedin_export","search_person_tier": "verified"|"possible"|"hidden_connected"|"rejected","university": "uoft"|"ubc"|"sfu"|"waterloo"
+            "ats_kind": "greenhouse"|"lever"|"ashby"|"smartrecruiters"|"workable"|"recruitee"|"fixture","candidate_source": "manual"|"csv"|"linkedin_export","candidate_status": "new"|"awaiting_review"|"approved"|"invitation_sent"|"invitation_pending"|"connected"|"declined_withdrawn"|"not_a_match"|"do_not_contact","classification_confidence": "confirmed"|"needs_review","connection_source": "invitation"|"export","degree_level": "undergraduate"|"masters"|"doctoral"|"alumni"|"other","discipline": "ce"|"ee"|"mech"|"cs","employer_status": "active"|"failing"|"disabled","evidence_confidence": "high"|"medium"|"low","invitation_outcome": "pending"|"accepted"|"declined"|"withdrawn","job_fit_tier": "strong"|"good"|"stretch"|"excluded","job_status": "running"|"succeeded"|"failed","job_user_status": "saved"|"applied"|"dismissed","known_connection_source": "csv"|"linkedin_export"|"manual","known_match_state": "none"|"auto_hidden"|"needs_review"|"confirmed_same"|"confirmed_different","network_fact_field": "institution"|"program"|"degree"|"grad_year"|"role"|"company"|"location"|"github"|"website"|"linkedin","network_person_status": "discovered"|"shortlisted"|"ready_to_connect"|"connection_sent_manually"|"connected"|"replied"|"follow_up"|"archived"|"not_relevant","network_proximity": "connected"|"not_connected"|"unknown"|"manual_second"|"manual_third","network_search_status": "queued"|"running"|"completed"|"failed"|"cancelled","person_feedback_kind": "great_match"|"not_relevant"|"already_connected"|"wrong_person"|"wrong_program","queue_item_state": "queued"|"sent"|"skipped","record_source": "manual"|"linkedin_export","search_person_tier": "verified"|"possible"|"hidden_connected"|"rejected","tailor_mode": "normal"|"apply_anyway","tailored_doc_kind": "resume"|"cover_letter","university": "uoft"|"ubc"|"sfu"|"waterloo"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -536,7 +753,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "candidate_source": ["manual", "csv", "linkedin_export"],"candidate_status": ["new", "awaiting_review", "approved", "invitation_sent", "invitation_pending", "connected", "declined_withdrawn", "not_a_match", "do_not_contact"],"classification_confidence": ["confirmed", "needs_review"],"connection_source": ["invitation", "export"],"degree_level": ["undergraduate", "masters", "doctoral", "alumni", "other"],"discipline": ["ce", "ee", "mech", "cs"],"evidence_confidence": ["high", "medium", "low"],"invitation_outcome": ["pending", "accepted", "declined", "withdrawn"],"job_status": ["running", "succeeded", "failed"],"known_connection_source": ["csv", "linkedin_export", "manual"],"known_match_state": ["none", "auto_hidden", "needs_review", "confirmed_same", "confirmed_different"],"network_fact_field": ["institution", "program", "degree", "grad_year", "role", "company", "location", "github", "website", "linkedin"],"network_person_status": ["discovered", "shortlisted", "ready_to_connect", "connection_sent_manually", "connected", "replied", "follow_up", "archived", "not_relevant"],"network_proximity": ["connected", "not_connected", "unknown", "manual_second", "manual_third"],"network_search_status": ["queued", "running", "completed", "failed", "cancelled"],"person_feedback_kind": ["great_match", "not_relevant", "already_connected", "wrong_person", "wrong_program"],"queue_item_state": ["queued", "sent", "skipped"],"record_source": ["manual", "linkedin_export"],"search_person_tier": ["verified", "possible", "hidden_connected", "rejected"],"university": ["uoft", "ubc", "sfu", "waterloo"]
+            "ats_kind": ["greenhouse", "lever", "ashby", "smartrecruiters", "workable", "recruitee", "fixture"],"candidate_source": ["manual", "csv", "linkedin_export"],"candidate_status": ["new", "awaiting_review", "approved", "invitation_sent", "invitation_pending", "connected", "declined_withdrawn", "not_a_match", "do_not_contact"],"classification_confidence": ["confirmed", "needs_review"],"connection_source": ["invitation", "export"],"degree_level": ["undergraduate", "masters", "doctoral", "alumni", "other"],"discipline": ["ce", "ee", "mech", "cs"],"employer_status": ["active", "failing", "disabled"],"evidence_confidence": ["high", "medium", "low"],"invitation_outcome": ["pending", "accepted", "declined", "withdrawn"],"job_fit_tier": ["strong", "good", "stretch", "excluded"],"job_status": ["running", "succeeded", "failed"],"job_user_status": ["saved", "applied", "dismissed"],"known_connection_source": ["csv", "linkedin_export", "manual"],"known_match_state": ["none", "auto_hidden", "needs_review", "confirmed_same", "confirmed_different"],"network_fact_field": ["institution", "program", "degree", "grad_year", "role", "company", "location", "github", "website", "linkedin"],"network_person_status": ["discovered", "shortlisted", "ready_to_connect", "connection_sent_manually", "connected", "replied", "follow_up", "archived", "not_relevant"],"network_proximity": ["connected", "not_connected", "unknown", "manual_second", "manual_third"],"network_search_status": ["queued", "running", "completed", "failed", "cancelled"],"person_feedback_kind": ["great_match", "not_relevant", "already_connected", "wrong_person", "wrong_program"],"queue_item_state": ["queued", "sent", "skipped"],"record_source": ["manual", "linkedin_export"],"search_person_tier": ["verified", "possible", "hidden_connected", "rejected"],"tailor_mode": ["normal", "apply_anyway"],"tailored_doc_kind": ["resume", "cover_letter"],"university": ["uoft", "ubc", "sfu", "waterloo"]
           }
         }
 } as const

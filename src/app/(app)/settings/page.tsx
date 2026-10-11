@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DISCIPLINE_LABELS } from "@/lib/domain";
 import { createClient } from "@/lib/supabase/server";
+import { AiKeySection } from "./ai-key-section";
 
 export const metadata = { title: "Settings · Network Growth" };
 
@@ -39,6 +40,9 @@ export default function SettingsPage() {
       <h1 className="text-xl font-semibold">Settings</h1>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
         <SettingsContent />
+      </Suspense>
+      <Suspense fallback={null}>
+        <AiKeySection />
       </Suspense>
     </div>
   );

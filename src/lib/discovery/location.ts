@@ -94,3 +94,45 @@ export function inCountry(location: string, country: string): "in" | "out" | nul
 export function countrySearchTerms(country: string | null): string[] {
   return country && /^canada$/i.test(country.trim()) ? ["Canada", "Toronto", "Vancouver"] : country ? [country] : [];
 }
+
+const PROVINCE_BY_NAME: Record<string, string> = {
+  "british columbia": "BC", ontario: "ON", alberta: "AB", quebec: "QC", manitoba: "MB", saskatchewan: "SK",
+  "nova scotia": "NS", "new brunswick": "NB", "newfoundland and labrador": "NL", newfoundland: "NL",
+  "prince edward island": "PE", yukon: "YT", "northwest territories": "NT", nunavut: "NU",
+};
+
+/** Cities that name one Canadian province on their own. Shared names (Victoria, Richmond, London) need a qualifier. */
+const CITY_PROVINCE: Record<string, string> = {
+  vancouver: "BC", burnaby: "BC", surrey: "BC", coquitlam: "BC", kelowna: "BC", "north vancouver": "BC", "west vancouver": "BC",
+  "new westminster": "BC", "port coquitlam": "BC", langley: "BC", abbotsford: "BC", nanaimo: "BC", kamloops: "BC", "lower mainland": "BC",
+  toronto: "ON", gta: "ON", "greater toronto area": "ON", mississauga: "ON", brampton: "ON", markham: "ON", oakville: "ON",
+  "richmond hill": "ON", vaughan: "ON", "north york": "ON", etobicoke: "ON", scarborough: "ON", ottawa: "ON", waterloo: "ON",
+  kitchener: "ON", "kitchener waterloo": "ON", guelph: "ON", oshawa: "ON", pickering: "ON", ajax: "ON", barrie: "ON",
+  sudbury: "ON", "thunder bay": "ON", burlington: "ON",
+  calgary: "AB", edmonton: "AB", montreal: "QC", "quebec city": "QC", gatineau: "QC", laval: "QC", winnipeg: "MB",
+  saskatoon: "SK", regina: "SK", halifax: "NS", fredericton: "NB", moncton: "NB", "st john s": "NL", charlottetown: "PE",
+  whitehorse: "YT", yellowknife: "NT", iqaluit: "NU",
+};
+
+/**
+ * The two-letter Canadian province a job's location points to, or null. An explicit
+ * province (code or name) wins; otherwise only an unambiguous city counts. Locations
+ * outside Canada (by country or US state) give null.
+ */
+export function provinceOf(...parts: (string | null | undefined)[]): string | null {
+  const raw = parts.filter(Boolean).join(", ").trim();
+  if (!raw) return null;
+  if (classifyCountry(raw) === "other") return null;
+  for (const p of parts) {
+    const code = p?.trim().toUpperCase();
+    if (code && (PROVINCE_CODES as string[]).includes(code)) return code === "PEI" ? "PE" : code;
+  }
+  const t = clean(raw);
+  // Longest names first so "new brunswick" isn't read as something shorter.
+  for (const name of Object.keys(PROVINCE_BY_NAME).sort((a, b) => b.length - a.length)) if (t.includes(` ${name} `)) return PROVINCE_BY_NAME[name];
+  for (const code of PROVINCE_CODES) {
+    if (codeAfterComma(raw, [code])) return code === "PEI" ? "PE" : code;
+  }
+  for (const city of Object.keys(CITY_PROVINCE).sort((a, b) => b.length - a.length)) if (t.includes(` ${city} `)) return CITY_PROVINCE[city];
+  return null;
+}

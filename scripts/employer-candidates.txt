@@ -1,0 +1,302 @@
+# Employers to look for on public job boards. One per line; "Name | token" forces a board token.
+# `node scripts/employers.mjs discover` keeps the ones whose board answers.
+
+# British Columbia
+Clio
+Hootsuite
+Trulioo
+Visier
+Thinkific
+Dapper Labs
+Procurify
+Jane App | janeapp
+Unbounce
+Later
+Copperleaf
+Absolute Software
+Klue
+Bench
+D-Wave | dwave
+Sanctuary AI | sanctuary
+Semios
+Kardium
+AbCellera
+Elastic Path
+Mogo
+Fresh Prints
+Skyline Champion
+Galvanize
+Recollective
+Rewind
+Tesera
+Avigilon
+Ballard Power
+Arctic Fox Labs
+Pani Energy
+Terramera
+Hockeystick
+Nexii
+Vention
+Aspect Biosystems
+Grow
+Teck
+Change Heroes
+Spectra
+Paystone
+Rival
+Plantiga
+Spring Financial
+Fortinet
+Electronic Arts
+Amazon Web Services
+Slack
+Microsoft
+Unity
+Relic Entertainment
+The Coalition
+Kabam
+Hothead
+Global Relay
+Avocette
+Mojio
+Bambora
+Ritual
+Glowforge
+Quinn Building Technologies
+Sitata
+Sage
+Riipen
+Ledn
+Gallery
+Hubspot
+Dropbox
+Zymeworks
+STEMCELL Technologies | stemcell
+Variational AI
+Unlimited Robotics
+Skillsoft
+Tasktop
+FirstHx
+Indochino
+Article
+Aritzia
+Lululemon
+Arc'teryx | arcteryx
+
+# Ontario
+Wealthsimple
+Faire
+Cohere
+Ada
+KOHO
+Wattpad
+1Password
+League
+PointClickCare
+Top Hat
+ApplyBoard
+Clearco
+Ecobee
+Rose Rocket
+Float
+Wave
+Properly
+Hopper
+Dialogue
+Lightspeed
+Coveo
+Arctic Wolf
+Geotab
+Vena Solutions
+Loopio
+Mattermost
+Tealbook
+FreshBooks
+Achievers
+Nulogy
+Interac
+Borrowell
+Sonder
+Kepler Communications
+Swift Medical
+Benevity
+Jobber
+Neo Financial
+Symend
+Plooto
+Paymentus
+Shopify
+Kinaxis
+OpenText
+Bitbuy
+Ceridian
+Questrade
+Ample Organics
+Dejero
+Aeroplan
+Nanoleaf
+BenchSci
+Deep Genomics
+Vector Institute
+Layer 6
+Untether AI
+Tenstorrent
+Magnet Forensics
+Clearpath Robotics
+OTTO Motors
+Avidbots
+Miovision
+Sortable
+Pocket Health
+Dooly
+Snapcommerce
+Nudge
+Tophatmonocle
+Jerry
+Shakepay
+Trufla
+Ownr
+Fable
+Nesto
+Pinwheel
+Certn
+Validere
+AlayaCare
+Humi
+Rangle
+TextNow
+Yelp
+Zynga
+Ubisoft
+Thomson Reuters
+Uber
+Instacart
+Pinterest
+Stripe
+Databricks
+Datadog
+Cloudflare
+Figma
+Notion
+Airbnb
+Lyft
+DoorDash
+Reddit
+Coinbase
+Robinhood
+Plaid
+Brex
+Ramp
+Affirm
+Okta
+Twilio
+Asana
+GitLab
+Elastic
+MongoDB
+Confluent
+HashiCorp
+Grafana Labs
+Vercel
+Supabase
+Linear
+Retool
+Benchling
+Canva
+Atlassian
+Samsara
+Snowflake
+Scale AI
+Anthropic
+OpenAI
+Rippling
+Gusto
+Chime
+SoFi
+Wealthfront
+Mercury
+Deel
+Remote
+Toast
+Squarespace
+Zapier
+Webflow
+Airtable
+Miro
+Discord
+Roblox
+Epic Games
+Niantic
+Riot Games
+Blizzard
+Lime
+Bird
+Rivian
+Lucid Motors
+Waymo
+Nuro
+Cruise
+Aurora
+Motional
+Zoox
+SpaceX
+Anduril
+Shield AI
+Skydio
+Planet
+Relativity Space
+Boston Dynamics
+Formlabs
+Carbon
+Desktop Metal
+Tesla
+Wish
+Etsy
+eBay
+Intercom
+Zendesk
+Workday
+ServiceNow
+Salesforce
+Autodesk
+Adobe
+Nvidia
+AMD
+Qualcomm
+Intel
+Arm
+Synopsys
+Cadence
+Marvell
+Broadcom
+Cisco
+Juniper
+Ciena
+Nokia
+Ericsson
+Huawei
+Siemens
+Bosch | BoschGroup
+ABB
+Schneider Electric
+Honeywell
+Rockwell Automation
+Emerson
+GE Vernova
+Hitachi
+Panasonic
+Sony
+Samsung
+LG
+Visa | Visa1
+Mastercard
+PayPal
+Square
+Block
+Wise
+Revolut
+N26
+Monzo
+Klarna
+Adyen
+Checkout.com | checkoutcom

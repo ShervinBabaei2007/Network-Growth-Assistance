@@ -19,6 +19,11 @@ const TABLES = [
   "network_interactions",
   "network_feedback",
   "network_connection_overrides",
+  "resumes",
+  "resume_lines",
+  "job_user_states",
+  "job_matches",
+  "tailored_documents",
 ] as const;
 const PAGE = 1000;
 

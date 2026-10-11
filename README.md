@@ -17,6 +17,7 @@ The app never scrapes LinkedIn, never automates invitations and never asks for L
 | 7 | Analytics and end-to-end tests | Done |
 | 8 | Production hardening, data export/deletion, deployment guide | Done |
 | 9 | Network discovery: known connections, evidence-backed AI research, People CRM | Done |
+| 10 | Jobs: recent postings from employers' own job boards (BC and Ontario first), free fit checks and tailored resume and cover letter, optional AI | Done |
 
 To deploy, follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
@@ -47,6 +48,24 @@ To deploy, follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 The research agent works in short, resumable steps with hard budgets (30 queries, 100 pages, 200 people, 60 AI calls per search). It stops when it has enough verified people, a budget runs out, or new searches stop finding new people. It returns fewer people rather than lowering the bar. Search results are cached for 3 days and pages for 14.
 
+## Jobs
+
+**Jobs** finds postings from the **last 24 hours in Canada**, British Columbia first, then Ontario (other provinces optional). It checks each one against your resume, and writes a **tailored resume and cover letter** from what your resume says. It needs **no API keys**, and the work it does outside the app grows with the number of employers, not users.
+
+1. **Postings, from employers' own job boards.** A shared crawler reads the public job-board APIs behind employers' careers pages: Greenhouse, Lever, Ashby, SmartRecruiters, Workable and Recruitee. These APIs are free, need no key and exist so the postings get shown elsewhere. The crawler keeps Canadian jobs only, and every user reads the same table. Boards with Canadian jobs are read every 30 minutes, others every 6 hours, and failing boards back off up to a day. ETags skip boards that haven't changed. LinkedIn, Indeed and Glassdoor are never fetched; you apply on the employer's site.
+2. **A shared employer directory.** It starts from `supabase/seed/employers.json`, about 110 employers hiring in Canada, found with `npm run employers:discover`. Anyone can add an employer under **Jobs → Employers** by pasting its careers page or board link; it's added once its board answers. **Coverage is the directory**: one hundred employers produce roughly 25–40 new Canadian jobs on a weekday, so a busy 24-hour feed needs thousands.
+3. **The 24-hour rule.** A job's date is the employer's publish time. A board that gives no time (Workable gives only a date) is dated by when the job first appeared on a board already read. Jobs already on a board the first time it's read, with no time, are never shown as recent.
+4. **Resume.** Upload a PDF (under 4 MB, with selectable text). It's read into jobs, projects, education and bullets without AI. Check it on **Jobs → Resume** and add what resumes don't say: work authorization, clearance, relocation. The PDF isn't kept.
+5. **Fit, without AI.** Each requirement line in a posting is matched against your resume:
+   - through a skills list with aliases ("Postgres" is PostgreSQL) and families ("React" partly meets "Vue")
+   - by meaning, using Supabase's free built-in `gte-small` embedding model; on by default when `EMBED_SECRET` is set
+
+   Every "met" quotes a real line of your resume. Rules decide years (from your dates), degree, clearance and work authorization. A posting is set aside under **Doesn't qualify**, with reasons, when a required licence or clearance is missing, your work authorization doesn't match, it asks for 3+ more years than you have, it needs a higher degree, or you meet under half its requirements. The rest are scored Strong, Good or Stretch.
+6. **Tailoring, without AI.** **Tailor resume and cover letter** keeps every job and orders your own bullets by relevance. It leaves out unrelated projects and puts matched skills first. It uses the posting's name for a skill you already list under another name, and nothing else is reworded. The cover letter is a template from your best-matched lines. **Tailor anyway**, for a posting you don't qualify for, adds one honest sentence about the gap. Edit, then download PDF or Word.
+7. **Optional AI rewording.** **Rewrite with AI** rewords the documents with Claude. It runs with your own Anthropic key (Settings, stored encrypted) or the app's key within a daily allowance (`AI_DAILY_QUOTA`, default 3). An accuracy check removes anything your resume doesn't support: new numbers, technologies, employers or skills.
+
+Also: **Paste a posting** (from LinkedIn or anywhere, private to you), Saved / Applied / Not interested, and **Find people at {company}** in Discover.
+
 ## Stack
 
 Next.js 16 (App Router, Cache Components), TypeScript, Tailwind v4, shadcn/ui (Base UI), Recharts, Supabase (Postgres, Auth, RLS), Zod, Vitest, pgTAP, Playwright. Optional: Anthropic SDK for note rewrites.
@@ -76,7 +95,8 @@ npm test          # Vitest unit tests
 npm run test:db   # pgTAP: RLS isolation and data constraints (needs db:start)
 npm run test:e2e  # Playwright end to end (needs db:start; starts or reuses the dev server)
                   # Discover's e2e test needs the server running with DISCOVERY_FIXTURES=1 (set
-                  # automatically when Playwright starts it); it is skipped otherwise.
+                  # automatically when Playwright starts it); it is skipped otherwise. Jobs' e2e
+                  # test likewise needs JOBS_FIXTURES=1.
 npm run build
 ```
 
@@ -93,6 +113,9 @@ After changing a migration, run `npm run db:reset` and then `npm run db:types` t
 | `ANTHROPIC_API_KEY` | server only, optional | Claude rewrites of connection-note drafts; in Discover, request parsing, evidence extraction and explanations |
 | `BRAVE_SEARCH_API_KEY` | server only, optional | Discover's public web search. Without it, Discover searches GitHub only |
 | `GITHUB_TOKEN` | server only, optional (recommended) | Free; no scopes needed. Raises GitHub's limit for Discover from about one search an hour |
+| `EMBED_SECRET` | server only, optional (recommended) | Jobs: turns on matching by meaning with the free `embed` Edge Function; set the same value as an Edge Function secret |
+| `APP_ENCRYPTION_KEY` | server only, optional | Jobs: encrypts users' own Anthropic keys (32+ characters; never change it once keys are stored) |
+| `AI_DAILY_QUOTA` | server only, optional | Jobs: AI rewrites per user per day on the server's `ANTHROPIC_API_KEY` (default 3; 0 = users' own keys only) |
 
 ## Data model
 
