@@ -17,6 +17,8 @@ const serverSchema = z.object({
   SUPABASE_SECRET_KEY: z.string().min(1),
   CRON_SECRET: z.string().min(16),
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  BRAVE_SEARCH_API_KEY: z.string().min(1).optional(),
+  GITHUB_TOKEN: z.string().min(1).optional(),
 });
 
 /** Server-only secrets. Never import this from a client component. */
@@ -25,5 +27,7 @@ export function serverEnv() {
     SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
     CRON_SECRET: process.env.CRON_SECRET,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || undefined,
+    BRAVE_SEARCH_API_KEY: process.env.BRAVE_SEARCH_API_KEY || undefined,
+    GITHUB_TOKEN: process.env.GITHUB_TOKEN || undefined,
   });
 }

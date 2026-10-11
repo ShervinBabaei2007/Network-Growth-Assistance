@@ -5,12 +5,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  BookUser,
+  Contact,
   GraduationCap,
   LayoutDashboard,
   ListChecks,
   Menu,
   Settings,
   Shapes,
+  Telescope,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +24,9 @@ export const NAV_ITEMS = [
   { href: "/overview", label: "Overview", icon: LayoutDashboard },
   { href: "/queue", label: "Daily Queue", icon: ListChecks },
   { href: "/candidates", label: "Candidates", icon: Users },
+  { href: "/discover", label: "Discover", icon: Telescope },
+  { href: "/people", label: "People", icon: BookUser },
+  { href: "/connections", label: "Connections", icon: Contact },
   { href: "/disciplines", label: "Disciplines", icon: Shapes },
   { href: "/universities", label: "Universities", icon: GraduationCap },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },

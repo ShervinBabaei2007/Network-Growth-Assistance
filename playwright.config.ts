@@ -23,6 +23,8 @@ export default defineConfig({
     command: "npm run dev -- --port 3000",
     url: "http://localhost:3000/login",
     reuseExistingServer: true,
+    // Discover uses its built-in fictional dataset in tests: no network calls, no API keys.
+    env: { DISCOVERY_FIXTURES: "1" },
     timeout: 120_000,
   },
 });
