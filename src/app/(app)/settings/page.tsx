@@ -10,6 +10,7 @@ import {
   updateGoal,
   updatePlanning,
   updateTargets,
+  updateTrackerSettings,
 } from "@/app/(app)/actions";
 import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
@@ -20,7 +21,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DISCIPLINE_LABELS } from "@/lib/domain";
 import { createClient } from "@/lib/supabase/server";
+import { normalizeAppearance } from "@/lib/appearance";
 import { AiKeySection } from "./ai-key-section";
+import { AppearanceForm } from "./appearance-form";
 
 export const metadata = { title: "Settings · Network Growth" };
 
@@ -62,6 +65,16 @@ async function SettingsContent() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
+      <Section title="Appearance" description="How the app looks on every device you sign in on.">
+        <AppearanceForm initial={normalizeAppearance({ theme: s.theme, density: s.density, text: s.text_size })} />
+      </Section>
+      <Section title="Applications" description="When to suggest marking an application “No response”. Nothing is changed automatically.">
+        <ActionForm action={updateTrackerSettings} submitLabel="Save">
+          <Field id="noResponseDays" label="Suggest after this many days without a reply">
+            <Input id="noResponseDays" name="noResponseDays" type="number" min={1} max={365} defaultValue={s.no_response_days} required className="w-28" />
+          </Field>
+        </ActionForm>
+      </Section>
       <Section title="Pause outreach" description="Use this if LinkedIn shows a warning, a restriction or an invitation limit.">
         {s.paused ? (
           <div className="grid gap-3">

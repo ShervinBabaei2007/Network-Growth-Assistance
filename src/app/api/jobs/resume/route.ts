@@ -7,6 +7,7 @@ import { fieldLabel, importSummary, parseResumeDetailed, reconcileWithAi } from 
 import { saveResumeLines } from "@/lib/job-postings/service";
 import { jobServices } from "@/lib/job-postings/services";
 import { logActivity } from "@/lib/server/action-context";
+import { allow, LIMITS } from "@/lib/server/rate-limit";
 import { routeUser, unauthorized } from "@/lib/server/route-auth";
 import type { Json } from "@/lib/supabase/database.types";
 
@@ -35,6 +36,7 @@ export type ResumeImportResponse = {
 export async function POST(request: Request) {
   const user = await routeUser();
   if (!user) return unauthorized();
+  if (!(await allow(user.supabase, LIMITS.resumeUpload))) return NextResponse.json({ error: LIMITS.resumeUpload.message }, { status: 429 });
   const form = await request.formData().catch(() => null);
   if (!form) return NextResponse.json({ error: "We couldn't read this resume. Try another PDF or DOCX file." }, { status: 400 });
   const file = form.get("file");

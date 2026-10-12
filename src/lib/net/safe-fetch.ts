@@ -17,7 +17,8 @@ import { isIP, type LookupFunction } from "node:net";
  *   (rebinding) can't point it somewhere else;
  * - redirects are followed by hand, each target checked again, at most 5.
  *
- * Bodies are capped (64 KB by default) and requests time out; no cookies are sent.
+ * Bodies are capped (64 KB by default); requests time out when idle and when the whole
+ * fetch, redirects included, runs past its deadline. No cookies are sent.
  */
 
 export class UnsafeUrlError extends Error {}
@@ -25,7 +26,8 @@ export class UnsafeUrlError extends Error {}
 type Address = { address: string; family: 4 | 6 };
 export type Resolver = (host: string) => Promise<Address[]>;
 /** Does one request to an already-vetted address. Swappable in tests. */
-export type Transport = (url: URL, address: Address, opts: { timeoutMs: number; maxBytes: number; headers: Record<string, string> }) => Promise<RawResponse>;
+/** `timeoutMs` is the socket's idle limit; `deadlineMs` caps the whole request, however slowly the body trickles in. */
+export type Transport = (url: URL, address: Address, opts: { timeoutMs: number; deadlineMs: number; maxBytes: number; headers: Record<string, string> }) => Promise<RawResponse>;
 export type RawResponse = { status: number; headers: Record<string, string | undefined>; body: string };
 
 export type SafeResponse = RawResponse & { url: string; redirects: string[] };
@@ -159,6 +161,7 @@ const pinnedTransport: Transport = (url, address, opts) =>
         servername: url.hostname,
       },
       (res) => {
+        res.on("close", () => clearTimeout(timer));
         const chunks: Buffer[] = [];
         let size = 0;
         res.on("data", (c: Buffer) => {
@@ -166,19 +169,29 @@ const pinnedTransport: Transport = (url, address, opts) =>
           if (size <= opts.maxBytes) chunks.push(c);
           else res.destroy();
         });
-        const done = () =>
+        const done = () => {
+          if (expired) return reject(new Error("timed out"));
           resolve({
             status: res.statusCode ?? 0,
             headers: Object.fromEntries(Object.entries(res.headers).map(([k, v]) => [k, Array.isArray(v) ? v.join(", ") : (v ?? "")])),
             body: Buffer.concat(chunks).toString("utf8").slice(0, opts.maxBytes),
           });
+        };
         res.on("end", done);
         res.on("close", done);
         res.on("error", reject);
       },
     );
+    let expired = false;
+    const timer = setTimeout(() => {
+      expired = true;
+      req.destroy(new Error("timed out"));
+    }, Math.max(1, opts.deadlineMs));
     req.on("timeout", () => req.destroy(new Error("timed out")));
-    req.on("error", reject);
+    req.on("error", (e) => {
+      clearTimeout(timer);
+      reject(e);
+    });
     req.end();
   });
 
@@ -188,7 +201,10 @@ export type SafeFetchOptions = {
   maxRedirects?: number;
   /** false: return a redirect response instead of following it (the caller checks the next hop itself). */
   followRedirects?: boolean;
+  /** Idle limit per connection (default 8s). */
   timeoutMs?: number;
+  /** Limit for the whole fetch, redirects included (default three times timeoutMs). */
+  totalTimeoutMs?: number;
   maxBytes?: number;
   headers?: Record<string, string>;
 };
@@ -203,11 +219,15 @@ export async function safeFetch(raw: string, opts: SafeFetchOptions = {}): Promi
   const maxRedirects = opts.maxRedirects ?? 5;
   const headers = { "User-Agent": USER_AGENT, Accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.5", ...opts.headers };
   const redirects: string[] = [];
+  const timeoutMs = opts.timeoutMs ?? 8000;
+  const deadline = Date.now() + (opts.totalTimeoutMs ?? timeoutMs * 3);
   let url = assertFetchableUrl(raw);
   for (let hop = 0; hop <= maxRedirects; hop++) {
     const host = url.hostname.replace(/^\[|\]$/g, "");
     const addresses = await resolvePublic(host, resolve);
-    const res = await transport(url, addresses[0], { timeoutMs: opts.timeoutMs ?? 8000, maxBytes: opts.maxBytes ?? 64 * 1024, headers });
+    const left = deadline - Date.now();
+    if (left <= 0) throw new Error("timed out");
+    const res = await transport(url, addresses[0], { timeoutMs, deadlineMs: left, maxBytes: opts.maxBytes ?? 64 * 1024, headers });
     const location = res.headers.location;
     if (res.status >= 300 && res.status < 400 && location && opts.followRedirects !== false) {
       // Every hop is checked again before it's followed.

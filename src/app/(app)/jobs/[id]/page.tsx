@@ -2,12 +2,14 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, Building2, Check, Clock, MapPin, Minus, Telescope, X } from "lucide-react";
+import { ApplyLink } from "@/components/jobs/apply-link";
 import { FitScore, SourceTag, TIER_STYLE, VerificationBadge } from "@/components/jobs/job-visuals";
 import { PageHeader } from "@/components/page-header";
 import { ToastOnMount } from "@/components/toast/toast-on-mount";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { STAGE_LABEL } from "@/lib/applications/stages";
 import { aiAccess } from "@/lib/job-postings/ai";
 import { applyState } from "@/lib/job-postings/apply-state";
 import type { Comparison } from "@/lib/job-postings/compare";
@@ -55,12 +57,14 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims.sub;
-  const [{ data: job }, resume, { data: state }, ai] = await Promise.all([
+  const [{ data: job }, resume, { data: state }, ai, { data: tracked }] = await Promise.all([
     supabase.from("jobs").select("*").eq("id", id).maybeSingle(),
     loadActiveResume(supabase),
     supabase.from("job_user_states").select("status").eq("job_id", id).maybeSingle(),
     aiAccess(supabase),
+    supabase.from("applications").select("id, stage, attempt").eq("job_id", id).order("attempt", { ascending: false }).limit(1),
   ]);
+  const application = tracked?.[0] ?? null;
   if (!job || !userId) notFound();
   const { data: employer } = job.employer_id ? await supabase.from("employers").select("name, ats, careers_url").eq("id", job.employer_id).maybeSingle() : { data: null };
   // A link checked more than a few hours ago is checked again after this page is sent.
@@ -263,9 +267,19 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
             <CardContent className="grid gap-3">
               <VerificationBadge status={job.closed_at ? "expired" : job.verification_status} />
               {apply.enabled ? (
-                <a href={apply.href} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants(), "w-full")}>
+                <ApplyLink
+                  jobId={job.id}
+                  href={apply.href}
+                  status={state?.status ?? null}
+                  className={cn(buttonVariants(), "w-full")}
+                  panelClassName="left-0 right-auto w-full min-w-64"
+                  documents={[
+                    ...(docs ?? []).map((d) => ({ value: `t:${d.id}`, label: d.label ?? `${d.kind === "cover_letter" ? "Cover letter" : d.kind === "cv" ? "Tailored CV" : "Tailored resume"}, ${d.created_at.slice(0, 10)}${d.edited ? " (edited)" : ""}` })),
+                    ...(resume ? [{ value: `r:${resume.id}`, label: "Your current resume" }] : []),
+                  ]}
+                >
                   Apply on {source.kind === "aggregator" ? "the listing" : "the employer's site"} <ArrowUpRight aria-hidden />
-                </a>
+                </ApplyLink>
               ) : (
                 <div className="grid gap-1">
                   <span role="link" aria-disabled="true" className={cn(buttonVariants(), "pointer-events-none w-full opacity-50")}>
@@ -309,6 +323,12 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
               <div className="grid gap-1.5 border-t pt-3">
                 <p className="text-xs font-medium text-muted-foreground">Your status</p>
                 <StatusActions jobId={job.id} status={state?.status ?? null} />
+                {application ? (
+                  <Link href={`/applications/${application.id}`} className="text-sm text-primary hover:underline">
+                    In Applications: {STAGE_LABEL[application.stage]}
+                    {application.attempt > 1 ? ` (attempt ${application.attempt})` : ""}
+                  </Link>
+                ) : null}
               </div>
               {discoverQuery ? (
                 <Link href={`/discover?q=${encodeURIComponent(discoverQuery)}`} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "justify-start border-t pt-3")}>

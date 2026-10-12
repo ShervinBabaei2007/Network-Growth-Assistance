@@ -2,6 +2,7 @@ import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { JobSearchSummary } from "@/components/applications/job-search-summary";
 import { BaselineForm, SnapshotForm } from "@/components/connection-forms";
 import { LoadError } from "@/components/load-error";
 import { MeterLegend, ProgressMeter } from "@/components/progress-meter";
@@ -20,6 +21,9 @@ export default function OverviewPage() {
   return (
     <div className="grid gap-6">
       <h1 className="text-xl font-semibold">Overview</h1>
+      <Suspense fallback={null}>
+        <JobSearchSummary />
+      </Suspense>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading your progress…</p>}>
         <OverviewContent />
       </Suspense>

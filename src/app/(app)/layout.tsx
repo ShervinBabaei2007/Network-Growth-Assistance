@@ -2,7 +2,9 @@ import { Suspense } from "react";
 import { LogOut } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
 import { MobileNav, SidebarNav } from "@/components/app-nav";
+import { AppearanceSync } from "@/components/appearance-sync";
 import { Button } from "@/components/ui/button";
+import { normalizeAppearance } from "@/lib/appearance";
 import { createClient } from "@/lib/supabase/server";
 
 // The shell is static; session-dependent parts stream in behind Suspense.
@@ -37,6 +39,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={null}>
           <PauseBanner />
         </Suspense>
+        <Suspense fallback={null}>
+          <SavedAppearance />
+        </Suspense>
         {/* Content stays a readable width on large monitors instead of spanning the whole screen. */}
         <main className="flex-1 px-4 py-5 md:px-8 md:py-8">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
@@ -70,4 +75,12 @@ async function PauseBanner() {
       {settings.pause_reason ? ` Reason noted: ${settings.pause_reason}` : null}
     </div>
   );
+}
+
+/** Applies the appearance saved in Settings (the source of truth) and refreshes its cookie. */
+async function SavedAppearance() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("settings").select("theme, density, text_size").maybeSingle();
+  if (!data) return null;
+  return <AppearanceSync value={normalizeAppearance({ theme: data.theme, density: data.density, text: data.text_size })} />;
 }

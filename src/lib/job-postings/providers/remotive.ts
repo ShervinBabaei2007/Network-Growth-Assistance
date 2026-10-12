@@ -5,6 +5,7 @@ import { jobDedupeKey, simhash64 } from "../dedupe";
 import { jobLevel } from "../levels";
 import { checkJobLink } from "../verify-url";
 import { ProviderError, type NormalizedJob, type ProviderResult } from "./types";
+import { BODY_LIMITS, readCappedJson } from "@/lib/net/read-capped";
 
 /**
  * Remotive's free public remote-jobs API (https://github.com/remotive-com/remote-jobs-api).
@@ -139,7 +140,7 @@ export class RemotiveProvider {
     if (res.status === 429) throw new ProviderError("rate_limited");
     if (res.status === 401 || res.status === 403) throw new ProviderError("auth");
     if (!res.ok) throw new ProviderError("outage");
-    const body = RemotiveResponse.safeParse(await res.json().catch(() => null));
+    const body = RemotiveResponse.safeParse(await readCappedJson(res, BODY_LIMITS.feed).catch(() => null));
     if (!body.success) throw new ProviderError("malformed");
     const jobs: NormalizedJob[] = [];
     let skipped = 0;

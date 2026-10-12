@@ -24,6 +24,7 @@ import { PROVINCE_CODES, SENIORITY } from "@/lib/job-postings/types";
 import { checkUrlLive } from "@/lib/job-postings/verify-job";
 import { checkUrlShape } from "@/lib/job-postings/verify-url";
 import { actionContext, logActivity } from "@/lib/server/action-context";
+import { allow, LIMITS } from "@/lib/server/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -76,11 +77,14 @@ export async function saveJobPreferences(_: FormState, formData: FormData): Prom
   if (error) return failed("Couldn't save. Try again.");
   // A country nobody searched before: employers' boards are read again from scratch (the
   // earlier reads kept only other countries' jobs), starting with the next crawl.
+  // Resetting every board is shared work, so each user can start only a few new countries a day.
   const isNew = !before.includes(parsed.data.country);
-  if (isNew) await admin.from("employers").update({ etag: null, next_crawl_at: new Date().toISOString() }).neq("status", "disabled");
+  const reread = isNew && (await allow(ctx.supabase, LIMITS.newCountry));
+  if (reread) await admin.from("employers").update({ etag: null, next_crawl_at: new Date().toISOString() }).neq("status", "disabled");
   refresh();
+  if (isNew && !reread) return saved(`Saved. ${LIMITS.newCountry.message} Remote job sites are searched right away.`);
   return saved(
-    isNew
+    reread
       ? `Saved. Employer boards are being read for ${countryName(parsed.data.country)}; their jobs appear within about 10 minutes. Remote job sites are searched right away.`
       : "Your job search preferences were saved.",
   );
@@ -100,6 +104,13 @@ export async function setJobStatus(jobId: string, status: "saved" | "applied" | 
           .from("job_user_states")
           .upsert({ user_id: ctx.userId, job_id: jobId, status, applied_at: status === "applied" ? new Date().toISOString() : null }, { onConflict: "user_id,job_id" });
   if (error) return err("Couldn't update. Try again.");
+  // Keep the application tracker in step. Saving or applying creates or moves the job's open
+  // application; removing or dismissing deletes it only while it holds nothing the user entered.
+  const tracked =
+    status === "saved" || status === "applied"
+      ? await ctx.supabase.rpc("sync_application_for_job", { p_job: jobId, p_stage: status })
+      : await ctx.supabase.rpc("release_application_for_job", { p_job: jobId });
+  if (tracked.error) await logActivity(ctx, "applications.sync_failed", { job: jobId });
   await logActivity(ctx, `jobs.${status ?? "restored"}`, { job: jobId });
   refresh();
   return ok(status ? STATUS_MESSAGE[status] : "Job removed from your list.");
@@ -108,6 +119,7 @@ export async function setJobStatus(jobId: string, status: "saved" | "applied" | 
 export async function checkFit(jobId: string): Promise<ActionResult> {
   if (!uuid.safeParse(jobId).success) return err("Unknown job.");
   const ctx = await actionContext();
+  if (!(await allow(ctx.supabase, LIMITS.checkFit))) return err(LIMITS.checkFit.message);
   const resume = await loadActiveResume(ctx.supabase);
   if (!resume) return err("Import your resume first.");
   await scoreJobs(ctx.supabase, ctx.userId, resume, [jobId], jobServices().embedder);
@@ -195,6 +207,7 @@ export async function addManualPosting(_: FormState, formData: FormData): Promis
   if (error || !data) return failed("Couldn't add it. Try again.");
   const services = jobServices();
   await ctx.supabase.from("job_user_states").upsert({ user_id: ctx.userId, job_id: data.id, status: "saved" }, { onConflict: "user_id,job_id" });
+  await ctx.supabase.rpc("sync_application_for_job", { p_job: data.id, p_stage: "saved" });
   await saveRequirements(ctx.supabase, data.id, m.description, services.embedder);
   const resume = await loadActiveResume(ctx.supabase);
   if (resume) await scoreJobs(ctx.supabase, ctx.userId, resume, [data.id], services.embedder);
@@ -249,6 +262,7 @@ export async function addEmployer(_: FormState, formData: FormData): Promise<For
  */
 export async function crawlNow(): Promise<ActionResult> {
   const ctx = await actionContext();
+  if (!(await allow(ctx.supabase, LIMITS.crawlNow))) return err(LIMITS.crawlNow.message);
   const services = jobServices();
   const s = await crawlDue(createAdminClient(), { deadline: Date.now() + 40_000, embedder: services.embedder, fixtures: services.fixtures, maxBoards: 40 });
   await logActivity(ctx, "jobs.crawl_now", { boards: s.boards, new: s.newJobs });

@@ -4,6 +4,7 @@ import { syncFeeds } from "@/lib/job-postings/search";
 import { jobServices } from "@/lib/job-postings/services";
 import { verifyPending } from "@/lib/job-postings/verify-job";
 import { cronAuthorized } from "@/lib/server/cron-auth";
+import { errorMessage, log } from "@/lib/server/log";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const maxDuration = 60;
@@ -25,9 +26,10 @@ async function handle(request: Request) {
     // A feed failing never fails the crawl: board jobs and link checks still run.
     const feeds = Date.now() < deadline ? await syncFeeds({ fixtures: services.fixtures }) : null;
     const linksChecked = Date.now() < deadline ? await verifyPending(30, deadline) : 0;
+    log("info", "cron.crawl", "finished", { boards: summary.boards, newJobs: summary.newJobs, linksChecked });
     return NextResponse.json({ ok: true, ...summary, feeds, linksChecked });
   } catch (e) {
-    console.error("[crawl] failed:", e instanceof Error ? e.message : e);
+    log("error", "cron.crawl", "failed", { message: errorMessage(e) });
     return NextResponse.json({ ok: false, error: "Crawl failed; see server logs." }, { status: 500 });
   }
 }

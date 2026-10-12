@@ -66,4 +66,16 @@ describe("localDateTimeToInstant", () => {
   it("reads wall-clock time in the zone", () => {
     expect(localDateTimeToInstant("2026-10-02T15:04", "America/Toronto").toISOString()).toBe("2026-10-02T19:04:00.000Z");
   });
+
+  it("is right on the day the clocks fall back", () => {
+    // 2026-11-01: Toronto moves from EDT (UTC-4) to EST (UTC-5) at 02:00.
+    expect(localDateTimeToInstant("2026-11-01T14:00", "America/Toronto").toISOString()).toBe("2026-11-01T19:00:00.000Z");
+    expect(localDateTimeToInstant("2026-11-01T00:30", "America/Toronto").toISOString()).toBe("2026-11-01T04:30:00.000Z");
+  });
+
+  it("is right on the day the clocks spring forward", () => {
+    // 2026-03-08: Toronto moves from EST (UTC-5) to EDT (UTC-4) at 02:00.
+    expect(localDateTimeToInstant("2026-03-08T10:00", "America/Toronto").toISOString()).toBe("2026-03-08T14:00:00.000Z");
+    expect(localDateTimeToInstant("2026-03-08T01:00", "America/Toronto").toISOString()).toBe("2026-03-08T06:00:00.000Z");
+  });
 });

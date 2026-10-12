@@ -5,6 +5,7 @@ import { jobDedupeKey, simhash64 } from "../dedupe";
 import { jobLevel, workplaceFromText } from "../levels";
 import { checkJobLink } from "../verify-url";
 import { ProviderError, type JobProvider, type NormalizedJob, type ProviderResult, type SearchQuery } from "./types";
+import { BODY_LIMITS, readCappedJson } from "@/lib/net/read-capped";
 
 /**
  * USAJOBS, the U.S. federal government's official job site (https://developer.usajobs.gov):
@@ -141,7 +142,7 @@ export class UsajobsProvider implements JobProvider {
     if (res.status === 401 || res.status === 403) throw new ProviderError("auth");
     if (res.status === 429) throw new ProviderError("rate_limited");
     if (!res.ok) throw new ProviderError("outage");
-    const body = Response_.safeParse(await res.json().catch(() => null));
+    const body = Response_.safeParse(await readCappedJson(res, BODY_LIMITS.feed).catch(() => null));
     if (!body.success) throw new ProviderError("malformed");
     const jobs: NormalizedJob[] = [];
     let skipped = 0;

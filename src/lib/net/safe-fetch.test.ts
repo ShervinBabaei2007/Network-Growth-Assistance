@@ -106,4 +106,24 @@ describe("safeFetch", () => {
     const transport: Transport = async (url) => ({ status: 302, headers: { location: `${url.pathname}x` }, body: "" });
     await expect(safeFetch("https://jobs.example.com/a", { resolve: resolveTo("93.184.216.34"), transport, maxRedirects: 3 })).rejects.toThrow(/too many redirects/);
   });
+
+  it("gives each hop only what's left of the overall deadline", async () => {
+    const deadlines: number[] = [];
+    const transport: Transport = async (url, _addr, opts) => {
+      deadlines.push(opts.deadlineMs);
+      await new Promise((r) => setTimeout(r, 30));
+      return url.pathname === "/go" ? { status: 301, headers: { location: "/jobs/42" }, body: "" } : { status: 200, headers: {}, body: "ok" };
+    };
+    await safeFetch("https://jobs.example.com/go", { resolve: resolveTo("93.184.216.34"), transport, totalTimeoutMs: 1000 });
+    expect(deadlines[0]).toBeLessThanOrEqual(1000);
+    expect(deadlines[1]).toBeLessThan(deadlines[0]);
+  });
+
+  it("gives up when redirects run past the overall deadline", async () => {
+    const transport: Transport = async (url) => {
+      await new Promise((r) => setTimeout(r, 30));
+      return { status: 302, headers: { location: `${url.pathname}x` }, body: "" };
+    };
+    await expect(safeFetch("https://jobs.example.com/a", { resolve: resolveTo("93.184.216.34"), transport, totalTimeoutMs: 50 })).rejects.toThrow(/timed out/);
+  });
 });

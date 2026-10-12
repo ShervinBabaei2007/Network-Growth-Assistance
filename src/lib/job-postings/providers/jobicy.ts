@@ -5,6 +5,7 @@ import { jobDedupeKey, simhash64 } from "../dedupe";
 import { jobLevel } from "../levels";
 import { checkJobLink } from "../verify-url";
 import { ProviderError, type JobProvider, type NormalizedJob, type ProviderResult, type SearchQuery } from "./types";
+import { BODY_LIMITS, readCappedJson } from "@/lib/net/read-capped";
 
 /**
  * Jobicy's free public jobs API (https://jobicy.com/jobs-rss-feed): remote jobs from many
@@ -255,6 +256,6 @@ export class JobicyProvider implements JobProvider {
     if (res.status === 401 || res.status === 403) throw new ProviderError("auth");
     if (res.status === 429) throw new ProviderError("rate_limited");
     if (!res.ok) throw new ProviderError("outage");
-    return res.json().catch(() => null);
+    return readCappedJson(res, BODY_LIMITS.feed).catch(() => null);
   }
 }

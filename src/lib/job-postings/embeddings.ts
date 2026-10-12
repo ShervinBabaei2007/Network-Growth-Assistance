@@ -1,4 +1,5 @@
 import { GTE_SMALL_THRESHOLDS, type Thresholds } from "./match";
+import { BODY_LIMITS, readCappedJson } from "@/lib/net/read-capped";
 
 /**
  * Meaning-based matching uses Supabase's free built-in embedding model (gte-small,
@@ -37,7 +38,7 @@ export class EdgeEmbedder implements Embedder {
         cache: "no-store",
       });
       if (!res.ok) return null;
-      const body = (await res.json()) as { vectors?: number[][] };
+      const body = await readCappedJson<{ vectors?: number[][] }>(res, BODY_LIMITS.api);
       return Array.isArray(body.vectors) && body.vectors.length === texts.length ? body.vectors : null;
     } catch {
       return null;

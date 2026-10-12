@@ -39,3 +39,17 @@ export function serverEnv() {
     USAJOBS_EMAIL: process.env.USAJOBS_EMAIL || undefined,
   });
 }
+
+/**
+ * Free AI uses per user per day on the server's key. Read on its own so a typo here
+ * falls back to the default (with a warning) instead of silently turning AI off.
+ */
+export function aiDailyQuota(fallback: number): number {
+  const raw = process.env.AI_DAILY_QUOTA || undefined;
+  const parsed = serverSchema.shape.AI_DAILY_QUOTA.safeParse(raw);
+  if (!parsed.success) {
+    console.warn(`AI_DAILY_QUOTA must be a whole number of 0 or more; using ${fallback}.`);
+    return fallback;
+  }
+  return parsed.data ?? fallback;
+}

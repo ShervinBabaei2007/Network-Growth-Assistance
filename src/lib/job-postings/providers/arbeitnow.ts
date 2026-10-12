@@ -5,6 +5,7 @@ import { jobDedupeKey, simhash64 } from "../dedupe";
 import { jobLevel, workplaceFromText } from "../levels";
 import { checkJobLink } from "../verify-url";
 import { ProviderError, type NormalizedJob, type ProviderResult } from "./types";
+import { BODY_LIMITS, readCappedJson } from "@/lib/net/read-capped";
 
 /**
  * Arbeitnow's free job board API (https://www.arbeitnow.com/blog/job-board-api): jobs in
@@ -146,7 +147,7 @@ export class ArbeitnowProvider {
       }
       if (res.status === 429) throw new ProviderError("rate_limited");
       if (!res.ok) throw new ProviderError("outage");
-      const body = ArbeitnowResponse.safeParse(await res.json().catch(() => null));
+      const body = ArbeitnowResponse.safeParse(await readCappedJson(res, BODY_LIMITS.feed).catch(() => null));
       if (!body.success) throw new ProviderError("malformed");
       for (const raw of body.data.data) {
         const j = this.normalizeJob(raw, wanted);

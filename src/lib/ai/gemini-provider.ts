@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import type { LLMProvider, LlmResult, LlmTier, LlmUsage } from "@/lib/discovery/llm";
+import { BODY_LIMITS, readCappedJson, readCappedText } from "@/lib/net/read-capped";
 
 /**
  * Google's Gemini Developer API (https://ai.google.dev), the app's default model service:
@@ -103,13 +104,13 @@ export class GeminiLLM implements LLMProvider {
     if (res.status === 401 || res.status === 403) return { ok: false, reason: "The Gemini API key was rejected." };
     if (res.status === 400) {
       // Google reports an invalid key as 400 INVALID_ARGUMENT with API_KEY_INVALID.
-      const text = await res.text().catch(() => "");
+      const text = await readCappedText(res, BODY_LIMITS.ai).catch(() => "");
       if (/API_KEY_INVALID|API key not valid/i.test(text)) return { ok: false, reason: "The Gemini API key was rejected." };
       return { ok: false, reason: "The AI service couldn't handle this request (400)." };
     }
     if (!res.ok) return { ok: false, reason: `The AI service returned an error (${res.status}).` };
 
-    const body = (await res.json().catch(() => null)) as GeminiResponse | null;
+    const body = (await readCappedJson<GeminiResponse>(res, BODY_LIMITS.ai).catch(() => null));
     if (!body) return { ok: false, reason: "The model's answer didn't match the expected format." };
     this.usage.inputTokens += body.usageMetadata?.promptTokenCount ?? 0;
     this.usage.outputTokens += (body.usageMetadata?.candidatesTokenCount ?? 0) + (body.usageMetadata?.thoughtsTokenCount ?? 0);

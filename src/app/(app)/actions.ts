@@ -14,6 +14,8 @@ import {
   saved,
   type FormState,
 } from "@/lib/form-state";
+import { err, ok, type ActionResult } from "@/lib/action-result";
+import { normalizeAppearance, type Appearance } from "@/lib/appearance";
 import { actionContext as context, logActivity as log } from "@/lib/server/action-context";
 
 // LinkedIn caps a member's network at 30,000 connections.
@@ -305,6 +307,29 @@ export async function updateNoteProfile(_: FormState, formData: FormData): Promi
   return saved("Saved. New queue items will use it; refresh today's queue to update existing ones.");
 }
 
+// ---------------------------------------------------------------- appearance and tracker
+
+/** Saves the theme, density and text size. The page applies them right away; this keeps them for every device. */
+export async function saveAppearance(input: Appearance): Promise<ActionResult> {
+  const a = normalizeAppearance(input);
+  const ctx = await context();
+  const { error } = await ctx.supabase.from("settings").update({ theme: a.theme, density: a.density, text_size: a.text }).eq("user_id", ctx.userId);
+  if (error) return err("Couldn't save your appearance settings. Try again.");
+  return ok("Appearance saved.");
+}
+
+const trackerSchema = z.object({ noResponseDays: formInt("Days", { min: 1, max: 365 }) });
+
+export async function updateTrackerSettings(_: FormState, formData: FormData): Promise<FormState> {
+  const parsed = trackerSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return failed(firstIssue(parsed.error));
+  const ctx = await context();
+  const { error } = await ctx.supabase.from("settings").update({ no_response_days: parsed.data.noResponseDays }).eq("user_id", ctx.userId);
+  if (error) return failed("Couldn't save. Try again.");
+  refresh();
+  return saved("Saved.");
+}
+
 /**
  * Permanently deletes the signed-in user's account. Every table references the
  * auth user with ON DELETE CASCADE, so all of their data goes with it.
@@ -316,10 +341,13 @@ export async function deleteAccount(_: FormState, formData: FormData): Promise<F
   const admin = createAdminClient();
   // Stored files aren't removed with the user's rows: delete their uploaded resumes first.
   // The id comes from the verified session, never from the form.
-  const { data: files } = await admin.storage.from("resumes").list(ctx.userId, { limit: 1000 });
-  if (files?.length) {
+  // Removing a page shifts the listing, so read the first page again until it's empty.
+  for (let page = 0; page < 100; page++) {
+    const { data: files, error: listError } = await admin.storage.from("resumes").list(ctx.userId, { limit: 100 });
+    if (listError) return failed("Couldn't delete your stored files. Nothing was deleted; try again.");
+    if (!files.length) break;
     const { error: removeError } = await admin.storage.from("resumes").remove(files.map((f) => `${ctx.userId}/${f.name}`));
-    if (removeError) return failed("Couldn't delete your stored files. Nothing was deleted; try again.");
+    if (removeError) return failed("Couldn't delete your stored files. Your account wasn't deleted; try again.");
   }
   const { error } = await admin.auth.admin.deleteUser(ctx.userId);
   if (error) return failed("Couldn't delete the account. Try again.");

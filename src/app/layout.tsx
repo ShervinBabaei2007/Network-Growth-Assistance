@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/toast/toaster";
+import { APPEARANCE_SCRIPT } from "@/lib/appearance";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -23,7 +24,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      data-theme="system"
+      data-density="comfortable"
+      data-text="normal"
+      // The inline script below sets the saved theme before paint, so the DOM differs on purpose.
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: APPEARANCE_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col">
         <Toaster>{children}</Toaster>
       </body>

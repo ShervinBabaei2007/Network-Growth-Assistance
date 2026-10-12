@@ -1,4 +1,5 @@
 import { ProviderError, type GitHubProfile, type SearchProvider, type SearchResult } from "./types";
+import { BODY_LIMITS, readCappedJson, readCappedText } from "@/lib/net/read-capped";
 
 type UserSearch = { items?: { login: string }[] };
 type User = { login: string; name: string | null; bio: string | null; company: string | null; location: string | null; blog: string | null; html_url: string; type: string };
@@ -31,7 +32,9 @@ export class GitHubSearchProvider implements SearchProvider {
     }
     if (res.status === 403 || res.status === 429) throw new ProviderError(this.name, "GitHub rate limit reached.", true);
     if (!res.ok) throw new ProviderError(this.name, `GitHub returned ${res.status}.`, res.status >= 500);
-    return (await res.json()) as T;
+    return readCappedJson<T>(res, BODY_LIMITS.api).catch(() => {
+      throw new ProviderError(this.name, "GitHub sent an answer that couldn't be read.", true);
+    });
   }
 
   async search(query: string, { count = 8, signal }: { count?: number; signal?: AbortSignal } = {}): Promise<SearchResult[]> {
@@ -65,7 +68,7 @@ export class GitHubSearchProvider implements SearchProvider {
     try {
       const res = await fetch(`https://raw.githubusercontent.com/${l}/${l}/HEAD/README.md`, { signal: signal ?? AbortSignal.timeout(8_000), cache: "no-store" });
       if (!res.ok) return null;
-      return (await res.text()).slice(0, 40_000);
+      return (await readCappedText(res, 200_000)).slice(0, 40_000);
     } catch {
       return null;
     }

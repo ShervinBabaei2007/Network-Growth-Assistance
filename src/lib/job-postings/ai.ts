@@ -3,6 +3,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
 import Anthropic from "@anthropic-ai/sdk";
 import { keyVendor, llmForKey, vendorOf, type AiVendor } from "@/lib/ai/default-llm";
 import { validateGeminiKey } from "@/lib/ai/gemini-provider";
+import { aiDailyQuota } from "@/lib/env";
 import type { LLMProvider } from "@/lib/discovery/llm";
 import { jobFixturesEnabled } from "@/lib/runtime-mode";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -17,7 +18,7 @@ import { jobServices } from "./services";
  */
 
 export const DEFAULT_DAILY_QUOTA = 3;
-export const dailyQuota = () => Math.max(0, Number(process.env.AI_DAILY_QUOTA ?? DEFAULT_DAILY_QUOTA) || 0);
+export const dailyQuota = () => aiDailyQuota(DEFAULT_DAILY_QUOTA);
 
 function keyBytes(): Buffer | null {
   const secret = process.env.APP_ENCRYPTION_KEY;

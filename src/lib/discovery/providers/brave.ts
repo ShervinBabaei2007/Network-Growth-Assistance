@@ -1,4 +1,5 @@
 import { ProviderError, type SearchProvider, type SearchResult } from "./types";
+import { BODY_LIMITS, readCappedJson } from "@/lib/net/read-capped";
 
 type BraveResponse = {
   web?: { results?: { url?: string; title?: string; description?: string; extra_snippets?: string[] }[] };
@@ -32,7 +33,9 @@ export class BraveSearchProvider implements SearchProvider {
     if (res.status === 429) throw new ProviderError(this.name, "Brave Search rate limit reached.", true);
     if (res.status === 401 || res.status === 403) throw new ProviderError(this.name, "The Brave Search API key was rejected.");
     if (!res.ok) throw new ProviderError(this.name, `Brave Search returned ${res.status}.`, res.status >= 500);
-    const body = (await res.json()) as BraveResponse;
+    const body = await readCappedJson<BraveResponse>(res, BODY_LIMITS.api).catch(() => {
+      throw new ProviderError(this.name, "Brave Search sent an answer that couldn't be read.", true);
+    });
     return (body.web?.results ?? [])
       .filter((r) => r.url && r.title)
       .map((r, i) => ({

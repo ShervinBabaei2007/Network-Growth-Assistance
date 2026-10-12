@@ -4,8 +4,9 @@ import { publicEnv, serverEnv } from "@/lib/env";
 import type { Database } from "./database.types";
 
 /**
- * Service-role client that bypasses row-level security.
- * Only the daily job uses it, and every query must filter by user_id explicitly.
+ * Service-role client that bypasses row-level security. Server code only: cron jobs,
+ * shared job and employer data, AI quota, and account deletion. Any query that touches a
+ * user's own rows must filter by the session's user_id explicitly, never one from input.
  */
 export function createAdminClient() {
   return createClient<Database>(

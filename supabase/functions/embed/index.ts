@@ -12,7 +12,7 @@ const MAX_CHARS = 2000;
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const secret = Deno.env.get("EMBED_SECRET");
-  if (!secret || req.headers.get("x-embed-secret") !== secret) return new Response("Unauthorized", { status: 401 });
+  if (!secret || !sameSecret(req.headers.get("x-embed-secret") ?? "", secret)) return new Response("Unauthorized", { status: 401 });
 
   const body = await req.json().catch(() => null);
   const texts = body?.texts;
@@ -27,3 +27,12 @@ Deno.serve(async (req) => {
   }
   return Response.json({ vectors });
 });
+
+/** Compares in constant time, so response timing doesn't reveal how much of the secret matched. */
+function sameSecret(given: string, expected: string): boolean {
+  const a = new TextEncoder().encode(given);
+  const b = new TextEncoder().encode(expected);
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < b.length; i++) diff |= (a[i] ?? 0) ^ b[i];
+  return diff === 0;
+}

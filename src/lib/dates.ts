@@ -67,9 +67,15 @@ export function isValidTimeZone(timeZone: string): boolean {
   }
 }
 
-/** "YYYY-MM-DDTHH:mm" read as wall-clock time in the zone → instant. */
+/**
+ * "YYYY-MM-DDTHH:mm" read as wall-clock time in the zone → instant. Correct on days the
+ * clocks change; a time skipped by the spring change resolves to the instant just after it.
+ */
 export function localDateTimeToInstant(local: string, timeZone: string): Date {
   const [date, time = "12:00"] = local.split("T");
   const [h, m] = time.split(":").map(Number);
-  return new Date(startOfLocalDay(date, timeZone).getTime() + (h * 60 + m) * 60_000);
+  const guess = Date.parse(`${date}T00:00:00Z`) + (h * 60 + m) * 60_000;
+  let instant = guess - zoneOffsetMs(guess, timeZone);
+  instant = guess - zoneOffsetMs(instant, timeZone);
+  return new Date(instant);
 }

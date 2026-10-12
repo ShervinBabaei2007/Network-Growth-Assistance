@@ -172,11 +172,55 @@ Both are flat monthly fees, not per-user costs. The crawler, the job table and t
 
 ## Operating it
 
-- **Logs**: Vercel → Project → Logs. Server errors are prefixed `[cron]`, `[queue]` or `[analytics]`. They contain error messages only, never names or profile data.
+- **Logs**: Vercel → Project → Logs.
+  - Cron jobs write one JSON line per run, for example `{"level":"info","scope":"cron.daily","event":"finished",…}`, and failures use `"level":"error"`. Search the logs for `"scope":"cron.` to see every run.
+  - Page errors are prefixed `[app]`, `[queue]` or `[analytics]`.
+  - Logs carry ids, counts and short error messages only. Keys, tokens and emails are redacted (`src/lib/server/log.ts`), and resume or posting text is never logged.
 - **Daily job failures**: they appear in **Settings → Daily job** with the error. The next cron call retries a failed day automatically, and **Run now** retries it immediately.
 - **Rotating secrets**: change `CRON_SECRET` or `SUPABASE_SECRET_KEY` in Vercel and redeploy. Rotate the Supabase key in its dashboard first.
-- **Schema changes**: add a migration under `supabase/migrations/`, test it locally (`npm run db:reset && npm run test:db`), then `npx supabase db push`.
+- **Schema changes**: add a migration under `supabase/migrations/`, then test it locally:
+  1. Apply it with `npx supabase migration up --local`, which keeps your local data. `npm run db:reset` also works, but it wipes the local database.
+  2. Run `npm run test:db`.
+
+  Then `npx supabase db push`. Migrations are additive where possible, so the previous deployment keeps working while a new one rolls out. See "Recovering from a bad deploy" below.
+- **Rate limits**: expensive actions are limited per user in the database (`rate_limits`, `hit_rate_limit()`):
+  - refreshing boards: 6 per hour
+  - new-country searches: 3 per day
+  - fit checks: 60 per hour
+  - resume uploads: 20 per day
+  - exports: 10 per hour
+
+  Change them in `src/lib/server/rate-limit.ts`. Old counters are deleted by the daily job.
 - **Deleting data**: each user can delete individual candidates, or their whole account under **Settings → Your data**. Account deletion cascades to every table.
+
+## Smoke checks after each deploy
+
+1. Sign in, and open **Overview**, **Jobs**, **Applications** and **Settings**. Each should load without an error message.
+2. On a job, press **Save**. It should appear on **Applications** under Saved. Move it to Applied, then press **Undo** in the toast.
+3. In **Settings → Appearance**, switch to Dark and reload: the page should come back dark, with no flash of light.
+4. **Settings → Your data → Download** should return a JSON file with `schemaVersion` and an `applications` list.
+5. Call the cron routes with the secret, as in step 4 of "Check that it works". Each should answer `{"ok":true,…}`.
+
+## Backups and restore
+
+- **Database**: which backups Supabase keeps, and whether you can restore them yourself, depends on your plan. Check **Database → Backups** in the dashboard and Supabase's current docs; don't rely on this page for it.
+- **Your own backup**, whatever the plan: take one on a schedule.
+
+  ```sh
+  npx supabase db dump --linked -f backup-schema.sql
+  npx supabase db dump --linked --data-only -f backup-data.sql
+  ```
+
+  Keep the files somewhere private: they contain every user's data.
+- **Stored files** (the `resumes` bucket) are **not** in database backups. Copy them separately, for example with the Storage API or the dashboard, if you need them.
+- **Restore**: create a new project, `npx supabase db push`, then load `backup-data.sql` with `psql`, and point Vercel's environment variables at the new project.
+- **Status: restore has not been rehearsed yet.** Until it has been done once in a scratch project, treat it as unverified.
+
+## Recovering from a bad deploy
+
+- **Code**: in Vercel → Deployments, promote the previous deployment. Every migration so far only adds tables and columns, so the older code runs against the newer database.
+- **Migrations**: they aren't rolled back automatically. Fix forward with a new migration. Never edit a migration that has already been pushed.
+- **A destructive migration** (dropping or rewriting columns) needs a backup taken just before it, and a note in the migration saying so.
 
 ## Using LinkedIn responsibly
 

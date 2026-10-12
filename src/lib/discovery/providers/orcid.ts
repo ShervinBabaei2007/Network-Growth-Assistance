@@ -1,4 +1,5 @@
 import { ProviderError, type OrcidAffiliation, type OrcidProfile, type SearchProvider, type SearchResult } from "./types";
+import { BODY_LIMITS, readCappedJson } from "@/lib/net/read-capped";
 
 /**
  * ORCID's public API (https://info.orcid.org/documentation/features/public-api/).
@@ -86,7 +87,9 @@ export class OrcidSearchProvider implements SearchProvider {
     }
     if (res.status === 429 || res.status === 503) throw new ProviderError(this.name, "ORCID is busy right now.", true);
     if (!res.ok) throw new ProviderError(this.name, `ORCID returned ${res.status}.`, res.status >= 500);
-    return (await res.json()) as T;
+    return readCappedJson<T>(res, BODY_LIMITS.api).catch(() => {
+      throw new ProviderError(this.name, "ORCID sent an answer that couldn't be read.", true);
+    });
   }
 
   async search(query: string, { count = 20, signal }: { count?: number; signal?: AbortSignal } = {}): Promise<SearchResult[]> {

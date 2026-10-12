@@ -73,7 +73,7 @@
   --muted-foreground: oklch(0.5 0.02 260);
   --accent: oklch(0.95 0.02 257);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: oklch(0.53 0.215 27.325);
   --border: oklch(0.91 0.008 257);
   --input: oklch(0.88 0.01 257);
   --ring: oklch(0.62 0.13 257);
@@ -147,6 +147,26 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Density and text size scale the shared tokens, so every component follows. */
+[data-density="compact"] {
+  --spacing: 0.21rem;
+}
+html[data-text="large"] {
+  font-size: 112.5%;
+}
+
+/* Respect "reduce motion": no animated transitions or smooth scrolling. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @layer base {

@@ -8,6 +8,7 @@ import { placeLabel, postedLabel } from "@/lib/job-postings/labels";
 import { LEVEL_LABELS, WORKPLACE_LABELS, type Workplace } from "@/lib/job-postings/levels";
 import type { JobSource } from "@/lib/job-postings/source";
 import { cn } from "@/lib/utils";
+import { ApplyLink } from "./apply-link";
 import { SaveJobButton } from "./save-job-button";
 
 export type CardJob = {
@@ -154,9 +155,9 @@ export function JobCard({
               </ul>
             </details>
             {apply.enabled ? (
-              <a href={apply.href} target="_blank" rel="noopener noreferrer" className={buttonVariants({ size: "sm" })}>
+              <ApplyLink jobId={j.id} href={apply.href} status={status} className={buttonVariants({ size: "sm" })}>
                 Apply <ArrowUpRight aria-hidden />
-              </a>
+              </ApplyLink>
             ) : (
               <span role="link" aria-disabled="true" title={apply.reason} className={cn(buttonVariants({ size: "sm" }), "pointer-events-none opacity-50")}>
                 {apply.label === "Expired" ? "Expired" : "Apply"}

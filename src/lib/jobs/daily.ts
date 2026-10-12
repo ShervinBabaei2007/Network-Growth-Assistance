@@ -4,6 +4,7 @@ import { classifyCandidate } from "@/lib/classify";
 import { localDate, startOfLocalDay } from "@/lib/dates";
 import type { Database } from "@/lib/supabase/database.types";
 import { buildTodaysQueue } from "./daily-queue";
+import { errorMessage, log } from "@/lib/server/log";
 
 type Client = SupabaseClient<Database>;
 export const DAILY_JOB = "daily";
@@ -194,7 +195,7 @@ export async function runDailyJobForAll(db: Client, now = new Date()) {
         summary[r.status]++;
       } catch (e) {
         summary.failed++;
-        console.error("[cron] user run failed:", e instanceof Error ? e.message : e);
+        log("error", "cron.daily", "user_run_failed", { message: errorMessage(e) });
       }
     }
     if (data.length < 500) return summary;

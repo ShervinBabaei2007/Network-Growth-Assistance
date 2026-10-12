@@ -1,6 +1,7 @@
 import { htmlToText } from "@/lib/discovery/fetch-page";
 import { readPlace, scopeFor } from "@/lib/geo/countries";
 import { byPriority } from "../regions";
+import { BODY_LIMITS, readCappedJson } from "@/lib/net/read-capped";
 
 /**
  * Employers' public job boards. Each ATS publishes an unauthenticated JSON API that
@@ -109,7 +110,7 @@ export async function getJson(url: string, opts: { etag?: string | null; signal?
   if (res.status === 404) throw new BoardError("The board wasn't found.", true);
   if (res.status === 429) throw new RateLimitedError(retryAfterSeconds(res.headers.get("retry-after")));
   if (!res.ok) throw new BoardError(`The board returned ${res.status}.`);
-  const body = await res.json().catch(() => {
+  const body = await readCappedJson(res, BODY_LIMITS.board).catch(() => {
     throw new BoardError("The board sent something that isn't JSON.");
   });
   return { notModified: false, etag: res.headers.get("etag"), body };
