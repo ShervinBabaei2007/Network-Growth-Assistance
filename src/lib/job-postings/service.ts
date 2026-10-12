@@ -42,8 +42,11 @@ export function toActiveResume(row: { id: string; profile: Json; raw_text: strin
   };
 }
 
-export async function loadActiveResume(db: Db): Promise<ActiveResume | null> {
-  const { data } = await db.from("resumes").select("id, profile, raw_text, facts, updated_at").eq("is_active", true).maybeSingle();
+/** The active resume. Pass `userId` when `db` isn't limited by row-level security (cron jobs). */
+export async function loadActiveResume(db: Db, userId?: string): Promise<ActiveResume | null> {
+  let query = db.from("resumes").select("id, profile, raw_text, facts, updated_at").eq("is_active", true);
+  if (userId) query = query.eq("user_id", userId);
+  const { data } = await query.maybeSingle();
   return data ? toActiveResume(data) : null;
 }
 

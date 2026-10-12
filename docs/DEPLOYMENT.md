@@ -108,6 +108,52 @@ Vercel reads `vercel.json` and registers the daily job (`/api/cron/daily`, sched
 
 7. **Check that no AI key reaches the browser** after a build: `npm run build && npm run check:bundle` (set `GEMINI_API_KEY` to a dummy value for both commands to also search for the value itself).
 
+## 3c. Alerts, notifications and optional email
+
+1. **Schedule the alerts job every 15 minutes**, next to the crawler (same Vault secrets as above):
+
+   ```sql
+   select cron.schedule('alerts', '*/15 * * * *', $$
+     select net.http_post(
+       url := (select decrypted_secret from vault.decrypted_secrets where name = 'app_url') || '/api/cron/alerts',
+       headers := jsonb_build_object('Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')),
+       timeout_milliseconds := 60000
+     );
+   $$);
+   ```
+
+   Each run:
+   - checks saved searches whose time has come, reading stored jobs only;
+   - creates notifications for due reminders, interviews in the next 24 hours, Monday summaries and job boards that stopped working;
+   - sends queued emails.
+
+   It is safe to run twice at once or to retry: each search is leased while it runs, and every notification and email is keyed so it can't repeat. A search whose run fails is retried on the next call; its new jobs aren't lost.
+
+2. **In-app notifications need nothing else.**
+
+3. **Optional: email digests over SMTP.** Any provider's SMTP works (Resend, Brevo, Postmark, Amazon SES, your own server). In Vercel, set:
+   - `SMTP_HOST` and `SMTP_PORT`. Port 465 uses TLS from the start; 587 upgrades with STARTTLS.
+   - `SMTP_USER` and `SMTP_PASS`.
+   - `SMTP_FROM`, for example `Network Growth <alerts@your-domain.example>`.
+   - `APP_URL`, for example `https://<your-app>.vercel.app`.
+   - `EMAIL_TOKEN_SECRET`: 32+ random characters, used to sign unsubscribe links. Changing it breaks the links in emails already sent.
+
+   With these set, users can turn on alert emails in **Settings → Notifications** and on each saved search. Both switches must be on.
+
+   **Your part (not checked by the app):**
+   - Verify the sending domain with your provider (SPF and DKIM; DMARC recommended).
+   - Check the provider's sending limits.
+
+   **What the emails contain and how they're sent:**
+   - Each email has a one-click unsubscribe (`List-Unsubscribe` headers, RFC 8058) and visible links.
+   - Emails contain job titles, companies and links only: no resume content, tracking pixels or click tracking.
+   - Delivery is **at least once**. A failed send is retried after 15 minutes and then after an hour, then marked failed. A crash right after a send can repeat one email.
+
+4. **Retention:**
+   - Read notifications are deleted after 90 days.
+   - Sent or skipped email records are deleted after 30 days, by the daily job.
+   - A saved search keeps the list of jobs it has already seen while those jobs exist.
+
 ## 4. Check that it works
 
 1. Open the site and sign in with your email. The link arrives from Supabase.

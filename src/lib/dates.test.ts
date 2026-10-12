@@ -78,4 +78,9 @@ describe("localDateTimeToInstant", () => {
     expect(localDateTimeToInstant("2026-03-08T10:00", "America/Toronto").toISOString()).toBe("2026-03-08T14:00:00.000Z");
     expect(localDateTimeToInstant("2026-03-08T01:00", "America/Toronto").toISOString()).toBe("2026-03-08T06:00:00.000Z");
   });
+
+  it("moves a time skipped by the spring change to just after the gap", () => {
+    // 02:30 doesn't exist in Toronto on 2026-03-08; it becomes 03:30 EDT.
+    expect(localDateTimeToInstant("2026-03-08T02:30", "America/Toronto").toISOString()).toBe("2026-03-08T07:30:00.000Z");
+  });
 });

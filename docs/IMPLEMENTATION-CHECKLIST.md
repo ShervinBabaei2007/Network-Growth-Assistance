@@ -12,6 +12,7 @@ Status words are kept separate on purpose:
 | Commit | Contents |
 |---|---|
 | `121de46` | Phases 0–1, as one commit. Several files mixed foundation and tracker changes, so they weren't split. |
+| `eea791b` | Step 0: generic deletion test, AI allowance for intros and notes, checklist corrections |
 
 ## Scope of the first release
 
@@ -113,6 +114,42 @@ Local data note: the local database holds the owner's own data. **Never run `db:
 **Not done:**
 - Automated axe accessibility scan (`@axe-core/playwright` isn't installed). Keyboard paths were covered only by e2e (labelled selects, focus).
 - A manual screen-reader pass.
+
+## Phase 2: saved searches, alerts, notifications
+
+| Item | Status | Evidence |
+|---|---|---|
+| Jobs feed extracted into a shared service: same search + same moment → same jobs for the page and alerts; alerts never call outside sources | implemented, unit-tested; page unchanged (e2e) | `src/lib/job-postings/feed-query.ts`, `feed-service.ts`, `feed-service.test.ts` |
+| `saved_searches`, `saved_search_matches`, `notifications`, `email_deliveries` (owner RLS, server-only writes where needed, 20-search cap) | implemented, pgTAP-tested (22) | `20261024000000_alerts_notifications.sql`, `supabase/tests/alerts.test.sql` |
+| Baseline on save: what a search shows now is never announced | implemented, e2e | `establishBaseline` in `src/lib/alerts/run.ts` |
+| New = no copy of the job (any source) seen before; durable per-job history | implemented, e2e | `feedGroups`, `runSearch` |
+| Overlapping runs: lease with `skip locked`; rerun announces nothing twice; failed run retried, pending matches kept | implemented, pgTAP + e2e | `claim_due_saved_searches`, `deliver_alert` |
+| Daily/weekly at the user's local hour, DST-correct | implemented, unit-tested | `src/lib/alerts/schedule.ts` |
+| Reminders, interviews (24 h, re-announced if moved), Monday summary, broken boards you added (once per outage) | implemented; reminders/interviews unit paths covered by pgTAP `notify_user`; not e2e | `run.ts` |
+| Notification centre, header bell with unread count, mark read / all read (Undo) | implemented, e2e | `/notifications`, `src/components/alerts/notification-bell.tsx` |
+| Saved searches page: open, edit, delete (Undo) | implemented; checked in screenshots | `/jobs/searches` |
+| Email digests over SMTP: opt-in twice (global + per search), no tracking, one-click unsubscribe, retries, at-least-once | implemented, unit + e2e (Mailpit) | `src/lib/email/`, `/api/email/unsubscribe` |
+| No SMTP → no email option, in-app alerts still work | verified (dev server without SMTP, cron run) | screenshot run log |
+| Export / deletion cover the new tables | done | inventory test; generic deletion test |
+| Retention: read notifications 90 days, sent emails 30 days | implemented | `prune_notifications` in the daily cron |
+
+**Verification (2026-10-12, local):**
+
+| Check | Result |
+|---|---|
+| typecheck, lint, build, `check:bundle` (47 files) | all pass |
+| Unit tests | 784 pass |
+| pgTAP | 185 pass |
+| E2E | 13/13 |
+
+**Browser review.** Screens checked in light and dark, desktop and phone, with no horizontal overflow: save form, saved searches, notifications, Settings → Notifications.
+
+**Found and fixed during this phase:**
+- **`localDateTimeToInstant` with times skipped by the spring change.** They resolved to before the gap, not after it, and the Phase 0 comment was wrong. Now they move forward, which is the standard behaviour. Tested.
+- **Alert emails queued during a cron run waited for the next run.** The due check used the run's start time.
+- **E2E specs run in parallel workers**, which the earlier "one at a time" note got wrong. The alerts spec now uses a title no other spec searches for, and two specs wait for the Jobs page before their fixture check.
+
+**Not verified:** a real SMTP provider (deliverability, SPF/DKIM, limits). Your configuration; see `docs/DEPLOYMENT.md` §3c.
 
 ## Fixes outside the roadmap
 

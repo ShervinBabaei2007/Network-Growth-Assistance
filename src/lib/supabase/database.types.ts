@@ -237,6 +237,26 @@ isOneToOne: false
       referencedColumns: ["id","user_id"]
     }
                   ]
+                },"email_deliveries": {
+                  Row: {
+                    "attempts": number,"created_at": string,"id": string,"last_error": string | null,"next_attempt_at": string,"notification_id": string,"sent_at": string | null,"status": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attempts"?: number,"created_at"?: string,"id"?: string,"last_error"?: string | null,"next_attempt_at"?: string,"notification_id": string,"sent_at"?: string | null,"status"?: string,"user_id": string
+                  }
+                  Update: {
+                    "attempts"?: number,"created_at"?: string,"id"?: string,"last_error"?: string | null,"next_attempt_at"?: string,"notification_id"?: string,"sent_at"?: string | null,"status"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "email_deliveries_notification_id_user_id_fkey"
+      columns: ["notification_id","user_id"]
+isOneToOne: false
+      referencedRelation: "notifications"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
                 },"employers": {
                   Row: {
                     "added_by": string | null,"ats": Database["public"]['Enums']["ats_kind"],"board_token": string,"careers_url": string | null,"created_at": string,"etag": string | null,"failures": number,"id": string,"last_crawled_at": string | null,"last_error": string | null,"matching_jobs": number,"name": string,"next_crawl_at": string,"status": Database["public"]['Enums']["employer_status"],"updated_at": string
@@ -669,6 +689,20 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"notifications": {
+                  Row: {
+                    "body": string | null,"created_at": string,"data": NonNullable<Json>,"dedupe_key": string,"href": string | null,"id": string,"kind": string,"read_at": string | null,"title": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "body"?: string | null,"created_at"?: string,"data"?: NonNullable<Json>,"dedupe_key": string,"href"?: string | null,"id"?: string,"kind": string,"read_at"?: string | null,"title": string,"user_id": string
+                  }
+                  Update: {
+                    "body"?: string | null,"created_at"?: string,"data"?: NonNullable<Json>,"dedupe_key"?: string,"href"?: string | null,"id"?: string,"kind"?: string,"read_at"?: string | null,"title"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"rate_limits": {
                   Row: {
                     "bucket": string,"count": number,"user_id": string,"window_start": string
@@ -717,16 +751,62 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"settings": {
+                },"saved_search_matches": {
                   Row: {
-                    "auto_approve": boolean,"baseline_connections": number | null,"count_ubco_as_ubc": boolean,"created_at": string,"daily_invite_target": number | null,"density": string,"discipline_priority": (Database["public"]['Enums']["discipline"])[],"job_country": string,"job_exclude_keywords": (string)[],"job_provinces": (string)[],"job_seniority": string,"job_titles": (string)[],"monthly_note_allowance": number | null,"my_interests": string | null,"my_program_text": string | null,"my_school_text": string | null,"networking_goal": string | null,"no_response_days": number,"note_char_limit": number,"overall_target": number,"pause_reason": string | null,"paused": boolean,"paused_at": string | null,"project_start_date": string,"stale_pending_days": number,"text_size": string,"theme": string,"timezone": string,"updated_at": string,"user_id": string,"weekly_invite_cap": number | null
+                    "first_matched_at": string,"job_id": string,"notification_id": string | null,"saved_search_id": string,"status": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"count_ubco_as_ubc"?: boolean,"created_at"?: string,"daily_invite_target"?: number | null,"density"?: string,"discipline_priority"?: (Database["public"]['Enums']["discipline"])[],"job_country"?: string,"job_exclude_keywords"?: (string)[],"job_provinces"?: (string)[],"job_seniority"?: string,"job_titles"?: (string)[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"no_response_days"?: number,"note_char_limit"?: number,"overall_target"?: number,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"text_size"?: string,"theme"?: string,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null
+                    "first_matched_at"?: string,"job_id": string,"notification_id"?: string | null,"saved_search_id": string,"status": string,"user_id"?: string
                   }
                   Update: {
-                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"count_ubco_as_ubc"?: boolean,"created_at"?: string,"daily_invite_target"?: number | null,"density"?: string,"discipline_priority"?: (Database["public"]['Enums']["discipline"])[],"job_country"?: string,"job_exclude_keywords"?: (string)[],"job_provinces"?: (string)[],"job_seniority"?: string,"job_titles"?: (string)[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"no_response_days"?: number,"note_char_limit"?: number,"overall_target"?: number,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"text_size"?: string,"theme"?: string,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null
+                    "first_matched_at"?: string,"job_id"?: string,"notification_id"?: string | null,"saved_search_id"?: string,"status"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "saved_search_matches_job_id_fkey"
+      columns: ["job_id"]
+isOneToOne: false
+      referencedRelation: "jobs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "saved_search_matches_notification_id_user_id_fkey"
+      columns: ["notification_id","user_id"]
+isOneToOne: false
+      referencedRelation: "notifications"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "saved_search_matches_saved_search_id_user_id_fkey"
+      columns: ["saved_search_id","user_id"]
+isOneToOne: false
+      referencedRelation: "saved_searches"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"saved_searches": {
+                  Row: {
+                    "alert_frequency": string,"alert_hour": number,"alert_weekday": number,"baseline_at": string | null,"created_at": string,"email_digest": boolean,"id": string,"last_error": string | null,"last_run_at": string | null,"lease_until": string | null,"name": string,"next_run_at": string | null,"query": NonNullable<Json>,"query_version": number,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "alert_frequency"?: string,"alert_hour"?: number,"alert_weekday"?: number,"baseline_at"?: string | null,"created_at"?: string,"email_digest"?: boolean,"id"?: string,"last_error"?: string | null,"last_run_at"?: string | null,"lease_until"?: string | null,"name": string,"next_run_at"?: string | null,"query": NonNullable<Json>,"query_version"?: number,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "alert_frequency"?: string,"alert_hour"?: number,"alert_weekday"?: number,"baseline_at"?: string | null,"created_at"?: string,"email_digest"?: boolean,"id"?: string,"last_error"?: string | null,"last_run_at"?: string | null,"lease_until"?: string | null,"name"?: string,"next_run_at"?: string | null,"query"?: NonNullable<Json>,"query_version"?: number,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"settings": {
+                  Row: {
+                    "auto_approve": boolean,"baseline_connections": number | null,"count_ubco_as_ubc": boolean,"created_at": string,"daily_invite_target": number | null,"density": string,"discipline_priority": (Database["public"]['Enums']["discipline"])[],"email_notifications": boolean,"job_country": string,"job_exclude_keywords": (string)[],"job_provinces": (string)[],"job_seniority": string,"job_titles": (string)[],"monthly_note_allowance": number | null,"my_interests": string | null,"my_program_text": string | null,"my_school_text": string | null,"networking_goal": string | null,"no_response_days": number,"note_char_limit": number,"notify_interviews": boolean,"notify_reminders": boolean,"overall_target": number,"pause_reason": string | null,"paused": boolean,"paused_at": string | null,"project_start_date": string,"stale_pending_days": number,"text_size": string,"theme": string,"timezone": string,"updated_at": string,"user_id": string,"weekly_invite_cap": number | null,"weekly_summary": boolean
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"count_ubco_as_ubc"?: boolean,"created_at"?: string,"daily_invite_target"?: number | null,"density"?: string,"discipline_priority"?: (Database["public"]['Enums']["discipline"])[],"email_notifications"?: boolean,"job_country"?: string,"job_exclude_keywords"?: (string)[],"job_provinces"?: (string)[],"job_seniority"?: string,"job_titles"?: (string)[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"no_response_days"?: number,"note_char_limit"?: number,"notify_interviews"?: boolean,"notify_reminders"?: boolean,"overall_target"?: number,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"text_size"?: string,"theme"?: string,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null,"weekly_summary"?: boolean
+                  }
+                  Update: {
+                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"count_ubco_as_ubc"?: boolean,"created_at"?: string,"daily_invite_target"?: number | null,"density"?: string,"discipline_priority"?: (Database["public"]['Enums']["discipline"])[],"email_notifications"?: boolean,"job_country"?: string,"job_exclude_keywords"?: (string)[],"job_provinces"?: (string)[],"job_seniority"?: string,"job_titles"?: (string)[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"no_response_days"?: number,"note_char_limit"?: number,"notify_interviews"?: boolean,"notify_reminders"?: boolean,"overall_target"?: number,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"text_size"?: string,"theme"?: string,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null,"weekly_summary"?: boolean
                   }
                   Relationships: [
                     
@@ -805,11 +885,39 @@ isOneToOne: false
 "apply_again":
 { Args: { "p_id": string,"p_stage"?: Database["public"]['Enums']["application_stage"] }; Returns: string
                            },
+"claim_due_saved_searches":
+{ Args: { "p_lease_seconds": number,"p_limit": number }; Returns: {
+              "alert_frequency": string,
+"alert_hour": number,
+"alert_weekday": number,
+"baseline_at": string | null,
+"created_at": string,
+"email_digest": boolean,
+"id": string,
+"last_error": string | null,
+"last_run_at": string | null,
+"lease_until": string | null,
+"name": string,
+"next_run_at": string | null,
+"query": NonNullable<Json>,
+"query_version": number,
+"updated_at": string,
+"user_id": string
+            }[]
+                          SetofOptions: {
+        from: "*"
+        to: "saved_searches"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
 "consume_ai_quota":
 { Args: { "p_limit": number,"p_user": string }; Returns: boolean
                            },
 "delete_invitation":
 { Args: { "p_candidate_id": string }; Returns: undefined
+                           },
+"deliver_alert":
+{ Args: { "p_href": string,"p_label": string,"p_run_key": string,"p_search": string }; Returns: string
                            },
 "hit_rate_limit":
 { Args: { "p_bucket": string,"p_max": number,"p_window_seconds": number }; Returns: boolean
@@ -827,12 +935,18 @@ isOneToOne: false
               "idx": number,"job_id": string,"line_id": string,"similarity": number
             }[]
                            },
+"notify_user":
+{ Args: { "p_body": string,"p_data"?: Json,"p_dedupe": string,"p_href": string,"p_kind": string,"p_title": string,"p_user": string }; Returns: string
+                           },
 "pending_requirement_embeddings":
 { Args: { "p_limit": number }; Returns: {
               "idx": number,"job_id": string,"text": string
             }[]
                            },
 "prune_jobs":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"prune_notifications":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
 "prune_rate_limits":

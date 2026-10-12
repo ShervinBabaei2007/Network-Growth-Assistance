@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { LogOut } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
+import { NotificationBell } from "@/components/alerts/notification-bell";
 import { MobileNav, SidebarNav } from "@/components/app-nav";
 import { AppearanceSync } from "@/components/appearance-sync";
 import { Button } from "@/components/ui/button";
@@ -29,12 +30,17 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
               <AccountEmail />
             </Suspense>
           </div>
-          <form action={signOut}>
-            <Button type="submit" variant="ghost" size="sm">
-              <LogOut aria-hidden />
-              Sign out
-            </Button>
-          </form>
+          <div className="flex items-center gap-1">
+            <Suspense fallback={null}>
+              <NotificationBell />
+            </Suspense>
+            <form action={signOut}>
+              <Button type="submit" variant="ghost" size="sm">
+                <LogOut aria-hidden />
+                Sign out
+              </Button>
+            </form>
+          </div>
         </header>
         <Suspense fallback={null}>
           <PauseBanner />

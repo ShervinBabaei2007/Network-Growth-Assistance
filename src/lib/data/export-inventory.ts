@@ -37,6 +37,10 @@ export const EXPORTED_TABLES = [
   "application_contacts",
   "application_reminders",
   "application_documents",
+  "saved_searches",
+  "saved_search_matches",
+  "notifications",
+  "email_deliveries",
 ] as const;
 
 /** Exported in part, by the export route itself. */

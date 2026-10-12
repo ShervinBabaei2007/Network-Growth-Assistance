@@ -53,3 +53,38 @@ export async function deleteTestRows(table: string, filters: Record<string, stri
   const res = await fetch(`${url}/rest/v1/${table}?${new URLSearchParams(filters)}`, { method: "DELETE", headers: { apikey: key, Authorization: `Bearer ${key}` } });
   if (!res.ok) throw new Error(`Couldn't delete test rows from ${table}: ${res.status}`);
 }
+
+/** A call to the local Supabase REST API with the server key, for test setup and cleanup. */
+export async function adminRest(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<unknown> {
+  const url = localEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const key = localEnv("SUPABASE_SECRET_KEY");
+  if (!url || !key) throw new Error("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY for test setup.");
+  const res = await fetch(`${url}/rest/v1/${path}`, {
+    method,
+    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: "return=representation" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${method} ${path}: ${res.status} ${await res.text()}`);
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+/** Calls a cron route the way pg_cron does, with CRON_SECRET from .env.local. */
+export async function runCron(route: "alerts" | "crawl" | "daily", base = "http://localhost:3000") {
+  const secret = localEnv("CRON_SECRET");
+  if (!secret) throw new Error("Set CRON_SECRET in .env.local to run cron routes in tests.");
+  const res = await fetch(`${base}/api/cron/${route}`, { method: "POST", headers: { Authorization: `Bearer ${secret}` } });
+  if (!res.ok) throw new Error(`cron ${route}: ${res.status} ${await res.text()}`);
+  return res.json() as Promise<Record<string, unknown>>;
+}
+
+/** The newest email Mailpit received for an address, as text, or null. */
+export async function latestEmail(to: string, subject?: RegExp): Promise<{ subject: string; text: string } | null> {
+  const list = await (await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:${to}`)}`)).json();
+  for (const m of list.messages ?? []) {
+    if (subject && !subject.test(m.Subject)) continue;
+    const msg = await (await fetch(`${MAILPIT}/api/v1/message/${m.ID}`)).json();
+    return { subject: msg.Subject, text: msg.Text };
+  }
+  return null;
+}

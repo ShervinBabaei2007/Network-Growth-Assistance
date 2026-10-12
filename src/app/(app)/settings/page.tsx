@@ -21,7 +21,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DISCIPLINE_LABELS } from "@/lib/domain";
 import { createClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
 import { normalizeAppearance } from "@/lib/appearance";
+import { updateNotificationSettings } from "@/app/(app)/jobs/searches/actions";
+import { emailConfigured } from "@/lib/email/mailer";
 import { AiKeySection } from "./ai-key-section";
 import { AppearanceForm } from "./appearance-form";
 
@@ -73,6 +76,31 @@ async function SettingsContent() {
           <Field id="noResponseDays" label="Suggest after this many days without a reply">
             <Input id="noResponseDays" name="noResponseDays" type="number" min={1} max={365} defaultValue={s.no_response_days} required className="w-28" />
           </Field>
+        </ActionForm>
+      </Section>
+      <Section id="notifications" title="Notifications" description="What appears in your notifications (the bell at the top). Saved-search alerts are set on each search.">
+        <ActionForm action={updateNotificationSettings} submitLabel="Save">
+          <div className="grid gap-2 text-sm">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="notifyReminders" defaultChecked={s.notify_reminders} className="size-4 accent-primary" /> Reminders when they&apos;re due
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="notifyInterviews" defaultChecked={s.notify_interviews} className="size-4 accent-primary" /> Interviews in the next 24 hours
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="weeklySummary" defaultChecked={s.weekly_summary} className="size-4 accent-primary" /> A summary of my job search every Monday
+            </label>
+            {emailConfigured() ? (
+              <label className="flex items-center gap-2">
+                <input type="checkbox" name="emailNotifications" defaultChecked={s.email_notifications} className="size-4 accent-primary" /> Allow alert emails (each saved search also has its own email switch)
+              </label>
+            ) : (
+              <p className="text-xs text-muted-foreground">Email isn&apos;t set up on this server, so alerts appear only in the app.</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Emails list job titles, companies and links only, with no tracking. Every email has a one-click unsubscribe link. Read notifications are deleted after 90 days.
+            </p>
+          </div>
         </ActionForm>
       </Section>
       <Section title="Pause outreach" description="Use this if LinkedIn shows a warning, a restriction or an invitation limit.">
@@ -288,18 +316,20 @@ function MoveButton({
 }
 
 function Section({
+  id,
   title,
   description,
   children,
   className,
 }: {
+  id?: string;
   title: string;
   description: string;
   children: ReactNode;
   className?: string;
 }) {
   return (
-    <Card className={className}>
+    <Card id={id} className={cn("scroll-mt-6", className)}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>

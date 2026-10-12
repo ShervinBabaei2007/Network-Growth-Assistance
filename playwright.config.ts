@@ -24,7 +24,16 @@ export default defineConfig({
     url: "http://localhost:3000/login",
     reuseExistingServer: true,
     // Discover and Jobs use built-in fictional datasets in tests: no network calls, no API keys.
-    env: { DISCOVERY_FIXTURES: "1", JOBS_FIXTURES: "1" },
+    // Alert emails go to local Mailpit's SMTP port; the token secret is for tests only.
+    env: {
+      DISCOVERY_FIXTURES: "1",
+      JOBS_FIXTURES: "1",
+      SMTP_HOST: "127.0.0.1",
+      SMTP_PORT: "54325",
+      SMTP_FROM: "Network Growth <alerts@example.test>",
+      APP_URL: "http://localhost:3000",
+      EMAIL_TOKEN_SECRET: "e2e-only-not-a-real-secret-0123456789abcdef",
+    },
     timeout: 120_000,
   },
 });

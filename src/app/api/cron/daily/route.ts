@@ -20,6 +20,8 @@ export async function GET(request: NextRequest) {
     if (pruneError) log("error", "cron.daily", "jobs_prune_failed", { message: pruneError.message });
     const { data: limitsPruned, error: limitsError } = await admin.rpc("prune_rate_limits");
     if (limitsError) log("error", "cron.daily", "rate_limits_prune_failed", { message: limitsError.message });
+    const { error: notesError } = await admin.rpc("prune_notifications");
+    if (notesError) log("error", "cron.daily", "notifications_prune_failed", { message: notesError.message });
     log(summary.failed ? "warn" : "info", "cron.daily", "finished", { ...summary, jobsPruned: pruned ?? 0, rateLimitsPruned: limitsPruned ?? 0 });
     // Counts only: no names, profile data or user ids leave the server.
     return NextResponse.json({ ok: true, ...summary, jobsPruned: pruned ?? 0 });

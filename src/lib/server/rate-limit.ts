@@ -13,6 +13,7 @@ export const LIMITS = {
   checkFit: { bucket: "jobs.check_fit", max: 60, windowSeconds: 3600, message: "That's a lot of fit checks for one hour. Try again a little later." },
   resumeUpload: { bucket: "jobs.resume_upload", max: 20, windowSeconds: 86400, message: "You've uploaded 20 resumes today. Try again tomorrow." },
   export: { bucket: "account.export", max: 10, windowSeconds: 3600, message: "You've exported your data several times this hour. Try again later." },
+  saveSearch: { bucket: "alerts.save_search", max: 30, windowSeconds: 86400, message: "You've saved or changed many searches today. Try again tomorrow." },
 } as const;
 
 export type Limit = (typeof LIMITS)[keyof typeof LIMITS];

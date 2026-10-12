@@ -13,6 +13,7 @@ const toast = (page: Page, text: string | RegExp) => page.getByTestId("toast").f
 test("track an application from save to offer", async ({ page, context }) => {
   test.setTimeout(240_000);
   await signIn(page, uniqueEmail("apps"), "/jobs");
+  await expect(page.getByRole("heading", { name: /jobs? from the last/i })).toBeVisible();
   test.skip(!(await page.getByText("Showing fictional sample employers").isVisible()), "Dev server isn't running with JOBS_FIXTURES=1");
 
   // An empty tracker explains itself.

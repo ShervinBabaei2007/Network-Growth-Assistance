@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Building2, FileText, Plus, Search, SlidersHorizontal } from "lucide-react";
 import type { TierKey } from "@/components/jobs/job-visuals";
 import { TIER_STYLE } from "@/components/jobs/job-visuals";
-import { JobCard, type CardJob } from "@/components/jobs/job-card";
+import { JobCard } from "@/components/jobs/job-card";
 import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
 import { NativeSelect } from "@/components/native-select";
@@ -14,28 +14,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { AtsKind } from "@/lib/job-postings/ats/types";
-import { dedupeJobs, type DedupeItem } from "@/lib/job-postings/dedupe";
-import { chooseRange, expansionNotice, parseRange, RANGES, rangeSince, relatedTitles, titleQuery, type Range } from "@/lib/job-postings/feed";
-import { activeFilterCount, matchesFilters, parseFilters, type Filters } from "@/lib/job-postings/filters";
-import { explainFit, prefilterScore } from "@/lib/job-postings/fit";
+import { expansionNotice, RANGES, relatedTitles, type Range } from "@/lib/job-postings/feed";
+import { activeFilterCount, type Filters } from "@/lib/job-postings/filters";
+import { explainFit } from "@/lib/job-postings/fit";
 import { timeAgo } from "@/lib/job-postings/labels";
-import { LEVEL_LABELS, LEVELS, SENIORITY_LEVELS, WORKPLACE_LABELS } from "@/lib/job-postings/levels";
-import { searchProviders } from "@/lib/job-postings/providers/registry";
-import { rankScore } from "@/lib/job-postings/rank";
-import { byPriority } from "@/lib/job-postings/regions";
+import { LEVEL_LABELS, LEVELS, WORKPLACE_LABELS } from "@/lib/job-postings/levels";
 import { StoredFit } from "@/lib/job-postings/schemas";
-import { providerTrouble, refreshFromProviders, type SourceNotice } from "@/lib/job-postings/search";
-import { chunk, loadActiveResume, MAX_SCORED_PER_VIEW, scoreJobs } from "@/lib/job-postings/service";
+import { providerTrouble } from "@/lib/job-postings/search";
 import { jobServices } from "@/lib/job-postings/services";
 import { alsoListedOn, jobSource } from "@/lib/job-postings/source";
 import { externalSearchLinks } from "@/lib/job-postings/external-search";
 import { skillsIn } from "@/lib/job-postings/taxonomy";
-import { scheduleVerifyPending } from "@/lib/job-postings/verify-job";
-import { FIXTURE_LINK_PREFIX, isFixtureLink } from "@/lib/job-postings/verify-url";
-import { ANYWHERE, countryName, countryOptions, currencyOf, isCountryCode, scopeFor } from "@/lib/geo/countries";
-import { PROVINCE_CODES, PROVINCE_NAMES, SENIORITY, SENIORITY_LABELS, type ProvinceCode, type Seniority } from "@/lib/job-postings/types";
+import { ANYWHERE, countryOptions } from "@/lib/geo/countries";
+import { PROVINCE_CODES, PROVINCE_NAMES, SENIORITY, SENIORITY_LABELS, type ProvinceCode } from "@/lib/job-postings/types";
 import { createClient } from "@/lib/supabase/server";
+import { describeSearch, fromSearchParams, searchOnly } from "@/lib/job-postings/feed-query";
+import { emailConfigured } from "@/lib/email/mailer";
+import { SaveSearch } from "@/components/alerts/save-search";
+import { FEED_PAGE_SIZE, loadFeed, MAX_FEED_ROWS } from "@/lib/job-postings/feed-service";
 import { cn } from "@/lib/utils";
 import { saveJobPreferences } from "./actions";
 
@@ -51,9 +47,7 @@ const TABS = [
   { key: "saved", label: "Saved & applied", tier: "good" },
 ] as const;
 type Tab = (typeof TABS)[number]["key"];
-const PAGE = 25;
-/** The most postings one search loads. */
-const MAX_ROWS = 1000;
+const PAGE = FEED_PAGE_SIZE;
 
 export default function JobsPage({ searchParams }: PageProps<"/jobs">) {
   return (
@@ -95,29 +89,6 @@ function SearchingState() {
   );
 }
 
-const JOB_FIELDS =
-  "id, title, company, city, province, country, countries, remote, workplace_type, posted_at, date_source, date_note, source, user_id, employer_id, salary, salary_min, salary_max, salary_currency, salary_period, employment_type, experience_level, level_source, apply_url, verification_status, verification_note, closed_at, description, dedupe_key, desc_fingerprint, description_is_partial, canonical_url";
-type Row = CardJob & {
-  employer_id: string | null;
-  salary_min: number | null;
-  salary_max: number | null;
-  salary_currency: string | null;
-  salary_period: string | null;
-  description: string;
-  dedupe_key: string | null;
-  desc_fingerprint: string | null;
-  description_is_partial: boolean;
-  canonical_url: string | null;
-};
-type EmployerInfo = { name: string; ats: AtsKind; careers_url: string | null };
-
-/** A province named in the "where" box ("BC", "Ontario"), if any. */
-function provinceIn(where: string): ProvinceCode | null {
-  const w = where.trim().toLowerCase();
-  if (!w) return null;
-  return PROVINCE_CODES.find((p) => p.toLowerCase() === w || PROVINCE_NAMES[p].toLowerCase() === w) ?? null;
-}
-
 async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) {
   const raw = await searchParams;
   // Checkbox groups arrive as repeated params (level=a&level=b): joined, they read like "a,b".
@@ -128,161 +99,21 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims.sub;
   const services = jobServices();
+  if (!userId) return <LoadError what="postings" />;
 
-  const [{ data: settings }, resume, { data: lastRun }, { count: employerCount }, { data: states }] = await Promise.all([
-    supabase.from("settings").select("job_titles, job_country, job_provinces, job_seniority, job_exclude_keywords").single(),
-    loadActiveResume(supabase),
+  const query = fromSearchParams(raw);
+  const [feed, { data: lastRun }, { count: employerCount }, { data: me }] = await Promise.all([
+    loadFeed(supabase, userId, query, { refresh: true }),
     supabase.from("job_crawl_runs").select("finished_at").not("finished_at", "is", null).order("started_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("employers").select("id", { count: "exact", head: true }).neq("status", "disabled").neq("ats", "fixture"),
-    supabase.from("job_user_states").select("job_id, status"),
+    supabase.from("settings").select("timezone").eq("user_id", userId).single(),
   ]);
-  if (!settings || !userId) return <LoadError what="postings" />;
+  if ("error" in feed) return <LoadError what="postings" />;
 
-  const q = sp.q.trim().slice(0, 120);
-  const where = sp.where.trim().slice(0, 80);
-  const allTitles = sp.all === "1";
-  const searched = q ? [q] : allTitles ? [] : settings.job_titles;
-  const explicitRange = parseRange(sp.range);
-  // The user's level setting is the default level filter until they choose levels (or none) themselves.
-  const levelChosen = raw.level !== undefined;
-  const filters: Filters = levelChosen ? parseFilters(sp) : { ...parseFilters(sp), levels: SENIORITY_LEVELS[settings.job_seniority as Seniority], levelStrict: false };
-  const tab: Tab = (TABS.find((t) => t.key === sp.tab)?.key ?? "all") as Tab;
-  const page = Math.max(1, Number(sp.page) || 1);
-  // One country at a time: the one in the URL, else the user's own ("*" = remote jobs open anywhere).
-  const askedCountry = sp.country.trim().toUpperCase();
-  const country = askedCountry === ANYWHERE || isCountryCode(askedCountry) ? askedCountry : settings.job_country;
-  const inCanada = country === "CA";
-  const currency = currencyOf(country);
-  const provinces = byPriority(settings.job_provinces);
-  const whereProvince = inCanada ? provinceIn(where) : null;
-  const provFilter = !inCanada ? [] : whereProvince ? [whereProvince] : sp.prov.split(",").filter((p): p is ProvinceCode => (PROVINCE_CODES as readonly string[]).includes(p));
-  const shownProvinces = provFilter.length ? provFilter : provinces;
-  const placeName = country === ANYWHERE ? "remote jobs open anywhere" : inCanada ? shownProvinces.map((p) => PROVINCE_NAMES[p]).join(", ") : (countryName(country) ?? country);
+  const { settings, resume, notices, newlyFetched, range, expandedFrom, firstCount, duplicatesOf, matches: matchBy, states: stateBy, employers: employerBy, excludedCount, tabs: inTab } = feed;
+  const { q, where, allTitles, searched, explicitRange, levelChosen, filters, tab, page, askedCountry, country, inCanada, currency, provinces, whereProvince, provFilter, placeName } = feed.resolved;
+  const providerNames = feed.providers;
 
-  // 1. Fresh results from the search providers (Jobicy; Adzuna if configured), cached per search.
-  const registry = searchProviders();
-  const windowRange: Range = explicitRange ?? RANGES.find((r) => r.key === "7d")!;
-  let notices: SourceNotice[] = [];
-  if (searched[0]) {
-    notices = await refreshFromProviders(registry.providers, {
-      what: searched[0],
-      country,
-      where: whereProvince ? PROVINCE_NAMES[whereProvince] : where || null,
-      maxDaysOld: Math.round(windowRange.hours / 24),
-      page: Math.max(1, Math.ceil((page * PAGE) / 50)),
-    });
-    // New results start unverified: check their links right after this page is sent.
-    if (registry.providers.length) scheduleVerifyPending();
-  }
-  // Listings just fetched (not from the cache) that are still being checked.
-  const newlyFetched = notices.filter((n) => n.outcome === "ok").reduce((sum, n) => sum + n.count, 0);
-
-  // 2. Every source, in one query: open, dated, in the window, verified (or unchecked when asked), open to the
-  // country (there, or remote and open to it, its region or anywhere) and, in Canada, in the user's provinces.
-  const statuses: ("verified" | "pending_validation")[] = filters.includeUnchecked ? ["verified", "pending_validation"] : ["verified"];
-  const scope = scopeFor(country);
-  const placeOr = `province.in.(${shownProvinces.join(",")}),and(province.is.null,remote.is.true)`;
-  let query = supabase
-    .from("jobs")
-    .select(JOB_FIELDS)
-    .gte("posted_at", rangeSince(windowRange))
-    .is("closed_at", null)
-    .neq("date_source", "unknown")
-    .in("verification_status", statuses)
-    .overlaps("countries", scope)
-    .order("posted_at", { ascending: false })
-    .limit(MAX_ROWS);
-  let excludedQuery = supabase
-    .from("jobs")
-    .select("id", { count: "exact", head: true })
-    .gte("posted_at", rangeSince(windowRange))
-    .is("closed_at", null)
-    .in("verification_status", ["failed_validation", "unavailable", "expired"])
-    .overlaps("countries", scope);
-  if (inCanada) {
-    query = query.or(placeOr);
-    excludedQuery = excludedQuery.or(placeOr);
-  }
-  const tsq = searched.length ? titleQuery(searched) : null;
-  if (tsq) {
-    query = query.textSearch("fts", tsq, { config: "english" });
-    excludedQuery = excludedQuery.textSearch("fts", tsq, { config: "english" });
-  }
-  if (services.fixtures) {
-    // Fixture mode (tests and demos): only fictional jobs and your own pastes, whatever real data the database holds.
-    const fixtureOnly = `apply_url.like."${FIXTURE_LINK_PREFIX}*",user_id.not.is.null`;
-    query = query.or(fixtureOnly);
-    excludedQuery = excludedQuery.or(fixtureOnly);
-  }
-  if (where && !whereProvince) {
-    const like = `%${where.replace(/[%_,()]/g, " ")}%`;
-    query = query.or(`city.ilike.${like},location_text.ilike.${like}`);
-  }
-  const stateBy = new Map((states ?? []).map((s) => [s.job_id, s.status]));
-  const savedIds = (states ?? []).filter((s) => s.status !== "dismissed").map((s) => s.job_id);
-  const [fresh, excludedCount, ...savedParts] = await Promise.all([query, excludedQuery, ...chunk(savedIds.slice(0, 300), 100).map((ids) => supabase.from("jobs").select(JOB_FIELDS).in("id", ids))]);
-  if (fresh.error || savedParts.some((p) => p.error)) return <LoadError what="postings" />;
-  const savedJobs = savedParts.flatMap((p) => (p.data ?? []) as unknown as Row[]);
-
-  // Where each posting came from (and a last guard: sample employers never show outside fixture mode).
-  const all = [...(fresh.data as unknown as Row[]), ...savedJobs];
-  const employerIds = [...new Set(all.map((j) => j.employer_id).filter((id): id is string => Boolean(id)))];
-  const employerParts = await Promise.all(chunk(employerIds, 100).map((ids) => supabase.from("employers").select("id, name, ats, careers_url").in("id", ids)));
-  const employerBy = new Map<string, EmployerInfo>(employerParts.flatMap((p) => (p.data ?? []).map((e) => [e.id, { name: e.name, ats: e.ats, careers_url: e.careers_url }] as const)));
-  const real = (j: Row) => services.fixtures || ((!j.employer_id || employerBy.get(j.employer_id)?.ats !== "fixture") && (Boolean(j.user_id) || !isFixtureLink(j.apply_url)));
-
-  const excludedWords = settings.job_exclude_keywords.map((k) => k.toLowerCase());
-  const filtered = (fresh.data as unknown as Row[]).filter((j) => real(j) && stateBy.get(j.id) !== "dismissed" && !excludedWords.some((k) => j.title.toLowerCase().includes(k)) && matchesFilters(j, filters, currency));
-
-  // 3. Freshness: the shortest window with enough verified results, unless the user chose one.
-  const verifiedWithin = (r: Range) => filtered.filter((j) => j.verification_status === "verified" && j.posted_at >= rangeSince(r)).length;
-  const { range, expandedFrom, firstCount } = chooseRange(verifiedWithin, explicitRange);
-  const inWindow = filtered.filter((j) => j.posted_at >= rangeSince(range));
-
-  // 4. One copy of each job, the most direct verified link first.
-  const employerHosted = (j: Row) => {
-    if (j.source !== "ats" || !j.apply_url || !j.employer_id) return false;
-    try {
-      return !/greenhouse|lever|ashbyhq|smartrecruiters|workable|recruitee/.test(new URL(j.apply_url).hostname);
-    } catch {
-      return false;
-    }
-  };
-  const merged = dedupeJobs(inWindow.map((j) => ({ ...j, source: j.source as DedupeItem["source"], employerHosted: employerHosted(j) })));
-  const duplicatesOf = new Map(merged.map((m) => [m.job.id, m.duplicates]));
-  const rows = merged.map((m) => m.job as unknown as Row);
-
-  // 5. Fit: saved checks, and the rest now (rules and database queries; no outside calls).
-  const matchBy = new Map<string, { tier: TierKey; score: number; summary: string | null; results: unknown }>();
-  const scoreIds = [...new Set([...rows, ...savedJobs].map((j) => j.id))];
-  if (resume) {
-    const parts = await Promise.all(chunk(scoreIds, 100).map((part) => supabase.from("job_matches").select("job_id, fit_score, tier, summary, requirement_results, updated_at").eq("resume_id", resume.id).in("job_id", part)));
-    for (const m of parts.flatMap((p) => p.data ?? [])) if (Date.parse(m.updated_at) >= Date.parse(resume.updatedAt)) matchBy.set(m.job_id, { tier: m.tier, score: m.fit_score, summary: m.summary, results: m.requirement_results });
-    const todo = scoreIds.filter((id) => !matchBy.has(id)).slice(0, MAX_SCORED_PER_VIEW);
-    if (todo.length) {
-      await scoreJobs(supabase, userId, resume, todo, services.embedder);
-      const again = await Promise.all(chunk(todo, 100).map((part) => supabase.from("job_matches").select("job_id, fit_score, tier, summary, requirement_results").eq("resume_id", resume.id).in("job_id", part)));
-      for (const m of again.flatMap((p) => p.data ?? [])) matchBy.set(m.job_id, { tier: m.tier, score: m.fit_score, summary: m.summary, results: m.requirement_results });
-    }
-  }
-
-  // 6. Rank: fit, title, recency, location, source quality.
-  const resumeSkills = resume ? resume.profile.skills.map((s) => s.toLowerCase()) : [];
-  const ranked = rows
-    .map((j) => {
-      const m = matchBy.get(j.id);
-      const pre = resume && !m ? prefilterScore({ title: j.title, description: j.description }, resumeSkills, resume.applicant.years) : null;
-      return { j, score: rankScore(j, m ? { score: m.score, tier: m.tier } : null, pre, { searched: searched.length ? searched : settings.job_titles, provinces, country }) };
-    })
-    .sort((a, b) => b.score - a.score || b.j.posted_at.localeCompare(a.j.posted_at));
-
-  const inTab: Record<Tab, Row[]> = {
-    all: ranked.filter((x) => matchBy.get(x.j.id)?.tier !== "excluded").map((x) => x.j),
-    fit: ranked.filter((x) => ["strong", "good"].includes(matchBy.get(x.j.id)?.tier ?? "")).map((x) => x.j),
-    stretch: ranked.filter((x) => matchBy.get(x.j.id)?.tier === "stretch").map((x) => x.j),
-    excluded: ranked.filter((x) => matchBy.get(x.j.id)?.tier === "excluded").map((x) => x.j),
-    saved: savedJobs.filter(real),
-  };
   const list = inTab[tab];
   const pages = Math.max(1, Math.ceil(list.length / PAGE));
   const current = Math.min(page, pages);
@@ -306,7 +137,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
   const toasts = [
     tab === "all"
       ? verifiedCount
-        ? { key: `${searchKey}:count`, type: "success" as const, title: `${verifiedCount} verified ${label ? `${label} ` : ""}job${verifiedCount === 1 ? "" : "s"} found.${excludedCount.count ? ` ${excludedCount.count} unavailable listing${excludedCount.count === 1 ? " was" : "s were"} excluded.` : ""}` }
+        ? { key: `${searchKey}:count`, type: "success" as const, title: `${verifiedCount} verified ${label ? `${label} ` : ""}job${verifiedCount === 1 ? "" : "s"} found.${excludedCount ? ` ${excludedCount} unavailable listing${excludedCount === 1 ? " was" : "s were"} excluded.` : ""}` }
         : { key: `${searchKey}:count`, type: "info" as const, title: "No verified jobs were found." }
       : null,
     expandedFrom ? { key: `${searchKey}:expanded`, type: "info" as const, title: expansionNotice(firstCount, expandedFrom, range) } : null,
@@ -318,13 +149,13 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
       <ToastOnMount specs={toasts} />
       {/* On phones the results come first and the filters follow; side by side from lg up. */}
       <aside className="order-last grid gap-4 lg:sticky lg:top-6 lg:order-none" aria-label="Filters and preferences">
-        <FiltersPanel sp={sp} filters={filters} provinces={inCanada ? provinces : []} provFilter={provFilter} hrefBase={href} explicitRange={explicitRange} showAdzuna={registry.providers.some((p) => p.name === "adzuna")} showUsajobs={registry.providers.some((p) => p.name === "usajobs")} currency={currency} />
+        <FiltersPanel sp={sp} filters={filters} provinces={inCanada ? provinces : []} provFilter={provFilter} hrefBase={href} explicitRange={explicitRange} showAdzuna={providerNames.includes("adzuna")} showUsajobs={providerNames.includes("usajobs")} currency={currency} />
         <PreferencesCard settings={settings} />
         <div className="grid gap-1 px-1 text-xs text-muted-foreground">
           <p>
             Sources: {(employerCount ?? 0).toLocaleString("en-CA")} employers&apos; job boards ({lastRun?.finished_at ? `last read ${timeAgo(lastRun.finished_at)}` : "not read yet"}), remote jobs from Jobicy and Remotive, jobs in Europe and the UK from Arbeitnow
-            {registry.providers.some((p) => p.name === "usajobs") ? ", U.S. federal jobs from USAJOBS" : ""}
-            {registry.providers.some((p) => p.name === "adzuna") ? ", and Adzuna job search" : ""}.
+            {providerNames.includes("usajobs") ? ", U.S. federal jobs from USAJOBS" : ""}
+            {providerNames.includes("adzuna") ? ", and Adzuna job search" : ""}.
           </p>
           <p>Jobicy and Remotive links go to their own listing pages, not the employer&apos;s. Remotive shares jobs 24 hours after it posts them.</p>
           <p>
@@ -366,6 +197,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
           {explicitRange ? <input type="hidden" name="range" value={explicitRange.key} /> : null}
         </form>
         <ExternalSearchRow what={searched[0] ?? ""} where={where || null} country={country} />
+        <SaveSearch params={searchOnly(query).params as Record<string, string>} suggestedName={describeSearch(query, settings)} emailAvailable={emailConfigured()} timeZone={me?.timezone ?? "UTC"} />
 
         {!resume ? (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-info-soft p-4">
@@ -388,7 +220,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
               {list.length ? `Showing ${(current - 1) * PAGE + 1}–${Math.min(current * PAGE, list.length)} of ${list.length.toLocaleString("en-CA")} matching jobs` : "No matching jobs"} in{" "}
               {placeName}
               {where && !whereProvince ? ` near ${where}` : ""}
-              {(fresh.data?.length ?? 0) >= MAX_ROWS ? ` · showing the newest ${MAX_ROWS.toLocaleString("en-CA")}` : ""}
+              {feed.loadedRows >= MAX_FEED_ROWS ? ` · showing the newest ${MAX_FEED_ROWS.toLocaleString("en-CA")}` : ""}
             </p>
           </div>
           <nav aria-label="Posted within" className="inline-flex flex-wrap rounded-lg border bg-card p-0.5 shadow-xs">
@@ -408,7 +240,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
           </nav>
         </div>
 
-        {expandedFrom || trouble || excludedCount.count || !filters.includeUnchecked || newlyFetched ? (
+        {expandedFrom || trouble || excludedCount || !filters.includeUnchecked || newlyFetched ? (
           <div className="grid gap-1 text-sm">
             {expandedFrom ? <p className="rounded-lg border border-info/30 bg-info-soft px-3 py-2">{expansionNotice(firstCount, expandedFrom, range)}</p> : null}
             {trouble ? <p className="rounded-lg border border-warning/40 bg-warning-soft px-3 py-2">Some job sources are temporarily unavailable. Results from the others are shown.</p> : null}
@@ -417,9 +249,9 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
                 {newlyFetched} new listing{newlyFetched === 1 ? " was" : "s were"} found and {newlyFetched === 1 ? "its link is" : "their links are"} being checked now. Reload in a minute to see the ones that check out.
               </p>
             ) : null}
-            {excludedCount.count ? (
+            {excludedCount ? (
               <p className="text-muted-foreground">
-                {excludedCount.count} listing{excludedCount.count === 1 ? " was" : "s were"} left out because {excludedCount.count === 1 ? "its" : "their"} link expired, broke or failed verification.
+                {excludedCount} listing{excludedCount === 1 ? " was" : "s were"} left out because {excludedCount === 1 ? "its" : "their"} link expired, broke or failed verification.
               </p>
             ) : null}
             {!filters.includeUnchecked ? (
@@ -465,10 +297,10 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
                 <JobCard
                   key={j.id}
                   job={j}
-                  fit={m ? { tier: m.tier, score: m.score, summary: m.summary } : null}
+                  fit={m ? { tier: m.tier as TierKey, score: m.score, summary: m.summary } : null}
                   explanation={fit?.success ? explainFit(fit.data.requirements, fit.data.results, (t) => skillsIn(t).map((s) => s.name)) : null}
                   skills={skillsIn(`${j.title}\n${j.description}`).map((s) => s.name)}
-                  status={(stateBy.get(j.id) as "saved" | "applied" | "dismissed" | undefined) ?? null}
+                  status={stateBy.get(j.id) ?? null}
                   source={jobSource(j, employer)}
                   alsoOn={[...new Set(twins.map((t) => alsoListedOn(t.source)))]}
                 />

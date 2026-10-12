@@ -94,9 +94,14 @@ export async function JobSearchSummary() {
           ) : (
             <p className="text-sm text-muted-foreground">None scheduled.</p>
           )}
-          <Link href="/applications" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "mt-1 justify-self-start")}>
-            Open Applications
-          </Link>
+          <div className="mt-1 flex flex-wrap gap-2">
+            <Link href="/applications" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Open Applications
+            </Link>
+            <Link href="/notifications" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+              All notifications
+            </Link>
+          </div>
         </section>
       </CardContent>
     </Card>

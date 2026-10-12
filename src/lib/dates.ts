@@ -75,7 +75,10 @@ export function localDateTimeToInstant(local: string, timeZone: string): Date {
   const [date, time = "12:00"] = local.split("T");
   const [h, m] = time.split(":").map(Number);
   const guess = Date.parse(`${date}T00:00:00Z`) + (h * 60 + m) * 60_000;
-  let instant = guess - zoneOffsetMs(guess, timeZone);
-  instant = guess - zoneOffsetMs(instant, timeZone);
-  return new Date(instant);
+  const first = guess - zoneOffsetMs(guess, timeZone);
+  const second = guess - zoneOffsetMs(first, timeZone);
+  // Either pass may land on the requested wall-clock time; if neither does, the time was
+  // skipped by a spring change, and the later candidate is the first moment after the gap.
+  const reads = (instant: number) => instant + zoneOffsetMs(instant, timeZone) === guess;
+  return new Date(reads(second) ? second : reads(first) ? first : Math.max(first, second));
 }

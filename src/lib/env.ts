@@ -18,6 +18,13 @@ const serverSchema = z.object({
   ADZUNA_APP_KEY: z.string().min(1).optional(),
   USAJOBS_API_KEY: z.string().min(1).optional(),
   USAJOBS_EMAIL: z.email().optional(),
+  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASS: z.string().min(1).optional(),
+  SMTP_FROM: z.string().min(3).optional(),
+  APP_URL: z.url().optional(),
+  EMAIL_TOKEN_SECRET: z.string().min(32).optional(),
 });
 
 /** Server-only secrets. Never import this from a client component. */
@@ -37,6 +44,13 @@ export function serverEnv() {
     ADZUNA_APP_KEY: process.env.ADZUNA_APP_KEY || undefined,
     USAJOBS_API_KEY: process.env.USAJOBS_API_KEY || undefined,
     USAJOBS_EMAIL: process.env.USAJOBS_EMAIL || undefined,
+    SMTP_HOST: process.env.SMTP_HOST || undefined,
+    SMTP_PORT: process.env.SMTP_PORT || undefined,
+    SMTP_USER: process.env.SMTP_USER || undefined,
+    SMTP_PASS: process.env.SMTP_PASS || undefined,
+    SMTP_FROM: process.env.SMTP_FROM || undefined,
+    APP_URL: process.env.APP_URL || undefined,
+    EMAIL_TOKEN_SECRET: process.env.EMAIL_TOKEN_SECRET || undefined,
   });
 }
 
