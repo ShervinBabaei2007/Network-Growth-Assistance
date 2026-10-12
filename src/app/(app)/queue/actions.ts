@@ -8,6 +8,7 @@ import { suggestNote } from "@/lib/notes";
 import { rewriteNoteWithAI } from "@/lib/notes/ai-rewrite";
 import { buildTodaysQueue } from "@/lib/jobs/daily-queue";
 import { actionContext, logActivity } from "@/lib/server/action-context";
+import { getUserLLM } from "@/lib/ai";
 
 export async function rebuildQueue(): Promise<FormState> {
   const ctx = await actionContext();
@@ -95,7 +96,11 @@ export async function suggestNoteWithAI(queueId: string): Promise<RewriteRespons
     candidateNotes: c.notes,
     me: { school: me.my_school_text, program: me.my_program_text, interests: me.my_interests },
   };
-  const result = await rewriteNoteWithAI(facts, suggestNote(facts, me.note_char_limit), me.note_char_limit);
+  // The user's own key, or the server's within the daily allowance (charged before the call).
+  const ai = await getUserLLM(ctx.supabase, ctx.userId);
+  if (!ai.ok) return { ok: false, message: ai.reason };
+  if (!(await ai.charge())) return { ok: false, message: "Today's free AI uses are used up. The template note is still there." };
+  const result = await rewriteNoteWithAI(facts, suggestNote(facts, me.note_char_limit), me.note_char_limit, ai.llm);
   await logActivity(ctx, "note.rewrite", { candidate: item.candidate_id, ok: result.ok });
   if (!result.ok) return { ok: false, message: result.reason };
 

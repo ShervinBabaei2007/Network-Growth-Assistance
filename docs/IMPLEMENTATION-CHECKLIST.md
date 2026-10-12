@@ -7,6 +7,12 @@ Status words are kept separate on purpose:
 - **verified**: the stated checks passed.
 - **release-ready**: no critical gate is open.
 
+## Commits
+
+| Commit | Contents |
+|---|---|
+| `121de46` | Phases 0–1, as one commit. Several files mixed foundation and tracker changes, so they weren't split. |
+
 ## Scope of the first release
 
 - **Phase 0:** audit and production foundation.
@@ -85,7 +91,7 @@ Local data note: the local database holds the owner's own data. **Never run `db:
 | Overview: due reminders and the week's interviews | implemented, e2e | `src/components/applications/job-search-summary.tsx` |
 | Theme System/Light/Dark, density, text size; pre-paint; reduced motion | implemented, unit-tested, checked in a browser | `src/lib/appearance.ts`, `src/components/appearance-sync.tsx`, `globals.css` |
 | Contrast of token pairs, both themes | verified ≥ 4.5:1 (computed from tokens) | 18 pairs per theme |
-| Export / deletion cover the new tables | implemented, tested | inventory test, pgTAP cascade test |
+| Export / deletion cover the new tables | implemented, tested | Export: inventory test. Deletion: since Step 0 of Phases 2–4, `account_deletion.test.sql` checks that every `user_id` table cascades and that a seeded account leaves no rows. (Before that, interviews, reminders, documents and `rate_limits` weren't checked: corrected.) |
 
 ## Verification run (2026-10-12, end of Phases 0–1, local)
 
@@ -107,6 +113,27 @@ Local data note: the local database holds the owner's own data. **Never run `db:
 **Not done:**
 - Automated axe accessibility scan (`@axe-core/playwright` isn't installed). Keyboard paths were covered only by e2e (labelled selects, focus).
 - A manual screen-reader pass.
+
+## Fixes outside the roadmap
+
+| Item | Status | Evidence |
+|---|---|---|
+| Intro and connection-note AI rewrites used the server key without charging the daily allowance | fixed: both now use `getUserLLM` (own key, or server key after `charge()`) | `src/lib/ai/index.ts`, `src/lib/ai/user-llm.test.ts` |
+
+## Polish items (§6 of the improvement plan)
+
+| Item | Target phase | Status |
+|---|---|---|
+| Command palette; j/k/s/o/d/? shortcuts | 7 (settings and onboarding) | not started |
+| Remember searches/filters per track; 25/50/100 per page; mobile filter summary | 2 (saved searches) and 5 (tracks) | not started |
+| Compare 2–3 jobs | 3 (company view) | not started |
+| Hide companies or title patterns, with Undo; duplicate-paste warning | 2 | not started |
+| Copy a job summary; CSV export of saved/applied jobs; preferred external search links | 2 | external search links exist; the rest not started |
+| `.ics` for calendar events | 1 | done |
+| Optional Gemini employer search (after re-checking its terms) | 3 | not started |
+| Bulk tags/status in Candidates and People; weekly goal progress; snooze a person | 3 | not started |
+| Empty states, retryable errors, relative + absolute times, What's New | every phase | partial |
+| Visual regression and automated accessibility checks; retention of old notifications | 2 (retention), later (visual / axe) | not started |
 
 ## Decisions
 

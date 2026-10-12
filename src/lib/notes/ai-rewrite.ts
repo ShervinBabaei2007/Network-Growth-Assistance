@@ -27,7 +27,8 @@ const NoteOut = z.object({ note: z.string() });
 export type RewriteResult = { ok: true; text: string } | { ok: false; reason: string };
 
 /** A more natural version of the template note, checked by the same rules as a hand-written one. */
-export async function rewriteNoteWithAI(facts: NoteFacts, draft: string, limit: number, llm: LLMProvider = defaultLLM()): Promise<RewriteResult> {
+/** `llm` comes from getUserLLM, after its charge: never the server key directly. */
+export async function rewriteNoteWithAI(facts: NoteFacts, draft: string, limit: number, llm: LLMProvider): Promise<RewriteResult> {
   if (!llm.enabled) return { ok: false, reason: "AI suggestions aren't configured on this server." };
 
   const known = {

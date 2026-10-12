@@ -7,7 +7,7 @@ import { classifyCandidate } from "@/lib/classify";
 import { rescoreSearch } from "@/lib/discovery/agent";
 import { NetworkingCriteria } from "@/lib/discovery/criteria";
 import { identitySignature } from "@/lib/discovery/known-match";
-import { defaultLLM } from "@/lib/ai/default-llm";
+import { getUserLLM } from "@/lib/ai";
 import { rewriteIntro, suggestIntro, INTRO_LIMIT } from "@/lib/discovery/messages";
 import { loadPersonDetail } from "@/lib/discovery/results";
 import { startSearch } from "@/lib/discovery/service";
@@ -218,7 +218,11 @@ export async function generateIntro(personId: string, useAi: boolean): Promise<A
   if (!detail) return err("Unknown person.");
   const draft = suggestIntro(detail.introFacts, INTRO_LIMIT);
   if (!useAi) return { ok: true, text: draft };
-  const res = await rewriteIntro(defaultLLM(), detail.introFacts, draft, INTRO_LIMIT);
+  // The user's own key, or the server's within the daily allowance (charged before the call).
+  const ai = await getUserLLM(ctx.supabase, ctx.userId);
+  if (!ai.ok) return { ok: true, text: draft, message: ai.reason };
+  if (!(await ai.charge())) return { ok: true, text: draft, message: "Today's free AI uses are used up. Here's the suggested message without AI." };
+  const res = await rewriteIntro(ai.llm, detail.introFacts, draft, INTRO_LIMIT);
   if (!res.ok) return { ok: true, text: draft, message: res.reason };
   return { ok: true, text: res.text };
 }
