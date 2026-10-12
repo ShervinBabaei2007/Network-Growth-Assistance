@@ -1,5 +1,6 @@
 "use client";
 
+import { useStateToast } from "@/components/toast/use-state-toast";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { importLinkedInExport, type ExportState } from "./export-actions";
 
 export function ExportImport({ today }: { today: string }) {
   const [state, action, pending] = useActionState<ExportState, FormData>(importLinkedInExport, { status: "idle" });
+  useStateToast(state);
   const s = state.summary;
 
   return (
@@ -71,12 +73,12 @@ export function ExportImport({ today }: { today: string }) {
           </Button>
         ) : null}
         {state.status === "imported" ? (
-          <p role="status" className="text-sm">
+          <p className="text-sm">
             {state.message}
           </p>
         ) : null}
         {state.status === "error" ? (
-          <p role="alert" className="text-sm text-destructive">
+          <p className="text-sm text-destructive">
             {state.message}
           </p>
         ) : null}

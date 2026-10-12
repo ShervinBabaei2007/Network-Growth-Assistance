@@ -60,7 +60,14 @@ export function letterBlocks(doc: CoverLetterDoc, today = new Date()): Block[] {
 }
 
 /** "Sam-Lee-Resume-Northwind-Labs.pdf" */
-export function fileName(name: string | null, kind: "resume" | "cover_letter", company: string | null, ext: "pdf" | "docx"): string {
+export function fileName(name: string | null, kind: "resume" | "cv" | "cover_letter", company: string | null, ext: "pdf" | "docx"): string {
   const slug = (s: string) => s.normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-").slice(0, 40);
-  return [name ? slug(name) : null, kind === "resume" ? "Resume" : "Cover-Letter", company ? slug(company) : null].filter(Boolean).join("-") + `.${ext}`;
+  return [name ? slug(name) : null, kind === "resume" ? "Resume" : kind === "cv" ? "CV" : "Cover-Letter", company ? slug(company) : null].filter(Boolean).join("-") + `.${ext}`;
+}
+
+/** The blocks as plain text, one line each, for comparing versions. */
+export function blocksToText(blocks: Block[]): string {
+  return blocks
+    .map((b) => (b.kind === "spacer" ? "" : b.kind === "heading" ? b.text.toUpperCase() : b.kind === "bullet" ? `• ${b.text}` : b.kind === "entry" ? [`${b.left}${b.right ? `   ${b.right}` : ""}`, b.sub].filter(Boolean).join("\n") : b.text))
+    .join("\n");
 }

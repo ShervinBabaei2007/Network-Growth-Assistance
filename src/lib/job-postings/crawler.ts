@@ -1,19 +1,33 @@
 import "server-only";
 import type { Database } from "@/lib/supabase/database.types";
 import { adapterFor } from "./ats";
-import { BoardError, canadianPlace, type AtsAdapter, type AtsJob } from "./ats/types";
+import { BoardError, jobPlace, RateLimitedError, wantedScope, type AtsAdapter, type AtsJob, type JobDetail } from "./ats/types";
+import { jobDedupeKey, simhash64 } from "./dedupe";
 import { toVector, type Embedder } from "./embeddings";
 import { FIXTURE_EMPLOYERS } from "./fixtures";
+import { jobLevel, workplaceFromText } from "./levels";
 import { extractRequirements } from "./requirements";
 import type { Db } from "./service";
+import { checkJobLink } from "./verify-url";
 
 /**
  * Reads employers' public job boards on a schedule and keeps the shared `jobs` table
  * current. Runs with the admin client from the cron route. Outside requests grow with
  * the number of employers, never with the number of users.
+ *
+ * Boards list jobs worldwide; only jobs open to a country some user searches are kept
+ * (jobs there, or remote jobs open to it, its region or anywhere), so storage grows with
+ * the countries people choose, not with every board's whole list.
  */
 
-type Employer = Pick<Database["public"]["Tables"]["employers"]["Row"], "id" | "name" | "ats" | "board_token" | "etag" | "last_crawled_at" | "failures" | "canada_jobs">;
+/** The countries users search (each user's chosen country). Canada when nobody has chosen. */
+export async function searchedCountries(db: Db, fixtures = false): Promise<string[]> {
+  const { data } = await db.rpc("job_search_countries");
+  const list = (data ?? []).filter((c): c is string => typeof c === "string");
+  return [...new Set([...(list.length ? list : ["CA"]), ...(fixtures ? ["CA"] : [])])];
+}
+
+type Employer = Pick<Database["public"]["Tables"]["employers"]["Row"], "id" | "name" | "ats" | "board_token" | "etag" | "last_crawled_at" | "failures" | "matching_jobs" | "careers_url">;
 
 export const ACTIVE_INTERVAL_MIN = 30;
 export const QUIET_INTERVAL_MIN = 6 * 60;
@@ -47,6 +61,16 @@ export function dateJob(job: Pick<AtsJob, "postedAt" | "precision">, firstCrawl:
   return { postedAt: now.toISOString(), dateSource: "unknown" };
 }
 
+/**
+ * Which boards a crawl may read. Sample boards are read only in fixture mode, so fictional
+ * jobs never reach real users; and in fixture mode only sample boards are read: every board
+ * is served canned data there, so a real board would look empty and its real jobs would be
+ * closed as "no longer listed".
+ */
+export function dueBoardKinds(fixtures: boolean): { only: "fixture"; never?: undefined } | { only?: undefined; never: "fixture" } {
+  return fixtures ? { only: "fixture" } : { never: "fixture" };
+}
+
 /** In fixture mode, the sample employers exist and are due, so every crawl has something to read. */
 export async function ensureFixtureEmployers(db: Db) {
   await db.from("employers").upsert(
@@ -55,70 +79,106 @@ export async function ensureFixtureEmployers(db: Db) {
   );
 }
 
-async function withDescriptions(adapter: AtsAdapter, token: string, jobs: { job: AtsJob; needs: boolean }[]): Promise<Map<string, string>> {
-  const out = new Map<string, string>();
+async function withDetails(adapter: AtsAdapter, token: string, jobs: { job: AtsJob; needs: boolean }[]): Promise<Map<string, JobDetail>> {
+  const out = new Map<string, JobDetail>();
   if (!adapter.fetchDetail) return out;
   const wanted = jobs.filter((j) => j.needs).slice(0, DETAILS_PER_BOARD);
   for (let i = 0; i < wanted.length; i += 5) {
     const batch = wanted.slice(i, i + 5);
-    const texts = await Promise.all(batch.map(({ job }) => adapter.fetchDetail!(token, job.externalId, { signal: AbortSignal.timeout(10_000) }).catch(() => null)));
-    batch.forEach(({ job }, k) => texts[k] && out.set(job.externalId, texts[k]!));
+    const details = await Promise.all(batch.map(({ job }) => adapter.fetchDetail!(token, job.externalId, { signal: AbortSignal.timeout(10_000) }).catch(() => null)));
+    batch.forEach(({ job }, k) => details[k] && out.set(job.externalId, details[k]!));
   }
   return out;
 }
 
+/**
+ * Whether a board job's link can be shown as verified. The evidence is the employer's own
+ * board listing the job in this read, with a link that belongs to that board or employer.
+ */
+export function verifyBoardLink(applyUrl: string | null, emp: Pick<Employer, "ats" | "board_token" | "careers_url" | "name">, externalId: string, company: string | null, now: Date) {
+  const check = checkJobLink(applyUrl, { source: "ats", ats: emp.ats, boardToken: emp.board_token, externalId, careersUrl: emp.careers_url, company: company ?? emp.name });
+  return check.ok
+    ? { verification_status: "verified" as const, verified_at: now.toISOString(), verification_note: null, canonical_url: check.canonical }
+    : { verification_status: check.status, verified_at: null, verification_note: check.reason.slice(0, 300), canonical_url: null };
+}
+
 /** Reads one board and updates its jobs. Returns counts; never throws. */
-export async function crawlEmployer(db: Db, emp: Employer): Promise<{ status: "ok" | "not_modified" | "failed"; newJobs: number; closedJobs: number }> {
+export async function crawlEmployer(db: Db, emp: Employer, wanted: ReadonlySet<string> = wantedScope(["CA"]), countries: readonly string[] = ["CA"]): Promise<{ status: "ok" | "not_modified" | "failed"; newJobs: number; closedJobs: number }> {
   const adapter = adapterFor(emp.ats);
   try {
-    const board = await adapter.fetchBoard(emp.board_token, { etag: emp.etag, signal: AbortSignal.timeout(20_000) });
+    const board = await adapter.fetchBoard(emp.board_token, { etag: emp.etag, signal: AbortSignal.timeout(20_000), countries });
     if (board.notModified) {
-      await db.from("employers").update({ last_crawled_at: new Date().toISOString(), next_crawl_at: minutes(emp.canada_jobs > 0 ? ACTIVE_INTERVAL_MIN : QUIET_INTERVAL_MIN), failures: 0, last_error: null, status: "active" }).eq("id", emp.id);
+      await db.from("employers").update({ last_crawled_at: new Date().toISOString(), next_crawl_at: minutes(emp.matching_jobs > 0 ? ACTIVE_INTERVAL_MIN : QUIET_INTERVAL_MIN), failures: 0, last_error: null, status: "active" }).eq("id", emp.id);
       // Jobs on an unchanged board are still there.
       await db.from("jobs").update({ last_seen_at: new Date().toISOString() }).eq("employer_id", emp.id).is("closed_at", null);
       return { status: "not_modified", newJobs: 0, closedJobs: 0 };
     }
 
-    const canadian = board.jobs.flatMap((job) => {
-      const place = canadianPlace(job.places, job.remote);
+    const kept = board.jobs.flatMap((job) => {
+      const place = jobPlace(job.places, job.remote, wanted);
       return place ? [{ job, place }] : [];
     });
-    const { data: existingRows } = await db.from("jobs").select("id, external_id, posted_at, date_source, first_seen_at, description, closed_at").eq("employer_id", emp.id);
+    const { data: existingRows } = await db.from("jobs").select("id, external_id, posted_at, date_source, first_seen_at, description, closed_at, apply_url").eq("employer_id", emp.id);
     const existing = new Map((existingRows ?? []).map((r) => [r.external_id, r]));
     const firstCrawl = emp.last_crawled_at === null;
-    const details = await withDescriptions(
+    const details = await withDetails(
       adapter,
       emp.board_token,
-      canadian.map(({ job }) => ({ job, needs: job.description === null && !existing.get(job.externalId)?.description })),
+      kept.map(({ job }) => {
+        const old = existing.get(job.externalId);
+        return { job, needs: (job.description === null && !old?.description) || (job.applyUrl === null && !old?.apply_url) };
+      }),
     );
 
     const now = new Date();
-    const rows = canadian.map(({ job, place }) => {
+    const rows = kept.map(({ job, place }) => {
       const old = existing.get(job.externalId);
       // A job keeps the date it was first given. Sample boards are re-dated each read so tests stay "recent".
       const dated = old && emp.ats !== "fixture" ? { postedAt: old.posted_at, dateSource: old.date_source as DatedJob["dateSource"] } : dateJob(job, firstCrawl && !old, now);
+      const detail = details.get(job.externalId);
+      // Links come only from the board: the list, the posting's own detail, or an earlier read of either.
+      const applyUrl = job.applyUrl ?? detail?.applyUrl ?? old?.apply_url ?? null;
+      const company = (job.company ?? emp.name).slice(0, 300);
+      const title = job.title.trim().slice(0, 300);
+      const description = (job.description ?? detail?.description ?? old?.description ?? "").slice(0, 60_000);
+      const level = jobLevel(title, job.level);
+      const pay = job.salaryRange;
       return {
         employer_id: emp.id,
+        source: "ats" as const,
         external_id: job.externalId.slice(0, 200),
-        company: (job.company ?? emp.name).slice(0, 300),
-        title: job.title.trim().slice(0, 300),
+        company,
+        title,
         city: place.city?.slice(0, 120) ?? null,
         province: place.province,
+        country: place.country,
+        countries: place.countries.slice(0, 60),
         location_text: place.locationText || null,
         remote: place.remote,
+        workplace_type: job.workplace ?? workplaceFromText(place.locationText, title) ?? (place.remote ? "remote" : null),
+        experience_level: level.level,
+        level_source: level.source,
         posted_at: dated.postedAt,
         date_source: dated.dateSource,
+        date_note: dated.dateSource === "source" ? (job.dateNote ?? null) : null,
         first_seen_at: old?.first_seen_at ?? now.toISOString(),
         last_seen_at: now.toISOString(),
         closed_at: null,
-        apply_url: job.applyUrl.slice(0, 2000),
-        description: (job.description ?? details.get(job.externalId) ?? old?.description ?? "").slice(0, 60_000),
+        apply_url: applyUrl?.slice(0, 2000) ?? null,
+        ...verifyBoardLink(applyUrl, emp, job.externalId, company, now),
+        description,
         salary: job.salary?.slice(0, 200) ?? null,
+        salary_min: pay?.min ?? null,
+        salary_max: pay?.max ?? null,
+        salary_currency: pay?.currency && /^[A-Z]{3}$/.test(pay.currency) ? pay.currency : null,
+        salary_period: pay?.period ?? null,
         employment_type: job.employmentType?.slice(0, 100) ?? null,
         department: job.department?.slice(0, 200) ?? null,
+        dedupe_key: jobDedupeKey({ company, title, city: place.city, province: place.province, remote: place.remote }),
+        desc_fingerprint: simhash64(description),
       };
     });
-    const valid = rows.filter((r) => /^https?:\/\//i.test(r.apply_url) && r.title);
+    const valid = rows.filter((r) => r.title);
 
     let newJobs = 0;
     const needRequirements: { id: string; description: string }[] = [];
@@ -133,9 +193,11 @@ export async function crawlEmployer(db: Db, emp: Employer): Promise<{ status: "o
       }
     }
 
-    const seen = new Set(valid.map((r) => r.external_id));
-    const gone = (existingRows ?? []).filter((r) => r.closed_at === null && !seen.has(r.external_id)).map((r) => r.id);
-    if (gone.length) await db.from("jobs").update({ closed_at: now.toISOString() }).in("id", gone);
+    // A partial read (the board has more jobs than we page through) can't tell us what closed.
+    // Every job on the board counts as still listed, kept here or not.
+    const seen = new Set(board.jobs.map((j) => j.externalId.slice(0, 200)));
+    const gone = board.partial ? [] : (existingRows ?? []).filter((r) => r.closed_at === null && !seen.has(r.external_id)).map((r) => r.id);
+    if (gone.length) await db.from("jobs").update({ closed_at: now.toISOString(), verification_status: "expired", verified_at: null, verification_note: "No longer listed on the employer's board" }).in("id", gone);
 
     for (const job of needRequirements) {
       const reqs = extractRequirements(job.description);
@@ -156,11 +218,19 @@ export async function crawlEmployer(db: Db, emp: Employer): Promise<{ status: "o
         last_error: null,
         status: "active",
         etag: board.etag?.slice(0, 300) ?? null,
-        canada_jobs: valid.length,
+        matching_jobs: valid.length,
       })
       .eq("id", emp.id);
     return { status: "ok", newJobs, closedJobs: gone.length };
   } catch (e) {
+    if (e instanceof RateLimitedError) {
+      // Being asked to wait isn't a failure of the board.
+      await db
+        .from("employers")
+        .update({ last_error: e.message, next_crawl_at: new Date(Date.now() + Math.max(60, e.retryAfterSeconds ?? ACTIVE_INTERVAL_MIN * 60) * 1000).toISOString() })
+        .eq("id", emp.id);
+      return { status: "failed", newJobs: 0, closedJobs: 0 };
+    }
     const failures = emp.failures + 1;
     const gone = e instanceof BoardError && e.gone;
     await db
@@ -201,21 +271,26 @@ export async function crawlDue(db: Db, opts: { deadline: number; embedder: Embed
   if (opts.fixtures) await ensureFixtureEmployers(db);
   const summary: CrawlSummary = { boards: 0, notModified: 0, failed: 0, newJobs: 0, closedJobs: 0, embedded: 0 };
   const { data: run } = await db.from("job_crawl_runs").insert({}).select("id").single();
-  const { data: due } = await db
+  let dueQuery = db
     .from("employers")
-    .select("id, name, ats, board_token, etag, last_crawled_at, failures, canada_jobs")
-    .neq("status", "disabled")
+    .select("id, name, ats, board_token, etag, last_crawled_at, failures, matching_jobs, careers_url")
+    .neq("status", "disabled");
+  const kinds = dueBoardKinds(opts.fixtures);
+  dueQuery = kinds.only ? dueQuery.eq("ats", kinds.only) : dueQuery.neq("ats", kinds.never);
+  const { data: due } = await dueQuery
     .lte("next_crawl_at", new Date().toISOString())
     .order("next_crawl_at")
     .limit(opts.maxBoards ?? BOARDS_PER_TICK);
   const boards = due ?? [];
+  const countries = await searchedCountries(db, opts.fixtures);
+  const wanted = wantedScope(countries);
   if (boards.length) await db.from("employers").update({ next_crawl_at: minutes(LEASE_MIN) }).in("id", boards.map((b) => b.id));
 
   let next = 0;
   const worker = async () => {
     while (next < boards.length && Date.now() < opts.deadline) {
       const emp = boards[next++];
-      const r = await crawlEmployer(db, emp);
+      const r = await crawlEmployer(db, emp, wanted, countries);
       summary.boards++;
       if (r.status === "not_modified") summary.notModified++;
       if (r.status === "failed") summary.failed++;

@@ -93,3 +93,26 @@ describe("prefilterScore", () => {
     expect(junior).toBeGreaterThan(senior);
   });
 });
+
+describe("explainFit", () => {
+  it("lists exactly the met and missing requirements, and is deterministic", async () => {
+    const { explainFit } = await import("./fit");
+    const { skillsIn } = await import("./taxonomy");
+    const names = (t: string) => skillsIn(t).map((s) => s.name);
+    const reqs = [
+      { id: "r1", text: "React and TypeScript", kind: "must" as const, category: "skill" as const, years: null, degreeLevel: null },
+      { id: "r2", text: "AWS", kind: "must" as const, category: "skill" as const, years: null, degreeLevel: null },
+      { id: "r3", text: "3+ years of professional experience", kind: "nice" as const, category: "years" as const, years: 3, degreeLevel: null },
+      { id: "r4", text: "Docker", kind: "nice" as const, category: "skill" as const, years: null, degreeLevel: null },
+    ];
+    const results = [
+      { requirementId: "r1", status: "met" as const, quote: "React and TypeScript app", note: null },
+      { requirementId: "r2", status: "missing" as const, quote: null, note: null },
+      { requirementId: "r3", status: "missing" as const, quote: null, note: null },
+      { requirementId: "r4", status: "partial" as const, quote: null, note: null },
+    ];
+    const e = explainFit(reqs, results, names);
+    expect(e).toEqual({ strong: ["TypeScript", "React"], missing: ["AWS"], preferredNotFound: ["3+ years of professional experience"] });
+    expect(explainFit(reqs, results, names)).toEqual(e);
+  });
+});

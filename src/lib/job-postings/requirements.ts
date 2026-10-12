@@ -20,7 +20,9 @@ const DEGREE_RE: [DegreeLevel, RegExp][] = [
 ];
 export const LICENCE_RE = /\b(P\.?\s?Eng|EIT|CPA|PMP|CISSP|CCNA|AWS Certified[\w -]*|Red Seal|CET|AScT|CompTIA[\w+ -]*)\b/;
 const CLEARANCE_RE = /\b(security clearance|secret clearance|reliability status|enhanced reliability|top secret)\b/i;
-const AUTH_RE = /\b(canadian citizen(ship)?|permanent resident|legally (eligible|entitled|authorized) to work in canada|eligible to work in canada|no (visa )?sponsorship|not able to sponsor|unable to sponsor)\b/i;
+/** Work authorization, in any country: "legally eligible to work in Canada", "authorized to work in the US", "right to work in the UK". */
+const AUTH_RE =
+  /\b((canadian|us|u\.s\.|american|british|australian|eu) citizen(ship)?|permanent resident|green card|(legally )?(eligible|entitled|authori[sz]ed|permitted) to work in( the)? [a-z][\w.]*|right to work in( the)? [a-z]+|work (authori[sz]ation|permit) (is )?required|no (visa )?sponsorship|not able to sponsor|unable to sponsor|without (visa )?sponsorship)\b/i;
 export const LANGUAGE_RE = /\b(french|bilingual|fran[çc]ais|mandarin|cantonese|punjabi|spanish|hindi|tagalog|korean|japanese|german|portuguese|arabic)\b/i;
 const LOCATION_RE = /\b(on-?site|in[- ]office|in the office|relocat\w*|located in|based in|commut\w*|days a week in)\b/i;
 const PREFERRED_RE = /\b(preferred|nice to have|nice-to-have|asset|bonus|plus|desired|ideally)\b/i;

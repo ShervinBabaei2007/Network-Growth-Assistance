@@ -313,8 +313,15 @@ export async function deleteAccount(_: FormState, formData: FormData): Promise<F
   if (formData.get("confirm") !== "DELETE") return failed("Type DELETE to confirm.");
   const ctx = await context();
   const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+  // Stored files aren't removed with the user's rows: delete their uploaded resumes first.
   // The id comes from the verified session, never from the form.
-  const { error } = await createAdminClient().auth.admin.deleteUser(ctx.userId);
+  const { data: files } = await admin.storage.from("resumes").list(ctx.userId, { limit: 1000 });
+  if (files?.length) {
+    const { error: removeError } = await admin.storage.from("resumes").remove(files.map((f) => `${ctx.userId}/${f.name}`));
+    if (removeError) return failed("Couldn't delete your stored files. Nothing was deleted; try again.");
+  }
+  const { error } = await admin.auth.admin.deleteUser(ctx.userId);
   if (error) return failed("Couldn't delete the account. Try again.");
   await ctx.supabase.auth.signOut();
   redirect("/login");

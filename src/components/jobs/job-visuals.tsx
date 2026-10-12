@@ -34,13 +34,31 @@ export function FitScore({ tier, score, size = "md" }: { tier: TierKey; score: n
 
 /** Where a posting came from. */
 export function SourceTag({ source, className }: { source: JobSource; className?: string }) {
-  const Icon = source.kind === "board" ? Globe : ClipboardPaste;
+  const Icon = source.kind === "pasted" ? ClipboardPaste : Globe;
   return (
     <span className={cn("inline-flex items-center gap-1.5 text-xs text-muted-foreground", className)}>
       <Icon aria-hidden className="size-3.5" />
       <span>
         <span className="font-medium text-foreground">{source.label}</span> · {source.detail}
       </span>
+    </span>
+  );
+}
+
+const VERIFICATION_STYLE: Record<string, { label: string; className: string; title: string }> = {
+  verified: { label: "Verified", className: "bg-success-soft text-success", title: "Listed by the source and the link checks out." },
+  pending_validation: { label: "Not yet verified", className: "bg-muted text-muted-foreground", title: "We couldn't confirm this link yet." },
+  expired: { label: "Expired", className: "bg-danger-soft text-destructive", title: "This job posting is no longer accepting applications." },
+  unavailable: { label: "Link unavailable", className: "bg-warning-soft text-warning", title: "The link to this listing isn't available or working." },
+  failed_validation: { label: "Failed verification", className: "bg-danger-soft text-destructive", title: "The link didn't pass our checks." },
+};
+
+/** Whether a listing's link was verified, said plainly; never "verified" without evidence. */
+export function VerificationBadge({ status, className }: { status: string; className?: string }) {
+  const s = VERIFICATION_STYLE[status] ?? VERIFICATION_STYLE.pending_validation;
+  return (
+    <span title={s.title} className={cn("inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", s.className, className)}>
+      {s.label}
     </span>
   );
 }

@@ -20,7 +20,7 @@ test("main flow: sign in → add → approve → queue → sent → accepted →
   await page.goto("/settings");
   await page.getByLabel("Invitations you plan to send per day").fill("10");
   await page.getByRole("button", { name: "Save planning" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+  await expect(page.getByTestId("form-status").filter({ hasText: "Saved." })).toBeVisible();
 
   // Add a candidate and approve in one go
   await page.goto("/candidates");
@@ -31,7 +31,7 @@ test("main flow: sign in → add → approve → queue → sent → accepted →
   await page.getByLabel("Program or major (as shown)").fill("Computer Engineering");
   await page.getByLabel(/Approve for outreach now/).check();
   await page.getByRole("button", { name: "Add candidate" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Added." })).toBeVisible();
+  await expect(page.getByTestId("form-status").filter({ hasText: "Added." })).toBeVisible();
 
   // Queue
   await page.goto("/queue");
@@ -68,7 +68,7 @@ test("the same profile can't be added twice", async ({ page }) => {
     await page.getByRole("button", { name: "Add candidate" }).click();
   };
   await add("https://www.linkedin.com/in/e2e-dupe");
-  await expect(page.getByRole("status").filter({ hasText: "Added" })).toBeVisible();
+  await expect(page.getByTestId("form-status").filter({ hasText: "Added" })).toBeVisible();
   await add("linkedin.com/in/E2E-Dupe/");
-  await expect(page.getByRole("alert").filter({ hasText: "already in your list" })).toBeVisible();
+  await expect(page.getByTestId("form-error").filter({ hasText: "already in your list" })).toBeVisible();
 });

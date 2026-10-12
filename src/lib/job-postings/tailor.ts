@@ -1,113 +1,127 @@
-import { z } from "zod";
-import type { LLMProvider } from "@/lib/discovery/llm";
-import { SECTION_KEYS, type CoverLetterDoc, type GuardIssue, type TailoredResumeDoc } from "./documents";
+import type { AIProvider, DocumentFormat, JobContext, TailorMode } from "@/lib/ai/provider";
+import { clean } from "@/lib/text/match";
+import type { CoverLetterDoc, GuardIssue, TailoredResumeDoc } from "./documents";
 import { guardCoverLetter, guardResume, type AiCoverLetter, type AiTailoredResume } from "./tailor-guard";
-import type { Requirement, RequirementResult, ResumeProfile } from "./types";
+import type { ResumeProfile } from "./types";
 
 /**
- * Writes a tailored resume and cover letter with the strong model, then runs the
- * server's accuracy check (tailor-guard). If the check rejects lines, the model gets
- * one retry with the reasons; anything still failing is replaced or removed.
+ * AI tailoring. The model rewrites the resume (or CV, or cover letter) for one job; the
+ * accuracy guard removes anything the resume doesn't support; then a materiality check
+ * makes sure the result is really different from the original. A near-identical result
+ * gets one retry with feedback. If it still isn't materially tailored, nothing is saved:
+ * the caller offers Improvement Notes instead. A reordered copy of the original is never
+ * presented as a tailored resume.
  */
 
-export type TailorMode = "normal" | "apply_anyway";
+export type { TailorMode } from "@/lib/ai/provider";
 
-export type TailorInput = {
-  profile: ResumeProfile;
-  resumeText: string;
-  posting: { title: string; company: string | null; description: string };
-  requirements: Requirement[];
-  results: RequirementResult[];
-  mode: TailorMode;
+/** A bullet counts as rewritten when under this share of its words are unchanged. */
+export const REWORDED_MAX_OVERLAP = 0.8;
+/** Share of kept bullets that must be rewritten… */
+export const MATERIAL_BULLET_SHARE = 0.4;
+/** …or this share, together with a rewritten summary. */
+export const MATERIAL_WITH_SUMMARY_SHARE = 0.25;
+
+const words = (s: string) => clean(s).trim().split(" ").filter(Boolean);
+
+/** Word-set overlap of two texts (Jaccard), 0–1. */
+export function overlap(a: string, b: string): number {
+  const A = new Set(words(a));
+  const B = new Set(words(b));
+  if (!A.size && !B.size) return 1;
+  let both = 0;
+  for (const w of A) if (B.has(w)) both++;
+  return both / (A.size + B.size - both);
+}
+
+export type Materiality = {
+  bullets: number;
+  reworded: number;
+  share: number;
+  summaryChanged: boolean;
+  /** Bullets that moved earlier within their entry. */
+  movedUp: number;
+  material: boolean;
 };
 
-const BulletsOut = z.array(z.object({ text: z.string(), sourceBulletIds: z.array(z.string()) }));
-const ResumeOut = z.object({
-  summary: z.string().nullable(),
-  skills: z.array(z.string()),
-  experience: z.array(z.object({ sourceId: z.string(), bullets: BulletsOut })),
-  projects: z.array(z.object({ sourceId: z.string(), bullets: BulletsOut })),
-  sectionOrder: z.array(z.enum(SECTION_KEYS)),
-});
-const LetterOut = z.object({ greeting: z.string(), paragraphs: z.array(z.string()), closing: z.string() });
+/** How much a tailored document differs from the resume it was written from. */
+export function materiality(profile: ResumeProfile, doc: TailoredResumeDoc): Materiality {
+  const original = new Map<string, string>();
+  const position = new Map<string, number>();
+  for (const e of [...profile.experience, ...profile.projects]) e.bullets.forEach((b, i) => (original.set(b.id, b.text), position.set(b.id, i)));
+  let bullets = 0;
+  let reworded = 0;
+  let movedUp = 0;
+  for (const s of doc.sections) {
+    if (s.key !== "experience" && s.key !== "projects") continue;
+    for (const e of s.entries) {
+      e.bullets.forEach((b, i) => {
+        bullets++;
+        const sources = b.sourceBulletIds.map((id) => original.get(id) ?? "").join(" ");
+        if (overlap(b.text, sources) < REWORDED_MAX_OVERLAP) reworded++;
+        const was = Math.min(...b.sourceBulletIds.map((id) => position.get(id) ?? i));
+        if (i < was) movedUp++;
+      });
+    }
+  }
+  const share = bullets ? reworded / bullets : 0;
+  const summaryChanged = Boolean(doc.summary) && overlap(doc.summary ?? "", profile.summary ?? "") < REWORDED_MAX_OVERLAP;
+  const material = bullets > 0 && (share >= MATERIAL_BULLET_SHARE || (summaryChanged && share >= MATERIAL_WITH_SUMMARY_SHARE));
+  return { bullets, reworded, share, summaryChanged, movedUp, material };
+}
 
-const HONESTY = `Absolute rules (a program checks every line and deletes what breaks them):
-- Never add an employer, job title, date, school, degree, certification, technology, tool, number or result that isn't in the resume.
-- Every bullet lists in sourceBulletIds the id(s) of the original bullet(s) it rewrites. A rewrite may only use facts from those bullets.
-- Numbers must be copied exactly from the cited bullets. Don't estimate, round or invent metrics.
-- Skills: only skills the resume lists or clearly uses.
-- Plain, specific wording. No buzzwords, no exaggeration ("expert", "world-class", "revolutionized").`;
+export type TailorOutcome =
+  | { ok: true; doc: TailoredResumeDoc; issues: GuardIssue[]; materiality: Materiality; attempts: number }
+  /** not_material: the model couldn't produce a meaningful rewrite without inventing details. */
+  | { ok: false; reason: "not_material"; materiality: Materiality; attempts: number }
+  | { ok: false; reason: "ai_failed"; error: string; attempts: number };
 
-const RESUME_SYSTEM = (mode: TailorMode) => `You tailor a resume to one job posting for a Canadian job search.
-What you may do: choose and reorder bullets so the most relevant come first; reword a bullet to use the posting's vocabulary for the same thing (e.g. "REST endpoints" → "REST APIs") when the original supports it; merge two bullets about the same work; leave out projects and bullets that don't help; reorder skills by relevance; write a 2–3 sentence summary from facts in the resume.
-- experience: include every job (by sourceId), 2–5 bullets each, most relevant first.
-- projects: the 2–4 most relevant, by sourceId.
-- sectionOrder: put "education" first only if the person has under a year of work experience; otherwise ["experience", "projects", "education"].
-${mode === "apply_anyway" ? "- This person is applying even though they don't meet every requirement. Lead with transferable experience that is genuinely related to the missing requirements. Don't hide or paper over gaps, and never imply they have what they don't." : ""}
-${HONESTY}`;
-
-const LETTER_SYSTEM = (mode: TailorMode) => `You write a cover letter for one job posting, in Canadian English, from the applicant's resume.
-- 3–4 short paragraphs, under 350 words in total. greeting like "Dear Hiring Manager," unless the posting names a person. closing like "Sincerely,".
-- Paragraph 1: the role and one concrete reason they fit. Middle: two or three specific examples from the resume that match the posting's needs. Last: a brief, polite close.
-- You may mention the company and what the posting says about the role. You may say they're keen to learn something the posting asks for, but never say or suggest they have experience with something the resume doesn't show.
-${mode === "apply_anyway" ? "- They don't meet every requirement. Address the main gap once, honestly and briefly: name the closest related experience from the resume and how they would close the gap. Don't apologize at length." : ""}
-${HONESTY}`;
-
-function resumeForPrompt(p: ResumeProfile): string {
-  const entry = (e: ResumeProfile["experience"][number]) =>
-    `[${e.id}] ${e.organization}${e.title ? ` — ${e.title}` : ""}${e.start || e.end ? ` (${[e.start, e.end].filter(Boolean).join(" – ")})` : ""}\n${e.bullets.map((b) => `  [${b.id}] ${b.text}`).join("\n")}`;
-  return [
-    p.summary ? `SUMMARY: ${p.summary}` : "",
-    `EXPERIENCE:\n${p.experience.map(entry).join("\n") || "(none)"}`,
-    `PROJECTS:\n${p.projects.map(entry).join("\n") || "(none)"}`,
-    `EDUCATION:\n${p.education.map(entry).join("\n") || "(none)"}`,
-    `SKILLS: ${p.skills.join(", ") || "(none)"}`,
-    p.certifications.length ? `CERTIFICATIONS: ${p.certifications.join("; ")}` : "",
+const feedbackFor = (m: Materiality, issues: GuardIssue[]) =>
+  [
+    m.material
+      ? null
+      : `Only ${m.reworded} of ${m.bullets} bullets were actually reworded${m.summaryChanged ? "" : ", and the summary wasn't rewritten"}. The result is too close to the original. Rewrite each relevant bullet in the posting's language (keeping its facts) and write a summary aimed at this role.`,
+    issues.length ? `These lines were rejected by the accuracy check:\n${issues.slice(0, 15).map((i) => `- "${i.text.slice(0, 160)}": ${i.reason}`).join("\n")}` : null,
   ]
     .filter(Boolean)
     .join("\n\n");
-}
 
-function fitForPrompt(requirements: Requirement[], results: RequirementResult[]): string {
-  const byId = new Map(results.map((r) => [r.requirementId, r]));
-  return requirements.map((r) => `- [${r.kind}] ${r.text}: ${byId.get(r.id)?.status ?? "missing"}`).join("\n");
-}
-
-function postingForPrompt(p: TailorInput["posting"]): string {
-  return `${p.title}${p.company ? ` at ${p.company}` : ""}\n"""\n${p.description.slice(0, 12_000)}\n"""`;
-}
-
-const retryNote = (issues: GuardIssue[]) =>
-  issues.length
-    ? `\n\nYour previous attempt had lines rejected by the accuracy check. Fix these:\n${issues.slice(0, 15).map((i) => `- "${i.text.slice(0, 160)}": ${i.reason}`).join("\n")}`
-    : "";
-
-export type TailorResult<T> = { ok: true; doc: T; issues: GuardIssue[] } | { ok: false; error: string };
-
-export async function tailorResume(llm: LLMProvider, input: TailorInput): Promise<TailorResult<TailoredResumeDoc>> {
-  if (!llm.enabled) return { ok: false, error: "Tailoring needs AI. Set ANTHROPIC_API_KEY on the server." };
-  const user = `JOB POSTING:\n${postingForPrompt(input.posting)}\n\nREQUIREMENTS AND HOW THE RESUME MEETS THEM:\n${fitForPrompt(input.requirements, input.results)}\n\nRESUME (ids in brackets):\n${resumeForPrompt(input.profile)}`;
-  let last: { doc: TailoredResumeDoc; issues: GuardIssue[] } | null = null;
+/**
+ * Tailors a resume or CV. Up to two model calls: the second only when the first wasn't
+ * materially different or had lines rejected by the guard.
+ */
+export async function tailorDocument(ai: AIProvider, input: JobContext & { resumeText: string; format: DocumentFormat }): Promise<TailorOutcome> {
+  let last: { doc: TailoredResumeDoc; issues: GuardIssue[]; materiality: Materiality } | null = null;
+  let attempts = 0;
   for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await llm.structured({ tier: "smart", system: RESUME_SYSTEM(input.mode), user: user + retryNote(last?.issues ?? []), schema: ResumeOut, maxTokens: 8000 });
+    attempts++;
+    const feedback = last ? feedbackFor(last.materiality, last.issues) : undefined;
+    const res = input.format === "cv" ? await ai.tailorCV(input, feedback) : await ai.tailorResume(input, feedback);
     if (!res.ok) {
       if (last) break;
-      return { ok: false, error: res.reason };
+      return { ok: false, reason: "ai_failed", error: res.reason, attempts };
     }
-    const guarded = guardResume(res.data as AiTailoredResume, input.profile, input.resumeText);
-    if (!last || guarded.issues.length <= last.issues.length) last = guarded;
-    if (!guarded.issues.length) break;
+    const guarded = guardResume(res.data as AiTailoredResume, input.profile, input.resumeText, { format: input.format });
+    const m = materiality(input.profile, guarded.doc);
+    const candidate = { ...guarded, materiality: m };
+    // Prefer a material result, then the one with fewer rejected lines.
+    if (!last || (m.material && !last.materiality.material) || (m.material === last.materiality.material && guarded.issues.length <= last.issues.length)) last = candidate;
+    if (m.material && !guarded.issues.length) break;
   }
-  return { ok: true, ...last! };
+  if (!last) return { ok: false, reason: "ai_failed", error: "The AI service didn't answer.", attempts };
+  if (!last.materiality.material) return { ok: false, reason: "not_material", materiality: last.materiality, attempts };
+  return { ok: true, doc: last.doc, issues: last.issues, materiality: last.materiality, attempts };
 }
 
-export async function tailorCoverLetter(llm: LLMProvider, input: TailorInput): Promise<TailorResult<CoverLetterDoc>> {
-  if (!llm.enabled) return { ok: false, error: "Writing a cover letter needs AI. Set ANTHROPIC_API_KEY on the server." };
-  const user = `JOB POSTING:\n${postingForPrompt(input.posting)}\n\nREQUIREMENTS AND HOW THE RESUME MEETS THEM:\n${fitForPrompt(input.requirements, input.results)}\n\nRESUME:\n${resumeForPrompt(input.profile)}`;
+export type LetterOutcome = { ok: true; doc: CoverLetterDoc; issues: GuardIssue[] } | { ok: false; error: string };
+
+/** A cover letter written by the model, every sentence checked against the resume and posting. */
+export async function writeCoverLetter(ai: AIProvider, input: JobContext & { resumeText: string }): Promise<LetterOutcome> {
   const posting = { text: input.posting.description, company: input.posting.company, title: input.posting.title };
   let last: { doc: CoverLetterDoc; issues: GuardIssue[] } | null = null;
   for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await llm.structured({ tier: "smart", system: LETTER_SYSTEM(input.mode), user: user + retryNote(last?.issues ?? []), schema: LetterOut, maxTokens: 4000 });
+    const feedback = last?.issues.length ? feedbackFor({ material: true } as Materiality, last.issues) : undefined;
+    const res = await ai.generateCoverLetter(input, feedback);
     if (!res.ok) {
       if (last) break;
       return { ok: false, error: res.reason };
@@ -116,5 +130,7 @@ export async function tailorCoverLetter(llm: LLMProvider, input: TailorInput): P
     if (!last || guarded.issues.length <= last.issues.length) last = guarded;
     if (!guarded.issues.length) break;
   }
-  return { ok: true, ...last! };
+  return last ? { ok: true, ...last } : { ok: false, error: "The AI service didn't answer." };
 }
+
+export const isMode = (m: unknown): m is TailorMode => m === "normal" || m === "apply_anyway";

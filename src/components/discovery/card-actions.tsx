@@ -1,22 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { ExternalLink, Search, UserRound } from "lucide-react";
-import { givePersonFeedback, recordPersonEvent, resolveKnownMatch, savePerson, type ActionResult } from "@/app/(app)/people/actions";
+import { givePersonFeedback, recordPersonEvent, resolveKnownMatch, savePerson, undoPersonFeedback } from "@/app/(app)/people/actions";
+import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { PersonCard } from "@/lib/discovery/results";
 import { PersonDrawer } from "./person-drawer";
-
-function useAction() {
-  const [pending, start] = useTransition();
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
-  const run = (fn: () => Promise<ActionResult>) =>
-    start(async () => {
-      const r = await fn();
-      setMessage(r.ok ? (r.message ? { ok: true, text: r.message } : null) : { ok: false, text: r.error });
-    });
-  return { pending, message, run };
-}
 
 /**
  * Links open in a new tab for the user to act on; the app never acts on LinkedIn itself.
@@ -66,7 +55,7 @@ export function ExternalLinks({ person: p }: { person: Pick<PersonCard, "personI
 }
 
 export function CardActions({ person: p, searchId }: { person: PersonCard; searchId: string }) {
-  const { pending, message, run } = useAction();
+  const { pending, run } = useActionRunner();
   return (
     <div className="grid gap-2">
       <div className="flex flex-wrap items-center gap-1">
@@ -77,22 +66,22 @@ export function CardActions({ person: p, searchId }: { person: PersonCard; searc
             Save
           </Button>
         ) : null}
-        <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => givePersonFeedback(p.personId, "not_relevant", searchId))}>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={pending}
+          onClick={() => run(() => givePersonFeedback(p.personId, "not_relevant", searchId), { undo: () => undoPersonFeedback(p.personId, "not_relevant") })}
+        >
           Not relevant
         </Button>
       </div>
-      {message ? (
-        <p role={message.ok ? "status" : "alert"} className={message.ok ? "text-xs text-muted-foreground" : "text-xs text-destructive"}>
-          {message.text}
-        </p>
-      ) : null}
     </div>
   );
 }
 
 /** "Is this one of your connections?" The answer is stored and reused by later searches. */
 export function KnownMatchReview({ personId, name, confidence }: { personId: string; name: string | null; confidence: number | null }) {
-  const { pending, message, run } = useAction();
+  const { pending, run } = useActionRunner();
   return (
     <div className="grid gap-2 rounded-md bg-muted p-3 text-sm">
       <p>
@@ -107,11 +96,6 @@ export function KnownMatchReview({ personId, name, confidence }: { personId: str
           No, different person
         </Button>
       </div>
-      {message ? (
-        <p role={message.ok ? "status" : "alert"} className="text-xs">
-          {message.text}
-        </p>
-      ) : null}
     </div>
   );
 }

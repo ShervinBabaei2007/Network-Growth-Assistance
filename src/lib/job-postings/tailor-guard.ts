@@ -28,7 +28,8 @@ const MAX_BULLET = 300;
 const KEEP_WHEN_OMITTED = 3;
 
 export function headerFrom(profile: ResumeProfile): DocHeader {
-  return { name: profile.name, email: profile.email, phone: profile.phone, location: profile.location, links: profile.links.slice(0, 8) };
+  const links = [profile.contact?.linkedin, profile.contact?.github, profile.contact?.website, ...profile.links].filter((l): l is string => Boolean(l));
+  return { name: profile.name, email: profile.email, phone: profile.phone, location: profile.location, links: [...new Set(links)].slice(0, 8) };
 }
 
 const copyEntry = (e: ResumeEntry, bullets: DocEntry["bullets"]): DocEntry => ({
@@ -54,7 +55,13 @@ export function checkBullet(text: string, cited: string[], resumeText: string): 
   return null;
 }
 
-export function guardResume(ai: AiTailoredResume, profile: ResumeProfile, resumeText: string): { doc: TailoredResumeDoc; issues: GuardIssue[] } {
+/**
+ * Builds the document from the model's output, keeping only what the resume supports.
+ * A CV is complete: every job, project and bullet stays (reworded or as written), and its
+ * awards and activities are copied as written.
+ */
+export function guardResume(ai: AiTailoredResume, profile: ResumeProfile, resumeText: string, opts: { format?: "resume" | "cv" } = {}): { doc: TailoredResumeDoc; issues: GuardIssue[] } {
+  const cv = opts.format === "cv";
   const issues: GuardIssue[] = [];
   const bulletText = new Map<string, string>();
   for (const e of [...profile.experience, ...profile.projects, ...profile.education]) for (const b of e.bullets) bulletText.set(b.id, b.text);
@@ -88,8 +95,15 @@ export function guardResume(ai: AiTailoredResume, profile: ResumeProfile, resume
           issues.push({ where: `${entry.organization}`, text: b.text, reason, action: "removed" });
         }
       }
+      // A CV keeps every original line: any bullet the rewrite didn't cover is added back as written.
+      if (cv) {
+        const cited = new Set(bullets.flatMap((b) => b.sourceBulletIds));
+        for (const b of entry.bullets) if (!cited.has(b.id)) bullets.push({ text: b.text, sourceBulletIds: [b.id] });
+      }
       out.push(copyEntry(entry, bullets.length ? bullets : entry.bullets.slice(0, KEEP_WHEN_OMITTED).map((b) => ({ text: b.text, sourceBulletIds: [b.id] }))));
     }
+    // A CV keeps every project, in the model's order with any it left out at the end.
+    if (key === "projects" && cv) for (const e of source) if (!seen.has(e.id)) out.push(copyEntry(e, e.bullets.map((b) => ({ text: b.text, sourceBulletIds: [b.id] }))));
     // Jobs are never dropped: leaving one out would open an unexplained gap.
     if (key === "experience") {
       for (const e of source) if (!seen.has(e.id)) out.push(copyEntry(e, e.bullets.slice(0, KEEP_WHEN_OMITTED).map((b) => ({ text: b.text, sourceBulletIds: [b.id] }))));
@@ -121,15 +135,18 @@ export function guardResume(ai: AiTailoredResume, profile: ResumeProfile, resume
     }
   }
 
-  const order = [...new Set([...ai.sectionOrder.filter((k) => k !== "education"), "experience" as const, "projects" as const])];
-  const built = {
+  const order = [...new Set([...ai.sectionOrder.filter((k) => k === "experience" || k === "projects"), "experience" as const, "projects" as const])];
+  const verbatim = (list: ResumeEntry[]) => list.map((e) => copyEntry(e, e.bullets.map((b) => ({ text: b.text, sourceBulletIds: [b.id] }))));
+  const built: Record<SectionKey, DocEntry[]> = {
     experience: section("experience", profile.experience, ai.experience),
     projects: section("projects", profile.projects, ai.projects),
-    education: profile.education.map((e) => copyEntry(e, e.bullets.map((b) => ({ text: b.text, sourceBulletIds: [b.id] })))),
+    education: verbatim(profile.education),
+    awards: cv ? verbatim(profile.awards ?? []) : [],
+    activities: cv ? verbatim(profile.activities ?? []) : [],
   };
   // Education goes first for students and new grads with little experience, otherwise last.
   const educationFirst = ai.sectionOrder[0] === "education";
-  const keys: SectionKey[] = educationFirst ? ["education", ...order] : [...order, "education"];
+  const keys: SectionKey[] = [...(educationFirst ? ["education" as const, ...order] : [...order, "education" as const]), "awards", "activities"];
   return {
     doc: {
       header: headerFrom(profile),

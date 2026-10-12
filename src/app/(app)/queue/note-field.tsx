@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { toast } from "@/components/toast/notify";
 import { Check, Copy, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { suggestNoteWithClaude } from "./actions";
+import { suggestNoteWithAI } from "./actions";
 
 /**
  * The note you'll paste into LinkedIn: editable, with a live character count, a copy
- * button, an optional Claude rewrite, and a warning when your monthly notes run out.
+ * button, an optional AI rewrite, and a warning when your monthly notes run out.
  */
 export function NoteField({
   id,
@@ -30,7 +31,6 @@ export function NoteField({
 }) {
   const [value, setValue] = useState(notesLeft === 0 ? "" : defaultValue);
   const [copied, setCopied] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const over = value.length > limit;
 
@@ -69,8 +69,9 @@ export function NoteField({
             try {
               await navigator.clipboard.writeText(value);
               setCopied(true);
+              toast.success("Note copied.", "Paste it into LinkedIn yourself.");
             } catch {
-              setMessage("Copy isn't available here; select the text instead.");
+              toast.warning("Copy isn't available here.", "Select the text and copy it instead.");
             }
           }}
         >
@@ -85,19 +86,19 @@ export function NoteField({
             disabled={pending}
             onClick={() =>
               startTransition(async () => {
-                setMessage(null);
-                const r = await suggestNoteWithClaude(queueId);
+                const r = await suggestNoteWithAI(queueId);
                 if (r.ok) {
                   setValue(r.text);
                   setCopied(false);
+                  toast.success("Suggested note ready.", "Read it through and edit it before sending.");
                 } else {
-                  setMessage(r.message);
+                  toast.warning(r.message);
                 }
               })
             }
           >
             <Sparkles aria-hidden />
-            {pending ? "Writing…" : "Suggest with Claude"}
+            {pending ? "Writing…" : "Suggest with AI"}
           </Button>
         ) : null}
         {value ? (
@@ -106,11 +107,6 @@ export function NoteField({
           </Button>
         ) : null}
       </div>
-      {message ? (
-        <p role="status" className="text-xs text-muted-foreground">
-          {message}
-        </p>
-      ) : null}
     </div>
   );
 }

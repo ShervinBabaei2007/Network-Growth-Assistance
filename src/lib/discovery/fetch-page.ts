@@ -1,9 +1,11 @@
+import { safeFetch, UnsafeUrlError, type SafeFetchOptions } from "@/lib/net/safe-fetch";
 import { isFetchable } from "./blocklist";
 
 /**
- * Fetches one public web page for evidence. It refuses LinkedIn and private hosts,
- * respects robots.txt, follows redirects only to allowed hosts, and keeps the page
- * small: a bounded amount of readable text plus the links on the page.
+ * Fetches one public web page for evidence. It refuses LinkedIn, respects robots.txt,
+ * follows redirects only to allowed hosts, and keeps the page small: a bounded amount of
+ * readable text plus the links on the page. Requests go through safeFetch, so a hostname
+ * that resolves to a private address (or redirects to one) is refused.
  */
 
 export type FetchedPage = { ok: true; url: string; title: string; text: string; links: string[] } | { ok: false; url: string; reason: string };
@@ -92,11 +94,14 @@ export function robotsAllows(robots: string, path: string): boolean {
 export class HttpPageFetcher implements PageFetcher {
   private robots = new Map<string, Promise<string | null>>();
 
+  /** `net` swaps the resolver and transport in tests. */
+  constructor(private readonly net: Pick<SafeFetchOptions, "resolve" | "transport"> = {}) {}
+
   private robotsFor(origin: string): Promise<string | null> {
     let p = this.robots.get(origin);
     if (!p) {
-      p = fetch(`${origin}/robots.txt`, { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(5_000), cache: "no-store", redirect: "follow" })
-        .then((r) => (r.ok ? r.text() : null))
+      p = safeFetch(`${origin}/robots.txt`, { ...this.net, headers: { "User-Agent": USER_AGENT }, timeoutMs: 5_000, maxBytes: 200_000 })
+        .then((r) => (r.status >= 200 && r.status < 300 ? r.body : null))
         .catch(() => null);
       this.robots.set(origin, p);
     }
@@ -111,30 +116,28 @@ export class HttpPageFetcher implements PageFetcher {
       const robots = await this.robotsFor(u.origin);
       if (robots && !robotsAllows(robots, u.pathname + u.search)) return { ok: false, url, reason: "disallowed by robots.txt" };
 
-      let res: Response;
+      let res;
       try {
-        res = await fetch(target, {
+        // Redirects come back to this loop, so each hop is checked against the blocklist and robots.txt.
+        res = await safeFetch(target, {
+          ...this.net,
+          followRedirects: false,
           headers: { "User-Agent": USER_AGENT, Accept: "text/html,application/xhtml+xml" },
-          redirect: "manual",
-          signal: AbortSignal.timeout(10_000),
-          cache: "no-store",
+          timeoutMs: 10_000,
+          maxBytes: MAX_BYTES + 1,
         });
-      } catch {
-        return { ok: false, url, reason: "unreachable" };
+      } catch (e) {
+        return { ok: false, url, reason: e instanceof UnsafeUrlError ? "blocked host" : "unreachable" };
       }
-      if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
-        target = new URL(res.headers.get("location")!, target).toString();
+      if (res.status >= 300 && res.status < 400 && res.headers.location) {
+        target = new URL(res.headers.location, target).toString();
         continue;
       }
-      if (!res.ok) return { ok: false, url, reason: `HTTP ${res.status}` };
-      const type = res.headers.get("content-type") ?? "";
+      if (res.status < 200 || res.status >= 300) return { ok: false, url, reason: `HTTP ${res.status}` };
+      const type = res.headers["content-type"] ?? "";
       if (!/text\/html|application\/xhtml/i.test(type)) return { ok: false, url, reason: "not an HTML page" };
-      const length = Number(res.headers.get("content-length") ?? 0);
-      if (length > MAX_BYTES) return { ok: false, url, reason: "page too large" };
-      const buf = await res.arrayBuffer();
-      if (buf.byteLength > MAX_BYTES) return { ok: false, url, reason: "page too large" };
-      const html = new TextDecoder("utf-8", { fatal: false }).decode(buf);
-      const { title, text, links } = htmlToText(html, target);
+      if (Number(res.headers["content-length"] ?? 0) > MAX_BYTES || res.body.length > MAX_BYTES) return { ok: false, url, reason: "page too large" };
+      const { title, text, links } = htmlToText(res.body, target);
       return { ok: true, url: target, title, text, links };
     }
     return { ok: false, url, reason: "too many redirects" };

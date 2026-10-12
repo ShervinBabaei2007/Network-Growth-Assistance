@@ -34,7 +34,7 @@ const job = (token: string, slug: string, title: string, place: string, hours: n
   department: "Engineering",
 });
 
-const JUNIOR_DEV = `Northwind Labs is hiring a Junior Software Developer to join our platform team in Vancouver.
+export const JUNIOR_DEV = `Northwind Labs is hiring a Junior Software Developer to join our platform team in Vancouver.
 
 What you'll do
 - Build and maintain REST APIs in Python
@@ -147,26 +147,57 @@ export class FixtureEmbedder implements Embedder {
   }
 }
 
-/** Canned AI tailoring: faithful rewrites plus one invented line, so the accuracy check has something to catch. */
+/**
+ * Canned AI answers for end-to-end tests. Tailoring rewrites each bullet truthfully (it adds
+ * the employer's name and job title, both in the resume) and slips in one invented line and
+ * skill for the accuracy check to catch. For the Lakeshore Devices posting it returns the
+ * resume unchanged, so the "couldn't rewrite meaningfully" path can be tested.
+ */
 export class FixtureJobsLLM implements LLMProvider {
   readonly enabled = true;
   async structured<S extends z.ZodType>({ system, user, schema }: { system: string; user: string; schema: S }): Promise<LlmResult<z.infer<S>>> {
     let data: unknown = null;
-    if (system.startsWith("You tailor a resume")) {
-      const entries = [...user.matchAll(/^\[(x\d+|p\d+)\] .*$\n((?: {2}\[\w+\] .*\n?)*)/gm)].map((m) => ({
-        sourceId: m[1],
-        bullets: [...m[2].matchAll(/\[(\w+)\] (.*)/g)].map((b) => ({ text: b[2].trim(), sourceBulletIds: [b[1]] })),
-      }));
+    if (system.startsWith("You tailor a resume") || system.startsWith("You tailor a CV")) {
+      const unchanged = user.includes("Lakeshore Devices");
+      const entries = [...user.matchAll(/^\[(x\d+|p\d+)\] ([^\n—(]*?)\s*(?:—\s*([^\n(]*?))?\s*(?:\(.*)?$\n((?: {2}\[\w+\] .*\n?)*)/gm)].map((m) => {
+        const org = m[2].trim();
+        const title = (m[3] ?? "").trim();
+        return {
+          sourceId: m[1],
+          bullets: [...m[4].matchAll(/\[(\w+)\] (.*)/g)].map((b) => ({
+            text: unchanged ? b[2].trim() : `${b[2].trim().replace(/[.;]$/, "")} as ${title || "part of the team"} at ${org}`,
+            sourceBulletIds: [b[1]],
+          })),
+        };
+      });
       const experience = entries.filter((e) => e.sourceId.startsWith("x"));
-      if (experience[0]) experience[0].bullets.push({ text: "Led a Kubernetes migration for 50 services", sourceBulletIds: [experience[0].bullets[0]?.sourceBulletIds[0] ?? "x1b1"] });
+      if (experience[0] && !unchanged) experience[0].bullets.push({ text: "Led a Kubernetes migration for 50 services", sourceBulletIds: [experience[0].bullets[0]?.sourceBulletIds[0] ?? "x1b1"] });
       const skills = (user.match(/^SKILLS: (.*)$/m)?.[1] ?? "").split(", ").filter(Boolean);
-      data = { summary: null, skills: [...skills, "Kubernetes"], experience, projects: entries.filter((e) => e.sourceId.startsWith("p")).slice(0, 2), sectionOrder: ["experience", "projects", "education"] };
+      const firstJob = user.match(/^\[x\d+\] ([^\n—(]*?)\s*(?:—\s*([^\n(]*?))?\s*(?:\(.*)?$/m);
+      data = {
+        summary: unchanged || !firstJob ? null : `${(firstJob[2] ?? "Developer").trim()} with hands-on work at ${firstJob[1].trim()}.`,
+        skills: unchanged ? skills : [...skills.slice().reverse(), "Kubernetes"],
+        experience,
+        projects: entries.filter((e) => e.sourceId.startsWith("p")).slice(0, 2),
+        sectionOrder: ["experience", "projects", "education"],
+      };
     } else if (system.startsWith("You write a cover letter")) {
       const job = user.match(/^JOB POSTING:\n(.*)$/m)?.[1] ?? "this role";
       data = {
         greeting: "Dear Hiring Manager,",
         paragraphs: [`I'm applying for the ${job.split(" at ")[0]} role.`, "I have five years of Kubernetes experience.", "Thank you for considering my application."],
         closing: "Sincerely,",
+      };
+    } else if (system.startsWith("You read one job posting")) {
+      const lines = user.split("\n").map((l) => l.replace(/^[-•]\s*/, "").trim()).filter((l) => l && l.length < 80);
+      data = { requiredSkills: [], preferredSkills: [], responsibilities: [], requiredQualifications: [], preferredQualifications: [], keywords: lines.slice(2, 4) };
+    } else if (system.startsWith("You advise a job seeker")) {
+      const bullet = user.match(/^ {2}\[(x\d+b\d+)\]/m)?.[1] ?? null;
+      data = {
+        notes: [
+          { section: "experience", priority: "medium", target: bullet, recommendation: "If accurate, say what this work let the team do.", why: "The posting asks for work that helps the team." },
+          { section: "skills", priority: "high", target: null, recommendation: "Add Kubernetes to your skills.", why: "Teams use it." },
+        ],
       };
     }
     if (!data) return { ok: false, reason: "fixture: no canned answer" };

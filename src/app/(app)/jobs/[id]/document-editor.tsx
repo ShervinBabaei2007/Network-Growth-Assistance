@@ -1,30 +1,21 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { Download, Trash2, Undo2 } from "lucide-react";
+import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SECTION_HEADINGS, type CoverLetterDoc, type GuardIssue, type TailoredResumeDoc } from "@/lib/job-postings/documents";
-import { discardDocumentEdit, saveDocumentEdit } from "../actions";
+import { discardDocumentEdit, saveDocumentEdit } from "../documents/actions";
 
 function useSave(docId: string) {
-  const [pending, start] = useTransition();
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
-  const save = (content: unknown) =>
-    start(async () => {
-      const r = await saveDocumentEdit(docId, content);
-      setMessage(r.ok ? { ok: true, text: r.message ?? "Saved." } : { ok: false, text: r.error });
-    });
+  const { pending, run, last: message } = useActionRunner();
+  const save = (content: unknown) => run(() => saveDocumentEdit(docId, content));
   /** Goes back to the generated version; `onDone` puts it back in the editor. */
-  const discard = (onDone: () => void) =>
-    start(async () => {
-      const r = await discardDocumentEdit(docId);
-      if (r.ok) onDone();
-      setMessage(r.ok ? { ok: true, text: r.message ?? "Reset." } : { ok: false, text: r.error });
-    });
+  const discard = (onDone: () => void) => run(() => discardDocumentEdit(docId), { onSuccess: onDone });
   return { pending, message, save, discard };
 }
 
@@ -46,11 +37,7 @@ function Toolbar({ docId, edited, pending, message, onSave, onDiscard }: { docId
         <Download aria-hidden /> Word (DOCX)
       </a>
       <span className="text-xs text-muted-foreground">Downloads use your last saved version.</span>
-      {message ? (
-        <p role={message.ok ? "status" : "alert"} className={message.ok ? "text-sm text-muted-foreground" : "text-sm text-destructive"}>
-          {message.text}
-        </p>
-      ) : null}
+      {message ? <p className={message.ok ? "text-sm text-muted-foreground" : "text-sm text-destructive"}>{message.text}</p> : null}
     </div>
   );
 }

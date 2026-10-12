@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 process.env.APP_ENCRYPTION_KEY = "test-key-that-is-at-least-32-characters-long";
 
-const { backoffMinutes, dateJob } = await import("./crawler");
+const { backoffMinutes, dateJob, dueBoardKinds } = await import("./crawler");
 const { decryptSecret, encryptSecret } = await import("./ai");
 
 const NOW = new Date("2026-10-11T18:00:00Z");
@@ -34,7 +34,16 @@ describe("own AI keys", () => {
     expect(stored).not.toContain("abcdef");
     expect(decryptSecret(stored)).toBe("sk-ant-api03-abcdefghijklmnopqrstuvwxyz");
     const [v, iv, tag, data] = stored.split(":");
-    expect(decryptSecret([v, iv, tag, `A${data.slice(1)}`].join(":"))).toBeNull();
+    // Change the first character to a different one (it may already be "A").
+    expect(decryptSecret([v, iv, tag, `${data[0] === "A" ? "B" : "A"}${data.slice(1)}`].join(":"))).toBeNull();
     expect(encryptSecret("same")).not.toBe(encryptSecret("same"));
+  });
+});
+
+describe("dueBoardKinds: test mode never reads real boards", () => {
+  it("reads only sample boards in test mode, and never sample boards otherwise", () => {
+    // In test mode every board is served canned data: a real board would look empty and its real jobs would be closed.
+    expect(dueBoardKinds(true)).toEqual({ only: "fixture" });
+    expect(dueBoardKinds(false)).toEqual({ never: "fixture" });
   });
 });

@@ -152,16 +152,6 @@ async function scoreChunk(db: Db, userId: string, resume: ActiveResume, ids: str
   return out;
 }
 
-/** Relevance of each resume line to one job (0–1 above the partial threshold), for ordering bullets. */
-export async function lineRelevance(db: Db, resumeId: string, jobId: string, embedder: Embedder): Promise<Map<string, number>> {
-  const out = new Map<string, number>();
-  if (!embedder.enabled) return out;
-  const { data } = await db.rpc("line_relevance", { p_resume: resumeId, p_job: jobId });
-  const floor = embedder.thresholds.partial;
-  for (const r of data ?? []) out.set(r.line_id, Math.max(0, (r.similarity - floor) / (1 - floor)));
-  return out;
-}
-
 export async function loadRequirements(db: Db, jobId: string): Promise<Requirement[]> {
   const { data } = await db.from("job_requirements").select("job_id, idx, text, kind, category, years, degree_level").eq("job_id", jobId).order("idx");
   return (data ?? []).map(toRequirement);

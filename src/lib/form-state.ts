@@ -1,8 +1,11 @@
 import { z } from "zod";
+import type { ToastSpec } from "./toast";
 
 export type FormState = {
   status: "idle" | "saved" | "error";
   message?: string;
+  /** What to announce, when it differs from the message (e.g. a warning after a save). */
+  toast?: ToastSpec;
   /** Optional link shown with the message, e.g. to an existing duplicate record. */
   href?: string;
   hrefLabel?: string;

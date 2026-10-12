@@ -1,35 +1,42 @@
 import { z } from "zod";
-import type { LLMProvider } from "@/lib/discovery/llm";
+import type { AIProvider } from "@/lib/ai/provider";
 import { clean } from "@/lib/text/match";
-import { DEGREE_LEVELS, type DegreeLevel, type ResumeEntry, type ResumeProfile } from "./types";
+import { DEGREE_LEVELS, ResumeProfile, type DegreeLevel, type ResumeContact, type ResumeEntry } from "./types";
 
 /**
- * Turns resume text into a ResumeProfile. With AI, Claude structures it; every
- * organization, bullet and skill it returns must appear in the text, or it is dropped.
- * Without AI (or if the model fails), a heading-based parser does a coarser job.
+ * Turns resume text into a ResumeProfile. A heading-based parser reads it without AI;
+ * every value it fills is copied from the text. With AI, the model structures it too, and
+ * anything it returns that isn't in the text is dropped (see groundAiResume).
+ * How sure we are about each field is worked out in resume-fields.ts.
  */
 
 export const MAX_RESUME_TEXT = 60_000;
 
-const HEADINGS: [keyof Pick<ResumeProfile, "experience" | "education" | "projects" | "skills" | "certifications" | "summary">, RegExp][] = [
+export type SectionKey = "experience" | "education" | "projects" | "skills" | "certifications" | "summary" | "awards" | "activities";
+
+const HEADINGS: [SectionKey, RegExp][] = [
   ["experience", /^(work |professional |relevant |employment |industry |co op |coop )?(experience|employment|history|work history)( history)?$/],
   ["education", /^(education|academic background|education and training)$/],
   ["projects", /^(technical |personal |academic |selected |relevant )?projects?( experience)?$/],
   ["skills", /^(technical |core |key )?(skills|technologies|competencies|skills and (tools|technologies|interests)|tools and technologies)$/],
   ["certifications", /^(certifications?|licen[cs]es?( and certifications?)?|certifications? and licen[cs]es?|certificates)$/],
   ["summary", /^(summary|profile|professional summary|objective|career objective|about me)$/],
+  ["awards", /^(awards?|honou?rs|honou?rs and awards|awards and honou?rs|achievements|scholarships?( and awards)?|awards and scholarships)$/],
+  ["activities", /^(extracurricular|extracurricular activities|extra curricular activities|activities|leadership|leadership experience|leadership and activities|volunteer|volunteering|volunteer experience|community involvement|involvement|clubs and organizations)$/],
 ];
 
-const BULLET = /^[•\-*▪●◦–·‣⁃■□➢►✓]\s*/;
+export const BULLET = /^[•\-*▪●◦–·‣⁃■□➢►✓]\s*/;
 const MONTH = "(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\\.?";
 const DATE = `(?:${MONTH}\\s+\\d{4}|\\d{1,2}/\\d{4}|\\d{4})`;
 const DATE_RANGE = new RegExp(`(${DATE})\\s*(?:-|–|—|to)\\s*(${DATE}|present|current|now|ongoing)`, "i");
-const SINGLE_DATE = new RegExp(`(?:expected\\s+)?(${MONTH}\\s+\\d{4}|\\d{4})\\s*$`, "i");
-const EMAIL = /[\w.+-]+@[\w-]+\.[\w.-]+/;
-const PHONE = /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/;
-const LINK = /(?:https?:\/\/)?(?:www\.)?(?:linkedin\.com\/in\/[\w-]+|github\.com\/[\w-]+|[\w-]+\.(?:dev|io|me|ca|com)\/?[\w/-]*)/gi;
+const SINGLE_DATE = new RegExp(`((?:expected|anticipated|exp\\.?)\\s+)?(${MONTH}\\s+\\d{4}|\\d{4})\\s*\\)?$`, "i");
+export const EMAIL = /[\w.+-]+@[\w-]+\.[\w.-]*\w/g;
+export const PHONE = /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/g;
+// Not preceded by "@" or a word character, so the domain of an email address isn't read as a link.
+export const LINK = /(?<![@\w.-])(?:https?:\/\/)?(?:www\.)?(?:linkedin\.com\/in\/[\w%-]+|github\.com\/[\w-]+(?:\/[\w.-]+)?|[\w-]+(?:\.[\w-]+)*\.(?:dev|io|me|ca|com|net|org|app|site|page)(?:\/[\w/#.-]*)?)/gi;
+const CA_LOCATION = /^[A-Z][\w .'-]+,\s*(BC|ON|AB|QC|MB|SK|NS|NB|NL|PE|YT|NT|NU|British Columbia|Ontario|Alberta|Quebec|Manitoba|Saskatchewan|Nova Scotia|New Brunswick|Canada)$/;
 
-function headingOf(line: string): (typeof HEADINGS)[number][0] | null {
+export function headingOf(line: string): SectionKey | null {
   if (line.length > 45) return null;
   const t = clean(line).trim();
   for (const [key, re] of HEADINGS) if (re.test(t)) return key;
@@ -37,15 +44,17 @@ function headingOf(line: string): (typeof HEADINGS)[number][0] | null {
 }
 
 /** Splits "Acme Corp — Software Developer Intern   May 2023 – Aug 2023" into its parts. */
-function splitHeader(line: string): { text: string; start: string | null; end: string | null } {
+function splitHeader(line: string): { text: string; start: string | null; end: string | null; expected: boolean } {
   const m = line.match(DATE_RANGE);
   if (m) {
     const text = line.replace(m[0], "").replace(/[|,–—-]\s*$/, "").replace(/\s{2,}/g, " ").trim();
-    return { text, start: m[1], end: m[2] };
+    return { text, start: m[1], end: m[2], expected: false };
   }
   const single = line.match(SINGLE_DATE);
-  if (single && line.length > single[0].length + 3) return { text: line.slice(0, single.index).replace(/[|,–—-]\s*$/, "").trim(), start: null, end: single[1] };
-  return { text: line, start: null, end: null };
+  if (single && line.length > single[0].length + 3) {
+    return { text: line.slice(0, single.index).replace(/[|,–—(-]\s*$/, "").trim(), start: null, end: single[2], expected: Boolean(single[1]) };
+  }
+  return { text: line, start: null, end: null, expected: false };
 }
 
 /** Header lines like "Software Developer, Acme Corp" or "Acme Corp | Vancouver, BC". */
@@ -56,27 +65,31 @@ function headerParts(lines: string[]): Pick<ResumeEntry, "organization" | "title
   return { organization: rest[0] ?? lines[0] ?? "", title: rest[1] ?? null, location: loc };
 }
 
-function entriesFrom(lines: string[], prefix: string): ResumeEntry[] {
+const blankEntry = (id: string): ResumeEntry => ({ id, organization: "", title: null, start: null, end: null, location: null, bullets: [], degree: null, major: null, graduation: null });
+
+/** Lines of one section grouped into entries: header lines (name, title, dates) then bullets. */
+export function entriesFrom(lines: string[], prefix: string): ResumeEntry[] {
   const entries: ResumeEntry[] = [];
   let header: string[] = [];
   let current: ResumeEntry | null = null;
-  let dates: { start: string | null; end: string | null } = { start: null, end: null };
+  let dates: { start: string | null; end: string | null; expected: boolean } = { start: null, end: null, expected: false };
 
   const flushHeader = () => {
     if (!header.length) return;
-    const id = `${prefix}${entries.length + 1}`;
-    current = { id, ...headerParts(header), start: dates.start, end: dates.end, bullets: [] };
-    entries.push(current);
+    const entry: ResumeEntry = { ...blankEntry(`${prefix}${entries.length + 1}`), ...headerParts(header), start: dates.start, end: dates.end };
+    // "Expected Apr 2027" is a graduation date, kept with its wording.
+    if (dates.expected && dates.end) entry.graduation = `Expected ${dates.end}`;
+    entries.push(entry);
+    current = entry;
     header = [];
-    dates = { start: null, end: null };
+    dates = { start: null, end: null, expected: false };
   };
 
   for (const raw of lines) {
-    const isBullet = BULLET.test(raw);
-    if (isBullet) {
+    if (BULLET.test(raw)) {
       flushHeader();
       if (!current) {
-        current = { id: `${prefix}${entries.length + 1}`, organization: "", title: null, start: null, end: null, location: null, bullets: [] };
+        current = blankEntry(`${prefix}${entries.length + 1}`);
         entries.push(current);
       }
       const entry: ResumeEntry = current;
@@ -92,8 +105,8 @@ function entriesFrom(lines: string[], prefix: string): ResumeEntry[] {
     }
     // A non-bullet line after bullets starts the next entry.
     if (entry && entry.bullets.length && !header.length) current = null;
-    const { text, start, end } = splitHeader(raw);
-    if (start || end) dates = { start: dates.start ?? start, end: dates.end ?? end };
+    const { text, start, end, expected } = splitHeader(raw);
+    if (start || end) dates = { start: dates.start ?? start, end: dates.end ?? end, expected: dates.expected || expected };
     if (text) header.push(text);
     if (header.length >= 3) flushHeader();
   }
@@ -114,12 +127,14 @@ export function splitSkills(lines: string[]): string[] {
   return [...out].slice(0, 120);
 }
 
-/** Heading-based parser for when AI is off or fails. Coarse, but every word is from the text. */
-export function parseResumeHeuristic(text: string): ResumeProfile {
+export type ResumeSections = { header: string[]; sections: Partial<Record<SectionKey, string[]>> };
+
+/** The resume's lines, split into the header (before the first heading) and its sections. */
+export function resumeSections(text: string): ResumeSections {
   const lines = text.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
-  const sections: Partial<Record<(typeof HEADINGS)[number][0], string[]>> = {};
+  const sections: Partial<Record<SectionKey, string[]>> = {};
   const header: string[] = [];
-  let section: (typeof HEADINGS)[number][0] | null = null;
+  let section: SectionKey | null = null;
   for (const line of lines) {
     const h = headingOf(line);
     if (h) {
@@ -130,26 +145,89 @@ export function parseResumeHeuristic(text: string): ResumeProfile {
     if (section) sections[section]!.push(line);
     else header.push(line);
   }
+  return { header, sections };
+}
 
+const NOT_A_NAME = /^(resume|résumé|curriculum vitae|cv)$/i;
+
+/** The first header line that looks like a name: no digits, no email, not "Resume". */
+export function nameCandidate(header: string[]): string | null {
+  const line = header.find((l) => !NOT_A_NAME.test(l.trim())) ?? "";
+  if (!line || line.length > 60) return null;
+  const EMAIL_ONE = new RegExp(EMAIL.source);
+  if (EMAIL_ONE.test(line) || /\d/.test(line)) return null;
+  return line.split(/\s+[|•·]\s+/)[0].trim() || null;
+}
+
+/** Every link in a text, without emails, in order of appearance. */
+export function linksIn(text: string): string[] {
+  return [...new Set([...text.matchAll(LINK)].map((m) => m[0].replace(/[.,)]+$/, "")).filter((l) => !/@/.test(l)))];
+}
+
+/** "linkedin.com/in/sam" → linkedin; "github.com/sam" → github; "sam.dev" → website. */
+export function classifyLinks(links: string[]): ResumeContact & { githubRepo: string | null } {
+  const linkedin = links.find((l) => /linkedin\.com\/in\//i.test(l)) ?? null;
+  const githubProfile = links.find((l) => /github\.com\/[\w-]+\/?$/i.test(l)) ?? null;
+  const githubRepo = links.find((l) => /github\.com\/[\w-]+\/[\w.-]+/i.test(l)) ?? null;
+  const website = links.find((l) => !/linkedin\.com|github\.com|gitlab\.com|bitbucket\.org/i.test(l)) ?? null;
+  return { linkedin, github: githubProfile, website, githubRepo };
+}
+
+const DEGREE_PHRASE =
+  /\b(Bachelor(?:'s)?(?: of [A-Z][A-Za-z]+(?: [A-Z][A-Za-z]+){0,2})?|Master(?:'s)?(?: of [A-Z][A-Za-z]+(?: [A-Z][A-Za-z]+){0,2})?|Doctor of Philosophy|Ph\.?\s?D\.?|B\.?\s?A\.?\s?Sc\.?|B\.?\s?Sc\.?|B\.?\s?Eng\.?|B\.?\s?Tech\.?|B\.?\s?Comm?\.?|B\.?\s?A\.?|M\.?\s?A\.?\s?Sc\.?|M\.?\s?Sc\.?|M\.?\s?Eng\.?|MBA|Advanced Diploma|Diploma|Associate(?:'s)? Degree|Certificate)\b/;
+
+/** "Bachelor of Applied Science in Computer Engineering" → degree and major, as written. */
+export function degreeAndMajor(text: string | null): { degree: string | null; major: string | null } {
+  if (!text) return { degree: null, major: null };
+  const m = text.match(DEGREE_PHRASE);
+  if (!m) return { degree: null, major: null };
+  const degree = m[1].trim();
+  const after = text
+    .slice((m.index ?? 0) + m[0].length)
+    .replace(/^\s*(?:,|in|of|:|-|–|—|\()\s*/i, "")
+    .replace(/\s*[|(].*$/, "")
+    .replace(/[,;]\s*(minor|specialization|option|co-?op|honou?rs|gpa|cgpa|dean).*$/i, "")
+    .trim();
+  const major = after && after.length <= 80 && /^[A-Z]/.test(after) ? after : null;
+  return { degree, major };
+}
+
+/** Fills degree, major and graduation of education entries from what each entry says. */
+function withDegrees(entries: ResumeEntry[]): ResumeEntry[] {
+  return entries.map((e) => {
+    const fromTitle = degreeAndMajor(e.title);
+    const fromOrg = fromTitle.degree ? fromTitle : degreeAndMajor(e.organization);
+    // Only a finished range or an "Expected" date says when it ends. A lone date stays the
+    // end date and is flagged for review in resume-fields.ts rather than called a graduation.
+    const graduation = e.graduation ?? (e.start && e.end && !/present|current|now|ongoing/i.test(e.end) ? e.end : null);
+    return { ...e, degree: e.degree ?? fromOrg.degree, major: e.major ?? fromOrg.major, graduation };
+  });
+}
+
+/** Heading-based parser that needs no AI. Every value it fills is copied from the text. */
+export function parseResumeHeuristic(text: string): ResumeProfile {
+  const { header, sections } = resumeSections(text);
   const headerText = header.join("\n");
-  const firstLine = header[0] ?? "";
-  const name = firstLine && firstLine.length <= 60 && !EMAIL.test(firstLine) && !/\d/.test(firstLine) ? firstLine.split(/\s+[|•·]\s+/)[0] : null;
-  const links = [...new Set([...headerText.matchAll(LINK)].map((m) => m[0]).filter((l) => !EMAIL.test(l) && !/@/.test(l)))].slice(0, 6);
-  const location = header.flatMap((l) => l.split(/\s+[|•·]\s+/)).find((p) => /^[A-Z][\w .'-]+,\s*(BC|ON|AB|QC|MB|SK|NS|NB|NL|PE|British Columbia|Ontario|Canada)$/.test(p.trim())) ?? null;
+  const headerLinks = linksIn(headerText);
+  const contact = classifyLinks(headerLinks.length ? headerLinks : linksIn(text));
+  const location = header.flatMap((l) => l.split(/\s+[|•·]\s+/)).find((p) => CA_LOCATION.test(p.trim())) ?? null;
 
-  return {
-    name,
-    email: headerText.match(EMAIL)?.[0] ?? null,
-    phone: headerText.match(PHONE)?.[0] ?? null,
+  return ResumeProfile.parse({
+    name: nameCandidate(header),
+    email: headerText.match(new RegExp(EMAIL.source))?.[0] ?? text.match(new RegExp(EMAIL.source))?.[0] ?? null,
+    phone: headerText.match(new RegExp(PHONE.source))?.[0]?.trim() ?? null,
     location: location?.trim() ?? null,
-    links,
+    links: headerLinks.slice(0, 6),
+    contact: { linkedin: contact.linkedin, github: contact.github, website: contact.website },
     summary: sections.summary?.join(" ").trim() || null,
     experience: entriesFrom(sections.experience ?? [], "x"),
-    education: entriesFrom(sections.education ?? [], "d"),
+    education: withDegrees(entriesFrom(sections.education ?? [], "d")),
     projects: entriesFrom(sections.projects ?? [], "p"),
     skills: splitSkills(sections.skills ?? []),
     certifications: (sections.certifications ?? []).map((l) => l.replace(BULLET, "").trim()).filter(Boolean).slice(0, 30),
-  };
+    awards: entriesFrom(sections.awards ?? [], "a").slice(0, 30),
+    activities: entriesFrom(sections.activities ?? [], "v").slice(0, 30),
+  });
 }
 
 // ------------------------------------------------------------------ AI parsing
@@ -161,6 +239,9 @@ const AiEntry = z.object({
   end: z.string().nullable(),
   location: z.string().nullable(),
   bullets: z.array(z.string()),
+  degree: z.string().nullable(),
+  major: z.string().nullable(),
+  graduation: z.string().nullable(),
 });
 export const AiResume = z.object({
   name: z.string().nullable(),
@@ -174,17 +255,11 @@ export const AiResume = z.object({
   projects: z.array(AiEntry),
   skills: z.array(z.string()),
   certifications: z.array(z.string()),
+  awards: z.array(AiEntry),
+  activities: z.array(AiEntry),
 });
 export type AiResume = z.infer<typeof AiResume>;
 
-const PARSE_SYSTEM = `You convert resume text into structured data. Copy text exactly as written: do not reword, fix, summarize, merge or invent anything.
-- experience: paid roles, co-ops and internships. organization = employer, title = job title.
-- education: organization = school, title = degree and program (e.g. "Diploma, Computer Systems Technology").
-- projects: organization = project name, title = role or tech line if present.
-- bullets: each bullet or sentence under an entry, verbatim.
-- skills: individual skills, tools, languages, frameworks, as listed.
-- certifications: certifications and licences, verbatim.
-Use null for anything not in the text.`;
 
 /** True if the text appears in the resume, ignoring case, punctuation and line breaks. */
 export function inResume(rawClean: string, text: string | null | undefined): boolean {
@@ -209,32 +284,41 @@ export function groundAiResume(ai: AiResume, raw: string): ResumeProfile {
           end: keep(e.end),
           location: keep(e.location),
           bullets: e.bullets.filter((b) => inResume(rawClean, b)).map((text, j) => ({ id: `${id}b${j + 1}`, text: text.trim() })),
+          degree: keep(e.degree),
+          major: keep(e.major),
+          // "Expected 2027" may be phrased differently; the date itself must be in the text.
+          graduation: e.graduation && inResume(rawClean, e.graduation.replace(/^(expected|anticipated)\s+/i, "")) ? e.graduation.trim() : null,
         };
       });
-  return {
+  const links = ai.links.filter((l) => raw.includes(l.replace(/^https?:\/\//, "").replace(/\/$/, ""))).slice(0, 6);
+  const contact = classifyLinks(links);
+  return ResumeProfile.parse({
     name: keep(ai.name),
     email: ai.email && raw.includes(ai.email) ? ai.email : null,
     phone: keep(ai.phone),
     location: keep(ai.location),
-    links: ai.links.filter((l) => raw.includes(l.replace(/^https?:\/\//, "").replace(/\/$/, ""))).slice(0, 6),
+    links,
+    contact: { linkedin: contact.linkedin, github: contact.github, website: contact.website },
     summary: keep(ai.summary),
     experience: entries(ai.experience, "x"),
     education: entries(ai.education, "d"),
     projects: entries(ai.projects, "p"),
     skills: [...new Set(ai.skills.filter((s) => inResume(rawClean, s)).map((s) => s.trim()))].slice(0, 120),
     certifications: ai.certifications.filter((c) => inResume(rawClean, c)).slice(0, 30),
-  };
+    awards: entries(ai.awards, "a").slice(0, 30),
+    activities: entries(ai.activities, "v").slice(0, 30),
+  });
 }
 
-export async function parseResume(text: string, llm: LLMProvider): Promise<{ profile: ResumeProfile; parsedWith: "ai" | "heuristic"; note: string | null }> {
+/** An AI reading of the resume, kept only where it matches the text. Falls back to the rules' reading. */
+export async function parseResume(text: string, ai: AIProvider): Promise<{ profile: ResumeProfile; parsedWith: "ai" | "heuristic"; note: string | null }> {
   const heuristic = parseResumeHeuristic(text);
-  if (!llm.enabled) return { profile: heuristic, parsedWith: "heuristic", note: "Parsed without AI: check the sections below." };
-  const res = await llm.structured({ tier: "fast", system: PARSE_SYSTEM, user: `Resume text:\n"""\n${text}\n"""`, schema: AiResume, maxTokens: 12_000 });
-  if (!res.ok) return { profile: heuristic, parsedWith: "heuristic", note: `AI parsing failed (${res.reason}), so a simpler parser was used. Check the sections below.` };
+  const res = await ai.parseResume(text);
+  if (!res.ok) return { profile: heuristic, parsedWith: "heuristic", note: `The AI read didn't work (${res.reason}), so your resume was read without it.` };
   const profile = groundAiResume(res.data, text);
   const bullets = (p: ResumeProfile) => [...p.experience, ...p.projects].reduce((n, e) => n + e.bullets.length, 0);
-  // If grounding threw most of it away, the simple parser is the safer result.
-  if (bullets(profile) < bullets(heuristic) / 2) return { profile: heuristic, parsedWith: "heuristic", note: "AI parsing didn't match the text closely, so a simpler parser was used. Check the sections below." };
+  // If grounding threw most of it away, the rules' reading is the safer result.
+  if (bullets(profile) < bullets(heuristic) / 2) return { profile: heuristic, parsedWith: "heuristic", note: "The AI read didn't match the text closely, so your resume was read without it." };
   return { profile, parsedWith: "ai", note: null };
 }
 

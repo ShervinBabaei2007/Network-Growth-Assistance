@@ -7,7 +7,7 @@ import { classifyCandidate } from "@/lib/classify";
 import { rescoreSearch } from "@/lib/discovery/agent";
 import { NetworkingCriteria } from "@/lib/discovery/criteria";
 import { identitySignature } from "@/lib/discovery/known-match";
-import { AnthropicLLM } from "@/lib/discovery/llm";
+import { defaultLLM } from "@/lib/ai/default-llm";
 import { rewriteIntro, suggestIntro, INTRO_LIMIT } from "@/lib/discovery/messages";
 import { loadPersonDetail } from "@/lib/discovery/results";
 import { startSearch } from "@/lib/discovery/service";
@@ -218,7 +218,7 @@ export async function generateIntro(personId: string, useAi: boolean): Promise<A
   if (!detail) return err("Unknown person.");
   const draft = suggestIntro(detail.introFacts, INTRO_LIMIT);
   if (!useAi) return { ok: true, text: draft };
-  const res = await rewriteIntro(new AnthropicLLM(), detail.introFacts, draft, INTRO_LIMIT);
+  const res = await rewriteIntro(defaultLLM(), detail.introFacts, draft, INTRO_LIMIT);
   if (!res.ok) return { ok: true, text: draft, message: res.reason };
   return { ok: true, text: res.text };
 }

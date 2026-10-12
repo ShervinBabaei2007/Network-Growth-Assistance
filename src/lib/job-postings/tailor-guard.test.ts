@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { unknownTerms } from "@/lib/text/terms";
 import { checkBullet, checkLetterSentence, guardCoverLetter, guardResume, type AiTailoredResume } from "./tailor-guard";
-import type { ResumeProfile } from "./types";
+import { ResumeProfile } from "./types";
 
-const profile: ResumeProfile = {
+const profile: ResumeProfile = ResumeProfile.parse({
   name: "Sam Lee",
   email: "sam@example.com",
   phone: null,
@@ -38,7 +38,7 @@ const profile: ResumeProfile = {
   projects: [{ id: "p1", organization: "Course Planner", title: null, start: null, end: null, location: null, bullets: [{ id: "p1b1", text: "React app for planning courses, deployed with Docker" }] }],
   skills: ["Python", "Flask", "SQL", "PostgreSQL", "React", "Docker", "pytest"],
   certifications: [],
-};
+});
 const resumeText = [
   "Sam Lee",
   "Acme Corp Software Developer Co-op",

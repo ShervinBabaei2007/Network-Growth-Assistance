@@ -7,7 +7,8 @@ The app runs on **Vercel** (web app and daily cron) and **Supabase** (Postgres a
 - A GitHub account. The code should be in a **private** repository.
 - A Vercel account, connected to GitHub.
 - A Supabase account.
-- Optional: an Anthropic API key, for the "Suggest with Claude" button on connection notes.
+- Recommended: a free Gemini API key from Google AI Studio (https://aistudio.google.com/apikey), for the "Suggest with AI" button on connection notes, Discover's reading of web pages, and Jobs' AI tailoring. Without it, every feature uses its non-AI path.
+- Nothing else. Jobs needs no keys: employer boards, Jobicy and Remotive are free public APIs. Anthropic and Adzuna are not required (both still work as optional extras).
 
 ## 1. Push the code to GitHub
 
@@ -46,20 +47,25 @@ Or create an empty private repository on github.com and push to it.
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | The publishable key |
    | `SUPABASE_SECRET_KEY` | The secret key. Server only, never expose it. |
    | `CRON_SECRET` | A long random string, e.g. from `openssl rand -hex 32` |
-   | `ANTHROPIC_API_KEY` | Optional. Leave unset to keep Claude suggestions off. Discover needs it to read web pages and explain matches. |
+   | `GEMINI_API_KEY` | Recommended, free. The default AI (Google AI Studio key). Server only: never name it `NEXT_PUBLIC_…`. Leave unset to keep AI off. |
+   | `GEMINI_MODEL` | Optional. Default `gemini-3.8-flash`. Any Gemini model with structured output. |
+   | `ANTHROPIC_API_KEY` | Optional, not required. Used only when `GEMINI_API_KEY` isn't set. |
    | `BRAVE_SEARCH_API_KEY` | Optional. Enables Discover's public web search. |
    | `GITHUB_TOKEN` | Optional. A token with no scopes; raises GitHub's rate limit for Discover. |
    | `EMBED_SECRET` | Recommended. Any random string of 16+ characters; turns on Jobs' matching by meaning (step 3b). |
-   | `APP_ENCRYPTION_KEY` | Optional. 32+ random characters (`openssl rand -hex 32`); lets users store their own Anthropic key. Never change it once keys are stored. |
-   | `AI_DAILY_QUOTA` | Optional. AI rewrites per user per day on your `ANTHROPIC_API_KEY` (default 3; `0` = users' own keys only). |
+   | `APP_ENCRYPTION_KEY` | Optional. 32+ random characters (`openssl rand -hex 32`); lets users store their own AI key (Gemini, or Anthropic). Never change it once keys are stored. |
+   | `AI_DAILY_QUOTA` | Optional. AI uses (tailoring, notes, AI resume reading) per user per day on your server key (default 3; `0` = users' own keys only). Keep it within your Gemini free-tier limits. |
+   | `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` | Optional, not required. With both, Jobs also searches Adzuna (whose free allowance is small). |
+
+   Never set `JOBS_FIXTURES` or `DISCOVERY_FIXTURES` in production. They are ignored in production builds anyway, so fictional data can't appear.
 
 3. Deploy.
 
 Vercel reads `vercel.json` and registers the daily job (`/api/cron/daily`, scheduled for 12:00 UTC, which is early morning in Canada). Vercel automatically sends `Authorization: Bearer $CRON_SECRET` with each cron call, and the route rejects calls without it.
 
-## 3b. Set up Jobs (no API keys)
+## 3b. Set up Jobs (no API keys needed to start)
 
-1. **Load the employer directory** (about 110 employers hiring in Canada) with your Supabase URL and secret key in the environment:
+1. **Load the employer directory** (tech employers first, plus non-tech and international ones found by `npm run employers:discover -- scripts/employer-candidates-worldwide.txt`) with your Supabase URL and secret key in the environment:
 
    ```sh
    NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co SUPABASE_SECRET_KEY=<secret> npm run employers:load
@@ -92,6 +98,16 @@ Vercel reads `vercel.json` and registers the daily job (`/api/cron/daily`, sched
 
    Without it, fit checks still work from the skills list alone.
 
+4. **Resume files** are stored in a private Supabase Storage bucket named `resumes`, which the migration creates with per-user access rules. Nothing to configure; check under **Storage** that the bucket exists and is not public. Deleting a resume or an account removes its files.
+
+5. **Jobicy and Remotive need nothing.** Searches ask Jobicy's public API (no key; each answer reused for an hour, as Jobicy asks). The crawl cron reads Remotive's public feed at most every 6 hours (Remotive asks for at most 4 reads a day). New listings from both start "not yet verified"; the crawl cron checks them with whatever time each tick has left (Jobicy jobs first through Jobicy's free status endpoint), and a listing becomes Apply-able only once its link checks out. Both sites ask to be credited and linked: the app shows the source on every job and links only to their listing pages.
+
+6. **Optional: Adzuna search.** Set `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` in Vercel. Searches then also ask Adzuna (cached for 30 minutes per search). Not needed for a useful search.
+
+   **Arbeitnow** (Europe and the UK) needs nothing: the crawl cron reads its newest feed pages at most every 6 hours. **Optional: USAJOBS** (U.S. federal jobs): request a free key at https://developer.usajobs.gov/apirequest/ and set `USAJOBS_API_KEY` and `USAJOBS_EMAIL` (the email you requested it with).
+
+7. **Check that no AI key reaches the browser** after a build: `npm run build && npm run check:bundle` (set `GEMINI_API_KEY` to a dummy value for both commands to also search for the value itself).
+
 ## 4. Check that it works
 
 1. Open the site and sign in with your email. The link arrives from Supabase.
@@ -120,26 +136,30 @@ These are from the providers' pricing pages at the time of writing. Check the cu
   - Projects **pause after a week without activity**. The daily cron touches the database every day, which keeps the project active.
   - No point-in-time backups. Use **Settings → Download all my data** for your own backup.
   - Built-in email is limited (see step 2.4).
-- **Anthropic (optional)**
-  - Pay-as-you-go. A note rewrite is a few hundred tokens on `claude-opus-5-5` at low effort, roughly a third of a cent each.
-  - The app caps rewrites at 25 per user per day.
+- **Gemini (recommended, free tier)**
+  - The Gemini Developer API's free tier covers Flash models at no cost, with per-minute and per-day request limits (see your limits in Google AI Studio). When they're reached, AI calls fail cleanly: Tailor Resume gives Improvement Notes, and the rest of the app works the same.
+  - **Privacy:** on the free tier, Google may use the prompts and answers (resume text, postings) to improve its products; on the paid tier it says it doesn't. Tell your users, or use a paid key.
+  - The app caps note rewrites at 25 per user per day, and Jobs AI at `AI_DAILY_QUOTA` per user per day on your key.
+- **Anthropic (optional, not required)**
+  - Pay-as-you-go. Used only if you set `ANTHROPIC_API_KEY` without `GEMINI_API_KEY`, or a user adds their own Anthropic key.
 
 - **Discover**
   - Works with no keys at all: GitHub and ORCID are free public APIs, and their data is read without AI. Set a free `GITHUB_TOKEN`; without it GitHub allows only about one search an hour.
   - Each user can run 20 searches a day, one at a time. A search is capped at 30 queries, 100 pages and 60 AI calls.
   - Brave Search bills per query; at most 30 per search, fewer when cached (search results are cached for 3 days).
-  - Page reading uses `claude-haiku-4-5` (one call per relevant page). Understanding the request and explaining the top matches use `claude-opus-5-5` at low effort.
+  - Page reading (one call per relevant page), understanding the request and explaining the top matches use your Gemini model (`GEMINI_MODEL`). On the free tier, a large search can reach the per-minute limit: then the request is understood by the built-in parser, matches are explained by their score breakdown, and pages that couldn't be read add no people.
   - Research runs in steps of up to 60 seconds, driven by the results page while it's open. Closing the tab pauses a search; reopening it continues. A search left for 10 minutes is cancelled when you start a new one.
 
 - **Jobs**
-  - No API keys and no per-user outside calls. The crawler reads each employer's public board at most every 30 minutes, whatever the number of users. In a local test, 114 boards took 12 seconds and stored about 1,600 Canadian jobs.
-  - Coverage grows with the directory, not with keys: about 100 employers give roughly 25–40 new Canadian jobs on a weekday.
+  - No API keys. The crawler reads each employer's public board at most every 30 minutes, whatever the number of users. In a local test, 114 boards took 12 seconds and stored about 1,600 jobs for Canada. Only jobs open to a country some user searches are kept, so storage grows with the countries people choose (each country adds roughly what its share of the boards lists); keep an eye on the 500 MB free database if users pick many countries.
+  - Jobicy: one call per new search (and per later page), shared by everyone searching the same words within an hour. Remotive: at most 4 calls a day in total.
+  - Coverage grows with the directory, not with keys: about 100 employers gave roughly 25–40 new Canadian jobs on a weekday.
   - Matching by meaning embeds requirements of open jobs from the last 90 days (the feed's longest range), newest first, at about 55 ms of Edge Function CPU each, in batches of 16. Resume lines are embedded once per upload.
   - Fit checks and free tailoring run in the app: one database call per page of jobs, no AI.
-  - Optional AI rewording uses `claude-opus-5-5`: two calls per rewrite, plus up to one retry each. It's paid by the user's own key, or by you within `AI_DAILY_QUOTA`.
+  - Optional AI rewording uses your Gemini model: one call per rewrite, plus up to one retry. It runs on the user's own key, or on yours within `AI_DAILY_QUOTA`.
   - Jobs no longer on their board are closed after 3 days. Closed jobs are deleted after 30 days unless someone saved or applied to them. The resume PDF is never stored, only its text.
 
-Running costs are $0 apart from optional Claude, Brave and GitHub usage.
+Running costs are $0: Gemini's free tier, free job APIs and free hosting tiers. Only optional extras (a paid Gemini tier, Anthropic, Brave) cost money.
 
 ### At tens of thousands of users
 

@@ -1,0 +1,295 @@
+# Employers outside tech and outside Canada, to look for on public job boards.
+# `node scripts/employers.mjs discover scripts/employer-candidates-worldwide.txt` keeps only
+# the ones whose board answers on Greenhouse, Lever, Ashby, SmartRecruiters, Workable or
+# Recruitee. These are guesses: a name that doesn't answer is simply left out.
+# Large retailers mostly use Workday or similar systems with no public API, so they can't be read.
+
+# Retail, consumer brands and e-commerce
+Warby Parker
+Allbirds
+Glossier
+Everlane
+Away
+Casper
+Peloton
+Sweetgreen
+Aritzia
+Lululemon
+# MEC (the Recruitee slug is MEC Consulting Group, not Mountain Equipment Co-op)
+Roots
+Frank And Oak
+Knix
+Kotn
+Article
+# Endy (its Recruitee slug is a sample board)
+Oak and Fort
+Gymshark
+Skims
+Rothy's
+Bombas
+Brooklinen
+Parachute Home
+Outdoor Voices
+Vuori
+Quince
+ThirdLove
+Mejuri
+Birkenstock
+Hims and Hers
+Dollar Shave Club
+Harry's
+Grove Collaborative
+Thrive Market
+Chewy
+Wayfair
+Etsy
+Poshmark
+ThredUp
+Depop
+Vinted
+Zalando
+ASOS
+Farfetch
+Klarna
+Ocado
+HelloFresh
+Gousto
+Too Good To Go
+Deliveroo
+Just Eat Takeaway
+DoorDash
+Uber Eats | uber
+SkipTheDishes
+Starbucks
+Tim Hortons
+Five Guys
+Pret A Manger
+Nando's
+Sephora
+Lush
+The Body Shop
+Decathlon
+IKEA
+H&M | hm
+Uniqlo
+Zara
+Primark
+Patagonia
+REI
+The North Face
+Canada Goose
+Arc'teryx
+Herschel Supply
+
+# Hospitality and travel
+Airbnb
+Booking.com | bookingcom
+Expedia
+Marriott
+Hilton
+Hyatt
+Accor
+Sonder
+Selina
+Getaround
+Turo
+Hostelworld
+GetYourGuide
+Klook
+Trivago
+
+# Healthcare and care
+One Medical
+Maven Clinic
+Hinge Health
+Headspace
+Calm
+Teladoc
+Babylon Health
+Kry
+Doctolib
+Ada Health
+Cityblock Health
+Oscar Health
+Ro
+Nurx
+Dialogue
+Maple
+League
+Felix Health
+Telus Health
+CVS Health
+Spring Health
+Lyra Health
+Talkspace
+Cerebral
+Carbon Health
+Forward
+Tia
+Parsley Health
+Omada Health
+Virta Health
+Noom
+WW International | ww
+
+# Education and nonprofit
+Coursera
+Duolingo
+Khan Academy
+Outschool
+Chegg
+Quizlet
+Brilliant
+Masterclass
+Udemy
+Codecademy
+2U
+Teach For America
+Kiva
+charity: water | charitywater
+Wikimedia Foundation | wikimedia
+Mozilla
+Doctors Without Borders | msf
+Ecosia
+Givedirectly
+Room to Read
+
+# Design, media, agencies and creative
+Pentagram
+IDEO
+Frog Design | frog
+Huge
+R/GA | rga
+Instrument
+Work & Co | workco
+Metalab
+Ueno
+Fantasy
+Spotify
+SoundCloud
+Vice Media | vice
+Vox Media | voxmedia
+BuzzFeed
+The Atlantic | theatlantic
+The Guardian | guardian
+The Economist | economist
+New York Times | nytimes
+Medium
+Substack
+Canva
+Behance
+Dribbble
+Adobe
+Pinterest
+Etsy
+
+# Finance, insurance, real estate and professional services
+Monzo
+Revolut
+Starling Bank | starlingbank
+N26
+Nubank
+Wise
+Lemonade
+Hippo
+Root Insurance | root
+Policygenius
+Compass
+Redfin
+Opendoor
+WeWork
+Knotel
+Deel
+Remote
+Papaya Global
+Oyster
+Gusto
+Rippling
+Justworks
+TriNet
+Hiscox
+Allianz
+AXA
+ING
+
+# Logistics, mobility and operations
+Flexport
+Shipbob
+Shippo
+Instacart
+Gopuff
+Getir
+Gorillas
+Bolt
+FREENOW | freenow
+BlaBlaCar
+Lime
+Bird
+Tier Mobility | tier
+Voi
+Cabify
+Rappi
+Swiggy
+Zomato
+Grab
+GoTo
+Careem
+Talabat
+Glovo
+Wolt
+
+# Other countries' larger employers with public boards
+Atlassian
+Canva
+SafetyCulture
+Culture Amp | cultureamp
+Employment Hero | employmenthero
+Xero
+Afterpay
+Airwallex
+Linktree
+Mercado Libre | mercadolibre
+Freshworks
+Zoho
+Razorpay
+CRED
+Meesho
+Ola
+Paytm
+Jumia
+Flutterwave
+Paystack
+Andela
+Kuda
+Takealot
+Yoco
+Delivery Hero | deliveryhero
+Celonis
+# Personio (its Recruitee slug is a sandbox board)
+N26
+SumUp
+Adyen
+Mollie
+Bunq
+Spotify
+Klarna
+Northvolt
+Truecaller
+iZettle
+Bending Spoons | bendingspoons
+Satispay
+Cabify
+Typeform
+Factorial
+Travelperk
+Glovo
+Wallapop
+Doctolib
+Alan
+Back Market | backmarket
+Qonto
+Swile
+ManoMano
+Contentsquare
+Mirakl
+BlaBlaCar

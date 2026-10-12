@@ -15,6 +15,7 @@
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
     "test:e2e": "playwright test",
+    "check:bundle": "node scripts/check-client-bundle.mjs",
     "employers:discover": "node scripts/employers.mjs discover",
     "employers:load": "node scripts/employers.mjs load"
   },
@@ -28,6 +29,7 @@
     "cn": "^0.4.0",
     "docx": "^9.10.0",
     "lucide-react": "^1.54.0",
+    "mammoth": "^1.13.0",
     "next": "16.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",

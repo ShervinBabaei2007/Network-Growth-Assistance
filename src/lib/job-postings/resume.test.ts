@@ -82,18 +82,39 @@ describe("groundAiResume", () => {
           end: "Dec 2024",
           location: null,
           bullets: ["Built REST endpoints in Python and Flask serving 2,000 daily users", "Led migration to Kubernetes"],
+          degree: null,
+          major: null,
+          graduation: null,
         },
-        { organization: "Google", title: "SWE", start: null, end: null, location: null, bullets: ["Did things"] },
+        { organization: "Google", title: "SWE", start: null, end: null, location: null, bullets: ["Did things"], degree: null, major: null, graduation: null },
       ],
-      education: [],
+      education: [
+        {
+          organization: "British Columbia Institute of Technology",
+          title: "Diploma, Computer Systems Technology",
+          start: "2023",
+          end: "2025",
+          location: null,
+          bullets: [],
+          degree: "Bachelor of Science",
+          major: "Computer Systems Technology",
+          graduation: "Expected 2031",
+        },
+      ],
       projects: [],
       skills: ["Python", "Kubernetes"],
       certifications: [],
+      awards: [{ organization: "Dean's List", title: null, start: null, end: null, location: null, bullets: [], degree: null, major: null, graduation: null }],
+      activities: [],
     };
     const p = groundAiResume(ai, TEXT);
     expect(p.experience.map((e) => e.organization)).toEqual(["Acme Corp"]);
     expect(p.experience[0].bullets.map((b) => b.text)).toEqual(["Built REST endpoints in Python and Flask serving 2,000 daily users"]);
     expect(p.skills).toEqual(["Python"]);
     expect(p.links).toEqual(["https://github.com/samlee"]);
+    expect(p.contact).toEqual({ linkedin: null, github: "https://github.com/samlee", website: null });
+    // A degree and a graduation date the resume doesn't state are dropped; the major it states is kept.
+    expect(p.education[0]).toMatchObject({ degree: null, major: "Computer Systems Technology", graduation: null });
+    expect(p.awards).toEqual([]);
   });
 });

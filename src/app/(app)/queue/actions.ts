@@ -5,7 +5,7 @@ import { z } from "zod";
 import { localDate, startOfLocalDay } from "@/lib/dates";
 import { failed, saved, type FormState } from "@/lib/form-state";
 import { suggestNote } from "@/lib/notes";
-import { rewriteNoteWithClaude } from "@/lib/notes/claude";
+import { rewriteNoteWithAI } from "@/lib/notes/ai-rewrite";
 import { buildTodaysQueue } from "@/lib/jobs/daily-queue";
 import { actionContext, logActivity } from "@/lib/server/action-context";
 
@@ -56,13 +56,13 @@ export async function skipQueueItem(_: FormState, formData: FormData): Promise<F
   return saved("Skipped for today.");
 }
 
-/** Per-user cap on Claude rewrites, to keep API cost predictable. */
+/** Per-user cap on AI rewrites, to keep API use (and any cost) predictable. */
 const DAILY_REWRITE_LIMIT = 25;
 
 export type RewriteResponse = { ok: true; text: string; left: number } | { ok: false; message: string };
 
-/** Asks Claude for a more natural version of the template note. Called from the note box. */
-export async function suggestNoteWithClaude(queueId: string): Promise<RewriteResponse> {
+/** Asks the AI for a more natural version of the template note. Called from the note box. */
+export async function suggestNoteWithAI(queueId: string): Promise<RewriteResponse> {
   if (!z.uuid().safeParse(queueId).success) return { ok: false, message: "Unknown queue item." };
   const ctx = await actionContext();
 
@@ -73,7 +73,7 @@ export async function suggestNoteWithClaude(queueId: string): Promise<RewriteRes
     .eq("kind", "note.rewrite")
     .gte("created_at", since);
   const used = count ?? 0;
-  if (used >= DAILY_REWRITE_LIMIT) return { ok: false, message: `You've used today's ${DAILY_REWRITE_LIMIT} Claude suggestions. The template note is still there.` };
+  if (used >= DAILY_REWRITE_LIMIT) return { ok: false, message: `You've used today's ${DAILY_REWRITE_LIMIT} AI suggestions. The template note is still there.` };
 
   const [{ data: item }, { data: me }] = await Promise.all([
     ctx.supabase
@@ -95,7 +95,7 @@ export async function suggestNoteWithClaude(queueId: string): Promise<RewriteRes
     candidateNotes: c.notes,
     me: { school: me.my_school_text, program: me.my_program_text, interests: me.my_interests },
   };
-  const result = await rewriteNoteWithClaude(facts, suggestNote(facts, me.note_char_limit), me.note_char_limit);
+  const result = await rewriteNoteWithAI(facts, suggestNote(facts, me.note_char_limit), me.note_char_limit);
   await logActivity(ctx, "note.rewrite", { candidate: item.candidate_id, ok: result.ok });
   if (!result.ok) return { ok: false, message: result.reason };
 

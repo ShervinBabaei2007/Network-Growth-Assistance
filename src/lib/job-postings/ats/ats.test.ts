@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ashby, greenhouse, lever, recruitee, smartrecruiters, workable } from "./adapters";
 import { detectBoard } from "./detect";
-import { boardHtmlToText, canadianPlace } from "./types";
+import { boardHtmlToText, canadianPlace, retryAfterSeconds } from "./types";
 
 /**
  * Response shapes recorded from live boards (trimmed, with fictional jobs). If an ATS
@@ -44,7 +44,7 @@ describe("adapters", () => {
     expect(r.etag).toBe('W/"abc"');
     expect(r.jobs).toHaveLength(1);
     expect(r.jobs[0]).toMatchObject({ externalId: "111", title: "Developer", company: "Acme", postedAt: "2026-10-11T09:00:00-04:00", description: null });
-    expect(await greenhouse.fetchDetail!("acme", "111", {})).toBe("Requirements\n• Python");
+    expect(await greenhouse.fetchDetail!("acme", "111", {})).toEqual({ description: "Requirements\n• Python" });
   });
 
   it("returns not-modified on 304 and sends the ETag", async () => {
@@ -100,7 +100,7 @@ describe("adapters", () => {
     expect(canadianPlace(r.jobs[0].places, r.jobs[0].remote)).toMatchObject({ province: "BC", city: "Vancouver" });
   });
 
-  it("SmartRecruiters: filters to Canada in the request, description from the detail call", async () => {
+  it("SmartRecruiters: filters to the searched country in the request; description and link come from the posting itself", async () => {
     const calls = serve({
       "/postings/s1": { postingUrl: "https://jobs.smartrecruiters.com/acme/s1", jobAd: { sections: { qualifications: { title: "Qualifications", text: "<ul><li>AutoCAD</li></ul>" } } } },
       "/companies/acme/postings?": { totalFound: 1, content: [{ id: "s1", name: "Designer", releasedDate: "2026-10-11T08:00:00Z", location: { city: "Toronto", region: "ON", country: "ca" } }] },
@@ -109,7 +109,59 @@ describe("adapters", () => {
     if (r.notModified) throw new Error("unexpected");
     expect(calls[0].url).toContain("country=ca");
     expect(canadianPlace(r.jobs[0].places, false)).toMatchObject({ province: "ON" });
-    expect(await smartrecruiters.fetchDetail!("acme", "s1", {})).toBe("Qualifications\n• AutoCAD");
+    // The list has no link, and none is guessed from a URL pattern.
+    expect(r.jobs[0].applyUrl).toBeNull();
+    // A country-filtered read doesn't show the rest of the board, so it never closes jobs by absence.
+    expect(r.partial).toBe(true);
+    expect(await smartrecruiters.fetchDetail!("acme", "s1", {})).toEqual({ description: "Qualifications\n• AutoCAD", applyUrl: "https://jobs.smartrecruiters.com/acme/s1" });
+  });
+
+  it("SmartRecruiters: asks for each searched country, and a job listed in two of them once", async () => {
+    const calls = serve({
+      "/companies/acme/postings?": { totalFound: 1, content: [{ id: "s1", name: "Designer", releasedDate: "2026-10-11T08:00:00Z", location: { city: "Berlin", country: "de" } }] },
+    });
+    const r = await smartrecruiters.fetchBoard("acme", { countries: ["CA", "DE"] });
+    if (r.notModified) throw new Error("unexpected");
+    expect(calls.map((c) => c.url).filter((u) => u.includes("/postings?"))).toEqual([expect.stringContaining("country=ca&"), expect.stringContaining("country=de&")]);
+    expect(r.jobs).toHaveLength(1);
+  });
+
+  it("SmartRecruiters: a board longer than the page cap is marked partial, so missing jobs aren't closed", async () => {
+    const content = Array.from({ length: 100 }, (_, i) => ({ id: `s${i}`, name: "Designer", location: { city: "Toronto", region: "ON", country: "ca" } }));
+    serve({ "/companies/acme/postings?": { totalFound: 450, content } });
+    const r = await smartrecruiters.fetchBoard("acme", {});
+    if (r.notModified) throw new Error("unexpected");
+    expect(r.partial).toBe(true);
+  });
+
+  it("SmartRecruiters: a posting without its own link stays without one", async () => {
+    serve({ "/postings/s2": { jobAd: { sections: {} } } });
+    expect(await smartrecruiters.fetchDetail!("acme", "s2", {})).toEqual({ description: null, applyUrl: null });
+  });
+
+  it("Workable: a job without its own link isn't given one", async () => {
+    serve({ "/widget/accounts/acme": { name: "Acme", jobs: [{ shortcode: "W2", title: "QA", published_on: "2026-10-11", country: "Canada", city: "Victoria", state: "BC" }] } });
+    const r = await workable.fetchBoard("acme", {});
+    if (r.notModified) throw new Error("unexpected");
+    expect(r.jobs[0].applyUrl).toBeNull();
+  });
+
+  it("Lever: dates are creation times, workplace and pay are structured", async () => {
+    serve({
+      "api.lever.co": [
+        { id: "L1", text: "Dev", hostedUrl: "https://jobs.lever.co/acme/L1", createdAt: 1760000000000, workplaceType: "hybrid", categories: { location: "Toronto, ON" }, salaryRange: { min: 80000, max: 95000, currency: "cad", interval: "per-year-salary" } },
+      ],
+    });
+    const r = await lever.fetchBoard("acme", {});
+    if (r.notModified) throw new Error("unexpected");
+    expect(r.jobs[0]).toMatchObject({ dateNote: "created", workplace: "hybrid", salaryRange: { min: 80000, max: 95000, currency: "CAD", period: "year" }, salary: "$80,000–$95,000 per year" });
+  });
+
+  it("a 429 waits for Retry-After instead of counting as a failure", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("slow down", { status: 429, headers: { "retry-after": "120" } })));
+    await expect(greenhouse.fetchBoard("acme", {})).rejects.toMatchObject({ retryAfterSeconds: 120 });
+    expect(retryAfterSeconds("Wed, 21 Oct 2015 07:28:00 GMT", Date.parse("Wed, 21 Oct 2015 07:27:00 GMT"))).toBe(60);
+    expect(retryAfterSeconds("soon")).toBeNull();
   });
 
   it("Workable: date-only postings are marked so", async () => {

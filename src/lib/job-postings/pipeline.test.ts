@@ -12,12 +12,14 @@ const { isFresh } = await import("./normalize");
 const { extractRequirements } = await import("./requirements");
 const { indexResume, matchFree, resumeLinesFrom } = await import("./match");
 const { scoreFit } = await import("./fit");
-const { smartCoverLetter, smartTailorResume } = await import("./smart-tailor");
+const { smartCoverLetter } = await import("./smart-tailor");
+const { buildImprovementNotes } = await import("./improvement-notes");
+const { analyzeJob } = await import("./job-analysis");
 
 /**
  * The free flow end to end, without a database: the e2e sample resume PDF, the fixture
  * employer boards, the Canada and 24-hour filters, requirements, matching by skills and
- * by (stand-in) meaning, fit rules, and free tailoring.
+ * by (stand-in) meaning, fit rules, Improvement Notes and the template cover letter.
  */
 describe("jobs pipeline without AI", async () => {
   const pdf = await pdfToText(new Uint8Array(readFileSync("e2e/fixtures/sample-resume.pdf")));
@@ -72,15 +74,20 @@ describe("jobs pipeline without AI", async () => {
     expect(senior.fit.exclusionReasons.join(" ")).toMatch(/7 years/);
   });
 
-  it("tailors anyway from the person's own lines, never adding the missing skills", async () => {
+  it("without AI, gives honest notes and a template letter, never adding the missing skills", async () => {
     const { s, reqs, results } = await evaluate("Fraser Robotics");
-    const input = { profile, resumeText: text, years: applicant.years, posting: { title: s.job.title, company: s.company, description: s.job.description ?? "" }, requirements: reqs, results, relevance: new Map<string, number>(), mode: "apply_anyway" as const };
-    const resume = smartTailorResume(input);
+    const posting = { title: s.job.title, company: s.company, description: s.job.description ?? "" };
+    const before = JSON.stringify(profile);
+    const notes = buildImprovementNotes({ profile, analysis: analyzeJob(posting, reqs), requirements: reqs, results, applicant, posting });
+    // What the person lacks is listed as not found, with a warning not to add it.
+    expect(notes.comparison.notFound.map((k) => k.term)).toEqual(expect.arrayContaining(["C++", "RTOS"]));
+    expect(notes.comparison.notFound.every((k) => /Do not add it unless you genuinely have that experience/.test(k.message))).toBe(true);
+    expect(notes.notes.filter((n) => /\b(add|move)\b/i.test(n.recommendation) && /C\+\+|RTOS|P\.Eng/.test(n.recommendation) && !/Don't claim/.test(n.recommendation))).toEqual([]);
+    expect(JSON.stringify(profile)).toBe(before);
+
+    const input = { profile, resumeText: text, years: applicant.years, posting, requirements: reqs, results, relevance: new Map<string, number>(), mode: "apply_anyway" as const };
     const letter = smartCoverLetter(input);
-    expect(resume.issues).toEqual([]);
     expect(letter.issues).toEqual([]);
-    // The resume never mentions what the person lacks; the letter names it only to say they haven't used it yet.
-    expect(JSON.stringify(resume.doc)).not.toMatch(/P\.Eng|C\+\+|RTOS|Zephyr/);
     const gap = letter.doc.paragraphs.filter((p) => /C\+\+|RTOS/.test(p));
     expect(gap).toEqual(["I haven't yet worked with C++, RTOS and FreeRTOS professionally, and I'm keen to learn quickly on the job."]);
   });

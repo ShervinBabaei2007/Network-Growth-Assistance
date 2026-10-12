@@ -1,15 +1,19 @@
 import "server-only";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
-import { AnthropicLLM, type LLMProvider } from "@/lib/discovery/llm";
+import { keyVendor, llmForKey, vendorOf, type AiVendor } from "@/lib/ai/default-llm";
+import { validateGeminiKey } from "@/lib/ai/gemini-provider";
+import type { LLMProvider } from "@/lib/discovery/llm";
+import { jobFixturesEnabled } from "@/lib/runtime-mode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Db } from "./service";
 import { jobServices } from "./services";
 
 /**
- * Optional AI rewriting. A user's own Anthropic key is used first (encrypted at rest
- * with APP_ENCRYPTION_KEY, decrypted only on the server per request). Otherwise the
- * operator's key, within a daily per-user quota. Everything else in Jobs works without AI.
+ * Optional AI rewriting. A user's own key (Gemini, or optionally Anthropic) is used first,
+ * encrypted at rest with APP_ENCRYPTION_KEY and decrypted only on the server per request.
+ * Otherwise the server's key (GEMINI_API_KEY by default), within a daily per-user quota.
+ * Everything else in Jobs works without AI.
  */
 
 export const DEFAULT_DAILY_QUOTA = 3;
@@ -45,37 +49,43 @@ export function decryptSecret(stored: string): string | null {
   }
 }
 
-/** Checks a key with a free call (listing models). */
-export async function validateAnthropicKey(key: string): Promise<boolean> {
-  if (!/^sk-ant-[A-Za-z0-9_-]{20,}$/.test(key)) return false;
-  if (process.env.JOBS_FIXTURES === "1") return true;
+/** Checks a user's own key with a free call (reading model details). Gemini ("AIza…") or Anthropic ("sk-ant-…"). */
+export async function validateOwnKey(key: string): Promise<boolean> {
+  const vendor = keyVendor(key);
+  if (!vendor) return false;
+  if (jobFixturesEnabled()) return true;
+  if (vendor === "gemini") return validateGeminiKey(key);
   try {
-    await new Anthropic({ apiKey: key, timeout: 10_000, maxRetries: 0 }).models.list({ limit: 1 });
+    await new Anthropic({ apiKey: key.trim(), timeout: 10_000, maxRetries: 0 }).models.list({ limit: 1 });
     return true;
   } catch {
     return false;
   }
 }
 
+/** Why AI can't be used right now. "no_key": no own key and no server key; "quota_exhausted": today's free uses are used up. */
+export type AiUnavailableCode = "no_key" | "quota_exhausted";
+
 export type AiAccess =
-  | { ok: true; llm: LLMProvider; source: "own" | "operator"; remaining: number | null }
-  | { ok: false; reason: string };
+  | { ok: true; llm: LLMProvider; source: "own" | "operator"; remaining: number | null; vendor: AiVendor | null }
+  | { ok: false; code: AiUnavailableCode; reason: string };
 
 /** Whether this user can use AI right now, and with which key. Doesn't consume quota. */
 export async function aiAccess(db: Db): Promise<AiAccess> {
   const { data: mine } = await db.from("user_ai").select("own_key_ciphertext").maybeSingle();
   if (mine?.own_key_ciphertext) {
     const key = decryptSecret(mine.own_key_ciphertext);
-    if (key) return { ok: true, llm: new AnthropicLLM(key), source: "own", remaining: null };
+    const llm = key ? llmForKey(key) : null;
+    if (llm) return { ok: true, llm, source: "own", remaining: null, vendor: vendorOf(llm) };
   }
   const operator = jobServices().operatorLlm;
   const quota = dailyQuota();
-  if (!operator.enabled || quota === 0) return { ok: false, reason: "AI rewriting needs your own Anthropic API key. Add it in Settings." };
+  if (!operator.enabled || quota === 0) return { ok: false, code: "no_key", reason: "AI rewriting needs a Gemini API key (free from Google AI Studio). Add your own in Settings." };
   const today = new Date().toISOString().slice(0, 10);
   const { data: usage } = await db.from("ai_usage").select("used").eq("day", today).maybeSingle();
   const remaining = quota - (usage?.used ?? 0);
-  if (remaining <= 0) return { ok: false, reason: `You've used today's ${quota} AI rewrites. Add your own Anthropic API key in Settings for more, or use the free tailoring.` };
-  return { ok: true, llm: operator, source: "operator", remaining };
+  if (remaining <= 0) return { ok: false, code: "quota_exhausted", reason: `You've used today's ${quota} free AI uses. Add your own Gemini API key in Settings to keep going, or try again tomorrow.` };
+  return { ok: true, llm: operator, source: "operator", remaining, vendor: vendorOf(operator) };
 }
 
 /** Counts one operator-key use. Server-only (the table can't be written by users). */

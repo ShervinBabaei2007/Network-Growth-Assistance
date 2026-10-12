@@ -1,5 +1,6 @@
 "use client";
 
+import { useStateToast } from "@/components/toast/use-state-toast";
 import { useActionState } from "react";
 import Link from "next/link";
 import { NativeSelect } from "@/components/native-select";
@@ -12,6 +13,7 @@ import { importCandidatesCsv, type CsvPreview } from "../actions";
 
 export function CsvImport() {
   const [state, action, pending] = useActionState<CsvPreview, FormData>(importCandidatesCsv, { status: "idle" });
+  useStateToast(state);
   const showMapping = state.headers && state.status !== "imported";
 
   return (
@@ -97,7 +99,7 @@ export function CsvImport() {
           </Button>
         ) : null}
         {state.status === "imported" ? (
-          <p role="status" className="text-sm">
+          <p className="text-sm">
             {state.message}{" "}
             <Link href="/candidates?review=1" className="underline underline-offset-4">
               Review them
@@ -105,7 +107,7 @@ export function CsvImport() {
           </p>
         ) : null}
         {state.status === "error" ? (
-          <p role="alert" className="text-sm text-destructive">
+          <p className="text-sm text-destructive">
             {state.message}
           </p>
         ) : null}

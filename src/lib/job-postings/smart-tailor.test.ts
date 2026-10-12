@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { indexResume, matchFree, resumeLinesFrom } from "./match";
 import { extractRequirements } from "./requirements";
 import { resumeText } from "./resume";
-import { alignWording, smartCoverLetter, smartTailorResume, type SmartInput } from "./smart-tailor";
+import { alignWording, smartCoverLetter, type SmartInput } from "./smart-tailor";
 import { skillsIn } from "./taxonomy";
-import type { ResumeProfile } from "./types";
+import { ResumeProfile } from "./types";
 
-const profile: ResumeProfile = {
+const profile: ResumeProfile = ResumeProfile.parse({
   name: "Sam Lee",
   email: "sam@example.com",
   phone: null,
@@ -36,7 +36,7 @@ const profile: ResumeProfile = {
   ],
   skills: ["Excel", "Python", "Postgres", "Flask", "React"],
   certifications: [],
-};
+});
 const raw = resumeText(profile, "");
 
 const POSTING = `Requirements
@@ -56,28 +56,6 @@ describe("alignWording", () => {
   it("uses the posting's name for a skill the resume names differently", () => {
     expect(alignWording("Wrote SQL migrations for Postgres", skillsIn(POSTING), POSTING)).toEqual({ text: "Wrote SQL migrations for PostgreSQL", aligned: ["PostgreSQL"] });
     expect(alignWording("Organized demos", skillsIn(POSTING), POSTING).aligned).toEqual([]);
-  });
-});
-
-describe("smartTailorResume", () => {
-  const { doc, issues } = smartTailorResume(input());
-  const acme = doc.sections.find((s) => s.key === "experience")!.entries[0];
-
-  it("puts the most relevant real bullets first", () => {
-    // Both relevant bullets (equally) come before the unrelated one.
-    expect(acme.bullets.map((b) => b.sourceBulletIds[0])).toEqual(["x1b2", "x1b3", "x1b1"]);
-    expect(acme.bullets[0].text).toBe("Wrote SQL migrations for PostgreSQL");
-    expect(issues).toEqual([]);
-  });
-
-  it("keeps every job, drops irrelevant projects, and leads with matched skills", () => {
-    expect(doc.sections.find((s) => s.key === "experience")!.entries.map((e) => e.organization)).toEqual(["Acme Corp", "Campus IT"]);
-    expect(doc.sections.find((s) => s.key === "projects")!.entries.map((e) => e.organization)).toEqual(["Course Planner"]);
-    expect(doc.skills).toEqual(["Python", "PostgreSQL", "React", "Excel", "Flask"]);
-  });
-
-  it("never adds a skill the resume doesn't have", () => {
-    expect(JSON.stringify(doc)).not.toContain("Kubernetes");
   });
 });
 

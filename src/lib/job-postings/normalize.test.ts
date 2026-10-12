@@ -55,21 +55,27 @@ describe("feed", () => {
     expect(byPriority(["ON", "AB", "BC"])).toEqual(["BC", "ON", "AB"]);
   });
 
-  it("builds a title search where developer also finds engineer and programmer", () => {
-    expect(titleQuery(["Junior Software Developer", "QA Analyst"])).toBe(
-      "(junior & software & (developer | engineer | programmer)) | (qa & (analyst | specialist))",
-    );
+  it("builds a title search where developer also finds engineer and programmer (seniority words not required)", () => {
+    expect(titleQuery(["Junior Software Developer"])).toBe("(software:A & (developer:A | engineer:A | programmer:A))");
     expect(titleQuery([])).toBeNull();
-    expect(titleQuery(["C++ / Firmware!"])).toBe("(firmware)");
+    expect(titleQuery(["C++ / Firmware!"])).toBe("(firmware:A)");
+  });
+
+  it("also finds close variants of a title, but not broader ones", () => {
+    const q = titleQuery(["Full Stack Developer"])!;
+    expect(q).toContain("(full:A & stack:A & (developer:A | engineer:A | programmer:A))");
+    expect(q).toContain("(fullstack:A & (developer:A | engineer:A | programmer:A))");
+    expect(q).toContain("(web:A & application:A & (developer:A | engineer:A | programmer:A))");
+    expect(q).not.toContain("(software:A & (developer");
   });
 });
 
 describe("time ranges", () => {
-  it("defaults to the last 24 hours and accepts week, month and 3 months", () => {
-    expect(parseRange(undefined).key).toBe("1d");
-    expect(parseRange("nonsense").key).toBe("1d");
-    expect(["7d", "30d", "90d"].map((k) => parseRange(k).hours)).toEqual([168, 720, 2160]);
-    expect(rangeSince(parseRange("7d"), NOW)).toBe(new Date(NOW - 7 * 24 * 3600_000).toISOString());
+  it("offers 24 hours, 3, 7, 14 and 30 days, and nothing chosen means automatic", () => {
+    expect(parseRange(undefined)).toBeNull();
+    expect(parseRange("nonsense")).toBeNull();
+    expect(["1d", "3d", "7d", "14d", "30d"].map((k) => parseRange(k)!.hours)).toEqual([24, 72, 168, 336, 720]);
+    expect(rangeSince(parseRange("7d")!, NOW)).toBe(new Date(NOW - 7 * 24 * 3600_000).toISOString());
   });
 });
 

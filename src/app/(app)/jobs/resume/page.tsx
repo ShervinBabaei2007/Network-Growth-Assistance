@@ -7,133 +7,123 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { WORK_AUTH_LABELS, timeAgo } from "@/lib/job-postings/labels";
+import { aiAccess } from "@/lib/job-postings/ai";
+import { TailoredResumeDoc } from "@/lib/job-postings/documents";
+import { DOC_METHOD_LABELS, WORK_AUTH_LABELS, timeAgo } from "@/lib/job-postings/labels";
+import { profileText } from "@/lib/job-postings/profile-text";
+import { blocksToText, resumeBlocks } from "@/lib/job-postings/render/layout";
 import { highestDegree, yearsOfExperience } from "@/lib/job-postings/resume";
-import { ResumeFacts, ResumeProfile, WORK_AUTHORIZATION } from "@/lib/job-postings/types";
+import { completenessChecks, fieldLabel, importSummary } from "@/lib/job-postings/resume-fields";
+import { FieldMetaMap, ResumeFacts, ResumeProfile, WORK_AUTHORIZATION } from "@/lib/job-postings/types";
 import { createClient } from "@/lib/supabase/server";
-import { saveResumeFacts } from "../actions";
+import { saveResumeFacts } from "./actions";
+import { ImportSummary } from "./import-summary";
 import { ProfileEditor, ResumeListActions } from "./profile-editor";
 import { ResumeUpload } from "./upload-form";
+import { ResumeVersions, type Version } from "./versions";
 
 export const metadata = { title: "Resume · Jobs · Network Growth" };
-// Reading a PDF and structuring it with AI can take a while.
+// Reading a file (and an optional AI read) can take a while.
 export const maxDuration = 60;
 
 const DEGREE_LABELS = { diploma: "Diploma", bachelor: "Bachelor's", master: "Master's", phd: "PhD" } as const;
+const SOURCE_LABELS = { pdf: "PDF", docx: "Word document", paste: "Pasted text" } as const;
 
-export default function ResumePage() {
+export default function ResumePage({ searchParams }: PageProps<"/jobs/resume">) {
   return (
     <div className="grid gap-6">
       <PageHeader
         back={{ href: "/jobs", label: "Jobs" }}
         title="Your resume"
-        description="Postings are checked against this resume, and tailored resumes and cover letters can only use what it says. Check that it was read correctly. It stays in your account, and is sent to Anthropic only if you choose “Rewrite with AI”."
+        description="Postings are checked against this profile, and tailored resumes, CVs and cover letters can only use what it says. Check what was read: anything uncertain is marked. Your original resume is kept unchanged."
       />
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
-        <ResumeContent />
+        <ResumeContent searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function ResumeContent() {
+async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/resume">["searchParams"] }) {
+  const params = await searchParams;
   const supabase = await createClient();
-  const { data: resumes, error } = await supabase.from("resumes").select("id, label, file_name, profile, facts, parsed_with, is_active, created_at, updated_at").order("created_at", { ascending: false });
+  const { data: resumes, error } = await supabase
+    .from("resumes")
+    .select("id, label, file_name, source_kind, original_file_path, raw_text, profile, original_profile, field_meta, facts, parsed_with, is_active, created_at, updated_at")
+    .order("created_at", { ascending: false });
   if (error) return <LoadError what="your resumes" />;
   const active = resumes.find((r) => r.is_active);
   const profile = active ? ResumeProfile.safeParse(active.profile) : null;
   const facts = ResumeFacts.parse(active?.facts ?? {});
+  const access = await aiAccess(supabase);
+  const aiNote = access.ok
+    ? { available: true, text: access.source === "own" ? "uses your own AI key" : `uses 1 of your ${access.remaining} free AI uses today` }
+    : { available: false, text: access.reason };
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>{active ? "Replace or update" : "Upload your resume"}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResumeUpload hasResume={Boolean(active)} />
-        </CardContent>
-      </Card>
-
       {active && profile?.success ? (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle>What your resume shows</CardTitle>
-              <CardDescription>
-                {active.label} · uploaded {timeAgo(active.created_at)} · read {active.parsed_with === "ai" ? "with AI" : "without AI"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              <Badge variant="secondary">About {yearsOfExperience(profile.data)} years of work experience</Badge>
-              <Badge variant="secondary">{highestDegree(profile.data) ? `${DEGREE_LABELS[highestDegree(profile.data)!]} level` : "Degree level not recognised"}</Badge>
-              <Badge variant="secondary">{profile.data.skills.length} skills</Badge>
-              <Badge variant="secondary">{profile.data.experience.length} jobs</Badge>
-              <Badge variant="secondary">{profile.data.projects.length} projects</Badge>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Your situation</CardTitle>
-              <CardDescription>Resumes usually don&apos;t say these, but postings often require them. They&apos;re used only to check fit.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ActionForm action={saveResumeFacts} submitLabel="Save">
-                <input type="hidden" name="resumeId" value={active.id} />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="workAuthorization">Work authorization in Canada</Label>
-                    <NativeSelect id="workAuthorization" name="workAuthorization" defaultValue={facts.workAuthorization}>
-                      {WORK_AUTHORIZATION.map((w) => (
-                        <option key={w} value={w}>
-                          {WORK_AUTH_LABELS[w]}
-                        </option>
-                      ))}
-                    </NativeSelect>
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="yearsOverride">Years of experience (leave blank to count from your dates)</Label>
-                    <Input id="yearsOverride" name="yearsOverride" type="number" min={0} max={50} step={0.5} defaultValue={facts.yearsOverride ?? ""} />
-                  </div>
+        <ActiveResume
+          active={active}
+          profile={profile.data}
+          justImported={params.imported === active.id}
+          factsForm={
+            <ActionForm action={saveResumeFacts} submitLabel="Save">
+              <input type="hidden" name="resumeId" value={active.id} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="workAuthorization">Work authorization in the country you search</Label>
+                  <NativeSelect id="workAuthorization" name="workAuthorization" defaultValue={facts.workAuthorization}>
+                    {WORK_AUTHORIZATION.map((w) => (
+                      <option key={w} value={w}>
+                        {WORK_AUTH_LABELS[w]}
+                      </option>
+                    ))}
+                  </NativeSelect>
                 </div>
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" name="securityClearance" defaultChecked={facts.securityClearance} className="size-4 accent-primary" />I hold a
-                  Canadian security clearance (reliability status or higher)
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" name="willingToRelocate" defaultChecked={facts.willingToRelocate} className="size-4 accent-primary" />
-                  I&apos;m willing to relocate
-                </label>
-              </ActionForm>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Check what was read</CardTitle>
-              <CardDescription>Fix anything that was read wrong. Saving changes the resume used for fit checks and tailoring.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ProfileEditor key={`${active.id}-${active.updated_at}`} resumeId={active.id} initial={profile.data} />
-            </CardContent>
-          </Card>
-        </>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="yearsOverride">Years of experience (leave blank to count from your dates)</Label>
+                  <Input id="yearsOverride" name="yearsOverride" type="number" min={0} max={50} step={0.5} defaultValue={facts.yearsOverride ?? ""} />
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="securityClearance" defaultChecked={facts.securityClearance} className="size-4 accent-primary" />I hold a government
+                security clearance there (e.g. Canadian reliability status or higher)
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="willingToRelocate" defaultChecked={facts.willingToRelocate} className="size-4 accent-primary" />
+                I&apos;m willing to relocate
+              </label>
+            </ActionForm>
+          }
+        />
       ) : active ? (
         <LoadError what="this resume" />
       ) : null}
 
+      <Card>
+        <CardHeader>
+          <CardTitle>{active ? "Import a new version" : "Import your resume"}</CardTitle>
+          <CardDescription>Upload a PDF or Word file, or paste the text. We fill in your profile and mark anything we weren&apos;t sure about.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResumeUpload hasResume={Boolean(active)} aiNote={aiNote} />
+        </CardContent>
+      </Card>
+
       {resumes.length > 1 || (resumes.length === 1 && !active) ? (
         <Card>
           <CardHeader>
-            <CardTitle>All resumes</CardTitle>
+            <CardTitle>All imported resumes</CardTitle>
+            <CardDescription>Each import is kept separately. One is used for fit checks and tailoring at a time.</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="grid gap-2">
               {resumes.map((r) => (
                 <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-3">
                   <span className="text-sm">
-                    {r.label} <span className="text-muted-foreground">· {timeAgo(r.created_at)}</span> {r.is_active ? <Badge>In use</Badge> : null}
+                    {r.label} <span className="text-muted-foreground">· {SOURCE_LABELS[r.source_kind as keyof typeof SOURCE_LABELS] ?? "PDF"} · {timeAgo(r.created_at)}</span>{" "}
+                    {r.is_active ? <Badge>In use</Badge> : null}
                   </span>
                   <ResumeListActions id={r.id} active={r.is_active} />
                 </li>
@@ -148,4 +138,140 @@ async function ResumeContent() {
       ) : null}
     </>
   );
+}
+
+type ResumeRow = {
+  id: string;
+  label: string;
+  source_kind: string;
+  original_file_path: string | null;
+  raw_text: string;
+  original_profile: unknown;
+  field_meta: unknown;
+  parsed_with: string;
+  created_at: string;
+  updated_at: string;
+};
+
+async function ActiveResume({ active, profile, justImported, factsForm }: { active: ResumeRow; profile: ResumeProfile; justImported: boolean; factsForm: React.ReactNode }) {
+  const meta = FieldMetaMap.catch({}).parse(active.field_meta);
+  const summary = importSummary(profile, meta);
+  const showSummary = justImported || summary.needsReview.length > 0;
+  const degree = highestDegree(profile);
+  const versions = await loadVersions(active, profile);
+  const original = ResumeProfile.safeParse(active.original_profile);
+
+  return (
+    <>
+      {showSummary ? (
+        <ImportSummary
+          justImported={justImported}
+          filled={summary.filled}
+          completeness={summary.completeness}
+          missingChecks={completenessChecks(profile)
+            .filter((c) => !c.done)
+            .map((c) => c.label.toLowerCase())}
+          needsReview={summary.needsReview.map((path) => ({ path, label: fieldLabel(path, profile), reason: meta[path]?.reason }))}
+          missing={summary.missing.map((path) => ({ path, label: fieldLabel(path, profile), reason: meta[path]?.reason }))}
+        />
+      ) : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>What your resume shows</CardTitle>
+          <CardDescription>
+            {active.label} · {SOURCE_LABELS[active.source_kind as keyof typeof SOURCE_LABELS] ?? "PDF"} · imported {timeAgo(active.created_at)} · read{" "}
+            {active.parsed_with === "ai" ? "with rules and a second AI read" : "with rules, without AI"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Badge variant="secondary">About {yearsOfExperience(profile)} years of work experience</Badge>
+          <Badge variant="secondary">{degree ? `${DEGREE_LABELS[degree]} level` : "Degree level not recognised"}</Badge>
+          <Badge variant="secondary">{profile.skills.length} skills</Badge>
+          <Badge variant="secondary">{profile.experience.length} jobs</Badge>
+          <Badge variant="secondary">{profile.projects.length} projects</Badge>
+          <Badge variant="secondary">Profile {summary.completeness}% complete</Badge>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Your situation</CardTitle>
+          <CardDescription>Resumes usually don&apos;t say these, but postings often require them. They&apos;re used only to check fit.</CardDescription>
+        </CardHeader>
+        <CardContent>{factsForm}</CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Check your profile</CardTitle>
+          <CardDescription>Fields marked “Needs review” were hard to read; fix them or confirm they&apos;re right. Saving changes your working profile, never the original.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ProfileEditor key={`${active.id}-${active.updated_at}`} resumeId={active.id} initial={profile} meta={meta} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Versions</CardTitle>
+          <CardDescription>Your original resume, what was read from it, your current profile, and every tailored version. Compare any two.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResumeVersions resumeId={active.id} versions={versions} canRestore={original.success} />
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
+async function loadVersions(active: ResumeRow, profile: ResumeProfile): Promise<Version[]> {
+  const original = ResumeProfile.safeParse(active.original_profile);
+  const versions: Version[] = [
+    {
+      key: "original",
+      kind: "original",
+      label: "Original resume",
+      detail: `${SOURCE_LABELS[active.source_kind as keyof typeof SOURCE_LABELS] ?? "PDF"} as imported ${timeAgo(active.created_at)}${active.original_file_path ? "" : " (text only)"}`,
+      text: active.raw_text,
+      download: `/api/jobs/resume/${active.id}/original`,
+    },
+  ];
+  if (active.original_profile && original.success) {
+    versions.push({ key: "parsed", kind: "parsed", label: "Parsed resume", detail: "As first read, before your edits", text: profileText(original.data) });
+  }
+  versions.push({ key: "current", kind: "current", label: "Current profile", detail: `Your working profile, used for fit checks · updated ${timeAgo(active.updated_at)}`, text: profileText(profile) });
+
+  const supabase = await createClient();
+  const { data: matches } = await supabase.from("job_matches").select("id, job_id").eq("resume_id", active.id);
+  if (!matches?.length) return versions;
+  const { data: docs } = await supabase
+    .from("tailored_documents")
+    .select("id, kind, label, method, generated, edited, match_id, created_at")
+    .in(
+      "match_id",
+      matches.map((m) => m.id),
+    )
+    .in("kind", ["resume", "cv"])
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+  const jobIds = [...new Set(matches.map((m) => m.job_id))];
+  const { data: jobs } = await supabase.from("jobs").select("id, title, company").in("id", jobIds);
+  const jobOf = new Map(matches.map((m) => [m.id, jobs?.find((j) => j.id === m.job_id)]));
+  for (const d of docs ?? []) {
+    const parsed = TailoredResumeDoc.safeParse(d.edited ?? d.generated);
+    if (!parsed.success) continue;
+    const job = jobOf.get(d.match_id);
+    const what = d.kind === "cv" ? "CV" : "Resume";
+    versions.push({
+      key: d.id,
+      kind: "tailored",
+      docId: d.id,
+      label: d.label ?? `Tailored ${what} — ${[job?.company, job?.title].filter(Boolean).join(" / ") || "a job"}`,
+      detail: `${DOC_METHOD_LABELS[d.method as keyof typeof DOC_METHOD_LABELS] ?? d.method} · ${timeAgo(d.created_at)}${d.edited ? " · edited by you" : ""}`,
+      text: blocksToText(resumeBlocks(parsed.data)),
+      href: job ? `/jobs/${job.id}#documents` : undefined,
+    });
+  }
+  return versions;
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useStateToast } from "@/components/toast/use-state-toast";
 import { useActionState, useRef, useState } from "react";
 import { NativeSelect } from "@/components/native-select";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { importConnections, type ConnectionImportState } from "./actions";
 /** Upload → preview and column mapping → confirm. Nothing is saved until "Import". */
 export function ConnectionsImport() {
   const [state, action, pending] = useActionState<ConnectionImportState, FormData>(importConnections, { status: "idle" });
+  useStateToast(state);
   const [mapping, setMapping] = useState<ColumnMapping | null>(null);
   const [fileChosen, setFileChosen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -119,12 +121,12 @@ export function ConnectionsImport() {
           </Button>
         ) : null}
         {state.status === "error" ? (
-          <p role="alert" className="text-sm text-destructive">
+          <p className="text-sm text-destructive">
             {state.message}
           </p>
         ) : null}
         {state.status === "imported" ? (
-          <p role="status" className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {state.message}
           </p>
         ) : null}

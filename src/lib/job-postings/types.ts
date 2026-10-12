@@ -17,23 +17,67 @@ export const ResumeEntry = z.object({
   end: z.string().nullable(),
   location: z.string().nullable(),
   bullets: z.array(ResumeBullet),
+  /** Education only: the degree ("Bachelor of Applied Science"), as written. */
+  degree: z.string().nullable().default(null),
+  /** Education only: the program or major ("Computer Engineering"), as written. */
+  major: z.string().nullable().default(null),
+  /** Education only: when it was or will be completed ("Apr 2027", "Expected 2027"), as written. */
+  graduation: z.string().nullable().default(null),
 });
 export type ResumeEntry = z.infer<typeof ResumeEntry>;
 
+export const ResumeContact = z.object({
+  linkedin: z.string().nullable().default(null),
+  github: z.string().nullable().default(null),
+  /** A personal site or portfolio. */
+  website: z.string().nullable().default(null),
+});
+export type ResumeContact = z.infer<typeof ResumeContact>;
+
+/**
+ * Everything read from a resume. Fields added later default to empty, so profiles stored
+ * before them still parse.
+ */
 export const ResumeProfile = z.object({
   name: z.string().nullable(),
   email: z.string().nullable(),
   phone: z.string().nullable(),
   location: z.string().nullable(),
   links: z.array(z.string()),
+  contact: ResumeContact.default({ linkedin: null, github: null, website: null }),
   summary: z.string().nullable(),
   experience: z.array(ResumeEntry),
   education: z.array(ResumeEntry),
   projects: z.array(ResumeEntry),
   skills: z.array(z.string()),
   certifications: z.array(z.string()),
+  awards: z.array(ResumeEntry).default([]),
+  /** Extracurricular, volunteer and leadership activities. */
+  activities: z.array(ResumeEntry).default([]),
 });
 export type ResumeProfile = z.infer<typeof ResumeProfile>;
+/** A profile as it may be written (new fields optional); parse it to get a full ResumeProfile. */
+export type ResumeProfileInput = z.input<typeof ResumeProfile>;
+
+/**
+ * How sure the parser is about one field. Stored beside the profile (not inside it), keyed
+ * by a path such as "contact.linkedin" or "education.d1.graduation".
+ */
+export const FieldMeta = z.object({
+  confidence: z.number().min(0).max(1),
+  needsReview: z.boolean(),
+  /** Nothing reliable was found; the field is left empty. */
+  missing: z.boolean().optional(),
+  /** Why it needs a look, for the helper text: "We found 2 possible dates." */
+  reason: z.string().optional(),
+  /** The resume text the value came from. */
+  sourceText: z.string().optional(),
+  /** Other values the resume could mean. */
+  alternatives: z.array(z.string()).optional(),
+});
+export type FieldMeta = z.infer<typeof FieldMeta>;
+export const FieldMetaMap = z.record(z.string(), FieldMeta);
+export type FieldMetaMap = z.infer<typeof FieldMetaMap>;
 
 export const WORK_AUTHORIZATION = ["citizen", "permanent_resident", "work_permit", "needs_sponsorship", "unknown"] as const;
 

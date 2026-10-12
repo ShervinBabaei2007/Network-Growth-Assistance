@@ -29,7 +29,7 @@ test("import connections, research people, review evidence and track one", async
   await expect(page.getByText("2 new known connection(s) to add")).toBeVisible();
   await expect(page.getByText("sam@example.test")).toHaveCount(0);
   await page.getByRole("button", { name: "Import" }).click();
-  await expect(page.getByText(/2 known connections imported/)).toBeVisible();
+  await expect(page.getByText(/2 known connections imported/).first()).toBeVisible();
   await expect(page.getByRole("cell", { name: "Sam Patel" })).toBeVisible();
 
   // 2. Ask for people in plain language.
@@ -87,7 +87,7 @@ test("import connections, research people, review evidence and track one", async
   const intro = drawer.getByLabel("Intro message");
   await expect(intro).toHaveValue(/UofT Computer Engineering/);
   await drawer.getByRole("button", { name: "Copy message" }).click();
-  await expect(drawer.getByText(/Copied\. Paste it into LinkedIn yourself/)).toBeVisible();
+  await expect(page.getByTestId("toast").filter({ hasText: "Intro copied." }).filter({ hasText: "Paste it into LinkedIn yourself" })).toBeVisible();
   await drawer.getByRole("button", { name: "I sent a connection request" }).click();
   await expect(drawer.getByLabel("Status")).toHaveValue("connection_sent_manually");
   await page.keyboard.press("Escape");

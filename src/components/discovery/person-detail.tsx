@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { toast } from "@/components/toast/notify";
+import { useActionRunner } from "@/components/toast/use-action-runner";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import {
@@ -43,14 +45,9 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 /** The full research record for one person, with every action the user can take. */
 export function PersonDetailView({ detail, searchId, onChange }: { detail: PersonDetail; searchId?: string; onChange: () => void }) {
   const p = detail.person;
-  const [pending, start] = useTransition();
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
-  const run = (fn: () => Promise<ActionResult>) =>
-    start(async () => {
-      const r = await fn();
-      setMessage(r.ok ? (r.message ? { ok: true, text: r.message } : null) : { ok: false, text: r.error });
-      onChange();
-    });
+  const runner = useActionRunner();
+  const { pending, last: message } = runner;
+  const run = (fn: () => Promise<ActionResult>) => runner.run(fn, { onSuccess: onChange });
 
   const search = detail.searches.find((s) => s.searchId === searchId) ?? detail.searches[0] ?? null;
   const bySource = useMemo(() => {
@@ -83,7 +80,7 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
       </div>
 
       {message ? (
-        <p role={message.ok ? "status" : "alert"} className={message.ok ? "text-muted-foreground" : "text-destructive"}>
+        <p className={message.ok ? "text-muted-foreground" : "text-destructive"}>
           {message.text}
         </p>
       ) : null}
@@ -354,23 +351,23 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
 /** Suggested intro from verified facts. Copy it into LinkedIn yourself; the app never sends it. */
 function IntroAssistant({ personId, initial }: { personId: string; initial: string }) {
   const [text, setText] = useState(initial);
-  const [note, setNote] = useState<string | null>(null);
-  const [pending, start] = useTransition();
+  const { pending, run } = useActionRunner();
 
   const polish = () =>
-    start(async () => {
-      const r = await generateIntro(personId, true);
-      if (r.ok && r.text) setText(r.text);
-      setNote(r.ok ? (r.message ?? null) : r.error);
+    run(() => generateIntro(personId, true), {
+      progress: "Polishing your intro…",
+      onSuccess: (r) => {
+        if ("text" in r && typeof r.text === "string" && r.text) setText(r.text);
+      },
     });
 
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(text);
-      setNote("Copied. Paste it into LinkedIn yourself if you decide to connect.");
+      toast.success("Intro copied.", "Paste it into LinkedIn yourself if you decide to connect.");
       void recordPersonEvent(personId, "message_copied");
     } catch {
-      setNote("Couldn't copy automatically; select the text and copy it.");
+      toast.warning("Couldn't copy automatically.", "Select the text and copy it.");
     }
   };
 
@@ -392,11 +389,6 @@ function IntroAssistant({ personId, initial }: { personId: string; initial: stri
           {text.length}/{INTRO_LIMIT}
         </span>
       </div>
-      {note ? (
-        <p role="status" className="text-xs text-muted-foreground">
-          {note}
-        </p>
-      ) : null}
       <p className="text-xs text-muted-foreground">Uses only verified facts and what you wrote about yourself in Settings. Nothing is ever sent from this app.</p>
     </section>
   );

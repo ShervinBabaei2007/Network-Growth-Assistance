@@ -1,117 +1,203 @@
 import { readFileSync } from "node:fs";
-import { expect, test } from "@playwright/test";
-import { signIn, uniqueEmail } from "./helpers";
+import { expect, test, type Page } from "@playwright/test";
+import { deleteTestRows, signIn, uniqueEmail } from "./helpers";
 
 /**
- * Jobs end to end against fictional employer boards and a stand-in embedder: no keys,
- * no network. The dev server must run with JOBS_FIXTURES=1 (the Playwright config sets
- * it when it starts the server); otherwise this test is skipped.
+ * Jobs end to end against fictional employer boards, a fictional Jobicy feed, a stand-in
+ * embedder and canned AI answers: no keys, no network. The dev server must run with
+ * JOBS_FIXTURES=1 (the Playwright config sets it when it starts the server); otherwise
+ * this test is skipped.
  */
 
-test("read employer boards, upload a resume, tailor anyway for free, download, and add an employer", async ({ page }) => {
+/** A resume with two email addresses, so one field needs the user's check. */
+const AMBIGUOUS = `Jamie Rivera
+Vancouver, BC | jamie@example.test | jamie.rivera@school.example.test | 604-555-0123
+EXPERIENCE
+Maple Labs | Developer Intern    May 2024 – Aug 2024
+• Built internal dashboards in React for the support team
+EDUCATION
+Simon Fraser University    2021 – 2025
+Bachelor of Science in Computing Science
+SKILLS
+React, Python, SQL`;
+
+const toast = (page: Page, text: string | RegExp) => page.getByTestId("toast").filter({ hasText: text });
+
+test("import, review, search verified jobs, improvement notes, AI tailoring and its honest fallbacks", async ({ page }) => {
+  test.setTimeout(300_000);
   await signIn(page, uniqueEmail("jobs"), "/jobs");
-  await expect(page.getByText("Postings from the last 24 hours", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /jobs? from the last/i })).toBeVisible();
   test.skip(!(await page.getByText("Showing fictional sample employers").isVisible()), "Dev server isn't running with JOBS_FIXTURES=1");
 
   // 1. The crawler reads the employers' boards (here, on demand).
   await page.goto("/jobs/employers");
   await page.getByRole("button", { name: "Read due boards now" }).click();
-  await expect(page.getByText(/Read \d+ boards?: \d+ new jobs?\.|Every board is up to date\./)).toBeVisible({ timeout: 45_000 });
-  await page.goto("/jobs/employers?q=Northwind");
-  await expect(page.getByRole("cell", { name: "Northwind Labs" })).toBeVisible();
+  await expect(page.getByText(/Read \d+ boards?: \d+ new jobs?\.|Every board is up to date\./).first()).toBeVisible({ timeout: 45_000 });
 
-  // 2. Upload the resume: read for free, without AI.
+  // 2. A pasted resume with an uncertain field: it's marked, and stays marked until checked.
   await page.goto("/jobs/resume");
-  await page.getByLabel("Your resume (PDF)").setInputFiles({ name: "resume.pdf", mimeType: "application/pdf", buffer: readFileSync("e2e/fixtures/sample-resume.pdf") });
-  await page.getByRole("button", { name: "Upload" }).click();
-  await expect(page.getByText("What your resume shows")).toBeVisible();
-  await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Alex Sample");
+  await page.getByRole("tab", { name: "Paste text" }).click();
+  await page.getByLabel("Your resume, as text").fill(AMBIGUOUS);
+  await page.getByRole("button", { name: "Import resume" }).click();
+  await expect(toast(page, "Resume imported, but 1 field needs verification.")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole("heading", { name: "Resume imported successfully." })).toBeVisible();
+  await expect(page.getByText("1 field needs your attention.")).toBeVisible();
+  const email = page.locator("#field-email");
+  await expect(email.getByText("Needs review")).toBeVisible();
+  await expect(email.getByText(/We found 2 email addresses/)).toBeVisible();
+  await email.getByRole("button", { name: "Looks right" }).click();
+  // Toasts can be dismissed (before this one times out on its own).
+  const marked = toast(page, "Marked as checked.");
+  await expect(marked).toBeVisible();
+  // Hovering (or F6 for keyboard users) expands the stack and exposes each toast's close button.
+  await marked.hover();
+  await marked.getByRole("button", { name: "Dismiss notification" }).click({ timeout: 4000 });
+  await expect(marked).toHaveCount(0);
+  await expect(email.getByText("Needs review")).toHaveCount(0);
 
-  // 3. The feed: recent Canadian jobs only, BC first, checked against the resume as you browse.
-  await page.goto("/jobs");
-  const feed = page.getByRole("region", { name: "Postings" });
-  await expect(feed.getByRole("link", { name: "Junior Software Developer" })).toBeVisible();
-  await expect(feed.getByText("Data Analyst")).toHaveCount(0);
-  await expect(page.getByText("Cascade Cloud")).toHaveCount(0);
-  const headings = await feed.getByRole("heading", { level: 3 }).allTextContents();
-  expect(headings[0]).toMatch(/^British Columbia/);
-  // Each posting says where it came from.
-  await expect(feed.getByRole("listitem").filter({ hasText: "Junior Software Developer" }).getByText("Northwind Labs' job board")).toBeVisible();
+  // 3. A PDF: read without AI, missing LinkedIn said plainly, the original kept to download.
+  await page.getByRole("tab", { name: "Upload a file" }).click();
+  await page.getByLabel("A new version (PDF or Word)").setInputFiles({ name: "resume.pdf", mimeType: "application/pdf", buffer: readFileSync("e2e/fixtures/sample-resume.pdf") });
+  await page.getByRole("button", { name: "Import new version" }).click();
+  await expect(toast(page, "Resume imported successfully. We filled 19 profile fields.")).toBeVisible({ timeout: 30_000 });
+  await expect(toast(page, "We couldn't find a LinkedIn profile in your resume. You can add it manually.")).toBeVisible();
+  await expect(page.getByLabel("Full name")).toHaveValue("Alex Sample");
+  await expect(page.locator("#field-contact-linkedin").getByText("Not found in your resume.")).toBeVisible();
+  await expect(page.getByText("Profile completeness")).toBeVisible();
+  const [original] = await Promise.all([page.waitForEvent("download"), page.getByRole("link", { name: "Download" }).first().click()]);
+  expect(readFileSync((await original.path())!).subarray(0, 5).toString()).toBe("%PDF-");
 
-  // Switching the time range shows older postings too (the 30-hour-old Data Analyst job).
-  const count = async () => Number((await page.getByText(/^\d+ in British Columbia/).innerText()).match(/^\d+/)![0]);
-  const dayCount = await count();
-  await page.getByRole("navigation", { name: "Posted within" }).getByRole("link", { name: "Week" }).click();
-  await expect(page.getByRole("heading", { name: "Postings from the past week" })).toBeVisible();
-  expect(await count()).toBe(dayCount + 1);
-  const tabs = page.getByRole("navigation", { name: "Fit" }).getByRole("link");
-  let found = false;
-  for (const name of await tabs.allInnerTexts()) {
-    if (/Saved/.test(name)) continue;
-    await tabs.filter({ hasText: name.split("(")[0].trim() }).first().click();
-    if (await page.getByRole("link", { name: "Data Analyst" }).isVisible()) {
-      found = true;
-      break;
-    }
-  }
-  expect(found).toBe(true);
-  await page.getByRole("navigation", { name: "Posted within" }).getByRole("link", { name: "24 hours" }).click();
-  await expect(page.getByRole("heading", { name: "Postings from the last 24 hours" })).toBeVisible();
+  // 4. Search: verified listings only, the date range widens (and says so), duplicates merged.
+  await page.goto("/jobs?q=Developer");
+  await expect(page.getByText("Only 2 verified jobs were found in the last 24 hours, so the search was expanded to the last 7 days.").first()).toBeVisible();
+  await expect(toast(page, "2 verified Developer jobs found.")).toBeVisible();
+  // Sites the app can't read are one click away, with the same search.
+  const elsewhere = page.getByRole("navigation", { name: "Search other job sites" });
+  await expect(elsewhere.getByRole("link", { name: /^LinkedIn/ })).toHaveAttribute("href", /linkedin\.com\/jobs\/search\/\?keywords=Developer/);
+  await expect(elsewhere.getByRole("link", { name: /^Indeed/ })).toHaveAttribute("href", /ca\.indeed\.com\/jobs\?q=Developer/);
+  const results = page.getByRole("region", { name: /jobs from/i });
+  const junior = results.getByRole("listitem").filter({ hasText: "Junior Software Developer" });
+  await expect(junior.getByText("Verified", { exact: true })).toBeVisible();
+  await expect(junior.getByText("Northwind Labs' job board")).toBeVisible();
+  await expect(junior.locator('a[href="https://jobs.example.com/northwind-labs/jr-dev"]')).toBeVisible();
+  // A Jobicy listing isn't shown until its link is verified…
+  await expect(results.getByText("Harbourview Software")).toHaveCount(0);
+  await page.getByRole("link", { name: "Include listings not yet verified" }).click();
+  const harbour = results.getByRole("listitem").filter({ hasText: "Harbourview Software" });
+  // …and when included, Apply stays off and only its stated pay is shown.
+  await expect(harbour.getByText("Not yet verified", { exact: true })).toBeVisible();
+  await expect(harbour.locator('[aria-disabled="true"]', { hasText: "Apply" })).toBeVisible();
+  await expect(harbour.locator('a[href*="jobs.example.com"]')).toHaveCount(0);
+  await expect(harbour.getByText("CA$70,000–CA$85,000 per year")).toBeVisible();
+  // It says where it came from, and links nowhere until verified (never to a guessed employer page).
+  await expect(harbour.getByText("Jobicy", { exact: true })).toBeVisible();
+  // The same Northwind job relisted on Jobicy is merged into the board's listing, whose link wins.
+  await expect(junior.getByText("Also listed on Jobicy")).toBeVisible();
+  await expect(junior.locator('a[href*="/jobicy/"]')).toHaveCount(0);
 
-  // 4. A job the resume doesn't meet is set aside, with reasons.
-  await page.getByRole("link", { name: /Doesn't qualify/ }).click();
+  // 5. A job the resume doesn't meet is set aside, with reasons.
+  await page.goto("/jobs?q=Engineer&level=&tab=excluded");
   await page.getByRole("link", { name: "Senior Embedded Software Engineer" }).click();
   await expect(page.getByText("Why it was set aside")).toBeVisible();
   await expect(page.getByText(/Asks for 7 years/).first()).toBeVisible();
 
-  // 5. Tailor anyway, free: the person's own lines, and an honest gap in the letter.
-  await page.getByRole("button", { name: "Tailor anyway" }).click();
-  await expect(page.getByText(/Nothing you don't have will be added/)).toBeVisible();
-  await page.getByRole("button", { name: "Tailor them anyway" }).click();
-  // Wait for the documents themselves (the section heading above them is always there).
-  await expect(page.getByRole("textbox", { name: /^Bullet \d+ for/ }).first()).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText("Free tailoring", { exact: true }).first()).toBeVisible();
-  const bullets = await page.getByRole("textbox", { name: /^Bullet \d+ for/ }).evaluateAll((els) => els.map((e) => (e as HTMLTextAreaElement).value));
-  expect(bullets).toContain("Built REST APIs in Python and Flask used by 3 internal teams");
-  expect(bullets.join(" ")).not.toMatch(/C\+\+|RTOS|P\.Eng/);
-  const letter = await page.getByRole("textbox", { name: /^Paragraph \d+$/ }).evaluateAll((els) => els.map((e) => (e as HTMLTextAreaElement).value).join(" "));
-  expect(letter).toContain("I haven't yet worked with");
+  // 6. Improvement Notes: advice only, with the gaps named honestly (AI use 1 of 3).
+  await page.getByRole("button", { name: "Get Resume Improvement Notes" }).click();
+  await expect(toast(page, /resume improvement suggestions? found|already a strong match/)).toBeVisible({ timeout: 30_000 });
+  const notes = page.locator("#notes");
+  await expect(notes.getByText("Not found in resume", { exact: true })).toBeVisible();
+  await expect(notes.getByText("C++ is listed as a required qualification, but it was not found in your resume. Do not add it unless you genuinely have that experience.")).toBeVisible();
+  await expect(notes.getByText(/Analysis only: your resume was not changed/)).toBeVisible();
+  // The canned AI note that suggests adding Kubernetes was rejected.
+  await expect(notes.getByText("Add Kubernetes to your skills.")).toHaveCount(0);
 
-  // 6. Edit a line, save, and download both formats.
+  // 7. Tailor anyway with AI (use 2 of 3): rewritten, checked, compared; nothing invented.
+  await page.getByRole("button", { name: "Tailor anyway" }).click();
+  await expect(page.getByText(/Nothing you don't have will be/)).toBeVisible();
+  await page.getByRole("button", { name: "Tailor Resume" }).click();
+  await expect(toast(page, /Your resume was tailored, but \d+ job requirements? (was|were) not found in your experience\.|Your tailored resume is ready\./)).toBeVisible({ timeout: 60_000 });
+  const docs = page.locator("#documents");
+  await expect(docs.getByText("AI Tailored").first()).toBeVisible();
+  await expect(docs.getByText("Keyword match").first()).toBeVisible();
+  await expect(docs.getByText(/^Missing requirement: /).first()).toBeVisible();
+  await expect(docs.getByText(/The accuracy check changed \d+ lines?/).first()).toBeVisible();
+  const bullets = await page.getByRole("textbox", { name: /^Bullet \d+ for/ }).evaluateAll((els) => els.map((e) => (e as HTMLTextAreaElement).value).join("\n"));
+  expect(bullets).toContain("as Software Developer Co-op at Harbour Software");
+  expect(bullets).not.toMatch(/Kubernetes|C\+\+|RTOS|P\.Eng/);
+
+  // 8. Edit a line, save, and download both formats.
   await page.getByRole("textbox", { name: /^Bullet 1 for Harbour Software/ }).fill("Built REST APIs in Python and Flask for 3 internal teams");
   await page.getByRole("button", { name: "Save edits" }).first().click();
-  await expect(page.getByText("Saved your edits.")).toBeVisible();
+  await expect(toast(page, "Saved your edits.")).toBeVisible();
   for (const [label, magic] of [
     ["PDF", "%PDF-"],
     ["Word (DOCX)", "PK"],
   ] as const) {
-    const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("link", { name: label }).first().click()]);
+    const [download] = await Promise.all([page.waitForEvent("download"), docs.getByRole("link", { name: label }).first().click()]);
     expect(download.suggestedFilename()).toMatch(/^Alex-Sample-Resume-Fraser-Robotics\.(pdf|docx)$/);
     expect(readFileSync((await download.path())!).subarray(0, magic.length).toString()).toBe(magic);
   }
 
-  // 7. Optional AI rewording (canned answers here) still can't add what the resume lacks.
-  await page.getByRole("button", { name: "Rewrite with AI" }).click();
-  await expect(page.getByText("Reworded with AI").first()).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText(/The accuracy check changed \d+ lines?/).first()).toBeVisible();
-  const aiBullets = await page.getByRole("textbox", { name: /^Bullet \d+ for/ }).evaluateAll((els) => els.map((e) => (e as HTMLTextAreaElement).value).join(" "));
-  expect(aiBullets).not.toContain("Kubernetes");
-
-  // 8. Track it.
+  // 9. Track it, with Undo.
   await page.getByRole("button", { name: "I applied" }).click();
-  await expect(page.getByText("Marked as applied.")).toBeVisible();
-  await page.goto("/jobs?tab=saved");
-  await expect(page.getByRole("link", { name: "Senior Embedded Software Engineer" })).toBeVisible();
+  await expect(toast(page, "Application marked as applied.")).toBeVisible();
 
-  // 9. Anyone can add an employer by its board link; the directory is shared.
+  // 10. A rewrite the AI can't make meaningful without inventing details: nothing is saved (use 3 of 3).
+  await page.goto("/jobs?q=Firmware&level=");
+  await page.getByRole("link", { name: "Firmware Developer Co-op" }).click();
+  if (await page.getByRole("button", { name: "Tailor anyway" }).isVisible()) await page.getByRole("button", { name: "Tailor anyway" }).click();
+  await page.getByRole("button", { name: "Tailor Resume" }).click();
+  await expect(toast(page, "We couldn't produce a meaningful rewrite without inventing details. Your original resume was not changed.")).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator("#notes").getByText(/no tailored version was saved/)).toBeVisible();
+  await expect(page.locator("#documents").getByText("AI Tailored")).toHaveCount(0);
+
+  // 11. Today's free AI uses are spent: Improvement Notes instead, with the ways forward.
+  await page.goto("/jobs?q=Full+Stack&level=");
+  await results.getByRole("link", { name: "Full Stack Developer" }).first().click();
+  if (await page.getByRole("button", { name: "Tailor anyway" }).isVisible()) await page.getByRole("button", { name: "Tailor anyway" }).click();
+  await page.getByRole("button", { name: "Tailor Resume" }).click();
+  await expect(toast(page, "Your free AI tailoring limit has been reached for today. We haven't modified your resume.")).toBeVisible({ timeout: 60_000 });
+  const banner = page.locator("#notes").getByRole("note");
+  for (const action of ["View Improvement Notes", "Try AI Tailoring Again Later", "Keep Original Resume"]) await expect(banner.getByRole("button", { name: action })).toBeVisible();
+  await expect(banner.getByRole("link", { name: "Use My Own AI Key" })).toHaveAttribute("href", "/settings#ai-key");
+  await expect(page.locator("#documents").getByText("AI Tailored")).toHaveCount(0);
+
+  // 12. Versions: the tailored resume sits beside the original; compare, delete with Undo.
+  await page.goto("/jobs/resume");
+  const version = page.getByRole("listitem").filter({ hasText: "Tailored Resume — Fraser Robotics" });
+  await expect(version).toBeVisible();
+  await page.getByRole("button", { name: "Compare" }).click();
+  await expect(page.getByRole("list", { name: "Differences" })).toBeVisible();
+  await version.getByRole("button", { name: /^Delete/ }).click();
+  await toast(page, "Version deleted.").getByRole("button", { name: "Undo" }).click();
+  await expect(toast(page, "Version restored.")).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "Tailored Resume — Fraser Robotics" })).toBeVisible();
+
+  // 13. Anyone can add an employer by its board link; the directory is shared.
   await page.goto("/jobs/employers");
   const token = `e2e-${Date.now()}`;
   await page.getByLabel("Employer").fill("E2E Robotics");
   await page.getByLabel("Careers page or job board").fill(`https://jobs.lever.co/${token}`);
   await page.getByRole("button", { name: "Add employer" }).click();
-  await expect(page.getByText(/^Added\./)).toBeVisible();
+  await expect(page.getByTestId("form-status").filter({ hasText: /^Added\./ })).toBeVisible();
   await page.getByLabel("Employer").fill("E2E Robotics");
   await page.getByLabel("Careers page or job board").fill(`https://jobs.lever.co/${token}/some-job`);
   await page.getByRole("button", { name: "Add employer" }).click();
-  await expect(page.getByText("E2E Robotics is already in the directory.")).toBeVisible();
+  await expect(page.getByTestId("form-status").filter({ hasText: "E2E Robotics is already in the directory." })).toBeVisible();
+  // The directory is shared: leave no test employer behind.
+  await deleteTestRows("employers", { board_token: `eq.${token}` });
+});
+
+test("pasting a whole job page fills the posting form", async ({ page }) => {
+  await signIn(page, uniqueEmail("paste"), "/jobs/add");
+  const pageText = ["Home", "Jobs", "Harbourview Health", "Registered Nurse - Emergency", "Vancouver, BC · 3 days ago · 48 applicants", "About the job", "We're hiring a Registered Nurse for our emergency department.", "• BLS and ACLS certification", "Show more"].join("\n");
+  await page.getByLabel("Quick fill: paste the whole job page (optional)").fill(pageText);
+  await page.getByRole("button", { name: "Fill the form" }).click();
+  await expect(page.getByRole("status").filter({ hasText: /^Filled job title, company, city, Canada, posting text/ })).toBeVisible();
+  await expect(page.getByLabel("Job title")).toHaveValue("Registered Nurse - Emergency");
+  await expect(page.getByLabel("Company")).toHaveValue("Harbourview Health");
+  await expect(page.getByLabel("City")).toHaveValue("Vancouver");
+  await expect(page.getByLabel("Country")).toHaveValue("CA");
+  await expect(page.getByLabel("Province (jobs in Canada)")).toHaveValue("BC");
+  await expect(page.getByLabel("Posting text")).toHaveValue(/BLS and ACLS certification/);
 });

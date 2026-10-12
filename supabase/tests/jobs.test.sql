@@ -51,8 +51,8 @@ select throws_ok(
   '42501', null, 'users cannot reset their AI quota');
 
 -- A pasted job is private to the person who pasted it.
-insert into public.jobs (id, user_id, external_id, title, posted_at, apply_url)
-values ('b0000000-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'pasted', 'Pasted job', now(), 'https://www.linkedin.com/jobs/view/1');
+insert into public.jobs (id, user_id, source, external_id, title, posted_at, apply_url)
+values ('b0000000-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'manual', 'pasted', 'Pasted job', now(), 'https://www.linkedin.com/jobs/view/1');
 insert into public.job_requirements (job_id, idx, text, kind, category) values ('b0000000-0000-0000-0000-000000000002', 0, 'SQL', 'must', 'skill');
 
 insert into public.resumes (id, label, raw_text, profile, parsed_with, is_active)

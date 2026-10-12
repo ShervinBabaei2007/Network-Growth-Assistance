@@ -2,7 +2,7 @@ import { classifyUniversity } from "@/lib/classify";
 import { DISCIPLINE_LABELS, SHORT_UNIVERSITY, UNIVERSITY_LABELS, type Discipline, type University } from "@/lib/domain";
 
 /**
- * Everything a note may mention. Templates and the Claude rewrite only ever see
+ * Everything a note may mention. Templates and the AI rewrite only ever see
  * these facts, and the checker rejects drafts that mention anything else.
  */
 export type NoteFacts = {

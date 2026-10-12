@@ -1,6 +1,8 @@
+import { defaultLLM } from "@/lib/ai/default-llm";
+import { discoveryFixturesEnabled } from "@/lib/runtime-mode";
 import { HttpPageFetcher, type PageFetcher } from "../fetch-page";
 import { FixtureGitHubProvider, FixtureLLM, FixtureOrcidProvider, FixturePageFetcher, FixtureWebProvider } from "../fixtures";
-import { AnthropicLLM, type LLMProvider } from "../llm";
+import type { LLMProvider } from "../llm";
 import { BraveSearchProvider } from "./brave";
 import { GitHubSearchProvider } from "./github";
 import { OrcidSearchProvider } from "./orcid";
@@ -17,7 +19,7 @@ export type DiscoveryServices = {
 
 /** Picks providers from the server environment. Keys never reach the browser. */
 export function discoveryServices(): DiscoveryServices {
-  if (process.env.DISCOVERY_FIXTURES === "1") {
+  if (discoveryFixturesEnabled()) {
     return { providers: [new FixtureWebProvider(), new FixtureGitHubProvider(), new FixtureOrcidProvider()], fetcher: new FixturePageFetcher(), llm: new FixtureLLM(), limitations: [], fixtures: true };
   }
   const providers: SearchProvider[] = [];
@@ -28,8 +30,8 @@ export function discoveryServices(): DiscoveryServices {
   providers.push(new GitHubSearchProvider(process.env.GITHUB_TOKEN || undefined));
   providers.push(new OrcidSearchProvider());
   if (!process.env.GITHUB_TOKEN) limitations.push("GitHub allows only about one search an hour without a token. A free GitHub token (no permissions needed) in GITHUB_TOKEN raises that a lot.");
-  const llm = new AnthropicLLM();
-  if (!llm.enabled) limitations.push("AI is off: requests are understood with the built-in parser and matches are explained by their score breakdown. Set ANTHROPIC_API_KEY to also read web pages and get written explanations.");
+  const llm = defaultLLM();
+  if (!llm.enabled) limitations.push("AI is off: requests are understood with the built-in parser and matches are explained by their score breakdown. Set GEMINI_API_KEY (free from Google AI Studio) to also read web pages and get written explanations.");
   return { providers, fetcher: new HttpPageFetcher(), llm, limitations, fixtures: false };
 }
 

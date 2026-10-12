@@ -27,15 +27,16 @@ export const DocEntry = z.object({
 });
 export type DocEntry = z.infer<typeof DocEntry>;
 
-export const SECTION_KEYS = ["experience", "projects", "education"] as const;
+/** Resumes use the first three; a CV also has awards and activities. */
+export const SECTION_KEYS = ["experience", "projects", "education", "awards", "activities"] as const;
 export type SectionKey = (typeof SECTION_KEYS)[number];
-export const SECTION_HEADINGS: Record<SectionKey, string> = { experience: "Experience", projects: "Projects", education: "Education" };
+export const SECTION_HEADINGS: Record<SectionKey, string> = { experience: "Experience", projects: "Projects", education: "Education", awards: "Awards", activities: "Activities" };
 
 export const TailoredResumeDoc = z.object({
   header: DocHeader,
   summary: z.string().max(1200).nullable(),
   skills: z.array(z.string().max(80)).max(60),
-  sections: z.array(z.object({ key: z.enum(SECTION_KEYS), entries: z.array(DocEntry).max(20) })).max(3),
+  sections: z.array(z.object({ key: z.enum(SECTION_KEYS), entries: z.array(DocEntry).max(30) })).max(5),
   certifications: z.array(z.string().max(200)).max(20),
 });
 export type TailoredResumeDoc = z.infer<typeof TailoredResumeDoc>;

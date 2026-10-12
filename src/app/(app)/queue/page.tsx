@@ -9,7 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentUserId } from "@/lib/data/dashboard";
 import { localDate, startOfLocalDay } from "@/lib/dates";
-import { aiNotesEnabled } from "@/lib/notes/claude";
+import { aiNotesEnabled } from "@/lib/notes/ai-rewrite";
 import { DISCIPLINE_LABELS, SHORT_UNIVERSITY, type Discipline } from "@/lib/domain";
 import { computeTodaysPlan } from "@/lib/jobs/daily-queue";
 import { MIN_RESOLVED_FOR_RATE, type Shortfall } from "@/lib/prioritize";

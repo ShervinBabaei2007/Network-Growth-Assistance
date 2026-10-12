@@ -27,7 +27,7 @@ export default function EmployersPage({ searchParams }: PageProps<"/jobs/employe
       <PageHeader
         back={{ href: "/jobs", label: "Jobs" }}
         title="Employers"
-        description="Jobs are read from these employers' own job boards (Greenhouse, Lever, Ashby, SmartRecruiters, Workable and Recruitee), every 30 minutes for employers hiring in Canada. Everyone shares this list: add an employer you'd like to work for and everyone sees its jobs."
+        description="Jobs are read from these employers' own job boards (Greenhouse, Lever, Ashby, SmartRecruiters, Workable and Recruitee), every 30 minutes for employers hiring in the countries people search. Any field and any country: everyone shares this list, so add an employer you'd like to work for and everyone sees its jobs."
       />
       <Card>
         <CardHeader>
@@ -63,8 +63,8 @@ async function Directory({ searchParams }: Pick<PageProps<"/jobs/employers">, "s
   const supabase = await createClient();
   let query = supabase
     .from("employers")
-    .select("id, name, ats, status, canada_jobs, last_crawled_at, careers_url, last_error", { count: "exact" })
-    .order("canada_jobs", { ascending: false })
+    .select("id, name, ats, status, matching_jobs, last_crawled_at, careers_url, last_error", { count: "exact" })
+    .order("matching_jobs", { ascending: false })
     .order("name")
     .range((page - 1) * PAGE, page * PAGE - 1);
   if (q) query = query.ilike("name", `%${q}%`);
@@ -107,7 +107,7 @@ async function Directory({ searchParams }: Pick<PageProps<"/jobs/employers">, "s
               <TableRow>
                 <TableHead>Employer</TableHead>
                 <TableHead>Board</TableHead>
-                <TableHead className="text-right">Jobs in Canada</TableHead>
+                <TableHead className="text-right" title="Jobs open to the countries people search">Jobs kept</TableHead>
                 <TableHead>Last read</TableHead>
               </TableRow>
             </TableHeader>
@@ -129,7 +129,7 @@ async function Directory({ searchParams }: Pick<PageProps<"/jobs/employers">, "s
                     ) : null}
                   </TableCell>
                   <TableCell>{ATS_LABELS[e.ats]}</TableCell>
-                  <TableCell className="text-right">{e.canada_jobs}</TableCell>
+                  <TableCell className="text-right">{e.matching_jobs}</TableCell>
                   <TableCell className="text-muted-foreground">{e.last_crawled_at ? timeAgo(e.last_crawled_at) : "Not yet"}</TableCell>
                 </TableRow>
               ))}

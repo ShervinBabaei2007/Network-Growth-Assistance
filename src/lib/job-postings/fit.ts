@@ -139,3 +139,35 @@ export function prefilterScore(posting: { title: string; description: string }, 
   if (JUNIOR_TITLE.test(posting.title) && years < 3) score += 15;
   return score;
 }
+
+// ------------------------------------------------------------------ explanation
+
+export type FitExplanation = {
+  /** What the resume clearly shows: skill names where a requirement names skills, else the requirement. */
+  strong: string[];
+  /** Required items the resume doesn't show. */
+  missing: string[];
+  /** Preferred items the resume doesn't show. */
+  preferredNotFound: string[];
+};
+
+const label = (req: Requirement, skillNames: (text: string) => string[]) => {
+  const names = skillNames(req.text);
+  return names.length ? names : [short(req.text)];
+};
+
+/**
+ * "Strong matches: React, TypeScript · Missing: AWS · Preferred not found: 3+ years", built
+ * only from the requirement results, so the explanation always agrees with the score.
+ */
+export function explainFit(requirements: Requirement[], results: RequirementResult[], skillNames: (text: string) => string[]): FitExplanation {
+  const byId = new Map(results.map((r) => [r.requirementId, r]));
+  const out: FitExplanation = { strong: [], missing: [], preferredNotFound: [] };
+  for (const req of requirements) {
+    const status = byId.get(req.id)?.status ?? "missing";
+    if (status === "met") out.strong.push(...label(req, skillNames));
+    else if (status === "missing") (req.kind === "must" ? out.missing : out.preferredNotFound).push(...label(req, skillNames));
+  }
+  const uniq = (xs: string[]) => [...new Set(xs)];
+  return { strong: uniq(out.strong), missing: uniq(out.missing), preferredNotFound: uniq(out.preferredNotFound) };
+}

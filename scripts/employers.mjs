@@ -2,9 +2,10 @@
 /**
  * The shared employer directory's seed list.
  *
- *   node scripts/employers.mjs discover   Probe each candidate name on the public job-board
- *                                         APIs and write supabase/seed/employers.json with the
- *                                         boards that answer (and how many Canadian jobs each has).
+ *   node scripts/employers.mjs discover [file]   Probe each candidate name (from file, default
+ *                                         scripts/employer-candidates.txt) on the public job-board
+ *                                         APIs and add the boards that answer to
+ *                                         supabase/seed/employers.json (boards already there are kept).
  *   node scripts/employers.mjs load       Upsert supabase/seed/employers.json into the database
  *                                         (reads NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY
  *                                         from the environment or .env.local).
@@ -14,8 +15,8 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 
 const SEED = "supabase/seed/employers.json";
-const CANDIDATES = "scripts/employer-candidates.txt";
-const UA = "NetworkGrowthAssistant/1.0 (+job search for Canadians; reads public job-board APIs)";
+const CANDIDATES = process.argv[3] ?? "scripts/employer-candidates.txt";
+const UA = "NetworkGrowthAssistant/1.0 (+personal job search; reads public job-board APIs)";
 
 const CANADA = /\b(canada|british columbia|ontario|alberta|quebec|manitoba|saskatchewan|nova scotia|new brunswick|toronto|vancouver|burnaby|surrey|richmond, bc|victoria, bc|kelowna|waterloo|kitchener|ottawa|mississauga|markham|montreal|calgary|edmonton|winnipeg|halifax|(,|\s-)\s*(bc|on|ab|qc|mb|sk|ns|nb)\b)/i;
 
@@ -34,8 +35,18 @@ const probes = {
     return r?.jobs ? { total: r.jobs.length, canada: r.jobs.filter((j) => CANADA.test(where(j))).length, url: `https://jobs.ashbyhq.com/${t}` } : null;
   },
   smartrecruiters: async (t) => {
-    const r = await get(`https://api.smartrecruiters.com/v1/companies/${t}/postings?country=ca&limit=1`);
-    return r && r.totalFound > 0 ? { total: r.totalFound, canada: r.totalFound, url: `https://careers.smartrecruiters.com/${t}` } : null;
+    const all = await get(`https://api.smartrecruiters.com/v1/companies/${t}/postings?limit=1`);
+    if (!all || !(all.totalFound > 0)) return null;
+    const ca = await get(`https://api.smartrecruiters.com/v1/companies/${t}/postings?country=ca&limit=1`);
+    return { total: all.totalFound, canada: ca?.totalFound ?? 0, url: `https://careers.smartrecruiters.com/${t}` };
+  },
+  workable: async (t) => {
+    const r = await get(`https://apply.workable.com/api/v1/widget/accounts/${t}`);
+    return Array.isArray(r?.jobs) ? { total: r.jobs.length, canada: r.jobs.filter((j) => j.country === "Canada" || CANADA.test(`${j.city ?? ""}, ${j.state ?? ""}`)).length, url: `https://apply.workable.com/${t}/` } : null;
+  },
+  recruitee: async (t) => {
+    const r = await get(`https://${t}.recruitee.com/api/offers/`);
+    return Array.isArray(r?.offers) ? { total: r.offers.length, canada: r.offers.filter((j) => CANADA.test(`${j.location ?? ""} ${j.country ?? ""}`)).length, url: `https://${t}.recruitee.com/` } : null;
   },
 };
 
@@ -67,24 +78,26 @@ async function discover() {
       for (const [ats, probe] of Object.entries(probes)) {
         for (const token of ats === "smartrecruiters" ? [...tokens, name.replace(/[^A-Za-z0-9]/g, "")] : tokens) {
           const r = await probe(token);
-          if (r && r.total > 0 && (!best || r.canada > best.canada)) best = { name, ats, token, careers_url: r.url, canada: r.canada, total: r.total };
+          // The board with the most jobs wins (worldwide); Canadian jobs are counted for the log only.
+          if (r && r.total > 0 && (!best || r.total > best.total)) best = { name, ats, token, careers_url: r.url, canada: r.canada, total: r.total };
         }
       }
       if (best) {
         found.push(best);
-        console.log(`${best.canada > 0 ? "✓" : "·"} ${name}: ${best.ats}/${best.token} (${best.canada} in Canada of ${best.total})`);
+        console.log(`✓ ${name}: ${best.ats}/${best.token} (${best.total} jobs, ${best.canada} in Canada)`);
       } else console.log(`✗ ${name}`);
     }
   };
   await Promise.all(Array.from({ length: 6 }, worker));
+  // Boards already in the seed stay (a probe can fail for a moment); new ones are added.
+  const previous = existsSync(SEED) ? JSON.parse(readFileSync(SEED, "utf8")).map((e) => ({ ...e, canada: 0, total: 0 })) : [];
   // One entry per board (a name listed twice finds the same board).
-  const unique = [...new Map(found.map((f) => [`${f.ats}/${f.token.toLowerCase()}`, f])).values()];
+  const unique = [...new Map([...previous, ...found].map((f) => [`${f.ats}/${f.token.toLowerCase()}`, f])).values()];
   found.length = 0;
   found.push(...unique);
-  // Employers with no Canadian jobs right now are kept: they hire in Canada from time to time.
-  found.sort((a, b) => b.canada - a.canada || a.name.localeCompare(b.name));
+  found.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
   writeFileSync(SEED, `${JSON.stringify(found.map(({ name, ats, token, careers_url }) => ({ name, ats, token, careers_url })), null, 2)}\n`);
-  console.log(`\n${found.length} boards found (${found.filter((f) => f.canada > 0).length} with jobs in Canada now) → ${SEED}`);
+  console.log(`\n${found.length} boards in ${SEED} (${unique.length - previous.length} new)`);
 }
 
 function env(name) {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { boardHtmlToText, BoardError, getJson, type AtsAdapter, type AtsJob, type BoardResult } from "./types";
+import { boardHtmlToText, BoardError, getJson, type AtsAdapter, type AtsJob, type BoardResult, type ExperienceLevel, type SalaryRange } from "./types";
 
 /**
  * One adapter per ATS. Every field is optional in the schemas: a malformed job is
@@ -24,6 +24,18 @@ const money = (min: number | null | undefined, max: number | null | undefined, u
   return unit ? `${range} per ${unit.toLowerCase()}` : range;
 };
 
+/** A pay period from the board's wording ("per-year-salary", "HOURLY", "month"). */
+export const payPeriod = (text: string | null | undefined): SalaryRange["period"] => {
+  const t = (text ?? "").toLowerCase();
+  return /year|annual/.test(t) ? "year" : /month/.test(t) ? "month" : /week/.test(t) ? "week" : /\bday|daily/.test(t) ? "day" : /hour/.test(t) ? "hour" : null;
+};
+
+/** A workplace type from a board's structured field ("OnSite", "hybrid", "remote"); null when unspecified. */
+export const workplaceOf = (value: string | null | undefined): AtsJob["workplace"] => {
+  const v = (value ?? "").toLowerCase().replace(/[\s_-]/g, "");
+  return v === "remote" ? "remote" : v === "hybrid" ? "hybrid" : v === "onsite" || v === "inoffice" ? "onsite" : null;
+};
+
 // ------------------------------------------------------------------ Greenhouse
 
 const GhJob = z.object({
@@ -42,7 +54,7 @@ export const greenhouse: AtsAdapter = {
   label: "Greenhouse",
   boardUrl: (t) => `https://boards.greenhouse.io/${t}`,
   async fetchBoard(token, opts): Promise<BoardResult> {
-    // The list without descriptions is small; descriptions are fetched only for new Canadian jobs.
+    // The list without descriptions is small; descriptions are fetched only for new jobs that are kept.
     const r = await getJson(`https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(token)}/jobs`, opts);
     if (r.notModified) return r;
     const list = z.object({ jobs: z.array(z.unknown()) }).safeParse(r.body);
@@ -70,7 +82,7 @@ export const greenhouse: AtsAdapter = {
     const r = await getJson(`https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(token)}/jobs/${encodeURIComponent(id)}`, opts);
     if (r.notModified) return null;
     const j = GhJob.safeParse(r.body);
-    return j.success ? boardHtmlToText(j.data.content, { escaped: true }) : null;
+    return j.success ? { description: boardHtmlToText(j.data.content, { escaped: true }) } : null;
   },
 };
 
@@ -112,11 +124,18 @@ export const lever: AtsAdapter = {
           // Lever's country is the posting's; locations may name several cities.
           places: locations.map((text) => ({ text, country: locations.length === 1 ? j.country : null })),
           remote: j.workplaceType === "remote",
+          workplace: workplaceOf(j.workplaceType),
+          // Lever's public API gives only when the posting was created, not when it was published.
           postedAt: j.createdAt ? new Date(j.createdAt).toISOString() : null,
           precision: "time",
+          dateNote: "created",
           applyUrl: j.hostedUrl,
           description: [j.descriptionPlain, lists, j.additionalPlain].filter(Boolean).join("\n").trim(),
-          salary: j.salaryRange ? money(j.salaryRange.min, j.salaryRange.max, j.salaryRange.interval?.replace(/^per-/, "")) : null,
+          salary: j.salaryRange ? money(j.salaryRange.min, j.salaryRange.max, payPeriod(j.salaryRange.interval)) : null,
+          salaryRange:
+            j.salaryRange && (j.salaryRange.min || j.salaryRange.max)
+              ? { min: j.salaryRange.min ?? null, max: j.salaryRange.max ?? null, currency: j.salaryRange.currency?.toUpperCase() ?? null, period: payPeriod(j.salaryRange.interval) }
+              : null,
           employmentType: j.categories?.commitment ?? null,
           department: j.categories?.team ?? null,
         };
@@ -173,6 +192,7 @@ export const ashby: AtsAdapter = {
               company: null,
               places: [ashbyPlace(j.location, j.address), ...(j.secondaryLocations ?? []).map((l) => ashbyPlace(l.location, l.address))],
               remote: Boolean(j.isRemote) || j.workplaceType === "Remote",
+              workplace: workplaceOf(j.workplaceType) ?? (j.isRemote ? "remote" : null),
               postedAt: j.publishedAt ?? null,
               precision: "time",
               applyUrl: j.jobUrl,
@@ -196,24 +216,39 @@ const SrJob = z.object({
   location: z.object({ city: s, region: s, country: s, remote: z.boolean().nullish(), fullLocation: s }).nullish(),
   department: z.object({ label: s }).nullish(),
   typeOfEmployment: z.object({ label: s }).nullish(),
+  experienceLevel: z.object({ id: s }).nullish(),
 });
 const SrDetail = z.object({
   postingUrl: s,
   jobAd: z.object({ sections: z.record(z.string(), z.object({ title: s, text: s }).nullish()) }).nullish(),
 });
 
+// SmartRecruiters' own experience levels; the broad ones ("mid_senior_level") are left to the title.
+const SR_LEVELS: Record<string, ExperienceLevel> = { internship: "internship", entry_level: "entry", associate: "junior" };
+const SR_PAGES = 3;
+/** With more searched countries than this, the board is read without a country filter. */
+const SR_MAX_COUNTRY_QUERIES = 6;
+
 export const smartrecruiters: AtsAdapter = {
   kind: "smartrecruiters",
   label: "SmartRecruiters",
   boardUrl: (t) => `https://careers.smartrecruiters.com/${t}`,
   async fetchBoard(token, opts): Promise<BoardResult> {
-    // The API filters by country, so only Canadian postings are listed (up to 300).
+    // The API filters by country: each searched country is asked for (up to 300 postings
+    // each), so a big employer's jobs in those countries aren't crowded out by the rest.
+    const countries = (opts.countries ?? ["CA"]).filter((c) => /^[A-Z]{2}$/.test(c));
+    const filters = countries.length && countries.length <= SR_MAX_COUNTRY_QUERIES ? countries.map((c) => `country=${c.toLowerCase()}&`) : [""];
     const jobs: AtsJob[] = [];
+    const seen = new Set<string>();
     let etag: string | null = null;
-    for (let offset = 0; offset < 300; offset += 100) {
-      const r = await getJson(`https://api.smartrecruiters.com/v1/companies/${encodeURIComponent(token)}/postings?country=ca&limit=100&offset=${offset}`, { ...opts, etag: offset === 0 ? opts.etag : null });
+    let partial = false;
+    for (const [qi, filter] of filters.entries()) {
+    for (let offset = 0; offset < SR_PAGES * 100; offset += 100) {
+      // An unchanged answer only counts when one query covers the whole board.
+      const first = qi === 0 && offset === 0;
+      const r = await getJson(`https://api.smartrecruiters.com/v1/companies/${encodeURIComponent(token)}/postings?${filter}limit=100&offset=${offset}`, { ...opts, etag: first && filters.length === 1 ? opts.etag : null });
       if (r.notModified) return r;
-      if (offset === 0) etag = r.etag;
+      if (first && filters.length === 1) etag = r.etag;
       const page = z.object({ content: z.array(z.unknown()), totalFound: z.number() }).safeParse(r.body);
       if (!page.success) throw new BoardError("Unexpected SmartRecruiters response.");
       jobs.push(
@@ -225,27 +260,35 @@ export const smartrecruiters: AtsAdapter = {
           remote: Boolean(j.location?.remote),
           postedAt: j.releasedDate ?? null,
           precision: "time",
-          applyUrl: `https://jobs.smartrecruiters.com/${token}/${j.id}`,
+          // The list has no public link; fetchDetail reads the posting's own postingUrl.
+          applyUrl: null,
           description: null,
           salary: null,
           employmentType: j.typeOfEmployment?.label ?? null,
           department: j.department?.label ?? null,
+          level: SR_LEVELS[j.experienceLevel?.id ?? ""] ?? null,
         })),
       );
       if (offset + 100 >= page.data.totalFound) break;
+      if (offset + 100 >= SR_PAGES * 100) partial = true;
     }
-    return { notModified: false, etag, jobs };
+    }
+    // A job listed in two searched countries is one job.
+    const unique = jobs.filter((j) => (seen.has(j.externalId) ? false : (seen.add(j.externalId), true)));
+    // Per-country reads can't tell what closed elsewhere on the board.
+    return { notModified: false, etag, jobs: unique, partial: partial || filters.length > 1 || filters[0] !== "" };
   },
   async fetchDetail(token, id, opts) {
     const r = await getJson(`https://api.smartrecruiters.com/v1/companies/${encodeURIComponent(token)}/postings/${encodeURIComponent(id)}`, opts);
     if (r.notModified) return null;
     const d = SrDetail.safeParse(r.body);
     if (!d.success) return null;
-    return Object.values(d.data.jobAd?.sections ?? {})
+    const description = Object.values(d.data.jobAd?.sections ?? {})
       .filter((sec) => sec?.text)
       .map((sec) => `${sec!.title ?? ""}\n${boardHtmlToText(sec!.text)}`)
       .join("\n")
       .trim();
+    return { description: description || null, applyUrl: d.data.postingUrl ?? null };
   },
 };
 
@@ -290,7 +333,8 @@ export const workable: AtsAdapter = {
         // Workable gives a date without a time.
         postedAt: j.published_on ? `${j.published_on}T00:00:00Z` : null,
         precision: "day",
-        applyUrl: j.url ?? `https://apply.workable.com/j/${j.shortcode}`,
+        // Only the board's own link; a job without one shows "Application link unavailable".
+        applyUrl: j.url ?? j.application_url ?? null,
         description: boardHtmlToText(j.description),
         salary: null,
         employmentType: j.employment_type ?? null,
