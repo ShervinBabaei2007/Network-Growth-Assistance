@@ -177,7 +177,8 @@ export const matchRole = (text: string, aliases: string[]) => aliases.find((a) =
 
 // ---------------------------------------------------- companies, locations
 
-const COMPANY_ALIASES: Record<string, readonly string[]> = {
+/** Company groups: names that refer to the same employer or its well-known brands. */
+export const COMPANY_ALIASES: Record<string, readonly string[]> = {
   amazon: ["amazon", "aws", "amazon web services"],
   google: ["google", "alphabet", "deepmind"],
   meta: ["meta", "facebook"],

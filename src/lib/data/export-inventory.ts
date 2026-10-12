@@ -41,6 +41,7 @@ export const EXPORTED_TABLES = [
   "saved_search_matches",
   "notifications",
   "email_deliveries",
+  "company_aliases",
 ] as const;
 
 /** Exported in part, by the export route itself. */

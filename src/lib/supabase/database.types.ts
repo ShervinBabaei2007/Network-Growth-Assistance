@@ -111,14 +111,14 @@ isOneToOne: false
                   ]
                 },"application_events": {
                   Row: {
-                    "application_id": string,"created_at": string,"detail": string | null,"from_stage": Database["public"]['Enums']["application_stage"] | null,"id": string,"kind": string,"occurred_at": string,"to_stage": Database["public"]['Enums']["application_stage"] | null,"user_id": string
+                    "application_id": string,"created_at": string,"detail": string | null,"from_stage": Database["public"]['Enums']["application_stage"] | null,"id": string,"interaction_id": string | null,"kind": string,"occurred_at": string,"to_stage": Database["public"]['Enums']["application_stage"] | null,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "application_id": string,"created_at"?: string,"detail"?: string | null,"from_stage"?: Database["public"]['Enums']["application_stage"] | null,"id"?: string,"kind": string,"occurred_at"?: string,"to_stage"?: Database["public"]['Enums']["application_stage"] | null,"user_id"?: string
+                    "application_id": string,"created_at"?: string,"detail"?: string | null,"from_stage"?: Database["public"]['Enums']["application_stage"] | null,"id"?: string,"interaction_id"?: string | null,"kind": string,"occurred_at"?: string,"to_stage"?: Database["public"]['Enums']["application_stage"] | null,"user_id"?: string
                   }
                   Update: {
-                    "application_id"?: string,"created_at"?: string,"detail"?: string | null,"from_stage"?: Database["public"]['Enums']["application_stage"] | null,"id"?: string,"kind"?: string,"occurred_at"?: string,"to_stage"?: Database["public"]['Enums']["application_stage"] | null,"user_id"?: string
+                    "application_id"?: string,"created_at"?: string,"detail"?: string | null,"from_stage"?: Database["public"]['Enums']["application_stage"] | null,"id"?: string,"interaction_id"?: string | null,"kind"?: string,"occurred_at"?: string,"to_stage"?: Database["public"]['Enums']["application_stage"] | null,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -127,6 +127,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "applications"
       referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "application_events_interaction_id_fkey"
+      columns: ["interaction_id"]
+isOneToOne: false
+      referencedRelation: "network_interactions"
+      referencedColumns: ["id"]
     }
                   ]
                 },"application_interviews": {
@@ -199,6 +205,20 @@ isOneToOne: false
                   }
                   Update: {
                     "connected_at"?: string | null,"connected_via"?: Database["public"]['Enums']["connection_source"] | null,"created_at"?: string,"degree_level"?: Database["public"]['Enums']["degree_level"] | null,"discipline"?: Database["public"]['Enums']["discipline"] | null,"discipline_confidence"?: Database["public"]['Enums']["classification_confidence"],"discovered_at"?: string,"full_name"?: string,"grad_year"?: number | null,"id"?: string,"is_preexisting_connection"?: boolean,"notes"?: string | null,"profile_key"?: string,"profile_url"?: string,"raw_program_text"?: string | null,"raw_school_text"?: string | null,"role"?: string | null,"source"?: Database["public"]['Enums']["candidate_source"],"status"?: Database["public"]['Enums']["candidate_status"],"university"?: Database["public"]['Enums']["university"] | null,"university_confidence"?: Database["public"]['Enums']["classification_confidence"],"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"company_aliases": {
+                  Row: {
+                    "a_key": string,"b_key": string,"created_at": string,"decision": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "a_key": string,"b_key": string,"created_at"?: string,"decision": string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "a_key"?: string,"b_key"?: string,"created_at"?: string,"decision"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -507,17 +527,23 @@ isOneToOne: false
                   ]
                 },"network_interactions": {
                   Row: {
-                    "body": string | null,"created_at": string,"id": string,"kind": string,"occurred_at": string,"person_id": string,"user_id": string
+                    "application_id": string | null,"body": string | null,"created_at": string,"id": string,"kind": string,"occurred_at": string,"person_id": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "body"?: string | null,"created_at"?: string,"id"?: string,"kind": string,"occurred_at"?: string,"person_id": string,"user_id"?: string
+                    "application_id"?: string | null,"body"?: string | null,"created_at"?: string,"id"?: string,"kind": string,"occurred_at"?: string,"person_id": string,"user_id"?: string
                   }
                   Update: {
-                    "body"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"occurred_at"?: string,"person_id"?: string,"user_id"?: string
+                    "application_id"?: string | null,"body"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"occurred_at"?: string,"person_id"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "network_interactions_application_fkey"
+      columns: ["application_id","user_id"]
+isOneToOne: false
+      referencedRelation: "applications"
+      referencedColumns: ["id","user_id"]
+    },{
       foreignKeyName: "network_interactions_person_id_user_id_fkey"
       columns: ["person_id","user_id"]
 isOneToOne: false
@@ -955,6 +981,9 @@ isOneToOne: false
 "record_invitation_sent":
 { Args: { "p_candidate_id": string,"p_note_text"?: string,"p_sent_at"?: string,"p_source"?: Database["public"]['Enums']["record_source"] }; Returns: string
                            },
+"record_referral":
+{ Args: { "p_application": string,"p_kind": string,"p_person": string }; Returns: boolean
+                           },
 "release_application_for_job":
 { Args: { "p_job": string }; Returns: boolean
                            },
@@ -966,6 +995,9 @@ isOneToOne: false
                            },
 "sync_application_for_job":
 { Args: { "p_job": string,"p_stage": Database["public"]['Enums']["application_stage"] }; Returns: string
+                           },
+"undo_referral":
+{ Args: { "p_application": string,"p_kind": string,"p_person": string }; Returns: boolean
                            },
 "user_local_date":
 { Args: { "p_at": string }; Returns: string

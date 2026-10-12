@@ -88,3 +88,14 @@ export async function latestEmail(to: string, subject?: RegExp): Promise<{ subje
   }
   return null;
 }
+
+/** The auth user id for a test email (local Supabase admin API). */
+export async function userIdFor(email: string): Promise<string> {
+  const url = localEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const key = localEnv("SUPABASE_SECRET_KEY");
+  const res = await fetch(`${url}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=5`, { headers: { apikey: key!, Authorization: `Bearer ${key}` } });
+  const body = (await res.json()) as { users?: { id: string; email: string }[] };
+  const user = body.users?.find((u) => u.email === email);
+  if (!user) throw new Error(`No user ${email}`);
+  return user.id;
+}

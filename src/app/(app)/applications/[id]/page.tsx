@@ -2,9 +2,11 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ExternalLink } from "lucide-react";
+import { PeopleAtCompany } from "@/components/companies/people-at-company";
 import { LoadError } from "@/components/load-error";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
+import { companySlug } from "@/lib/companies/match";
 import { formatDateOnly, formatDateTime, relativeDays, toLocalInput } from "@/lib/applications/format";
 import { describeMove, formatPay, STAGE_LABEL } from "@/lib/applications/stages";
 import { createClient } from "@/lib/supabase/server";
@@ -124,7 +126,11 @@ async function Application({ params }: Pick<PageProps<"/applications/[id]">, "pa
         title={app.title}
         meta={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            {app.company ? <span>{app.company}</span> : null}
+            {app.company ? (
+              <Link href={`/companies/${companySlug(app.company)}`} className="hover:text-foreground hover:underline">
+                {app.company}
+              </Link>
+            ) : null}
             {app.location ? <span>{app.location}</span> : null}
             <Badge variant="secondary">{STAGE_LABEL[app.stage]}</Badge>
             {app.attempt > 1 ? <span>Attempt {app.attempt}</span> : null}
@@ -159,6 +165,11 @@ async function Application({ params }: Pick<PageProps<"/applications/[id]">, "pa
         </p>
       ) : null}
       <ApplicationDetail data={data} />
+      {app.company ? (
+        <Suspense fallback={null}>
+          <PeopleAtCompany company={app.company} applicationId={app.id} />
+        </Suspense>
+      ) : null}
     </div>
   );
 }

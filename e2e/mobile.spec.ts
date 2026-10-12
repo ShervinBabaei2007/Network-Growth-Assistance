@@ -17,7 +17,7 @@ test("mobile: menu works and pages fit the screen", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Your resume" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   // So do notifications and saved searches (here, their empty states).
-  for (const [path, heading] of [["/notifications", "Notifications"], ["/jobs/searches", "Saved searches"]] as const) {
+  for (const [path, heading] of [["/notifications", "Notifications"], ["/jobs/searches", "Saved searches"], ["/companies/northwind-labs", "Northwind Labs"]] as const) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: heading, level: 1 })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);

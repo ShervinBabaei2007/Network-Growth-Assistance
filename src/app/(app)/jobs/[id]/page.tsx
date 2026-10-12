@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowUpRight, Building2, Check, Clock, MapPin, Minus, Telescope, X } from "lucide-react";
+import { ArrowUpRight, Building2, Check, Clock, MapPin, Minus, X } from "lucide-react";
+import { PeopleAtCompany } from "@/components/companies/people-at-company";
 import { ApplyLink } from "@/components/jobs/apply-link";
 import { FitScore, SourceTag, TIER_STYLE, VerificationBadge } from "@/components/jobs/job-visuals";
 import { PageHeader } from "@/components/page-header";
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { STAGE_LABEL } from "@/lib/applications/stages";
+import { companySlug } from "@/lib/companies/match";
 import { aiAccess } from "@/lib/job-postings/ai";
 import { applyState } from "@/lib/job-postings/apply-state";
 import type { Comparison } from "@/lib/job-postings/compare";
@@ -93,7 +95,6 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
   const fit = match ? StoredFit.safeParse(match.requirement_results) : null;
   const originals: Record<string, string> = {};
   if (resume) for (const e of [...resume.profile.experience, ...resume.profile.projects, ...resume.profile.education]) for (const b of e.bullets) originals[b.id] = b.text;
-  const discoverQuery = job.company ? `Find people working at ${job.company}${job.city ? ` in ${job.city}` : ""}` : null;
   const aiStatus = ai.ok
     ? { available: true, note: ai.source === "own" ? "AI uses your own key." : `AI: ${ai.remaining} free use${ai.remaining === 1 ? "" : "s"} left today.` }
     : { available: false, note: `${ai.reason} Without AI, “Tailor Resume” gives you Improvement Notes instead.` };
@@ -119,10 +120,10 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
         meta={
           <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
             {job.company ? (
-              <span className="inline-flex items-center gap-1 font-medium text-foreground">
+              <Link href={`/companies/${companySlug(job.company)}`} className="inline-flex items-center gap-1 font-medium text-foreground hover:underline">
                 <Building2 aria-hidden className="size-4 text-muted-foreground" />
                 {job.company}
-              </span>
+              </Link>
             ) : null}
             <span className="inline-flex items-center gap-1">
               <MapPin aria-hidden className="size-4" />
@@ -330,13 +331,13 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
                   </Link>
                 ) : null}
               </div>
-              {discoverQuery ? (
-                <Link href={`/discover?q=${encodeURIComponent(discoverQuery)}`} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "justify-start border-t pt-3")}>
-                  <Telescope aria-hidden /> Find people at {job.company}
-                </Link>
-              ) : null}
             </CardContent>
           </Card>
+          {job.company ? (
+            <Suspense fallback={null}>
+              <PeopleAtCompany company={job.company} applicationId={application?.id ?? null} city={job.city} />
+            </Suspense>
+          ) : null}
         </aside>
       </div>
     </div>

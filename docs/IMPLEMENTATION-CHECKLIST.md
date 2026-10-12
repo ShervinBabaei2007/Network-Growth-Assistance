@@ -13,6 +13,7 @@ Status words are kept separate on purpose:
 |---|---|
 | `121de46` | Phases 0–1, as one commit. Several files mixed foundation and tracker changes, so they weren't split. |
 | `eea791b` | Step 0: generic deletion test, AI allowance for intros and notes, checklist corrections |
+| `142486d` | Phase 2: saved searches, alerts, notifications, SMTP digests |
 
 ## Scope of the first release
 
@@ -150,6 +151,34 @@ Local data note: the local database holds the owner's own data. **Never run `db:
 - **E2E specs run in parallel workers**, which the earlier "one at a time" note got wrong. The alerts spec now uses a title no other spec searches for, and two specs wait for the Jobs page before their fixture check.
 
 **Not verified:** a real SMTP provider (deliverability, SPF/DKIM, limits). Your configuration; see `docs/DEPLOYMENT.md` §3c.
+
+## Phase 3: network ↔ jobs bridge
+
+| Item | Status | Evidence |
+|---|---|---|
+| One company matcher for the bridge: exact (after legal suffixes) counts; regional names, brand groups and name prefixes are only *possible* | implemented, unit-tested | `src/lib/companies/match.ts`, `match.test.ts` |
+| User-scoped, correctable "same / different company" decisions (Undo) | implemented, pgTAP + e2e | `company_aliases`, `decideCompanies` |
+| People at {company}: imported connections and saved People, each with the reason it matched and evidence age; over 180 days flagged "may have changed jobs since" | implemented, e2e | `src/lib/companies/people.ts`, `src/components/companies/people-at-company.tsx` |
+| Referrals ("I asked" / "They referred me"): on the person, as the application's referrer, once on its timeline; Undo | implemented, pgTAP + e2e | `record_referral`, `undo_referral` in `20261025000000_network_bridge.sql` |
+| Referral-ask drafts: template without AI; optional AI rewrite charged to the allowance; its own guard (no "works there now", no invented facts, numbers or links, no implied meeting without recorded contact); copied, never sent | implemented, unit + e2e (template) | `src/lib/discovery/referral.ts` |
+| Company page: applications (all attempts), verified open jobs, referrals, people | implemented, e2e | `/companies/[slug]` |
+| Links: job page and application header → company page | implemented | |
+
+**Decisions:**
+- `normCompany` (dedupe keys) and discovery's `sameCompany` are unchanged. The new matcher is used by the bridge only.
+- Brand groups (Amazon / AWS, Meta / Facebook) are *possible*, never automatic: a group's people may work in a different unit.
+- Imported connections can't carry a referral until they're saved to People, since referrals need a person record.
+
+**Verification (local):**
+
+| Check | Result |
+|---|---|
+| typecheck, lint, build, `check:bundle` (49 files) | all pass |
+| Unit tests | 795 pass |
+| pgTAP | 197 pass |
+| E2E | 14/14 (new `network.spec.ts`) |
+
+**Browser review.** Job page "People at" card and company page, in light and dark, desktop and phone, with no horizontal overflow.
 
 ## Fixes outside the roadmap
 
