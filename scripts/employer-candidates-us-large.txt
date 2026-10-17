@@ -1,0 +1,205 @@
+# Large US employers on Workday career sites (same format as employer-candidates-canada-large.txt).
+# `node scripts/employers.mjs discover scripts/employer-candidates-us-large.txt` keeps only the
+# sites that answer. These are guesses: an employer whose site isn't found is left out.
+
+# Tech
+Cisco Systems | wd:cisco
+Oracle | wd:oracle
+Micron | wd:micron
+Applied Materials | wd:amat,appliedmaterials
+Texas Instruments | wd:ti,texasinstruments
+Analog Devices | wd:analogdevices,adi
+Western Digital | wd:wdc,westerndigital
+Seagate | wd:seagate
+Juniper Networks | wd:juniper
+Arista Networks | wd:arista
+Palo Alto Networks | wd:paloaltonetworks
+CrowdStrike | wd:crowdstrike
+Fortinet | wd:fortinet
+ServiceNow | wd:servicenow
+Intuit | wd:intuit
+PayPal | wd:paypal
+eBay | wd:ebay
+Expedia | wd:expedia
+Zillow | wd:zillow
+Yahoo | wd:yahoo
+Comcast | wd:comcast
+Charter Communications | wd:charter,spectrum
+Verizon | wd:verizon
+AT&T | wd:att
+T-Mobile | wd:tmobile
+Disney | wd:disney
+Warner Bros. Discovery | wd:wbd,warnerbros
+Paramount | wd:paramount
+Sony | wd:sony
+Accenture Federal | wd:accenture
+Booz Allen Hamilton | wd:bah,boozallen
+Leidos | wd:leidos
+SAIC | wd:saic
+CACI | wd:caci
+Gartner | wd:gartner
+Moody's | wd:moodys
+S&P Global | wd:spgi,spglobal
+MSCI | wd:msci
+Nasdaq | wd:nasdaq
+Intercontinental Exchange | wd:ice,theice
+Fidelity Investments | wd:fmr,fidelity
+Vanguard | wd:vanguard
+Charles Schwab | wd:schwab
+T. Rowe Price | wd:troweprice
+BlackRock | wd:blackrock
+State Street | wd:statestreet
+Northern Trust | wd:northerntrust
+BNY | wd:bny,bnymellon
+Capital One | wd:capitalone
+American Express | wd:aexp,americanexpress
+Discover Financial | wd:discover
+Synchrony | wd:synchrony
+Ally Financial | wd:ally
+US Bank | wd:usbank
+PNC | wd:pnc
+Truist | wd:truist
+Citizens Bank | wd:citizens
+Fifth Third | wd:53,fifththird
+KeyBank | wd:key,keybank
+Mastercard | wd:mastercard
+Visa | wd:visa
+Fiserv | wd:fiserv
+FIS | wd:fis
+Allstate | wd:allstate
+Progressive | wd:progressive
+Travelers | wd:travelers
+Liberty Mutual | wd:libertymutual
+Nationwide | wd:nationwide
+MetLife | wd:metlife
+Prudential | wd:prudential
+Aflac | wd:aflac
+Chubb | wd:chubb
+AIG | wd:aig
+Marsh McLennan | wd:mmc,marshmclennan
+Aon | wd:aon
+Willis Towers Watson | wd:wtw
+
+# Health
+CVS Health | wd:cvshealth
+UnitedHealth Group | wd:uhg,unitedhealthgroup
+Elevance Health | wd:elevancehealth
+Cigna | wd:cigna
+Humana | wd:humana
+Centene | wd:centene
+HCA Healthcare | wd:hca
+CommonSpirit Health | wd:commonspirit
+Providence | wd:providence
+Kaiser Permanente | wd:kaiser
+Mayo Clinic | wd:mayoclinic
+Cleveland Clinic | wd:clevelandclinic
+Johns Hopkins | wd:jhu,johnshopkins
+Mass General Brigham | wd:massgeneralbrigham,mgb
+Advocate Health | wd:advocatehealth,aah
+Intermountain Health | wd:intermountain
+Pfizer | wd:pfizer
+Eli Lilly | wd:lilly
+Bristol Myers Squibb | wd:bms
+Amgen | wd:amgen
+Gilead | wd:gilead
+Regeneron | wd:regeneron
+Thermo Fisher | wd:thermofisher
+Danaher | wd:danaher
+Abbott | wd:abbott
+Baxter | wd:baxter
+Becton Dickinson | wd:bd
+Boston Scientific | wd:bostonscientific,bsci
+Zimmer Biomet | wd:zimmerbiomet
+Cardinal Health | wd:cardinalhealth
+Cencora | wd:cencora,amerisourcebergen
+Walgreens | wd:walgreens
+Labcorp | wd:labcorp
+Quest Diagnostics | wd:questdiagnostics
+
+# Retail and consumer
+Walmart | wd:walmart
+Target | wd:target
+Kroger | wd:kroger
+Albertsons | wd:albertsons
+Home Depot | wd:homedepot
+Lowe's | wd:lowes
+Best Buy | wd:bestbuy
+Macy's | wd:macys
+Nordstrom | wd:nordstrom
+Kohl's | wd:kohls
+Gap Inc | wd:gap,gapinc
+TJX | wd:tjx
+Ross Stores | wd:ross
+Dollar General | wd:dollargeneral
+Dollar Tree | wd:dollartree
+Ulta Beauty | wd:ulta
+Sephora | wd:sephora
+Nike | wd:nike
+Under Armour | wd:underarmour
+PepsiCo | wd:pepsico
+Coca-Cola | wd:coke,cocacola
+Procter & Gamble | wd:pg
+Kraft Heinz | wd:kraftheinz
+General Mills | wd:generalmills
+Kellanova | wd:kellanova
+Mondelez | wd:mondelez
+Colgate-Palmolive | wd:colgate
+Kimberly-Clark | wd:kimberlyclark
+Estee Lauder | wd:elcompanies,esteelauder
+Chipotle | wd:chipotle
+Starbucks US | wd:starbucks
+Yum! Brands | wd:yum
+Hilton US | wd:hilton
+Marriott US | wd:marriott
+Hyatt | wd:hyatt
+
+# Industrial, energy and transportation
+General Electric | wd:ge
+3M | wd:3m
+Caterpillar | wd:cat,caterpillar
+Deere | wd:deere,johndeere
+Honeywell US | wd:honeywell
+Lockheed Martin | wd:lmco
+Northrop Grumman | wd:ngc,northropgrumman
+General Dynamics | wd:gd
+RTX | wd:rtx
+L3Harris | wd:l3harris
+Textron | wd:textron
+Emerson | wd:emerson
+Eaton | wd:eaton
+Parker Hannifin | wd:parker
+Cummins | wd:cummins
+Carrier | wd:carrier
+Otis | wd:otis
+Trane Technologies | wd:trane
+Johnson Controls | wd:jci,johnsoncontrols
+Dow | wd:dow
+DuPont | wd:dupont
+Chevron | wd:chevron
+ConocoPhillips | wd:conocophillips
+Duke Energy | wd:duke,dukeenergy
+NextEra Energy | wd:nextera,nexteraenergy
+Southern Company | wd:southernco
+Dominion Energy | wd:dominion
+Exelon | wd:exelon
+FedEx | wd:fedex
+UPS | wd:ups
+Delta Air Lines | wd:delta
+United Airlines | wd:united
+American Airlines | wd:aa,americanairlines
+Southwest Airlines | wd:southwest
+Union Pacific | wd:up,unionpacific
+BNSF | wd:bnsf
+Tesla | wd:tesla
+
+# Education
+Harvard University | wd:harvard
+Stanford University | wd:stanford
+University of Washington | wd:uw
+University of Michigan | wd:umich
+Yale University | wd:yale
+Cornell University | wd:cornell
+Columbia University | wd:columbia
+Northwestern University | wd:northwestern
+University of Chicago | wd:uchicago
+Duke University | wd:duke

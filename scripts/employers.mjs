@@ -6,6 +6,11 @@
  *                                         scripts/employer-candidates.txt) on the public job-board
  *                                         APIs and add the boards that answer to
  *                                         supabase/seed/employers.json (boards already there are kept).
+ *
+ * Candidate lines: "Name" (its slug is tried on each board), "Name | token" (that token), or for
+ * Workday: "Name | wd" (find the site from the name), "Name | wd:tenant" (from a tenant guess),
+ * "Name | tenant.wd3.Site" (that site) or "Name | https://careers.example.com" (the Workday site
+ * the careers page links to).
  *   node scripts/employers.mjs load       Upsert supabase/seed/employers.json into the database
  *                                         (reads NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY
  *                                         from the environment or .env.local).
@@ -59,6 +64,119 @@ async function get(url) {
   }
 }
 
+// ------------------------------------------------------------------ Workday
+// Career sites at {tenant}.wd{N}.myworkdayjobs.com/{site}; the board token is "tenant.wdN.site".
+// The same public API answers 422 when the tenant isn't on that server, 404 (Job_Posting_Site_ID)
+// when the tenant is there but the site name is wrong, and 200 for the site itself.
+
+const WD_PODS = ["wd3", "wd1", "wd5", "wd10", "wd12", "wd101", "wd103", "wd105", "wd108", "wd501", "wd503"];
+const WD_LINK = /https?:\/\/([a-z0-9_-]+)\.(wd\d{1,3})\.myworkdayjobs\.com\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?([A-Za-z0-9_-]{1,80})/gi;
+const NOT_WD_SITES = new Set(["job", "jobs", "wday", "login", "details"]);
+
+async function wdPost(tenant, pod, site) {
+  try {
+    const res = await fetch(`https://${tenant}.${pod}.myworkdayjobs.com/wday/cxs/${tenant}/${encodeURIComponent(site)}/jobs`, {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json", "User-Agent": UA },
+      body: JSON.stringify({ appliedFacets: {}, limit: 1, offset: 0, searchText: "" }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    return { status: res.status, body: res.ok ? await res.json() : null };
+  } catch {
+    return { status: 0, body: null };
+  }
+}
+
+/** Jobs in Canada, from the board's country facet (wherever it's nested). */
+function wdCanada(facets) {
+  let n = 0;
+  const walk = (list) => {
+    for (const f of list ?? []) {
+      if (/^canada$/i.test(f.descriptor ?? "") && typeof f.count === "number") n = Math.max(n, f.count);
+      walk(f.values);
+    }
+  };
+  walk(facets);
+  return n;
+}
+
+const probeWorkday = async (token) => {
+  const m = /^([A-Za-z0-9_-]+)\.(wd\d{1,3})\.([A-Za-z0-9_-]+)$/.exec(token);
+  if (!m) return null;
+  const r = await wdPost(m[1], m[2], m[3]);
+  return r.status === 200 && r.body?.total > 0 ? { total: r.body.total, canada: wdCanada(r.body.facets), url: `https://${m[1]}.${m[2]}.myworkdayjobs.com/${m[3]}` } : null;
+};
+
+/** Site names employers commonly give their Workday career site, for a tenant. */
+function wdSiteGuesses(tenant) {
+  const forms = [...new Set([tenant, tenant.toUpperCase(), tenant[0].toUpperCase() + tenant.slice(1)])];
+  return [
+    ...["External", "Careers", "careers", "career", "External_Careers", "ExternalCareers", "External_Career_Site", "ExternalCareerSite", "External_Site", "Search", "search", "Jobs", "jobs", "Global", "Careers_External", "Experienced", "Corporate", "Staff", "en-US"],
+    ...forms.flatMap((t) => [t, `${t}_Careers`, `${t}_careers`, `${t}Careers`, `${t}careers`, `${t}_External`, `${t}External`, `${t}_Career`, `${t}-Careers`, `${t}_External_Careers`, `${t}_External_Career_Site`, `${t}_Jobs`, `${t}Global`, `${t}_Global`]),
+  ];
+}
+
+/** Finds a tenant's server, then its career site among the usual names. One request per guess. */
+async function guessWorkday(tenant) {
+  for (const pod of WD_PODS) {
+    const first = await wdPost(tenant, pod, "External");
+    if (first.status === 422 || first.status === 0) continue;
+    if (first.status === 200) return `${tenant}.${pod}.External`;
+    for (const site of wdSiteGuesses(tenant).slice(1)) {
+      const r = await wdPost(tenant, pod, site);
+      if (r.status === 200) return `${tenant}.${pod}.${site}`;
+    }
+    return null;
+  }
+  return null;
+}
+
+/** Workday sites a careers page links to ("tenant.wdN.site"), most-linked first. */
+async function workdayLinksOn(pageUrl) {
+  try {
+    const res = await fetch(pageUrl, { headers: { Accept: "text/html", "User-Agent": UA }, redirect: "follow", signal: AbortSignal.timeout(20_000) });
+    const direct = [...`${res.url} `.matchAll(WD_LINK)];
+    const html = res.ok ? await res.text() : "";
+    const counts = new Map();
+    for (const m of [...direct, ...html.matchAll(WD_LINK)]) {
+      if (NOT_WD_SITES.has(m[3].toLowerCase())) continue;
+      const t = `${m[1].toLowerCase()}.${m[2].toLowerCase()}.${m[3]}`;
+      counts.set(t, (counts.get(t) ?? 0) + 1);
+    }
+    return [...counts].sort((a, b) => b[1] - a[1]).map(([t]) => t);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Workday candidates for one line: an explicit token, the sites a careers URL leads to, or
+ * guesses from "wd" / "wd:tenant1,tenant2" hints (the name's own slug when no tenant is given).
+ */
+async function workdayTokensFor(name, explicit) {
+  if (/^[A-Za-z0-9_-]+\.wd\d{1,3}\.[A-Za-z0-9_-]+$/.test(explicit)) return [explicit];
+  if (/^https?:\/\//i.test(explicit)) return (await workdayLinksOn(explicit)).slice(0, 3);
+  const hint = /^wd(?::(.+))?$/i.exec(explicit);
+  if (!hint) return [];
+  const tenants = hint[1] ? hint[1].split(",").map((t) => t.trim().toLowerCase()).filter(Boolean) : slugs(name).map((s) => s.replace(/-/g, ""));
+  for (const t of [...new Set(tenants)]) {
+    const token = await guessWorkday(t);
+    if (token) return [token];
+  }
+  return [];
+}
+
+/** Workday candidates from a line's hints, tried in order until one finds a site. */
+async function workdayTokens(name, hints) {
+  for (const h of hints) {
+    const found = await workdayTokensFor(name, h);
+    if (found.length) return found;
+  }
+  return [];
+}
+
+const isWorkdayHint = (h) => /^(wd(:|$)|https?:\/\/)/i.test(h) || /\.wd\d/.test(h);
+
 /** "Clio" → ["clio"]; "Fresh Prints" → ["freshprints", "fresh-prints"]; an explicit "Name | token" is used as given. */
 function slugs(name) {
   const base = name.toLowerCase().normalize("NFKD").replace(/[^a-z0-9 ]/g, "").trim();
@@ -72,10 +190,18 @@ async function discover() {
   const worker = async () => {
     while (i < lines.length) {
       const line = lines[i++];
-      const [name, explicit] = line.split("|").map((s) => s.trim());
-      const tokens = explicit ? [explicit] : slugs(name);
+      const [name, ...hints] = line.split("|").map((s) => s.trim()).filter(Boolean);
+      const explicit = hints[0];
       let best = null;
-      for (const [ats, probe] of Object.entries(probes)) {
+      // Workday lines ("wd", "wd:tenant", a Workday token or a careers URL) are probed on Workday only.
+      const workdayLine = hints.length > 0 && hints.every(isWorkdayHint);
+      const wd = workdayLine ? await workdayTokens(name, hints) : [];
+      for (const token of wd) {
+        const r = await probeWorkday(token);
+        if (r && (!best || r.total > best.total)) best = { name, ats: "workday", token, careers_url: r.url, canada: r.canada, total: r.total };
+      }
+      const tokens = workdayLine ? [] : explicit ? [explicit] : slugs(name);
+      for (const [ats, probe] of workdayLine ? [] : Object.entries(probes)) {
         for (const token of ats === "smartrecruiters" ? [...tokens, name.replace(/[^A-Za-z0-9]/g, "")] : tokens) {
           const r = await probe(token);
           // The board with the most jobs wins (worldwide); Canadian jobs are counted for the log only.
@@ -88,7 +214,7 @@ async function discover() {
       } else console.log(`✗ ${name}`);
     }
   };
-  await Promise.all(Array.from({ length: 6 }, worker));
+  await Promise.all(Array.from({ length: 8 }, worker));
   // Boards already in the seed stay (a probe can fail for a moment); new ones are added.
   const previous = existsSync(SEED) ? JSON.parse(readFileSync(SEED, "utf8")).map((e) => ({ ...e, canada: 0, total: 0 })) : [];
   // One entry per board (a name listed twice finds the same board).

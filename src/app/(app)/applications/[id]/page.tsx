@@ -55,7 +55,7 @@ async function Application({ params }: Pick<PageProps<"/applications/[id]">, "pa
     app.job_id ? supabase.from("applications").select("id, attempt, stage").eq("job_id", app.job_id).neq("id", id).order("attempt") : Promise.resolve({ data: [] as { id: string; attempt: number; stage: string }[] }),
     app.job_id ? supabase.from("jobs").select("id, verification_status, closed_at").eq("id", app.job_id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
-  const tz = settings?.timezone ?? "America/Vancouver";
+  const tz = settings?.timezone ?? "UTC";
   const now = new Date();
 
   // Document versions written for this job: every tailored resume, CV and cover letter.

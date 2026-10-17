@@ -23,7 +23,7 @@ export default function DiscoverPage({ searchParams }: PageProps<"/discover">) {
       <div className="grid gap-1">
         <h1 className="text-xl font-semibold">Network discovery</h1>
         <p className="max-w-prose text-sm text-muted-foreground">
-          Describe the people worth meeting. The research assistant searches public sources (personal sites, university and team pages, GitHub),
+          Describe the people worth meeting. The research assistant searches public sources (personal sites, school, faculty and team pages, research profiles, and GitHub for software fields),
           keeps only facts it can quote from a source, leaves out people in your known connections and explains every match. It never visits or
           automates LinkedIn. You decide who to contact, and you do it yourself.
         </p>
@@ -76,7 +76,7 @@ async function RequestCard({ searchParams }: Pick<PageProps<"/discover">, "searc
                 first so people you already know are left out.
               </li>
             )}
-            <li>Only people located in Canada are verified; anyone shown to live elsewhere is left out. Change this per search under Modify.</li>
+            <li>A search covers people anywhere unless you ask for a place (for example “in Toronto” or “in the UK”). Change it per search under Modify.</li>
             <li>Sources: {status.providers.join(", ")}. AI: {status.aiEnabled ? "on" : "off"}.</li>
             {status.limitations.map((l) => (
               <li key={l}>{l}</li>
@@ -98,7 +98,7 @@ async function RequestCard({ searchParams }: Pick<PageProps<"/discover">, "searc
             <ActionForm action={saveNetworkingGoal} submitLabel="Save">
               <div className="grid gap-1.5">
                 <Label htmlFor="goal">What are you looking for?</Label>
-                <Input id="goal" name="goal" maxLength={300} defaultValue={settings?.networking_goal ?? ""} placeholder="e.g. I'm a junior full-stack developer looking for internships" />
+                <Input id="goal" name="goal" maxLength={300} defaultValue={settings?.networking_goal ?? ""} placeholder="e.g. what you&apos;re hoping to learn, or the kind of role you&apos;re working toward" />
                 <p className="text-xs text-muted-foreground">Used to rank people by how useful a conversation would be, and to word suggested intros. It isn&apos;t shared.</p>
               </div>
             </ActionForm>

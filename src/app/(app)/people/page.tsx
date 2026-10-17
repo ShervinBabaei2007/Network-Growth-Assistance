@@ -48,7 +48,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
 
   const supabase = await createClient();
   const { data: settings } = await supabase.from("settings").select("timezone").single();
-  const today = localDate(new Date(), settings?.timezone ?? "America/Vancouver");
+  const today = localDate(new Date(), settings?.timezone ?? "UTC");
 
   let query = supabase
     .from("network_people")
@@ -97,7 +97,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="tag">Tag</Label>
-          <Input id="tag" name="tag" defaultValue={tag} placeholder="e.g. UofT" />
+          <Input id="tag" name="tag" defaultValue={tag} placeholder="A tag you added" />
         </div>
         <div className="flex items-end gap-3">
           <label className="flex h-8 items-center gap-2 text-sm">

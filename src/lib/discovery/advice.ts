@@ -17,15 +17,13 @@ export function emptyAdvice(criteria: NetworkingCriteria | null, people: { tierR
     if (/school/.test(r)) counts.school++;
   }
   const program = criteria?.education.programs[0] ?? null;
-  const eceInstead = people.filter((p) => /electrical and computer/i.test(p.program ?? "")).length;
   const tips: { weight: number; text: string }[] = [];
 
-  if (counts.program || eceInstead) {
-    const ece = program && /computer engineering|electrical engineering/i.test(program) && !criteria?.education.broadenEce && eceInstead > 0;
+  if (counts.program) {
     tips.push({
-      weight: Math.max(counts.program, eceInstead),
-      text: ece
-        ? `${eceInstead} ${eceInstead === 1 ? "person lists" : "people list"} “Electrical and Computer Engineering” rather than ${program}. Try broadening ${program} → ECE.`
+      weight: counts.program,
+      text: program
+        ? `The program couldn't be confirmed for many people. Under Modify, add other names people use for ${program} (abbreviations, degree names).`
         : "The program couldn't be confirmed for many people. Try related program names.",
     });
   }

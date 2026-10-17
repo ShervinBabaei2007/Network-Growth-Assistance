@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { parseRequestDeterministic } from "./parse-request";
+import { testCriteria } from "@/test/discovery";
 import { LINKEDIN_EXCLUSION, normalizeQuery, planQueries } from "./planner";
 
 describe("planQueries", () => {
-  const criteria = parseRequestDeterministic("Find 50 UofT Computer Engineering alumni working as software engineers at NVIDIA or AMD in Toronto");
+  const base = testCriteria("Find 50 UofT Computer Engineering alumni working as software engineers at NVIDIA or AMD in Toronto");
+  // The school's website, as the AI reading of a request (or the user) supplies it.
+  const criteria = { ...base, education: { ...base.education, institutionDomains: ["utoronto.ca"] } };
   const plan = planQueries(criteria);
 
   it("plans many targeted searches across families", () => {
@@ -34,9 +36,20 @@ describe("planQueries", () => {
   });
 });
 
+describe("any field", () => {
+  it("doesn't search GitHub or assume a role for a field without public code", () => {
+    const base = testCriteria("Find 20 McGill University Nursing alumni");
+    const nursing = { ...base, education: { ...base.education, programs: ["Nursing"], programAliases: ["BScN"] } };
+    const plan = planQueries(nursing);
+    expect(plan.some((p) => p.provider === "github")).toBe(false);
+    expect(plan.some((p) => /engineer/i.test(p.query))).toBe(false);
+    expect(plan.some((p) => p.query.includes('"McGill University"') && p.query.includes('"Nursing"'))).toBe(true);
+  });
+});
+
 describe("provider rotation", () => {
   it("every early batch tries each source", () => {
-    const plan = planQueries(parseRequestDeterministic("Find 50 UofT Computer Engineering alumni working as software engineers"));
+    const plan = planQueries(testCriteria("Find 50 UofT Computer Engineering alumni working as software engineers"));
     expect(plan.slice(0, 3).map((p) => p.provider).sort()).toEqual(["github", "orcid", "web"]);
     expect(plan.slice(3, 6).map((p) => p.provider).sort()).toEqual(["github", "orcid", "web"]);
   });

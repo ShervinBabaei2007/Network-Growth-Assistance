@@ -14,9 +14,10 @@ export const BANNED: BannedPhrase[] = [
   { pattern: /!{2,}|\b(amazing|incredible|awesome)\b/i, reason: "too promotional" },
 ];
 
-// Capitalized words that are fine anywhere (sentence words, common tech terms).
+// Capitalized words that are fine anywhere: sentence words and generic words about study and
+// work, in no particular field. Field-specific names must come from the facts themselves.
 const COMMON = new Set(
-  "hi hello hey i i'm i'd i've i'll linkedin thanks thank ask asking would could their they recent recently ai ml swe backend frontend full stack software engineering engineer engineers computer electrical science university college ece ce cs api cloud gpu cpu".split(" "),
+  "hi hello hey i i'm i'd i've i'll linkedin thanks thank ask asking would could their they recent recently university college school institute program degree alumni student students graduate".split(" "),
 );
 
 /** `banned` defaults to the intro rules; other messages (a referral ask) pass their own. */

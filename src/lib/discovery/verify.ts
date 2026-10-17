@@ -21,7 +21,6 @@ import { classifyCountry } from "./location";
  * lines that name the person count.
  */
 
-const ROLE_FALLBACK = ["software engineer"];
 
 /** Lines and sentences short enough to quote. */
 export function quotableLines(text: string): string[] {
@@ -67,7 +66,8 @@ export function factsFromOwnPage(
 ): Fact[] {
   const inst = institutionMatcher(criteria);
   const programs = programMatchers(criteria);
-  const roles = roleAliases(criteria.roles.length ? criteria.roles : ROLE_FALLBACK);
+  // Only roles the search asks for: no field is assumed.
+  const roles = roleAliases(criteria.roles);
   const companies = companyAliases(criteria.companies);
   const facts: Fact[] = [];
   const seen = new Set<string>();

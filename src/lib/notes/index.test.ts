@@ -4,8 +4,8 @@ import { checkNote, firstName, suggestNote, type NoteFacts } from "./index";
 const facts = (over: Partial<NoteFacts> = {}): NoteFacts => ({
   candidateId: "c-1",
   fullName: "Ada Lovelace",
-  university: "ubc",
-  discipline: "ce",
+  university: { name: "UBC", aliases: ["University of British Columbia"] },
+  discipline: { name: "Computer Engineering", aliases: ["comp eng"] },
   programText: "Computer Engineering",
   candidateNotes: null,
   me: { school: "BCIT", program: "Computer Systems Technology", interests: "embedded systems" },
@@ -32,7 +32,7 @@ describe("suggestNote", () => {
 
   it("mentions a shared school only when it's really shared", () => {
     const shared = suggestNote(facts({ me: { school: "University of British Columbia", program: "Electrical Engineering", interests: null } }), 200);
-    expect(shared).toMatch(/also at UBC|fellow UBC student/);
+    expect(shared).toMatch(/also at UBC|fellow UBC person/);
     expect(suggestNote(facts(), 200)).not.toContain("also at");
   });
 

@@ -1,9 +1,9 @@
 import { fixtureBoard } from "../fixtures";
-import { ashby, greenhouse, lever, recruitee, smartrecruiters, workable } from "./adapters";
+import { ashby, greenhouse, lever, recruitee, smartrecruiters, workable, workday } from "./adapters";
 import { jobFixturesEnabled } from "@/lib/runtime-mode";
 import { BoardError, type AtsAdapter, type AtsKind } from "./types";
 
-export const ADAPTERS: Record<Exclude<AtsKind, "fixture">, AtsAdapter> = { greenhouse, lever, ashby, smartrecruiters, workable, recruitee };
+export const ADAPTERS: Record<Exclude<AtsKind, "fixture">, AtsAdapter> = { greenhouse, lever, ashby, smartrecruiters, workable, recruitee, workday };
 
 /**
  * The adapter for a board. In fixture mode (tests and local demos only) every board is
@@ -24,5 +24,6 @@ export const ATS_LABELS: Record<AtsKind, string> = {
   smartrecruiters: "SmartRecruiters",
   workable: "Workable",
   recruitee: "Recruitee",
+  workday: "Workday",
   fixture: "Sample board",
 };

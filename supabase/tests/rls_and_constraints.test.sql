@@ -3,7 +3,7 @@ create extension if not exists pgtap with schema extensions;
 
 select plan(17);
 
--- Two users; the signup trigger seeds their settings and targets.
+-- Two users; the signup trigger creates their settings only. Nothing about their networking is assumed.
 insert into auth.users (id, email)
 values
   ('11111111-1111-1111-1111-111111111111', 'a@example.test'),
@@ -13,12 +13,17 @@ select is(
   (select count(*)::int from public.settings where user_id = '11111111-1111-1111-1111-111111111111'),
   1, 'signup creates one settings row');
 select is(
-  (select count(*)::int from public.targets where user_id = '11111111-1111-1111-1111-111111111111'),
-  12, 'signup creates 4 discipline totals + U of T and UBC cells');
+  (select count(*)::int from public.targets where user_id = '11111111-1111-1111-1111-111111111111')
+    + (select count(*)::int from public.universities where user_id = '11111111-1111-1111-1111-111111111111')
+    + (select count(*)::int from public.disciplines where user_id = '11111111-1111-1111-1111-111111111111'),
+  0, 'signup creates no schools, disciplines or targets: the user sets them up');
 select is(
-  (select sum(target_count)::int from public.targets
-   where user_id = '11111111-1111-1111-1111-111111111111' and university is null),
-  1000, 'discipline totals add up to 1,000');
+  (select overall_target from public.settings where user_id = '11111111-1111-1111-1111-111111111111'),
+  null, 'there is no built-in connection goal');
+
+-- A's own discipline and its target.
+insert into public.disciplines (id, user_id, name) values ('d0000000-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'Nursing');
+insert into public.targets (user_id, discipline, target_count) values ('11111111-1111-1111-1111-111111111111', 'd0000000-0000-0000-0000-000000000001', 100);
 
 -- ---------------------------------------------------------------- user A
 set local role authenticated;
@@ -65,7 +70,7 @@ set local request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","r
 
 select is((select count(*)::int from public.candidates), 0, 'B cannot see A''s candidates');
 select is((select count(*)::int from public.invitations), 0, 'B cannot see A''s invitations');
-select is((select count(*)::int from public.targets), 12, 'B sees only their own targets');
+select is((select count(*)::int from public.targets) + (select count(*)::int from public.disciplines), 0, 'B cannot see A''s disciplines or targets');
 
 select is_empty(
   $$update public.candidates set notes = 'hijacked'

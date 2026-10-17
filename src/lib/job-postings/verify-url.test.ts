@@ -66,6 +66,9 @@ describe("checkJobLink: the link belongs to its source", () => {
     expect(checkJobLink("https://www.adzuna.ca/land/ad/5123?se=x", { source: "adzuna", externalId: "5123" }, { allowFixtureHosts: false }).ok).toBe(true);
     expect(checkJobLink("https://www.adzuna.ca/land/ad/999", { source: "adzuna", externalId: "5123" }, { allowFixtureHosts: false }).ok).toBe(false);
     expect(checkJobLink("https://jobs.someboard.com/5123", { source: "adzuna", externalId: "5123" }, { allowFixtureHosts: false }).ok).toBe(false);
+    // Every country Adzuna serves has its own site; look-alike hosts don't pass.
+    for (const host of ["www.adzuna.de", "www.adzuna.com.au", "www.adzuna.co.za", "www.adzuna.fr"]) expect(checkJobLink(`https://${host}/land/ad/5123`, { source: "adzuna", externalId: "5123" }, { allowFixtureHosts: false }).ok).toBe(true);
+    expect(checkJobLink("https://www.adzuna.evil.com/land/ad/5123", { source: "adzuna", externalId: "5123" }, { allowFixtureHosts: false }).ok).toBe(false);
   });
 
   it("accepts only Jobicy's and Remotive's own listing pages for the same job", () => {

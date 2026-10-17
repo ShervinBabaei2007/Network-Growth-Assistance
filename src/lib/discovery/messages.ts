@@ -22,14 +22,8 @@ export type IntroFacts = {
   me: { school: string | null; program: string | null; interests: string | null; goal: string | null };
 };
 
-const SHORT_SCHOOL: Record<string, string> = {
-  "university of toronto": "UofT",
-  "university of british columbia": "UBC",
-  "simon fraser university": "SFU",
-  "university of waterloo": "Waterloo",
-};
-
-const short = (s: string | null) => (s ? (SHORT_SCHOOL[s.toLowerCase()] ?? s) : null);
+// Schools are written as the facts give them; no school is shortened by a built-in list.
+const short = (s: string | null) => s;
 const article = (w: string) => (/^[aeiou]/i.test(w) ? "an" : "a");
 
 /** A deterministic intro from verified facts, within `limit` characters. */
@@ -37,7 +31,7 @@ export function suggestIntro(f: IntroFacts, limit = INTRO_LIMIT): string {
   const hi = firstName(f.fullName) ? `Hi ${firstName(f.fullName)}` : "Hi";
   const background = [short(f.institution), f.program].filter(Boolean).join(" ");
   const work = f.role && f.company ? `${f.role.toLowerCase()} work at ${f.company}` : f.company ? `work at ${f.company}` : f.role ? `work as ${article(f.role)} ${f.role.toLowerCase()}` : null;
-  const meParts = f.me.program && f.me.school ? `I'm ${article(f.me.program)} ${f.me.program} student at ${f.me.school}` : f.me.school ? `I'm a student at ${f.me.school}` : null;
+  const meParts = f.me.program && f.me.school ? `I'm in ${f.me.program} at ${f.me.school}` : f.me.school ? `I'm at ${f.me.school}` : null;
 
   const variants = [
     meParts && background && work
@@ -52,7 +46,7 @@ export function suggestIntro(f: IntroFacts, limit = INTRO_LIMIT): string {
   return variants.find((v) => v.length <= limit) ?? variants[variants.length - 1].slice(0, limit);
 }
 
-const SYSTEM = `You polish a short LinkedIn connection message that a student will send themselves.
+const SYSTEM = `You polish a short LinkedIn connection message that someone will send themselves, in whatever field they are in.
 
 Rewrite the draft to sound natural and specific, using only the facts provided. Keep it under the character limit.
 - Never imply the two have met, talked, worked together or share connections.

@@ -29,18 +29,22 @@ export const ATS_POSTING_HOSTS: Record<Exclude<AtsKind, "fixture">, RegExp> = {
   smartrecruiters: /^(jobs|careers)\.smartrecruiters\.com$/i,
   workable: /^apply\.workable\.com$/i,
   recruitee: /^[a-z0-9-]+\.recruitee\.com$/i,
+  workday: /^[a-z0-9_-]+\.wd\d{1,3}\.myworkdayjobs\.com$/i,
 };
 
 const ALL_ATS_HOSTS = Object.values(ATS_POSTING_HOSTS);
 export const isAtsHost = (host: string) => ALL_ATS_HOSTS.some((re) => re.test(host));
 
 /** Job boards and search APIs whose own listing links we accept, by source. */
-export const SOURCE_HOSTS: Record<"adzuna" | "jobicy" | "remotive" | "arbeitnow" | "usajobs", RegExp> = {
-  adzuna: /^(www\.)?adzuna\.(ca|com|co\.uk)$/i,
+export const SOURCE_HOSTS: Record<"adzuna" | "jobicy" | "remotive" | "arbeitnow" | "usajobs" | "careerjet", RegExp> = {
+  // Adzuna's site for each country its API serves (see ADZUNA_COUNTRIES): adzuna.ca, adzuna.de, adzuna.com.au…
+  adzuna: /^(www\.)?adzuna\.(ca|com|co\.uk|at|be|ch|de|es|fr|in|it|nl|pl|sg|co\.nz|co\.za|com\.au|com\.br|com\.mx)$/i,
   jobicy: /^(www\.)?jobicy\.com$/i,
   remotive: /^(www\.)?remotive\.com$/i,
   arbeitnow: /^(www\.)?arbeitnow\.(com|co\.uk)$/i,
   usajobs: /^(www\.)?usajobs\.gov$/i,
+  // Careerjet's country sites (see CAREERJET_LOCALES), e.g. jobviewer.careerjet.ca.
+  careerjet: /^([a-z0-9-]+\.)?careerjet\.(ca|com|co\.uk|ie|com\.au|co\.nz|co\.in|co\.za|sg|de|at|ch|fr|be|nl|es|it|pl|com\.br|com\.mx)$/i,
 };
 const isAggregatorHost = (host: string) => Object.values(SOURCE_HOSTS).some((re) => re.test(host));
 
@@ -97,7 +101,7 @@ export function checkUrlShape(raw: string | null | undefined, opts: { allowFixtu
 
 export type LinkContext =
   | { source: "ats"; ats: AtsKind; boardToken: string; externalId: string; careersUrl: string | null; company: string | null }
-  | { source: "adzuna" | "jobicy" | "remotive" | "arbeitnow" | "usajobs"; externalId: string }
+  | { source: "adzuna" | "jobicy" | "remotive" | "arbeitnow" | "usajobs" | "careerjet"; externalId: string }
   | { source: "manual" };
 
 /** Words in a hostname that could name the company ("acme-robotics.com" → ["acme", "robotics"]). */
@@ -154,7 +158,7 @@ export function checkJobLink(raw: string | null | undefined, ctx: LinkContext, o
     return { ok: false, status: "failed_validation", reason: "The link's website doesn't match the employer" };
   }
 
-  if (ctx.source === "adzuna" || ctx.source === "jobicy" || ctx.source === "remotive" || ctx.source === "arbeitnow" || ctx.source === "usajobs") {
+  if (ctx.source === "adzuna" || ctx.source === "jobicy" || ctx.source === "remotive" || ctx.source === "arbeitnow" || ctx.source === "usajobs" || ctx.source === "careerjet") {
     if (!SOURCE_HOSTS[ctx.source].test(host)) return { ok: false, status: "failed_validation", reason: "The link isn't the job board's own link" };
     return text.includes(ctx.externalId.toLowerCase()) ? shape : { ok: false, status: "failed_validation", reason: "The link isn't for this job" };
   }

@@ -1,5 +1,5 @@
-import { DISCIPLINE_LABELS, SHORT_UNIVERSITY, type Discipline, type University } from "@/lib/domain";
-import { ADDITIONAL_UNIVERSITIES, type DisciplineProgress } from "@/lib/progress";
+import { disciplineName, poolUniversities, universityName, type Catalog, type Discipline, type University } from "@/lib/domain";
+import type { DisciplineProgress } from "@/lib/progress";
 
 export type SearchLink = {
   discipline: Discipline;
@@ -11,33 +11,18 @@ export type SearchLink = {
   isAlternate: boolean;
 };
 
-// How each school is usually written in headlines.
-const SCHOOL_TERM: Record<University, string> = {
-  uoft: "University of Toronto",
-  ubc: "UBC",
-  sfu: "SFU",
-  waterloo: "University of Waterloo",
-};
-
-// Program wording as students usually write it in headlines.
-const PROGRAM_TERM: Record<Discipline, Partial<Record<University, string>> & { default: string }> = {
-  ce: { default: "computer engineering" },
-  ee: { default: "electrical engineering" },
-  mech: { default: "mechatronics", sfu: "mechatronic systems engineering" },
-  cs: { default: "computer science", sfu: "computing science" },
-};
-
 export function linkedInPeopleSearch(keywords: string): string {
   return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(keywords)}`;
 }
 
 /**
  * Ready-made LinkedIn people searches for the categories that still need
- * connections, most important first: disciplines in priority order, U of T and
- * UBC before SFU and Waterloo, and the cell with the most still needed first.
- * They only open LinkedIn in the user's browser; nothing is fetched.
+ * connections, most important first: disciplines in priority order, schools with their
+ * own targets before the user's other schools, and the cell with the most still needed
+ * first. The search words are the user's own names for them. They only open LinkedIn in
+ * the user's browser; nothing is fetched.
  */
-export function searchLinks(disciplines: DisciplineProgress[], limit = 6): SearchLink[] {
+export function searchLinks(disciplines: DisciplineProgress[], catalog: Catalog, limit = 6): SearchLink[] {
   const links: SearchLink[] = [];
   for (const d of disciplines) {
     if (d.complete) continue;
@@ -46,15 +31,16 @@ export function searchLinks(disciplines: DisciplineProgress[], limit = 6): Searc
       .sort((a, b) => (b.remaining ?? 0) - (a.remaining ?? 0));
     const cells = [
       ...primary.map((c) => ({ university: c.university, remaining: c.remaining, isAlternate: false })),
-      ...ADDITIONAL_UNIVERSITIES.map((u) => ({ university: u, remaining: null, isAlternate: true })),
+      ...poolUniversities(catalog).map((u) => ({ university: u.id, remaining: null, isAlternate: true })),
     ];
     for (const c of cells) {
-      const program = PROGRAM_TERM[d.discipline][c.university] ?? PROGRAM_TERM[d.discipline].default;
+      const program = disciplineName(catalog, d.discipline);
+      const school = universityName(catalog, c.university);
       links.push({
         discipline: d.discipline,
         university: c.university,
-        label: `${DISCIPLINE_LABELS[d.discipline]} · ${SHORT_UNIVERSITY[c.university]}`,
-        url: linkedInPeopleSearch(`${program} student ${SCHOOL_TERM[c.university]}`),
+        label: `${program} · ${school}`,
+        url: linkedInPeopleSearch(`${program} ${school}`),
         remaining: c.remaining,
         isAlternate: c.isAlternate,
       });

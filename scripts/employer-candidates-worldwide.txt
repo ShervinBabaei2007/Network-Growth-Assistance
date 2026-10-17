@@ -2,7 +2,7 @@
 # `node scripts/employers.mjs discover scripts/employer-candidates-worldwide.txt` keeps only
 # the ones whose board answers on Greenhouse, Lever, Ashby, SmartRecruiters, Workable or
 # Recruitee. These are guesses: a name that doesn't answer is simply left out.
-# Large retailers mostly use Workday or similar systems with no public API, so they can't be read.
+# Large employers on Workday are listed in employer-candidates-canada-large.txt and -us-large.txt.
 
 # Retail, consumer brands and e-commerce
 Warby Parker

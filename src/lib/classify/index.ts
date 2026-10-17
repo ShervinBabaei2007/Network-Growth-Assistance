@@ -1,145 +1,56 @@
-import type { Discipline, University } from "@/lib/domain";
+import type { Catalog, Discipline, University } from "@/lib/domain";
 import { clean, has, hasAny } from "@/lib/text/match";
+
+/**
+ * Sorts a candidate into one of the user's own schools and disciplines, from what their
+ * profile says. A school or discipline matches by its name or any of the user's aliases
+ * for it, as whole words. Nothing is built in: an empty list matches nothing.
+ */
 
 export type Confidence = "confirmed" | "needs_review";
 
 export type Classified<T> = { value: T | null; confidence: Confidence; reason: string };
 
-// ---------------------------------------------------------------- universities
+/** The phrases that identify an entry: its name and its aliases, cleaned, without duplicates. */
+export const phrasesFor = (entry: { name: string; aliases: readonly string[] }) =>
+  [...new Set([entry.name, ...entry.aliases].map((p) => clean(p).trim()).filter(Boolean))];
 
-export const UNIVERSITY_ALIASES: Record<University, readonly string[]> = {
-  uoft: [
-    "university of toronto",
-    "u of t",
-    "uoft",
-    "utoronto",
-    "utsc",
-    "utm",
-    "u of t scarborough",
-    "u of t mississauga",
-  ],
-  ubc: ["university of british columbia", "ubc", "ubc vancouver"],
-  sfu: ["simon fraser university", "simon fraser", "sfu"],
-  waterloo: ["university of waterloo", "uwaterloo", "uw waterloo"],
-};
-
-const UBCO_ALIASES = ["ubc okanagan", "ubco", "university of british columbia okanagan"];
-
-// Names that contain a target school's words but are a different institution.
-export const LOOKALIKES = ["toronto metropolitan", "wilfrid laurier", "waterloo region", "conestoga"];
-
-export function classifyUniversity(
-  text: string | null | undefined,
-  { countUbcoAsUbc = true }: { countUbcoAsUbc?: boolean } = {},
-): Classified<University> {
+function matchOne<T extends string>(
+  text: string,
+  entries: readonly { id: T; name: string; aliases: readonly string[] }[],
+  what: { one: string; many: string; none: string; empty: string },
+): Classified<T> {
   const t = clean(text);
-  if (!t.trim()) return { value: null, confidence: "needs_review", reason: "No school given." };
-
-  const found = new Set<University>();
-  for (const [u, aliases] of Object.entries(UNIVERSITY_ALIASES) as [University, readonly string[]][]) {
-    if (hasAny(t, aliases)) found.add(u);
-  }
-
-  if (hasAny(t, UBCO_ALIASES)) {
-    if (countUbcoAsUbc) found.add("ubc");
-    else if (found.size === 1 && found.has("ubc")) {
-      return { value: null, confidence: "needs_review", reason: "UBC Okanagan isn't counted as UBC in your settings." };
-    }
-  }
-
-  if (found.size > 1) {
-    return { value: null, confidence: "needs_review", reason: "Mentions more than one target school." };
-  }
-  if (found.size === 1) {
-    const [u] = found;
-    return { value: u, confidence: "confirmed", reason: "Matched the school name." };
-  }
-
-  if (hasAny(t, LOOKALIKES)) {
-    return { value: null, confidence: "needs_review", reason: "A different school with a similar name." };
-  }
-  if (has(t, "waterloo")) {
-    return { value: null, confidence: "needs_review", reason: "Says “Waterloo” but not clearly the University of Waterloo." };
-  }
-  if (has(t, "toronto")) {
-    return { value: null, confidence: "needs_review", reason: "Says “Toronto” but not clearly the University of Toronto." };
-  }
-  return { value: null, confidence: "needs_review", reason: "Not one of the four target schools." };
+  if (!t.trim()) return { value: null, confidence: "needs_review", reason: what.empty };
+  if (!entries.length) return { value: null, confidence: "needs_review", reason: what.none };
+  const found = entries.filter((e) => hasAny(t, phrasesFor(e)));
+  if (found.length === 1) return { value: found[0].id, confidence: "confirmed", reason: what.one };
+  if (found.length > 1) return { value: null, confidence: "needs_review", reason: what.many };
+  return { value: null, confidence: "needs_review", reason: "Not one of your schools or disciplines. Add it in Settings, or pick it here." };
 }
 
-// ---------------------------------------------------------------- disciplines
-
-export const DISCIPLINE_ALIASES: Record<Discipline, readonly string[]> = {
-  ce: ["computer engineering", "computer eng", "comp eng", "compe", "cpen", "cpe"],
-  ee: ["electrical engineering", "electrical eng", "elec eng", "electronics engineering", "electrical"],
-  mech: ["mechatronics", "mechatronic", "mechatronics engineering", "mechatronic systems engineering", "mechatronics option"],
-  cs: ["computer science", "computing science", "comp sci", "compsci", "cpsc", "cmpt", "bcs", "cs"],
-};
-
-// Program names that span more than one target discipline.
-export const AMBIGUOUS_PROGRAMS = [
-  "electrical and computer engineering",
-  "electrical computer engineering",
-  "ece",
-  "e and ce",
-  "engineering science",
-  "engsci",
-  "ensc",
-];
-
-// Course codes and abbreviations that are only meaningful at one school.
-const SCHOOL_SPECIFIC: { alias: string; discipline: Discipline; university: University }[] = [
-  { alias: "elec", discipline: "ee", university: "ubc" },
-  { alias: "mse", discipline: "mech", university: "sfu" },
-];
-
-export function classifyDiscipline(
-  text: string | null | undefined,
-  university: University | null = null,
-): Classified<Discipline> {
-  let t = clean(text);
-  if (!t.trim()) return { value: null, confidence: "needs_review", reason: "No program given." };
-
-  if (has(t, "minor")) {
-    return { value: null, confidence: "needs_review", reason: "Mentions a minor; confirm the major." };
-  }
-
-  const hadAmbiguous = hasAny(t, AMBIGUOUS_PROGRAMS);
-  for (const phrase of AMBIGUOUS_PROGRAMS) t = t.split(` ${phrase} `).join(" ");
-
-  const found = new Set<Discipline>();
-  for (const [d, aliases] of Object.entries(DISCIPLINE_ALIASES) as [Discipline, readonly string[]][]) {
-    if (hasAny(t, aliases)) found.add(d);
-  }
-  for (const s of SCHOOL_SPECIFIC) {
-    if (university === s.university && has(t, s.alias)) found.add(s.discipline);
-  }
-  if (found.size === 1) {
-    const [d] = found;
-    return { value: d, confidence: "confirmed", reason: "Matched the program name." };
-  }
-  if (found.size > 1) {
-    return { value: null, confidence: "needs_review", reason: "Mentions more than one target program." };
-  }
-  if (hadAmbiguous) {
-    return { value: null, confidence: "needs_review", reason: "The program covers more than one discipline (for example ECE or Engineering Science)." };
-  }
-  if (has(t, "mechanical engineering") || has(t, "mechanical")) {
-    return { value: null, confidence: "needs_review", reason: "Mechanical engineering only counts if the Mechatronics option is stated." };
-  }
-  if (has(t, "software engineering")) {
-    return { value: null, confidence: "needs_review", reason: "Software engineering is related but not a target program; decide manually." };
-  }
-  return { value: null, confidence: "needs_review", reason: "Not one of the four target programs." };
+export function classifyUniversity(text: string | null | undefined, catalog: Catalog): Classified<University> {
+  return matchOne(text ?? "", catalog.universities, {
+    one: "Matched the school name.",
+    many: "Mentions more than one of your schools.",
+    none: "You haven't added any schools yet (Settings → Schools).",
+    empty: "No school given.",
+  });
 }
 
-/** Classifies both fields; the discipline check can use the school for course codes. */
-export function classifyCandidate(
-  schoolText: string | null | undefined,
-  programText: string | null | undefined,
-  opts?: { countUbcoAsUbc?: boolean },
-) {
-  const university = classifyUniversity(schoolText, opts);
-  const discipline = classifyDiscipline(programText, university.value);
-  return { university, discipline };
+export function classifyDiscipline(text: string | null | undefined, catalog: Catalog): Classified<Discipline> {
+  const t = clean(text);
+  // "…, minor in X": the major isn't clear from the text.
+  if (t.trim() && has(t, "minor")) return { value: null, confidence: "needs_review", reason: "Mentions a minor; confirm the major." };
+  return matchOne(text ?? "", catalog.disciplines, {
+    one: "Matched the discipline name.",
+    many: "Mentions more than one of your disciplines.",
+    none: "You haven't added any disciplines yet (Settings → Disciplines).",
+    empty: "No program given.",
+  });
+}
+
+/** Classifies both fields against the user's own schools and disciplines. */
+export function classifyCandidate(schoolText: string | null | undefined, programText: string | null | undefined, catalog: Catalog) {
+  return { university: classifyUniversity(schoolText, catalog), discipline: classifyDiscipline(programText, catalog) };
 }

@@ -28,7 +28,7 @@ const Alert = z.object({
 export type AlertInput = z.input<typeof Alert>;
 
 const settingsRow = (ctx: Awaited<ReturnType<typeof actionContext>>) =>
-  ctx.supabase.from("settings").select("timezone, job_titles, job_country, job_provinces, job_seniority, job_exclude_keywords").eq("user_id", ctx.userId).single();
+  ctx.supabase.from("settings").select("timezone, job_titles, job_country, job_provinces, job_exclude_keywords").eq("user_id", ctx.userId).single();
 
 /** Saves the search the Jobs page is showing (`params` are its URL's search params). */
 export async function saveSearch(params: Record<string, string>, input: AlertInput): Promise<ActionResult<{ id: string }>> {

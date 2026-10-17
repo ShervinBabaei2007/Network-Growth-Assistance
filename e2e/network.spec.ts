@@ -14,7 +14,7 @@ test("people at a company, referrals and the company page", async ({ page, conte
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const email = uniqueEmail("network");
   await signIn(page, email, "/jobs");
-  await expect(page.getByRole("heading", { name: /jobs? from the last/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /jobs? from (the last|any date)/i })).toBeVisible();
   test.skip(!(await page.getByText("Showing fictional sample employers").isVisible()), "Dev server isn't running with JOBS_FIXTURES=1");
   const userId = await userIdFor(email);
 

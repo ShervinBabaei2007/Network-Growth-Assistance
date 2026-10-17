@@ -20,15 +20,17 @@ export type SearchQuery = {
   page: number;
   /** For cursor-paged providers (Jobicy): the cursor the previous page returned; null for page 1. */
   cursor?: string | null;
+  /** The person searching, for providers that require it (Careerjet). Absent for background jobs. */
+  client?: { ip: string; userAgent: string } | null;
 };
 
 export type ProviderOutcome = "ok" | "empty" | "timeout" | "rate_limited" | "auth" | "outage" | "malformed";
 
 /** A listing in the shape of a `jobs` row (the app's one job model). */
 /** Job boards and search APIs that list many employers' jobs, each with its own link. */
-export type AggregatorSource = "adzuna" | "jobicy" | "remotive" | "arbeitnow" | "usajobs";
-export const AGGREGATOR_SOURCES: readonly AggregatorSource[] = ["adzuna", "jobicy", "remotive", "arbeitnow", "usajobs"];
-export const AGGREGATOR_LABELS: Record<AggregatorSource, string> = { adzuna: "Adzuna", jobicy: "Jobicy", remotive: "Remotive", arbeitnow: "Arbeitnow", usajobs: "USAJOBS" };
+export type AggregatorSource = "adzuna" | "jobicy" | "remotive" | "arbeitnow" | "usajobs" | "careerjet";
+export const AGGREGATOR_SOURCES: readonly AggregatorSource[] = ["adzuna", "jobicy", "remotive", "arbeitnow", "usajobs", "careerjet"];
+export const AGGREGATOR_LABELS: Record<AggregatorSource, string> = { adzuna: "Adzuna", jobicy: "Jobicy", remotive: "Remotive", arbeitnow: "Arbeitnow", usajobs: "USAJOBS", careerjet: "Careerjet" };
 
 export type NormalizedJob = {
   source: AggregatorSource;

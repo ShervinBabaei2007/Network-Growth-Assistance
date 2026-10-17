@@ -54,5 +54,5 @@ export default function ImportPage() {
 async function ExportImportForUser() {
   const supabase = await createClient();
   const { data } = await supabase.from("settings").select("timezone").single();
-  return <ExportImport today={localDate(new Date(), data?.timezone ?? "America/Vancouver")} />;
+  return <ExportImport today={localDate(new Date(), data?.timezone ?? "UTC")} />;
 }

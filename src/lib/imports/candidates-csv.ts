@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { classifyCandidate, type Confidence } from "@/lib/classify";
-import type { DegreeLevel, Discipline, University } from "@/lib/domain";
+import type { Catalog, DegreeLevel, Discipline, University } from "@/lib/domain";
 import { normalizeProfileUrl } from "@/lib/linkedin/normalize-url";
 import { parseCsv } from "./csv";
 
@@ -86,7 +86,7 @@ const text = (max: number) => z.string().trim().max(max).transform((v) => v || n
 export function prepareCandidateRows(
   csvText: string,
   mapping: ColumnMapping,
-  opts: { countUbcoAsUbc: boolean; hasHeader: boolean },
+  opts: { catalog: Catalog; hasHeader: boolean },
 ): { drafts: CandidateDraft[]; issues: RowIssue[]; totalRows: number } {
   const rows = parseCsv(csvText);
   const body = opts.hasHeader ? rows.slice(1) : rows;
@@ -125,7 +125,7 @@ export function prepareCandidateRows(
 
     const school = text(300).parse(cell("school"));
     const program = text(300).parse(cell("program"));
-    const c = classifyCandidate(school, program, { countUbcoAsUbc: opts.countUbcoAsUbc });
+    const c = classifyCandidate(school, program, opts.catalog);
 
     drafts.push({
       full_name: name,

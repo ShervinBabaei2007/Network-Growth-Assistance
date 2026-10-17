@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { TEST_CATALOG } from "@/test/catalog";
 import { detectMapping, parseDegreeLevel, prepareCandidateRows } from "./candidates-csv";
 import { findHeaderRow, parseCsv } from "./csv";
 
@@ -64,7 +65,7 @@ describe("prepareCandidateRows", () => {
   const mapping = { fullName: 0, profileUrl: 1, school: 2, program: 3, gradYear: 4 };
 
   it("validates, classifies and dedupes rows", () => {
-    const r = prepareCandidateRows(csv, mapping, { countUbcoAsUbc: true, hasHeader: true });
+    const r = prepareCandidateRows(csv, mapping, { catalog: TEST_CATALOG, hasHeader: true });
     expect(r.totalRows).toBe(6);
     expect(r.drafts.map((d) => d.profile_key)).toEqual(["ada", "alan-t"]);
     expect(r.drafts[0]).toMatchObject({
@@ -89,7 +90,7 @@ describe("prepareCandidateRows", () => {
   });
 
   it("requires the name and URL columns", () => {
-    const r = prepareCandidateRows(csv, { fullName: 0 }, { countUbcoAsUbc: true, hasHeader: true });
+    const r = prepareCandidateRows(csv, { fullName: 0 }, { catalog: TEST_CATALOG, hasHeader: true });
     expect(r.drafts).toEqual([]);
     expect(r.issues[0].reason).toContain("LinkedIn URL");
   });

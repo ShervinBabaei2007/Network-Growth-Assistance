@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { testCriteria } from "@/test/discovery";
 import { DEFAULT_BUDGET, pagesThisStep, stopReason, type Progress } from "./budget";
 import { FixtureGitHubProvider, FixtureLLM, FixturePageFetcher, FixtureWebProvider } from "./fixtures";
 import { disabledLLM } from "./llm";
-import { parseRequestDeterministic } from "./parse-request";
 import { researchResults } from "./pipeline";
 
-const criteria = parseRequestDeterministic("Find 50 UofT Computer Engineering software engineers");
+const criteria = testCriteria("Find 50 UofT Computer Engineering software engineers");
 
 async function run(opts: { pageBudget?: number; llmBudget?: number; llm?: FixtureLLM | typeof disabledLLM } = {}) {
   const fetcher = new FixturePageFetcher();

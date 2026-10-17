@@ -1,104 +1,77 @@
 import { describe, expect, it } from "vitest";
-import { classifyCandidate, classifyDiscipline, classifyUniversity } from "./index";
+import { EMPTY_CATALOG } from "@/lib/domain";
+import { NURSING_CATALOG, TEST_CATALOG } from "@/test/catalog";
+import { classifyCandidate, classifyDiscipline, classifyUniversity, phrasesFor } from "./index";
 
-describe("classifyUniversity", () => {
+describe("classifyUniversity: the user's own schools", () => {
   it.each([
     ["University of Toronto", "uoft"],
-    ["U of T Engineering", "uoft"],
-    ["UofT", "uoft"],
-    ["University of Toronto Scarborough", "uoft"],
-    ["UTSC", "uoft"],
-    ["The University of British Columbia", "ubc"],
+    ["Student at U of T", "uoft"],
+    ["UofT Engineering '27", "uoft"],
+    ["University of British Columbia", "ubc"],
     ["UBC Vancouver", "ubc"],
     ["Simon Fraser University", "sfu"],
-    ["SFU", "sfu"],
-    ["University of Waterloo", "waterloo"],
-    ["uWaterloo", "waterloo"],
-    ["Université de Toronto?", null],
-  ])("%s → %s", (text, expected) => {
-    const r = classifyUniversity(text);
-    expect(r.value).toBe(expected);
-    expect(r.confidence).toBe(expected ? "confirmed" : "needs_review");
+  ])("%s → %s", (text, id) => {
+    expect(classifyUniversity(text, TEST_CATALOG)).toMatchObject({ value: id, confidence: "confirmed" });
   });
 
-  it.each([
-    ["Toronto Metropolitan University", "different school"],
-    ["Wilfrid Laurier University, Waterloo", "different school"],
-    ["Waterloo, Ontario", "not clearly the University of Waterloo"],
-    ["Toronto", "not clearly the University of Toronto"],
-    ["University of Waterloo → UBC", "more than one"],
-    ["BCIT", "Not one of the four"],
-    ["", "No school"],
-  ])("sends %s to review (%s)", (text, reason) => {
-    const r = classifyUniversity(text);
-    expect(r.value).toBeNull();
-    expect(r.confidence).toBe("needs_review");
-    expect(r.reason).toContain(reason);
+  it("matches whole words only, so a school's name inside another word doesn't count", () => {
+    expect(classifyUniversity("Subcontractor", TEST_CATALOG).value).toBeNull();
   });
 
-  it("follows the UBC Okanagan setting", () => {
-    expect(classifyUniversity("UBC Okanagan").value).toBe("ubc");
-    const excluded = classifyUniversity("UBC Okanagan", { countUbcoAsUbc: false });
-    expect(excluded.value).toBeNull();
-    expect(excluded.reason).toContain("Okanagan");
+  it("sends unclear cases to review", () => {
+    expect(classifyUniversity("", TEST_CATALOG)).toMatchObject({ value: null, confidence: "needs_review", reason: "No school given." });
+    expect(classifyUniversity("UBC and SFU exchange", TEST_CATALOG)).toMatchObject({ value: null, reason: "Mentions more than one of your schools." });
+    expect(classifyUniversity("McGill University", TEST_CATALOG).reason).toMatch(/Not one of your schools/);
+  });
+
+  it("works for any field and any school the user adds", () => {
+    expect(classifyUniversity("McGill School of Nursing", NURSING_CATALOG)).toMatchObject({ value: "mcgill", confidence: "confirmed" });
+    expect(classifyUniversity("University of Toronto", NURSING_CATALOG).value).toBeNull();
+  });
+
+  it("matches nothing until the user adds schools", () => {
+    expect(classifyUniversity("University of Toronto", EMPTY_CATALOG)).toMatchObject({ value: null, reason: expect.stringMatching(/haven't added any schools/) });
   });
 });
 
-describe("classifyDiscipline", () => {
+describe("classifyDiscipline: the user's own disciplines", () => {
   it.each([
-    ["Computer Engineering", null, "ce"],
-    ["BASc Computer Engineering, 2027", null, "ce"],
-    ["CPEN student", "ubc", "ce"],
-    ["Electrical Engineering", null, "ee"],
-    ["Electronics Engineering", null, "ee"],
-    ["ELEC 2026", "ubc", "ee"],
-    ["Mechatronics Engineering", "waterloo", "mech"],
-    ["Mechanical Engineering – Mechatronics Option", "ubc", "mech"],
-    ["Mechatronic Systems Engineering", "sfu", "mech"],
-    ["MSE", "sfu", "mech"],
-    ["Computer Science", null, "cs"],
-    ["BSc CPSC", "ubc", "cs"],
-    ["CMPT major", "sfu", "cs"],
-    ["Computing Science", "sfu", "cs"],
-    ["ECE (Computer Engineering)", "waterloo", "ce"],
-  ] as const)("%s at %s → %s", (text, uni, expected) => {
-    const r = classifyDiscipline(text, uni);
-    expect(r.value).toBe(expected);
-    expect(r.confidence).toBe("confirmed");
+    ["Computer Engineering", "ce"],
+    ["BASc Computer Engineering, 2027", "ce"],
+    ["CPEN student", "ce"],
+    ["Electrical Engineering", "ee"],
+    ["Mechatronics", "mech"],
+    ["BSc CPSC", "cs"],
+    ["Computing Science", "cs"],
+  ])("%s → %s", (text, id) => {
+    expect(classifyDiscipline(text, TEST_CATALOG)).toMatchObject({ value: id, confidence: "confirmed" });
   });
 
-  it.each([
-    ["Electrical and Computer Engineering", null, "more than one discipline"],
-    ["Electrical & Computer Engineering", null, "more than one discipline"],
-    ["ECE", "uoft", "more than one discipline"],
-    ["Engineering Science", "uoft", "more than one discipline"],
-    ["ENSC", "sfu", "more than one discipline"],
-    ["MSE", "uoft", "Not one of the four"],
-    ["ELEC", "sfu", "Not one of the four"],
-    ["Mechanical Engineering", "ubc", "Mechatronics option"],
-    ["Software Engineering", "waterloo", "Software engineering"],
-    ["Computer Science and Computer Engineering double degree", null, "more than one target"],
-    ["Engineering Science – Electrical and Computer option, Computer Engineering stream", "uoft", "more than one target"],
-    ["Economics with a Computer Science minor", null, "minor"],
-    ["Engineering", null, "Not one of the four"],
-    ["", null, "No program"],
-  ] as const)("sends %s at %s to review (%s)", (text, uni, reason) => {
-    const r = classifyDiscipline(text, uni);
-    expect(r.value).toBeNull();
-    expect(r.confidence).toBe("needs_review");
-    expect(r.reason).toContain(reason);
+  it("sends unclear cases to review", () => {
+    expect(classifyDiscipline("", TEST_CATALOG).reason).toBe("No program given.");
+    expect(classifyDiscipline("Computer Science and Computer Engineering double degree", TEST_CATALOG).reason).toBe("Mentions more than one of your disciplines.");
+    expect(classifyDiscipline("Computer Science, minor in Economics", TEST_CATALOG).reason).toBe("Mentions a minor; confirm the major.");
+    expect(classifyDiscipline("Biology", TEST_CATALOG).reason).toMatch(/Not one of your/);
   });
 
-  it("keeps EE and CE separate", () => {
-    expect(classifyDiscipline("Electrical Engineering").value).toBe("ee");
-    expect(classifyDiscipline("Computer Engineering").value).toBe("ce");
+  it("works for a nursing student as well as an engineer", () => {
+    expect(classifyDiscipline("BScN student", NURSING_CATALOG)).toMatchObject({ value: "nursing", confidence: "confirmed" });
+    expect(classifyDiscipline("Registered Nurse, Nursing graduate", NURSING_CATALOG).value).toBe("nursing");
+    expect(classifyDiscipline("Computer Engineering", NURSING_CATALOG).value).toBeNull();
   });
 });
 
 describe("classifyCandidate", () => {
-  it("uses the school to read course codes", () => {
-    const r = classifyCandidate("University of British Columbia", "ELEC");
-    expect(r.university.value).toBe("ubc");
-    expect(r.discipline.value).toBe("ee");
+  it("classifies both against the same lists", () => {
+    const r = classifyCandidate("McGill University", "Bachelor of Nursing (BSN)", NURSING_CATALOG);
+    expect(r.university).toMatchObject({ value: "mcgill", confidence: "confirmed" });
+    expect(r.discipline).toMatchObject({ value: "nursing", confidence: "confirmed" });
+  });
+});
+
+describe("phrasesFor", () => {
+  it("uses the name and every spelling, cleaned and without duplicates", () => {
+    expect(phrasesFor({ name: "UBC", aliases: ["ubc", "University of British Columbia"] })).toEqual(["ubc", "university of british columbia"]);
   });
 });

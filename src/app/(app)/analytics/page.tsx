@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { buildAnalytics } from "@/lib/analytics";
 import { currentUserId } from "@/lib/data/dashboard";
-import { DISCIPLINE_LABELS, SHORT_UNIVERSITY } from "@/lib/domain";
+import { disciplineName, poolUniversities, targetUniversities, universityName } from "@/lib/domain";
 import { computeTodaysPlan } from "@/lib/jobs/daily-queue";
 import { createClient } from "@/lib/supabase/server";
 
@@ -179,24 +179,27 @@ async function AnalyticsContent() {
               <TableRow>
                 <TableHead>Discipline</TableHead>
                 <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">U of T</TableHead>
-                <TableHead className="text-right">UBC</TableHead>
-                <TableHead className="text-right">SFU + Waterloo</TableHead>
+                {targetUniversities(progress.catalog).map((u) => (
+                  <TableHead key={u.id} className="text-right">
+                    {u.name}
+                  </TableHead>
+                ))}
+                {poolUniversities(progress.catalog).length ? <TableHead className="text-right">{poolUniversities(progress.catalog).map((u) => u.name).join(" + ")}</TableHead> : null}
               </TableRow>
             </TableHeader>
             <TableBody className="tabular-nums">
               {progress.disciplines.map((d) => (
                 <TableRow key={d.discipline}>
-                  <TableCell>{DISCIPLINE_LABELS[d.discipline]}</TableCell>
+                  <TableCell>{disciplineName(progress.catalog, d.discipline)}</TableCell>
                   <TableCell className="text-right">
-                    {d.accepted} / {d.target}
+                    {d.accepted} / {d.target || "—"}
                   </TableCell>
                   {d.primaryCells.map((c) => (
                     <TableCell key={c.university} className="text-right">
                       {c.accepted} / {c.target ?? "—"}
                     </TableCell>
                   ))}
-                  <TableCell className="text-right">{d.acceptedAdditional}</TableCell>
+                  {poolUniversities(progress.catalog).length ? <TableCell className="text-right">{d.acceptedAdditional}</TableCell> : null}
                 </TableRow>
               ))}
             </TableBody>
@@ -218,7 +221,7 @@ async function AnalyticsContent() {
                 .filter((s) => s.university !== null)
                 .map((s) => (
                   <li key={`${s.discipline}-${s.university}`}>
-                    {DISCIPLINE_LABELS[s.discipline]} · {SHORT_UNIVERSITY[s.university!]}: {s.available} ready, about {s.invitesWanted} needed
+                    {disciplineName(progress.catalog, s.discipline)} · {universityName(progress.catalog, s.university)}: {s.available} ready, about {s.invitesWanted} needed
                   </li>
                 ))}
             </ul>

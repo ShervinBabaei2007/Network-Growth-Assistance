@@ -1,5 +1,5 @@
-import { classifyUniversity } from "@/lib/classify";
-import { DISCIPLINE_LABELS, SHORT_UNIVERSITY, UNIVERSITY_LABELS, type Discipline, type University } from "@/lib/domain";
+import { phrasesFor } from "@/lib/classify";
+import { clean, hasAny } from "@/lib/text/match";
 
 /**
  * Everything a note may mention. Templates and the AI rewrite only ever see
@@ -8,20 +8,15 @@ import { DISCIPLINE_LABELS, SHORT_UNIVERSITY, UNIVERSITY_LABELS, type Discipline
 export type NoteFacts = {
   candidateId: string;
   fullName: string;
-  university: University | null;
-  discipline: Discipline | null;
-  /** The program as the profile shows it, e.g. "Mechatronics Engineering". */
+  /** The candidate's school, as the user named it in their own list (with its other spellings). */
+  university: { name: string; aliases: string[] } | null;
+  /** The candidate's discipline, as the user named it. */
+  discipline: { name: string; aliases: string[] } | null;
+  /** The program as the profile shows it, e.g. "Nursing" or "Mechatronics Engineering". */
   programText: string | null;
   /** The user's own private notes about this person (may mention a shared club or project). */
   candidateNotes: string | null;
   me: { school: string | null; program: string | null; interests: string | null };
-};
-
-const DISCIPLINE_AREA: Record<Discipline, string> = {
-  ce: "computer engineering",
-  ee: "electrical engineering",
-  mech: "mechatronics",
-  cs: "computer science",
 };
 
 /** First name if the profile name starts with a plain word; otherwise none. */
@@ -30,8 +25,9 @@ export function firstName(fullName: string): string | null {
   return /^[\p{L}][\p{L}'-]{0,29}$/u.test(first) ? first : null;
 }
 
-function sameSchool(me: string | null, university: University | null): boolean {
-  return Boolean(me && university && classifyUniversity(me).value === university);
+/** Whether the user's own school (as they wrote it) is the candidate's school. */
+function sameSchool(me: string | null, university: NoteFacts["university"]): boolean {
+  return Boolean(me && university && hasAny(clean(me), phrasesFor(university)));
 }
 
 function hash(s: string): number {
@@ -40,41 +36,39 @@ function hash(s: string): number {
   return h;
 }
 
-const article = (word: string) => (/^[aeiou]/i.test(word) ? "an" : "a");
-
 /** Templates grouped in tiers, most specific first; a tier is empty if a fact it needs is missing. */
 function tiers(f: NoteFacts): string[][] {
   const hi = firstName(f.fullName) ? `Hi ${firstName(f.fullName)},` : "Hi,";
-  const school = f.university ? SHORT_UNIVERSITY[f.university] : null;
-  const area = f.discipline ? DISCIPLINE_AREA[f.discipline] : null;
-  const program = f.programText?.trim() || (f.discipline ? DISCIPLINE_LABELS[f.discipline] : null);
+  const school = f.university?.name ?? null;
+  const area = f.discipline ? f.discipline.name.toLowerCase() : null;
+  const program = f.programText?.trim() || f.discipline?.name || null;
   const { me } = f;
 
   return [
     sameSchool(me.school, f.university) && me.program && program
       ? [
-          `${hi} I'm also at ${school}, studying ${me.program}. I'd like to connect and follow your work in ${program}.`,
-          `${hi} fellow ${school} student here, in ${me.program}. Would be great to connect with someone in ${program}.`,
+          `${hi} I'm also at ${school}, in ${me.program}. I'd like to connect and follow your work in ${program}.`,
+          `${hi} fellow ${school} person here, in ${me.program}. Would be great to connect with someone in ${program}.`,
         ]
       : [],
     // With interests, say what draws you to their field; used when it fits the limit.
     me.program && me.school && me.interests && area
       ? [
-          `${hi} I'm ${article(me.program)} ${me.program} student at ${me.school}, interested in ${me.interests}. I'd like to connect with people in ${area}.`,
-          `${hi} I study ${me.program} at ${me.school} and I'm into ${me.interests}. Would be great to connect with someone in ${area}.`,
+          `${hi} I'm in ${me.program} at ${me.school}, interested in ${me.interests}. I'd like to connect with people in ${area}.`,
+          `${hi} my background is ${me.program} at ${me.school} and I'm into ${me.interests}. Would be great to connect with someone in ${area}.`,
         ]
       : [],
     me.program && me.school && area && school
       ? [
-          `${hi} I'm ${article(me.program)} ${me.program} student at ${me.school} with a strong interest in ${area}. I'd like to connect and learn from your experience at ${school}.`,
-          `${hi} I study ${me.program} at ${me.school} and I'm keen to meet others in ${area}. Would be great to connect.`,
+          `${hi} I'm in ${me.program} at ${me.school} with a strong interest in ${area}. I'd like to connect and learn from your experience at ${school}.`,
+          `${hi} my background is ${me.program} at ${me.school} and I'm keen to meet others in ${area}. Would be great to connect.`,
         ]
       : [],
     me.interests && area && school
       ? [`${hi} I'm interested in ${me.interests} and growing my network in ${area} at ${school}. I'd be glad to connect.`]
       : [],
     area && school
-      ? [`${hi} I'm building connections with ${area} students at ${school} and would be glad to connect and learn from your experience.`]
+      ? [`${hi} I'm building connections with people in ${area} at ${school} and would be glad to connect and learn from your experience.`]
       : [],
     [`${hi} I'd be glad to connect and follow your work.`],
   ];
@@ -127,8 +121,8 @@ export function checkNote(draft: string, facts: NoteFacts, limit: number): { ok:
     facts.me.school,
     facts.me.program,
     facts.me.interests,
-    facts.university ? `${UNIVERSITY_LABELS[facts.university]} ${SHORT_UNIVERSITY[facts.university]}` : "",
-    facts.discipline ? DISCIPLINE_LABELS[facts.discipline] : "",
+    facts.university ? [facts.university.name, ...facts.university.aliases].join(" ") : "",
+    facts.discipline ? [facts.discipline.name, ...facts.discipline.aliases].join(" ") : "",
     "Hi Hello I I'm I'd I've I'll LinkedIn",
   ]
     .join(" ")

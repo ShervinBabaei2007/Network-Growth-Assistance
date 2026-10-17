@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { TEST_CATALOG, withPriority } from "@/test/catalog";
 import type { Discipline } from "@/lib/domain";
 import { computeProgress, type ProgressInput } from "./index";
 import { nextAction } from "./next-action";
 
 const DISCIPLINES: Discipline[] = ["ce", "ee", "mech", "cs"];
 
-function progress(overrides: Partial<ProgressInput> = {}, settings: Partial<ProgressInput["settings"]> = {}) {
+function progress(overrides: Partial<ProgressInput> = {}, settings: Partial<ProgressInput["settings"]> = {}, catalog = TEST_CATALOG) {
   return computeProgress({
     now: new Date("2026-10-09T16:00:00Z"),
     settings: {
@@ -13,9 +14,9 @@ function progress(overrides: Partial<ProgressInput> = {}, settings: Partial<Prog
       baselineConnections: 1000,
       projectStartDate: "2026-10-01",
       timezone: "America/Toronto",
-      disciplinePriority: DISCIPLINES,
       ...settings,
     },
+    catalog,
     targets: DISCIPLINES.map((discipline) => ({ discipline, university: null, targetCount: 250 })),
     latestSnapshot: null,
     invitations: [],
@@ -66,7 +67,7 @@ describe("nextAction", () => {
   });
 
   it("asks to find candidates for the focus discipline when the pool is empty", () => {
-    const a = nextAction(progress({}, { disciplinePriority: ["ee", "ce", "mech", "cs"] }), false);
+    const a = nextAction(progress({}, {}, withPriority(["ee", "ce", "mech", "cs"])), false);
     expect(a.kind).toBe("find-candidates");
     expect(a.title).toContain("Electrical Engineering");
   });

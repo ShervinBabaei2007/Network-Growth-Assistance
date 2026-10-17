@@ -22,6 +22,7 @@ const SITES: [RegExp, string][] = [
   [/(^|\.)remotive\.com$/i, "Remotive"],
   [/(^|\.)arbeitnow\.(com|co\.uk)$/i, "Arbeitnow"],
   [/(^|\.)usajobs\.gov$/i, "USAJOBS"],
+  [/(^|\.)careerjet\.[a-z.]+$/i, "Careerjet"],
 ];
 
 export function siteName(url: string | null): string {
@@ -40,6 +41,7 @@ const AGGREGATOR_DETAIL: Record<AggregatorSource, string> = {
   arbeitnow: "a listing on Arbeitnow, not the employer's own page",
   usajobs: "the official U.S. federal job announcement",
   adzuna: "job search results",
+  careerjet: "job search results from Careerjet, not the employer's own page",
 };
 
 export const isAggregator = (source: string | null | undefined): source is AggregatorSource => (AGGREGATOR_SOURCES as readonly string[]).includes(source ?? "");

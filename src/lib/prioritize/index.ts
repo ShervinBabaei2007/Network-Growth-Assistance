@@ -1,5 +1,5 @@
-import { DISCIPLINE_LABELS, PRIMARY_UNIVERSITIES, SHORT_UNIVERSITY, type Discipline, type University } from "@/lib/domain";
-import { ADDITIONAL_UNIVERSITIES, type DisciplineProgress } from "@/lib/progress";
+import { disciplineName, poolUniversities, targetUniversities, universityName, type Catalog, type Discipline, type University } from "@/lib/domain";
+import type { DisciplineProgress } from "@/lib/progress";
 
 /** Resolved invitations needed before the measured acceptance rate replaces the default. */
 export const MIN_RESOLVED_FOR_RATE = 20;
@@ -41,6 +41,8 @@ export type QueuePlan = {
 
 export type PlanInput = {
   disciplines: DisciplineProgress[];
+  /** The user's own schools and disciplines, for names and which schools have targets. */
+  catalog: Catalog;
   eligible: EligibleCandidate[];
   /** Candidate ids skipped earlier today; they are not offered again today. */
   skippedToday: string[];
@@ -57,24 +59,23 @@ export function acceptanceRate(outcomes: PlanInput["outcomes"]) {
   return { rate: Math.min(1, Math.max(0.1, outcomes.accepted / resolved)), measured: true, resolved };
 }
 
-const SEARCH_HINTS: Record<Discipline, Record<University, string>> = {
-  ce: { uoft: "U of T “Computer Engineering” students", ubc: "UBC “CPEN” or “Computer Engineering” students", sfu: "SFU “Computer Engineering” students", waterloo: "Waterloo “Computer Engineering” students" },
-  ee: { uoft: "U of T “Electrical Engineering” students", ubc: "UBC “ELEC” or “Electrical Engineering” students", sfu: "SFU “Electronics Engineering” students", waterloo: "Waterloo “Electrical Engineering” students" },
-  mech: { uoft: "U of T students in the Robotics & Mechatronics minor or EngSci Robotics (U of T has no Mechatronics degree, so expect few)", ubc: "UBC Mechanical Engineering students in the “Mechatronics option”", sfu: "SFU “Mechatronic Systems Engineering” students", waterloo: "Waterloo “Mechatronics Engineering” students" },
-  cs: { uoft: "U of T “Computer Science” students", ubc: "UBC “CPSC” or “Computer Science” students", sfu: "SFU “Computing Science” students", waterloo: "Waterloo “Computer Science” students" },
-};
+/** What to search LinkedIn for to find more people in a category: the user's own names for it. */
+const searchHint = (catalog: Catalog, d: Discipline, u: University) => `“${disciplineName(catalog, d)}” at ${universityName(catalog, u)}`;
 
 /**
  * Plans today's invitations. Disciplines are served in priority order; within a
- * discipline, U of T and UBC cells with the most still needed come first. SFU and
- * Waterloo candidates fill in only when the primary pools run short, and are marked
- * as alternates. Pending invitations are discounted by the expected acceptance rate
+ * discipline, the cells of schools with their own targets that still need the most come
+ * first. Candidates from the user's other schools (extra pools) fill in only when those
+ * run short, and are marked as alternates. Pending invitations are discounted by the expected acceptance rate
  * so a category with many outstanding invites is not over-contacted. A category is
  * never padded with unqualified people: shortfalls are reported instead.
  */
 export function planQueue(input: PlanInput): QueuePlan {
   const { rate, measured } = acceptanceRate(input.outcomes);
-  const { settings } = input;
+  const { settings, catalog } = input;
+  const primaryIds = targetUniversities(catalog).map((u) => u.id);
+  const poolIds = poolUniversities(catalog).map((u) => u.id);
+  const short = (u: University) => universityName(catalog, u);
   const base = { acceptanceRate: rate, rateIsMeasured: measured, items: [] as QueueItem[] };
 
   const invitesFor = (target: number, accepted: number, pending: number) =>
@@ -105,14 +106,14 @@ export function planQueue(input: PlanInput): QueuePlan {
           university: cell.university,
           invitesWanted: wanted,
           available,
-          suggestion: `Search LinkedIn for ${SEARCH_HINTS[d.discipline][cell.university]}.`,
+          suggestion: `Search LinkedIn for ${searchHint(catalog, d.discipline, cell.university)}.`,
         });
       }
     }
     // The gap the primary pools leave, capped by what the discipline as a whole still needs.
     const disciplineWanted = invitesFor(d.target, d.accepted, d.pending);
-    const primaryAvailable = PRIMARY_UNIVERSITIES.reduce((n, u) => n + pool(d.discipline, u).length, 0);
-    const alternates = ADDITIONAL_UNIVERSITIES.reduce((n, u) => n + pool(d.discipline, u).length, 0);
+    const primaryAvailable = primaryIds.reduce((n, u) => n + pool(d.discipline, u).length, 0);
+    const alternates = poolIds.reduce((n, u) => n + pool(d.discipline, u).length, 0);
     const gap = Math.min(primaryShort, Math.max(0, disciplineWanted - primaryAvailable));
     if (gap > alternates) {
       shortfalls.push({
@@ -120,7 +121,9 @@ export function planQueue(input: PlanInput): QueuePlan {
         university: null,
         invitesWanted: disciplineWanted,
         available: primaryAvailable + alternates,
-        suggestion: `Even with SFU and Waterloo, ${DISCIPLINE_LABELS[d.discipline]} needs more candidates. Try ${SEARCH_HINTS[d.discipline].sfu} or ${SEARCH_HINTS[d.discipline].waterloo}.`,
+        suggestion: poolIds.length
+          ? `Even with ${poolIds.map(short).join(", ")}, ${disciplineName(catalog, d.discipline)} needs more candidates. Search LinkedIn for ${poolIds.map((u) => searchHint(catalog, d.discipline, u)).join(" or ")}, or add more schools in Settings.`
+          : `${disciplineName(catalog, d.discipline)} needs more candidates. Add more schools in Settings (schools without their own targets add to this discipline's pool).`,
       });
     }
   }
@@ -141,7 +144,7 @@ export function planQueue(input: PlanInput): QueuePlan {
 
   for (const d of active) {
     if (items.length >= slots) break;
-    const name = DISCIPLINE_LABELS[d.discipline];
+    const name = disciplineName(catalog, d.discipline);
     let disciplineLeft = invitesFor(d.target, d.accepted, d.pending);
     if (disciplineLeft === 0) continue; // enough invitations are already pending
 
@@ -154,7 +157,7 @@ export function planQueue(input: PlanInput): QueuePlan {
       const next = cells.filter((c) => c.left > 0 && c.queue.length > 0).sort((a, b) => b.left - a.left)[0];
       if (!next) break;
       const remaining = d.primaryCells.find((c) => c.university === next.u)!.remaining;
-      add(next.queue.shift()!, false, `${name} (priority ${d.rank}) · ${SHORT_UNIVERSITY[next.u]} still needs ${remaining}`);
+      add(next.queue.shift()!, false, `${name} (priority ${d.rank}) · ${short(next.u)} still needs ${remaining}`);
       next.left--;
       disciplineLeft--;
     }
@@ -162,13 +165,13 @@ export function planQueue(input: PlanInput): QueuePlan {
     // Alternates only for what the primary pools could not cover.
     const uncovered = cells.reduce((n, c) => n + (c.queue.length === 0 ? c.left : 0), 0);
     let alternateLeft = Math.min(uncovered, disciplineLeft);
-    const altQueues = ADDITIONAL_UNIVERSITIES.map((u) => ({ u, queue: [...pool(d.discipline, u)] }));
+    const altQueues = poolIds.map((u) => ({ u, queue: [...pool(d.discipline, u)] }));
     while (alternateLeft > 0 && items.length < slots) {
       const next = altQueues.filter((q) => q.queue.length > 0).sort((a, b) => b.queue.length - a.queue.length)[0];
       if (!next) break;
-      const short = cells.filter((c) => c.queue.length === 0 && c.left > 0).map((c) => SHORT_UNIVERSITY[c.u]);
-      const pools = short.length > 1 ? `${short.join(" and ")} pools are` : `${short[0]} pool is`;
-      add(next.queue.shift()!, true, `${name} (priority ${d.rank}) · alternate from ${SHORT_UNIVERSITY[next.u]} because the ${pools} short`);
+      const empty = cells.filter((c) => c.queue.length === 0 && c.left > 0).map((c) => short(c.u));
+      const pools = empty.length > 1 ? `${empty.join(" and ")} pools are` : `${empty[0]} pool is`;
+      add(next.queue.shift()!, true, `${name} (priority ${d.rank}) · alternate from ${short(next.u)} because the ${pools} short`);
       alternateLeft--;
       disciplineLeft--;
     }

@@ -62,7 +62,7 @@ const PARTIAL_WINDOW_MS = 3 * 24 * 3600_000;
 
 export type DedupeItem = {
   id: string;
-  source: "ats" | "adzuna" | "jobicy" | "remotive" | "arbeitnow" | "usajobs" | "manual";
+  source: "ats" | "adzuna" | "jobicy" | "remotive" | "arbeitnow" | "usajobs" | "careerjet" | "manual";
   dedupe_key: string | null;
   desc_fingerprint: string | null;
   description_is_partial: boolean;
@@ -100,7 +100,7 @@ export function sameJob(a: DedupeItem, b: DedupeItem): boolean {
  * is the employer's site for federal jobs); then job sites: Jobicy, Remotive, Arbeitnow,
  * Adzuna; then a paste.
  */
-const SOURCE_RANK: Record<DedupeItem["source"], number> = { ats: 1, usajobs: 1, jobicy: 2, remotive: 3, arbeitnow: 4, adzuna: 5, manual: 6 };
+const SOURCE_RANK: Record<DedupeItem["source"], number> = { ats: 1, usajobs: 1, jobicy: 2, remotive: 3, arbeitnow: 4, adzuna: 5, careerjet: 5, manual: 6 };
 
 /**
  * Which copy of a job to show: verified first, then the most direct link —

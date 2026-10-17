@@ -16,8 +16,17 @@ const PATTERNS: [Exclude<AtsKind, "fixture">, RegExp][] = [
 // Path segments that aren't board names.
 const NOT_TOKENS = new Set(["embed", "api", "j", "jobs", "v1", "o", "careers", "www"]);
 
+/**
+ * A Workday career site: https://{tenant}.wd{N}.myworkdayjobs.com/{locale?}/{site}/… →
+ * "tenant.wdN.site". Locale segments ("en-US") and the API path aren't the site.
+ */
+const WORKDAY = /^https?:\/\/([a-z0-9_-]+)\.(wd\d{1,3})\.myworkdayjobs\.com\/(?:wday\/cxs\/[a-z0-9_-]+\/)?(?:[a-z]{2}(?:-[a-z]{2})?\/)?([A-Za-z0-9_-]{1,80})(?=[/?#]|$)/i;
+const NOT_WORKDAY_SITES = new Set(["job", "jobs", "wday", "login", "details"]);
+
 /** The ATS board a URL points to, if any: "https://jobs.lever.co/acme/123" → lever/acme. */
 export function detectBoard(url: string): DetectedBoard | null {
+  const wd = url.trim().match(WORKDAY);
+  if (wd && !NOT_WORKDAY_SITES.has(wd[3].toLowerCase())) return { ats: "workday", token: `${wd[1].toLowerCase()}.${wd[2].toLowerCase()}.${wd[3]}` };
   for (const [ats, re] of PATTERNS) {
     const m = url.trim().match(re);
     if (m && !NOT_TOKENS.has(m[1].toLowerCase())) return { ats, token: m[1] };

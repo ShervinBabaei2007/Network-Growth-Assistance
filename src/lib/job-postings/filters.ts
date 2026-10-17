@@ -9,7 +9,7 @@ import { LEVELS, type Workplace } from "./levels";
  */
 
 export type EmploymentKind = "full" | "part" | "contract" | "internship";
-export type SourceKind = "ats" | "jobicy" | "remotive" | "arbeitnow" | "usajobs" | "adzuna" | "manual";
+export type SourceKind = "ats" | "jobicy" | "remotive" | "arbeitnow" | "usajobs" | "adzuna" | "careerjet" | "manual";
 
 export type Filters = {
   workplace: Workplace[];
@@ -43,7 +43,7 @@ export function parseFilters(sp: Record<string, string | undefined>): Filters {
     hasSalary: sp.pay === "1",
     minSalary: Number.isFinite(min) && min > 0 ? Math.min(min, 1_000_000) : null,
     company: (sp.company ?? "").trim().slice(0, 100),
-    sources: list(sp.src, ["ats", "jobicy", "remotive", "arbeitnow", "usajobs", "adzuna", "manual"] as const),
+    sources: list(sp.src, ["ats", "jobicy", "remotive", "arbeitnow", "usajobs", "adzuna", "careerjet", "manual"] as const),
     includeUnchecked: sp.unchecked === "1",
   };
 }

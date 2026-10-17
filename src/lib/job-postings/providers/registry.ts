@@ -1,6 +1,7 @@
 import { jobFixturesEnabled } from "@/lib/runtime-mode";
 import { JUNIOR_DEV } from "../fixtures";
 import { AdzunaProvider } from "./adzuna";
+import { CareerjetProvider } from "./careerjet";
 import { JobicyProvider } from "./jobicy";
 import { UsajobsProvider } from "./usajobs";
 import type { JobProvider } from "./types";
@@ -8,7 +9,8 @@ import type { JobProvider } from "./types";
 /**
  * The search-time job sources this server can use. Jobicy is free and needs no key, so it
  * is always on. Adzuna is optional: it is added only when its developer keys are set, and
- * nothing depends on it, and so is USAJOBS (US federal jobs; a free key). (Remotive and
+ * nothing depends on it, and so are USAJOBS (US federal jobs; a free key) and Careerjet
+ * (a free publisher key; asked only from the Jobs page, since it needs the person searching). (Remotive and
  * Arbeitnow are read by the scheduled crawl, not per search: see syncFeeds.) In fixture mode (tests and local demos only, never production) a
  * fictional Jobicy feed is used instead, with no network.
  */
@@ -17,6 +19,7 @@ export function searchProviders(env: Record<string, string | undefined> = proces
   const providers: JobProvider[] = [new JobicyProvider()];
   if (env.ADZUNA_APP_ID && env.ADZUNA_APP_KEY) providers.push(new AdzunaProvider(env.ADZUNA_APP_ID, env.ADZUNA_APP_KEY));
   if (env.USAJOBS_API_KEY && env.USAJOBS_EMAIL) providers.push(new UsajobsProvider(env.USAJOBS_API_KEY, env.USAJOBS_EMAIL));
+  if (env.CAREERJET_API_KEY) providers.push(new CareerjetProvider(env.CAREERJET_API_KEY));
   return { providers };
 }
 

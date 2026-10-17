@@ -1,6 +1,5 @@
 import { htmlToText } from "@/lib/discovery/fetch-page";
 import { readPlace, scopeFor } from "@/lib/geo/countries";
-import { byPriority } from "../regions";
 import { BODY_LIMITS, readCappedJson } from "@/lib/net/read-capped";
 
 /**
@@ -8,7 +7,7 @@ import { BODY_LIMITS, readCappedJson } from "@/lib/net/read-capped";
  * powers the employer's own careers page; the crawler reads it, never the job sites.
  */
 
-export type AtsKind = "greenhouse" | "lever" | "ashby" | "smartrecruiters" | "workable" | "recruitee" | "fixture";
+export type AtsKind = "greenhouse" | "lever" | "ashby" | "smartrecruiters" | "workable" | "recruitee" | "workday" | "fixture";
 
 /** A place as the board describes it. Structured fields when the ATS has them. */
 export type AtsPlace = { text: string; city?: string | null; region?: string | null; country?: string | null };
@@ -46,8 +45,11 @@ export type AtsJob = {
 export type SalaryRange = { min: number | null; max: number | null; currency: string | null; period: "year" | "month" | "week" | "day" | "hour" | null };
 export type ExperienceLevel = "internship" | "new_grad" | "entry" | "junior" | "mid" | "senior";
 
-/** What a posting's own page adds to the list: its description and, for some boards, its link. */
-export type JobDetail = { description: string | null; applyUrl?: string | null };
+/**
+ * What a posting's own page adds to the list: its description and, for some boards, its
+ * link and exact places (Workday lists a job in several places only as "2 Locations").
+ */
+export type JobDetail = { description: string | null; applyUrl?: string | null; places?: AtsPlace[] | null };
 
 /**
  * `partial`: the board stopped listing before the end (a page cap), so jobs missing from
@@ -88,17 +90,29 @@ export interface AtsAdapter {
   fetchBoard(token: string, opts: { etag?: string | null; signal?: AbortSignal; countries?: readonly string[] }): Promise<BoardResult>;
   /** The description (and for some boards the link), when the list omits them. Only called for jobs that are kept and need it. */
   fetchDetail?(token: string, externalId: string, opts: { signal?: AbortSignal }): Promise<JobDetail | null>;
+  /** Postings whose detail may be read per board read (default DETAILS_PER_BOARD in crawler.ts). */
+  readonly detailsPerRead?: number;
+  /** How long one board read may take (default 20 s). Boards read page by page need longer. */
+  readonly boardTimeoutMs?: number;
+  /** Minutes between reads of a board with matching jobs (default ACTIVE_INTERVAL_MIN). */
+  readonly activeIntervalMin?: number;
 }
 
 export const USER_AGENT = "NetworkGrowthAssistant/1.0 (+personal job search; reads public job-board APIs)";
 
 /** GET a board's JSON with the crawler's user agent, honouring ETags. */
-export async function getJson(url: string, opts: { etag?: string | null; signal?: AbortSignal; method?: string }): Promise<{ notModified: true } | { notModified: false; etag: string | null; body: unknown }> {
+export async function getJson(url: string, opts: { etag?: string | null; signal?: AbortSignal; method?: string; body?: unknown }): Promise<{ notModified: true } | { notModified: false; etag: string | null; body: unknown }> {
   let res: Response;
   try {
     res = await fetch(url, {
-      method: opts.method ?? "GET",
-      headers: { Accept: "application/json", "User-Agent": USER_AGENT, ...(opts.etag ? { "If-None-Match": opts.etag } : {}) },
+      method: opts.method ?? (opts.body === undefined ? "GET" : "POST"),
+      headers: {
+        Accept: "application/json",
+        "User-Agent": USER_AGENT,
+        ...(opts.etag ? { "If-None-Match": opts.etag } : {}),
+        ...(opts.body === undefined ? {} : { "Content-Type": "application/json" }),
+      },
+      ...(opts.body === undefined ? {} : { body: JSON.stringify(opts.body) }),
       signal: opts.signal ?? AbortSignal.timeout(15_000),
       cache: "no-store",
       redirect: "follow",
@@ -161,8 +175,8 @@ export function jobPlace(places: AtsPlace[], remote: boolean, wanted: ReadonlySe
     }
   }
   if (!found.length) return null;
-  const order = byPriority(found.filter((f) => f.country === "CA").map((f) => f.province ?? ""));
-  const shown = found.find((f) => f.country === "CA" && f.province && f.province === order[0]) ?? found[0];
+  // The first place the board lists (no place or province is preferred over another).
+  const shown = found[0];
   return { ...shown, countries: [...all].sort() };
 }
 

@@ -111,7 +111,7 @@ export async function recheckJob(
   if (jobFixturesEnabled() || !needsRecheck(job)) return null;
   const db = createAdminClient();
   const now = new Date().toISOString();
-  const externalId = job.external_id.replace(/^(adzuna|jobicy|remotive|arbeitnow|usajobs):/, "");
+  const externalId = job.external_id.replace(/^(adzuna|jobicy|remotive|arbeitnow|usajobs|careerjet):/, "");
 
   if (job.source === "jobicy") {
     const status =

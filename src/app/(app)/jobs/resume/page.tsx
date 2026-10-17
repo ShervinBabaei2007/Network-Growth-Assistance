@@ -57,7 +57,7 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
   const facts = ResumeFacts.parse(active?.facts ?? {});
   const access = await aiAccess(supabase);
   const aiNote = access.ok
-    ? { available: true, text: access.source === "own" ? "uses your own AI key" : `uses 1 of your ${access.remaining} free AI uses today` }
+    ? { available: true, text: access.source === "own" ? "uses your own AI key" : access.remaining === null ? "uses the app's AI" : `uses 1 of your ${access.remaining} free AI uses today` }
     : { available: false, text: access.reason };
 
   return (

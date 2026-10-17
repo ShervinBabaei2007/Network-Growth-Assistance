@@ -220,7 +220,7 @@ function Results({ view, results, filtering }: { view: SearchView; results: Sear
         title="Include lower-confidence matches"
         count={possible.length}
         open={verified.length === 0 && finished}
-        hint="Some criteria are backed only by weaker evidence (for example ECE instead of Computer Engineering, or no public mention of their current role). Check the evidence before reaching out."
+        hint="Some criteria are backed only by weaker evidence (for example only a short form of the school, or no public mention of their current role). Check the evidence before reaching out."
       >
         <CardList people={possible} searchId={view.id} />
       </Group>

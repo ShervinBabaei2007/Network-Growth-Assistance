@@ -13,12 +13,12 @@ import { jobServices } from "./services";
 /**
  * Optional AI rewriting. A user's own key (Gemini, or optionally Anthropic) is used first,
  * encrypted at rest with APP_ENCRYPTION_KEY and decrypted only on the server per request.
- * Otherwise the server's key (GEMINI_API_KEY by default), within a daily per-user quota.
- * Everything else in Jobs works without AI.
+ * Otherwise the server's key (GEMINI_API_KEY by default), with no limit unless the operator
+ * sets a daily per-user quota (AI_DAILY_QUOTA). Everything else in Jobs works without AI.
  */
 
-export const DEFAULT_DAILY_QUOTA = 3;
-export const dailyQuota = () => aiDailyQuota(DEFAULT_DAILY_QUOTA);
+/** AI uses per user per day on the server's key; null means no limit. */
+export const dailyQuota = () => aiDailyQuota();
 
 function keyBytes(): Buffer | null {
   const secret = process.env.APP_ENCRYPTION_KEY;
@@ -50,7 +50,7 @@ export function decryptSecret(stored: string): string | null {
   }
 }
 
-/** Checks a user's own key with a free call (reading model details). Gemini ("AIza…") or Anthropic ("sk-ant-…"). */
+/** Checks a user's own key with a free call (reading model details). Gemini ("AIza…" or "AQ.…") or Anthropic ("sk-ant-…"). */
 export async function validateOwnKey(key: string): Promise<boolean> {
   const vendor = keyVendor(key);
   if (!vendor) return false;
@@ -82,6 +82,7 @@ export async function aiAccess(db: Db): Promise<AiAccess> {
   const operator = jobServices().operatorLlm;
   const quota = dailyQuota();
   if (!operator.enabled || quota === 0) return { ok: false, code: "no_key", reason: "AI rewriting needs a Gemini API key (free from Google AI Studio). Add your own in Settings." };
+  if (quota === null) return { ok: true, llm: operator, source: "operator", remaining: null, vendor: vendorOf(operator) };
   const today = new Date().toISOString().slice(0, 10);
   const { data: usage } = await db.from("ai_usage").select("used").eq("day", today).maybeSingle();
   const remaining = quota - (usage?.used ?? 0);
@@ -91,6 +92,8 @@ export async function aiAccess(db: Db): Promise<AiAccess> {
 
 /** Counts one operator-key use. Server-only (the table can't be written by users). */
 export async function consumeQuota(userId: string): Promise<boolean> {
-  const { data } = await createAdminClient().rpc("consume_ai_quota", { p_user: userId, p_limit: dailyQuota() });
+  const quota = dailyQuota();
+  if (quota === null) return true;
+  const { data } = await createAdminClient().rpc("consume_ai_quota", { p_user: userId, p_limit: quota });
   return data === true;
 }

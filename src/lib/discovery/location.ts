@@ -92,7 +92,7 @@ export function inCountry(location: string, country: string): "in" | "out" | nul
 
 /** Locations to bias GitHub's user search towards, for a country. */
 export function countrySearchTerms(country: string | null): string[] {
-  return country && /^canada$/i.test(country.trim()) ? ["Canada", "Toronto", "Vancouver"] : country ? [country] : [];
+  return country?.trim() ? [country.trim()] : [];
 }
 
 const PROVINCE_BY_NAME: Record<string, string> = {

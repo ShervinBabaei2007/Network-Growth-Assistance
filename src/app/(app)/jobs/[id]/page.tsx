@@ -96,7 +96,7 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
   const originals: Record<string, string> = {};
   if (resume) for (const e of [...resume.profile.experience, ...resume.profile.projects, ...resume.profile.education]) for (const b of e.bullets) originals[b.id] = b.text;
   const aiStatus = ai.ok
-    ? { available: true, note: ai.source === "own" ? "AI uses your own key." : `AI: ${ai.remaining} free use${ai.remaining === 1 ? "" : "s"} left today.` }
+    ? { available: true, note: ai.source === "own" ? "AI uses your own key." : ai.remaining === null ? "AI is on." : `AI: ${ai.remaining} free use${ai.remaining === 1 ? "" : "s"} left today.` }
     : { available: false, note: `${ai.reason} Without AI, “Tailor Resume” gives you Improvement Notes instead.` };
   const source = jobSource(job, employer);
   const results = fit?.success ? fit.data.results : [];

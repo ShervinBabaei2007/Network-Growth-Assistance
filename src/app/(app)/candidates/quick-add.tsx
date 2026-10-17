@@ -24,11 +24,11 @@ export function QuickAddForm() {
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="schoolText">School (as shown on the profile)</Label>
-          <Input id="schoolText" name="schoolText" maxLength={300} placeholder="University of British Columbia" />
+          <Input id="schoolText" name="schoolText" maxLength={300} placeholder="As the profile shows it" />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="programText">Program or major (as shown)</Label>
-          <Input id="programText" name="programText" maxLength={300} placeholder="Computer Engineering" />
+          <Input id="programText" name="programText" maxLength={300} placeholder="As the profile shows it" />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="degreeLevel">Degree level</Label>

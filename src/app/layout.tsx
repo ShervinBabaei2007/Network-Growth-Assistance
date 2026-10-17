@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Network Growth Assistant",
-  description: "Plan, prioritize and track LinkedIn networking toward 2,000 connections.",
+  description: "Plan, prioritize and track your professional networking and job search.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -124,6 +124,8 @@ export const RANGES = [
   { key: "7d", label: "7 days", heading: "the last 7 days", hours: 24 * 7 },
   { key: "14d", label: "14 days", heading: "the last 14 days", hours: 24 * 14 },
   { key: "30d", label: "30 days", heading: "the last 30 days", hours: 24 * 30 },
+  // Every open posting, however old, including board jobs whose posting date is unknown.
+  { key: "any", label: "Any time", heading: "any date", hours: Number.POSITIVE_INFINITY },
 ] as const;
 export type Range = (typeof RANGES)[number];
 export type RangeKey = Range["key"];
@@ -133,12 +135,20 @@ export function parseRange(value: string | undefined): Range | null {
   return RANGES.find((r) => r.key === value) ?? null;
 }
 
-export const rangeSince = (range: Range, now = Date.now()) => new Date(now - range.hours * 3600_000).toISOString();
+export const rangeSince = (range: Range, now = Date.now()) => (Number.isFinite(range.hours) ? new Date(now - range.hours * 3600_000) : new Date(0)).toISOString();
 
-/** The automatic order when the user hasn't chosen a range: 24 hours, then 3 days, then 7. */
-export const AUTO_LADDER: RangeKey[] = ["1d", "3d", "7d"];
+/** Whether a job falls in a window. Jobs with an unknown posting date count only for "any time". */
+export const inRange = (j: { posted_at: string; date_source: string }, range: Range, now = Date.now()) =>
+  !Number.isFinite(range.hours) || (j.date_source !== "unknown" && j.posted_at >= rangeSince(range, now));
+
+/**
+ * The automatic order when the user hasn't chosen a range: the last week, then the last
+ * month, then every open posting. Open jobs stay relevant after a week (as on LinkedIn or
+ * Google Jobs); ranking already puts the newest close matches first.
+ */
+export const AUTO_LADDER: RangeKey[] = ["7d", "30d", "any"];
 /** Fewer verified results than this in a window widens the search to the next one. */
-export const ENOUGH_RESULTS = 10;
+export const ENOUGH_RESULTS = 100;
 
 /**
  * Picks the window to show when the user didn't choose one: the shortest on the ladder

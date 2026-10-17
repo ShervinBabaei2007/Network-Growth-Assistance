@@ -3,7 +3,7 @@ import { provinceOf } from "@/lib/discovery/location";
 import { parseRange, rangeSince, titleQuery } from "./feed";
 import { jobSource, siteName } from "./source";
 import { dedupeKey, isFresh } from "./normalize";
-import { byPriority } from "./regions";
+import { validProvinces } from "./regions";
 
 const NOW = Date.parse("2026-10-11T18:00:00Z");
 const hoursAgo = (h: number) => new Date(NOW - h * 3600_000).toISOString();
@@ -51,8 +51,9 @@ describe("dedupeKey", () => {
 });
 
 describe("feed", () => {
-  it("orders provinces BC first, then Ontario", () => {
-    expect(byPriority(["ON", "AB", "BC"])).toEqual(["BC", "ON", "AB"]);
+  it("keeps only real provinces, none preferred over another", () => {
+    expect(validProvinces(["ON", "XX", "AB", "BC"])).toEqual(["AB", "BC", "ON"]);
+    expect(validProvinces([])).toEqual([]);
   });
 
   it("builds a title search where developer also finds engineer and programmer (seniority words not required)", () => {

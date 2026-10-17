@@ -29,7 +29,7 @@ export async function JobSearchSummary() {
   ]);
   if (!loaded || !reminders) return null;
   if (!loaded.apps.length) return null;
-  const tz = settings?.timezone ?? "America/Vancouver";
+  const tz = settings?.timezone ?? "UTC";
   const open = loaded.apps.filter((a) => !isClosed(a.stage)).length;
   const quiet = suggestNoResponse(loaded.apps, settings?.no_response_days ?? 21, now).length;
 

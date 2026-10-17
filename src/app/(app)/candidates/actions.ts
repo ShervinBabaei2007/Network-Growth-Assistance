@@ -15,10 +15,12 @@ import {
 } from "@/lib/imports/candidates-csv";
 import { parseCsv } from "@/lib/imports/csv";
 import { normalizeProfileUrl } from "@/lib/linkedin/normalize-url";
+import { loadCatalog } from "@/lib/data/catalog";
+import { disciplineName, universityName } from "@/lib/domain";
 import { actionContext, logActivity, type ActionContext } from "@/lib/server/action-context";
 
-const DISCIPLINES = ["ce", "ee", "mech", "cs"] as const;
-const UNIVERSITIES = ["uoft", "ubc", "sfu", "waterloo"] as const;
+/** One of the user's own schools or disciplines, by id (row-level security and foreign keys keep it theirs); blank is none. */
+const optionalCategory = z.preprocess((v) => (v === "" || v == null ? null : v), z.uuid().nullable());
 const DEGREES = ["undergraduate", "masters", "doctoral", "alumni", "other"] as const;
 
 const optionalText = (max: number, label: string) =>
@@ -85,9 +87,7 @@ export async function addCandidate(_: FormState, formData: FormData): Promise<Fo
     });
   }
 
-  const c = classifyCandidate(d.schoolText, d.programText, {
-    countUbcoAsUbc: ctx.settings.count_ubco_as_ubc,
-  });
+  const c = classifyCandidate(d.schoolText, d.programText, await loadCatalog(ctx.supabase));
   const classified =
     c.university.confidence === "confirmed" && c.discipline.confidence === "confirmed";
 
@@ -160,8 +160,8 @@ export async function updateCandidate(_: FormState, formData: FormData): Promise
 
 const classificationSchema = z.object({
   id: z.uuid(),
-  university: optionalEnum(UNIVERSITIES),
-  discipline: optionalEnum(DISCIPLINES),
+  university: optionalCategory,
+  discipline: optionalCategory,
 });
 
 /** A person confirming the school and program; blank means "unknown, keep in review". */
@@ -206,9 +206,7 @@ export async function reclassifyCandidate(_: FormState, formData: FormData): Pro
     .single();
   if (!cand) return failed("Candidate not found.");
 
-  const c = classifyCandidate(cand.raw_school_text, cand.raw_program_text, {
-    countUbcoAsUbc: ctx.settings.count_ubco_as_ubc,
-  });
+  const c = classifyCandidate(cand.raw_school_text, cand.raw_program_text, await loadCatalog(ctx.supabase));
   const { error } = await ctx.supabase
     .from("candidates")
     .update({
@@ -362,7 +360,7 @@ export type CsvPreview = {
   duplicates?: number;
   needsReview?: number;
   issues?: RowIssue[];
-  sample?: Pick<CandidateDraft, "full_name" | "profile_key" | "university" | "discipline" | "classificationNote">[];
+  sample?: (Pick<CandidateDraft, "full_name" | "profile_key" | "classificationNote"> & { schoolName: string | null; disciplineName: string | null })[];
 };
 
 const mappingFields = ["fullName", "profileUrl", "school", "program", "role", "degreeLevel", "gradYear", "notes"] as const;
@@ -389,10 +387,8 @@ export async function importCandidatesCsv(_: CsvPreview, formData: FormData): Pr
   const mapping = formData.get("mapped") === "1" ? readMapping(formData) : detectMapping(headers);
 
   const ctx = await actionContext();
-  const { drafts, issues, totalRows } = prepareCandidateRows(csv, mapping, {
-    countUbcoAsUbc: ctx.settings.count_ubco_as_ubc,
-    hasHeader: true,
-  });
+  const catalog = await loadCatalog(ctx.supabase);
+  const { drafts, issues, totalRows } = prepareCandidateRows(csv, mapping, { catalog, hasHeader: true });
 
   // Find which profiles are already in the list (in chunks to keep URLs short).
   const existing = new Set<string>();
@@ -414,8 +410,8 @@ export async function importCandidatesCsv(_: CsvPreview, formData: FormData): Pr
     sample: fresh.slice(0, 8).map(({ full_name, profile_key, university, discipline, classificationNote }) => ({
       full_name,
       profile_key,
-      university,
-      discipline,
+      schoolName: university ? universityName(catalog, university) : null,
+      disciplineName: discipline ? disciplineName(catalog, discipline) : null,
       classificationNote,
     })),
   };
@@ -470,8 +466,8 @@ const capturedSchema = z
       headline: z.string().trim().max(300).nullable(),
       details: z.string().trim().max(600).nullable(),
       // Quick capture only adds people whose school and program are known.
-      university: z.enum(UNIVERSITIES, "Every row needs a school."),
-      discipline: z.enum(DISCIPLINES, "Every row needs a program."),
+      university: z.uuid("Every row needs a school."),
+      discipline: z.uuid("Every row needs a discipline."),
     }),
   )
   .min(1, "Select at least one person.")

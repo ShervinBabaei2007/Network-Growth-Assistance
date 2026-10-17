@@ -41,7 +41,7 @@ async function ApplicationsView({ searchParams }: Pick<PageProps<"/applications"
   const supabase = await createClient();
   const [loaded, { data: settings }] = await Promise.all([loadApplications(supabase), supabase.from("settings").select("timezone, no_response_days").single()]);
   if (!loaded) return <LoadError what="your applications" />;
-  const tz = settings?.timezone ?? "America/Vancouver";
+  const tz = settings?.timezone ?? "UTC";
   const afterDays = settings?.no_response_days ?? 21;
   const now = new Date();
 

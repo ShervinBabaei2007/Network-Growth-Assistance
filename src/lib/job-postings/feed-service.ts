@@ -2,8 +2,8 @@ import "server-only";
 import { scopeFor } from "@/lib/geo/countries";
 import type { AtsKind } from "./ats/types";
 import { dedupeJobs, type DedupeItem } from "./dedupe";
-import { chooseRange, RANGES, rangeSince, titleQuery, type Range } from "./feed";
-import { resolveFeed, type FeedQuery, type FeedSettings, type FeedTab, type ResolvedFeed } from "./feed-query";
+import { AUTO_LADDER, chooseRange, inRange, RANGES, rangeSince, titleQuery, type Range } from "./feed";
+import { resolveFeed, titlesFromResume, type FeedQuery, type FeedSettings, type FeedTab, type ResolvedFeed } from "./feed-query";
 import { matchesFilters } from "./filters";
 import { prefilterScore } from "./fit";
 import { searchProviders } from "./providers/registry";
@@ -30,9 +30,29 @@ export const FEED_PAGE_SIZE = 25;
 export const MAX_FEED_ROWS = 1000;
 /** Saved jobs shown under "Saved & applied". */
 const MAX_SAVED = 300;
+/** Searched titles sent to the job sites per search (each is one call per site, cached). */
+export const MAX_PROVIDER_TITLES = 3;
+/** Unchecked search results whose links are checked right after a search page is sent. */
+const VERIFY_AFTER_SEARCH = 60;
 
+/** One notice per source when several titles were searched: counts added, any success wins. */
+export function mergeNotices(notices: SourceNotice[]): SourceNotice[] {
+  const rank = (o: SourceNotice["outcome"]) => (o === "ok" ? 0 : o === "cached" ? 1 : o === "empty" ? 2 : 3);
+  const by = new Map<string, SourceNotice>();
+  for (const n of notices) {
+    const prev = by.get(n.provider);
+    by.set(n.provider, prev ? { ...prev, outcome: rank(n.outcome) < rank(prev.outcome) ? n.outcome : prev.outcome, count: prev.count + n.count } : { ...n });
+  }
+  return [...by.values()];
+}
+
+/**
+ * What the feed reads per posting. `description` is the first 4,000 characters
+ * (description_head): enough to rank and preview, without reading up to 1,000 full
+ * descriptions per search. The job's own page reads the whole text.
+ */
 export const JOB_FIELDS =
-  "id, title, company, city, province, country, countries, remote, workplace_type, posted_at, date_source, date_note, source, user_id, employer_id, salary, salary_min, salary_max, salary_currency, salary_period, employment_type, experience_level, level_source, apply_url, verification_status, verification_note, closed_at, description, dedupe_key, desc_fingerprint, description_is_partial, canonical_url";
+  "id, title, company, city, province, country, countries, remote, workplace_type, posted_at, date_source, date_note, source, user_id, employer_id, salary, salary_min, salary_max, salary_currency, salary_period, employment_type, experience_level, level_source, apply_url, verification_status, verification_note, closed_at, description:description_head, dedupe_key, desc_fingerprint, description_is_partial, canonical_url";
 
 export type FeedJob = {
   id: string;
@@ -88,7 +108,7 @@ export type Selection = {
 const employerHosted = (j: FeedJob) => {
   if (j.source !== "ats" || !j.apply_url || !j.employer_id) return false;
   try {
-    return !/greenhouse|lever|ashbyhq|smartrecruiters|workable|recruitee/.test(new URL(j.apply_url).hostname);
+    return !/greenhouse|lever|ashbyhq|smartrecruiters|workable|recruitee|myworkdayjobs|myworkdaysite/.test(new URL(j.apply_url).hostname);
   } catch {
     return false;
   }
@@ -104,9 +124,9 @@ export function selectFeed(fresh: FeedJob[], ctx: { resolved: ResolvedFeed; sett
   const filtered = fresh.filter(
     (j) => isReal(j) && states.get(j.id) !== "dismissed" && !excludedWords.some((k) => j.title.toLowerCase().includes(k)) && matchesFilters(j as Parameters<typeof matchesFilters>[0], resolved.filters, resolved.currency),
   );
-  const verifiedWithin = (r: Range) => filtered.filter((j) => j.verification_status === "verified" && j.posted_at >= rangeSince(r, now)).length;
+  const verifiedWithin = (r: Range) => filtered.filter((j) => j.verification_status === "verified" && inRange(j, r, now)).length;
   const { range, expandedFrom, firstCount } = chooseRange(verifiedWithin, resolved.explicitRange);
-  const inWindow = filtered.filter((j) => j.posted_at >= rangeSince(range, now));
+  const inWindow = filtered.filter((j) => inRange(j, range, now));
   const merged = dedupeJobs(inWindow.map((j) => ({ ...j, source: j.source as DedupeItem["source"], employerHosted: employerHosted(j) })));
   return {
     rows: merged.map((m) => m.job as unknown as FeedJob),
@@ -178,34 +198,46 @@ export type LoadFeedOptions = {
   now?: number;
   /** Ask outside job sources for fresh results (the page) or only read stored ones (alerts). */
   refresh: boolean;
+  /** The person searching (IP and browser), for job sources that require it (Careerjet). */
+  client?: { ip: string; userAgent: string } | null;
 };
 
 export async function loadFeed(db: Db, userId: string, query: FeedQuery, opts: LoadFeedOptions): Promise<Feed | { error: string }> {
   const now = opts.now ?? Date.now();
   const services = jobServices();
   const [{ data: settings }, resume, { data: stateRows }] = await Promise.all([
-    db.from("settings").select("job_titles, job_country, job_provinces, job_seniority, job_exclude_keywords").eq("user_id", userId).single(),
+    db.from("settings").select("job_titles, job_country, job_provinces, job_exclude_keywords").eq("user_id", userId).single(),
     loadActiveResume(db, userId),
     db.from("job_user_states").select("job_id, status").eq("user_id", userId),
   ]);
   if (!settings) return { error: "settings" };
-  const resolved = resolveFeed(query, settings);
+  // Without saved titles, the roles in the resume are searched, so results fit what the user has done.
+  const resolved = resolveFeed(query, settings, titlesFromResume(resume?.profile));
   const { searched, explicitRange, filters, country, inCanada, whereProvince, where, page, shownProvinces } = resolved;
 
   // 1. Fresh results from the search providers (Jobicy; Adzuna if configured), cached per search. Page only.
   const registry = searchProviders();
-  const windowRange: Range = explicitRange ?? RANGES.find((r) => r.key === "7d")!;
+  // The widest window this search can show: the one chosen, else the end of the automatic ladder.
+  const windowRange: Range = explicitRange ?? RANGES.find((r) => r.key === AUTO_LADDER[AUTO_LADDER.length - 1])!;
   let notices: SourceNotice[] = [];
-  if (opts.refresh && searched[0]) {
-    notices = await refreshFromProviders(registry.providers, {
-      what: searched[0],
-      country,
-      where: whereProvince ? PROVINCE_NAMES[whereProvince] : where || null,
-      maxDaysOld: Math.round(windowRange.hours / 24),
-      page: Math.max(1, Math.ceil((page * FEED_PAGE_SIZE) / 50)),
-    });
+  if (opts.refresh && searched.length) {
+    // Every searched title (up to a few) is asked for, side by side, not just the first.
+    const runs = await Promise.all(
+      searched.slice(0, MAX_PROVIDER_TITLES).map((what) =>
+        refreshFromProviders(registry.providers, {
+          what,
+          country,
+          where: whereProvince ? PROVINCE_NAMES[whereProvince] : where || null,
+          // Job sites are asked for the last month at most ("any time" included): older listings are mostly filled.
+          maxDaysOld: Math.min(30, Math.round(windowRange.hours / 24)),
+          page: Math.max(1, Math.ceil((page * FEED_PAGE_SIZE) / 50)),
+          client: opts.client ?? null,
+        }),
+      ),
+    );
+    notices = mergeNotices(runs.flat());
     // New results start unverified: check their links right after this page is sent.
-    if (registry.providers.length) scheduleVerifyPending();
+    if (registry.providers.length) scheduleVerifyPending(VERIFY_AFTER_SEARCH);
   }
 
   // 2. Every source, in one query: open, dated, in the window, verified (or unchecked when asked), open to the
@@ -222,7 +254,6 @@ export async function loadFeed(db: Db, userId: string, query: FeedQuery, opts: L
     .or(visible)
     .gte("posted_at", since)
     .is("closed_at", null)
-    .neq("date_source", "unknown")
     .in("verification_status", statuses)
     .overlaps("countries", scope)
     .order("posted_at", { ascending: false })
@@ -235,7 +266,8 @@ export async function loadFeed(db: Db, userId: string, query: FeedQuery, opts: L
     .is("closed_at", null)
     .in("verification_status", ["failed_validation", "unavailable", "expired"])
     .overlaps("countries", scope);
-  if (inCanada) {
+  // In Canada, the chosen provinces (and remote jobs); without a choice, all of Canada.
+  if (inCanada && shownProvinces.length) {
     query_ = query_.or(placeOr);
     excludedQuery = excludedQuery.or(placeOr);
   }

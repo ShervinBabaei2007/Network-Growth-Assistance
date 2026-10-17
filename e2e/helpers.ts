@@ -99,3 +99,45 @@ export async function userIdFor(email: string): Promise<string> {
   if (!user) throw new Error(`No user ${email}`);
   return user.id;
 }
+
+export type PlanSetup = {
+  goal?: number;
+  schools: { name: string; aliases?: string; ownTargets?: boolean }[];
+  disciplines: { name: string; aliases?: string }[];
+  /** Per discipline: its total, and the target for each school with its own targets. */
+  targets?: Record<string, { total?: number; schools?: Record<string, number> }>;
+};
+
+/** Sets up a new user's own networking plan through Settings, as a person would. Nothing is built in. */
+export async function setUpPlan(page: Page, plan: PlanSetup) {
+  await page.goto("/settings");
+  if (plan.goal !== undefined) {
+    await page.locator("#overallTarget").fill(String(plan.goal));
+    await page.getByRole("button", { name: "Save goal" }).click();
+    await expect(page.getByTestId("form-status").filter({ hasText: "Saved." }).first()).toBeVisible();
+  }
+  for (const s of plan.schools) {
+    await page.locator("#university-new-name").fill(s.name);
+    await page.locator("#university-new-aliases").fill(s.aliases ?? "");
+    const own = page.locator("form").filter({ has: page.locator("#university-new-name") }).getByLabel("Give this school its own targets");
+    if (s.ownTargets === false) await own.uncheck();
+    else await own.check();
+    await page.getByRole("button", { name: "Add school" }).click();
+    await expect(page.getByTestId("toast").filter({ hasText: `Added “${s.name}”` }).first()).toBeVisible();
+  }
+  for (const d of plan.disciplines) {
+    await page.locator("#discipline-new-name").fill(d.name);
+    await page.locator("#discipline-new-aliases").fill(d.aliases ?? "");
+    await page.getByRole("button", { name: "Add discipline" }).click();
+    await expect(page.getByTestId("toast").filter({ hasText: `Added “${d.name}”` }).first()).toBeVisible();
+  }
+  if (plan.targets) {
+    for (const [discipline, t] of Object.entries(plan.targets)) {
+      const group = page.getByRole("group", { name: discipline });
+      if (t.total !== undefined) await group.getByLabel("Total", { exact: true }).fill(String(t.total));
+      for (const [school, n] of Object.entries(t.schools ?? {})) await group.getByLabel(school, { exact: true }).fill(String(n));
+    }
+    await page.getByRole("button", { name: "Save targets" }).click();
+    await expect(page.getByTestId("toast").filter({ hasText: "Saved." }).first()).toBeVisible();
+  }
+}

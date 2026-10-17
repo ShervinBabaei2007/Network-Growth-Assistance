@@ -1,4 +1,5 @@
 import "server-only";
+import { loadCatalog } from "./catalog";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { connection } from "next/server";
 import { localDate, startOfLocalDay, weekStart } from "@/lib/dates";
@@ -86,14 +87,14 @@ export async function loadProgress(supabase: Client, userId: string, at?: Date) 
   const { data: settings, error: settingsError } = await supabase
     .from("settings")
     .select(
-      "overall_target, baseline_connections, project_start_date, timezone, discipline_priority",
+      "overall_target, baseline_connections, project_start_date, timezone",
     )
     .eq("user_id", userId)
     .single();
   if (settingsError) throw settingsError;
 
   const today = localDate(now, settings.timezone);
-  const [targets, snapshot, counts, invitations, discoveredToday, discoveredThisWeek, exportConnections] =
+  const [targets, snapshot, counts, invitations, discoveredToday, discoveredThisWeek, exportConnections, catalog] =
     await Promise.all([
       supabase.from("targets").select("discipline, university, target_count").eq("user_id", userId),
       supabase
@@ -111,6 +112,7 @@ export async function loadProgress(supabase: Client, userId: string, at?: Date) 
       countDiscoveredSince(supabase, userId, startOfLocalDay(today, settings.timezone)),
       countDiscoveredSince(supabase, userId, startOfLocalDay(weekStart(today), settings.timezone)),
       loadExportConnections(supabase, userId),
+      loadCatalog(supabase, userId),
     ]);
   for (const result of [targets, snapshot, counts]) if (result.error) throw result.error;
 
@@ -121,8 +123,8 @@ export async function loadProgress(supabase: Client, userId: string, at?: Date) 
       baselineConnections: settings.baseline_connections,
       projectStartDate: settings.project_start_date,
       timezone: settings.timezone,
-      disciplinePriority: settings.discipline_priority,
     },
+    catalog,
     targets: (targets.data ?? []).map((t) => ({
       discipline: t.discipline,
       university: t.university,

@@ -2,7 +2,6 @@ import "server-only";
 import { z } from "zod";
 import { defaultLLM } from "@/lib/ai/default-llm";
 import type { LLMProvider } from "@/lib/discovery/llm";
-import { DISCIPLINE_LABELS, UNIVERSITY_LABELS } from "@/lib/domain";
 import { checkNote, type NoteFacts } from "./index";
 
 /** AI rewrites are optional: they only run when the server has a model key (GEMINI_API_KEY by default). */
@@ -10,14 +9,14 @@ export function aiNotesEnabled(llm: LLMProvider = defaultLLM()): boolean {
   return llm.enabled;
 }
 
-const SYSTEM = `You write LinkedIn connection-request notes for a student who is growing a professional network in engineering and computer science.
+const SYSTEM = `You write LinkedIn connection-request notes for someone growing their professional network, in whatever field they are in.
 
-Rewrite the draft so it sounds natural, warm and specific to this person, using only the facts provided. The note goes to someone the student has never met.
+Rewrite the draft so it sounds natural, warm and specific to this person, using only the facts provided. The note goes to someone the writer has never met.
 
 - Stay within the character limit you're given.
 - Don't claim or imply that they have met, spoken or worked together.
 - Don't mention jobs, internships, hiring, referrals or opportunities.
-- Don't invent clubs, projects, companies, courses or people. The candidate notes are the student's private notes; use a detail from them only when it is clearly a shared interest or activity.
+- Don't invent clubs, projects, companies, courses or people. The candidate notes are the writer's private notes; use a detail from them only when it is clearly a shared interest or activity.
 - No links, hashtags, emojis or exclamation marks.
 
 Put the note text, and nothing else, in "note".`;
@@ -33,8 +32,8 @@ export async function rewriteNoteWithAI(facts: NoteFacts, draft: string, limit: 
 
   const known = {
     name: facts.fullName,
-    their_school: facts.university ? UNIVERSITY_LABELS[facts.university] : null,
-    their_program: facts.programText ?? (facts.discipline ? DISCIPLINE_LABELS[facts.discipline] : null),
+    their_school: facts.university?.name ?? null,
+    their_program: facts.programText ?? facts.discipline?.name ?? null,
     private_notes_about_them: facts.candidateNotes,
     my_school: facts.me.school,
     my_program: facts.me.program,

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { testCriteria } from "@/test/discovery";
 import { evaluateCriteria } from "./evidence";
 import { draftFromOrcid, identityKeys } from "./extract";
 import { FIXTURE_ORCID } from "./fixtures";
@@ -7,7 +8,7 @@ import { planQueries } from "./planner";
 import { orcidProfileFromRecord } from "./providers/orcid";
 import { scorePerson } from "./score";
 
-const criteria = parseRequestDeterministic("Find 20 UofT Computer Engineering alumni working as software engineers");
+const criteria = testCriteria("Find 20 UofT Computer Engineering alumni working as software engineers");
 
 describe("orcidProfileFromRecord", () => {
   it("reads name, biography, links, education and employment", () => {
@@ -82,10 +83,6 @@ describe("draftFromOrcid", () => {
     expect(d.facts.find((f) => f.field === "role")?.extractedText).toBe("Now a backend developer.");
   });
 
-  it("keeps ECE as ECE", () => {
-    const d = draftFromOrcid({ ...FIXTURE_ORCID[0], educations: [{ ...FIXTURE_ORCID[0].educations[0], role: "BASc" }] }, criteria)!;
-    expect(d.facts.find((f) => f.field === "program")?.value).toBe("Electrical and Computer Engineering");
-  });
 });
 
 describe("planner and parser without AI", () => {

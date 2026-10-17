@@ -16,7 +16,8 @@ export async function AiKeySection() {
     supabase.from("user_ai").select("own_key_hint").maybeSingle(),
     supabase.from("ai_usage").select("used").eq("day", today).maybeSingle(),
   ]);
-  const operator = jobServices().operatorLlm.enabled && dailyQuota() > 0;
+  const quota = dailyQuota();
+  const operator = jobServices().operatorLlm.enabled && quota !== 0;
   return (
     <Card id="ai-key" className="scroll-mt-24">
       <CardHeader>
@@ -24,7 +25,7 @@ export async function AiKeySection() {
         <CardDescription>
           AI rewrites tailored resumes, CVs and cover letters for a job, and adds detail to Improvement Notes. It never adds anything your resume
           doesn&apos;t say. Without AI, you get Improvement Notes to apply yourself, and searching and fit checks work the same.{" "}
-          {operator ? `This app includes ${dailyQuota()} free AI uses a day (${Math.max(0, dailyQuota() - (usage?.used ?? 0))} left today). ` : ""}
+          {operator ? (quota === null ? "This app includes AI at no cost to you. " : `This app includes ${quota} free AI uses a day (${Math.max(0, quota - (usage?.used ?? 0))} left today). `) : ""}
           With your own Gemini API key (free from{" "}
           <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="underline underline-offset-4">
             Google AI Studio
@@ -43,7 +44,7 @@ export async function AiKeySection() {
           <ActionForm action={saveOwnAiKey} submitLabel="Save key" resetOnSuccess>
             <div className="grid gap-1.5">
               <Label htmlFor="aiKey">Your Gemini API key</Label>
-              <Input id="aiKey" name="key" type="password" autoComplete="off" placeholder="AIza…" required />
+              <Input id="aiKey" name="key" type="password" autoComplete="off" placeholder="AIza… or AQ.…" required />
               <p className="text-xs text-muted-foreground">Stored encrypted and only ever used on the server, for your own requests. You can remove it any time. An Anthropic key (sk-ant-…) is accepted too.</p>
             </div>
           </ActionForm>

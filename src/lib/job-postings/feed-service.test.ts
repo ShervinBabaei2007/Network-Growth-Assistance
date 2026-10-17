@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { fromSearchParams, resolveFeed, searchOnly, toSearchParams, type FeedSettings } from "./feed-query";
-import { rankFeed, selectFeed, type FeedJob, type FeedMatch } from "./feed-service";
+import { ENOUGH_RESULTS } from "./feed";
+import { fromSearchParams, resolveFeed, searchOnly, titlesFromResume, toSearchParams, type FeedSettings } from "./feed-query";
+import { mergeNotices, rankFeed, selectFeed, type FeedJob, type FeedMatch } from "./feed-service";
 
-const settings: FeedSettings = { job_titles: ["Developer"], job_country: "CA", job_provinces: ["BC", "ON"], job_seniority: "junior", job_exclude_keywords: ["senior"] };
+const settings: FeedSettings = { job_titles: ["Developer"], job_country: "CA", job_provinces: ["BC", "ON"], job_exclude_keywords: ["senior"] };
 const NOW = Date.parse("2026-10-20T12:00:00Z");
 const hoursAgo = (h: number) => new Date(NOW - h * 3600_000).toISOString();
 
@@ -88,18 +89,20 @@ describe("selectFeed", () => {
   });
 
   it("uses the shortest window with enough verified jobs", () => {
-    const today = Array.from({ length: 10 }, () => job({ posted_at: hoursAgo(3) }));
-    const older = job({ posted_at: hoursAgo(60) });
-    const s = selectFeed([...today, older], ctx({ level: "" }));
-    expect(s.range.key).toBe("1d");
-    expect(s.rows).toHaveLength(10);
+    const thisWeek = Array.from({ length: ENOUGH_RESULTS }, (_, i) => job({ title: `Developer ${i}`, posted_at: hoursAgo(3), dedupe_key: `k${i}` }));
+    const older = job({ posted_at: hoursAgo(24 * 20) });
+    const s = selectFeed([...thisWeek, older], ctx({ level: "" }));
+    expect(s.range.key).toBe("7d");
+    expect(s.rows).toHaveLength(ENOUGH_RESULTS);
     expect(s.expandedFrom).toBeNull();
   });
 
-  it("widens the window when the newest day has too few", () => {
-    const s = selectFeed([job({ posted_at: hoursAgo(3) }), job({ posted_at: hoursAgo(60) })], ctx({ level: "" }));
-    expect(s.range.key).toBe("7d");
-    expect(s.expandedFrom?.key).toBe("1d");
+  it("widens to every open posting when recent ones are too few, including undated board jobs", () => {
+    const undated = job({ posted_at: hoursAgo(2), date_source: "unknown" });
+    const s = selectFeed([job({ posted_at: hoursAgo(3) }), job({ posted_at: hoursAgo(24 * 90) }), undated], ctx({ level: "" }));
+    expect(s.range.key).toBe("any");
+    expect(s.expandedFrom?.key).toBe("7d");
+    expect(s.rows).toHaveLength(3);
   });
 
   it("merges the same job from two sources, keeping the verified board link", () => {
@@ -137,5 +140,40 @@ describe("rankFeed", () => {
     expect(tabs.stretch.map((j) => j.id)).toEqual([stretch.id]);
     expect(tabs.excluded.map((j) => j.id)).toEqual([excluded.id]);
     expect(tabs.saved.map((j) => j.id)).toEqual([strong.id]);
+  });
+});
+
+describe("titles from the resume", () => {
+  const xp = (...titles: (string | null)[]) => ({ experience: titles.map((title) => ({ title })) });
+
+  it("searches the roles the resume lists, most recent first, without internship words", () => {
+    expect(titlesFromResume(xp("Software Developer Intern", "QA Analyst (Co-op)", "Software Developer", "Barista", "Cook"))).toEqual(["Software Developer", "QA Analyst", "Barista"]);
+    expect(titlesFromResume(xp("International Sales Coordinator"))).toEqual(["International Sales Coordinator"]);
+    expect(titlesFromResume(xp(null, "", "Intern"))).toEqual([]);
+    expect(titlesFromResume(null)).toEqual([]);
+  });
+
+  it("are used only when there's no query and no saved titles", () => {
+    const fromResume = ["Data Analyst"];
+    const none = { ...settings, job_titles: [] };
+    expect(resolveFeed(fromSearchParams({}), none, fromResume)).toMatchObject({ searched: fromResume, titlesFromResume: true });
+    expect(resolveFeed(fromSearchParams({ q: "Nurse" }), none, fromResume)).toMatchObject({ searched: ["Nurse"], titlesFromResume: false });
+    expect(resolveFeed(fromSearchParams({}), { ...none, job_titles: ["Designer"] }, fromResume)).toMatchObject({ searched: ["Designer"], titlesFromResume: false });
+    expect(resolveFeed(fromSearchParams({ all: "1" }), none, fromResume)).toMatchObject({ searched: [], titlesFromResume: false });
+  });
+});
+
+describe("mergeNotices", () => {
+  it("gives one notice per source across searched titles", () => {
+    const merged = mergeNotices([
+      { provider: "adzuna", label: "Adzuna", outcome: "timeout", count: 0 },
+      { provider: "adzuna", label: "Adzuna", outcome: "ok", count: 40 },
+      { provider: "jobicy", label: "Jobicy", outcome: "cached", count: 5 },
+      { provider: "jobicy", label: "Jobicy", outcome: "empty", count: 0 },
+    ]);
+    expect(merged).toEqual([
+      { provider: "adzuna", label: "Adzuna", outcome: "ok", count: 40 },
+      { provider: "jobicy", label: "Jobicy", outcome: "cached", count: 5 },
+    ]);
   });
 });

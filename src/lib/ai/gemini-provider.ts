@@ -28,8 +28,8 @@ export function geminiModel(env: Record<string, string | undefined> = process.en
   return m && /^[a-z0-9][a-z0-9.\-]{1,80}$/i.test(m) ? m : GEMINI_DEFAULT_MODEL;
 }
 
-/** Google AI Studio keys look like "AIza…" (39 characters). */
-export const looksLikeGeminiKey = (key: string) => /^AIza[0-9A-Za-z_-]{30,}$/.test(key.trim());
+/** Google AI Studio keys look like "AIza…" (39 characters) or, in Google's newer format, "AQ.…". */
+export const looksLikeGeminiKey = (key: string) => /^(AIza[0-9A-Za-z_-]{30,}|AQ\.[0-9A-Za-z_-]{30,})$/.test(key.trim());
 
 /** JSON Schema keywords Gemini's structured output accepts; the rest are dropped (Zod still checks them). */
 const KEEP = new Set(["type", "properties", "required", "items", "prefixItems", "enum", "anyOf", "description", "title", "additionalProperties", "minItems", "maxItems", "minimum", "maximum", "format", "$ref", "$defs", "propertyOrdering"]);

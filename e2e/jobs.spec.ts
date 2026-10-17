@@ -26,7 +26,7 @@ const toast = (page: Page, text: string | RegExp) => page.getByTestId("toast").f
 test("import, review, search verified jobs, improvement notes, AI tailoring and its honest fallbacks", async ({ page }) => {
   test.setTimeout(300_000);
   await signIn(page, uniqueEmail("jobs"), "/jobs");
-  await expect(page.getByRole("heading", { name: /jobs? from the last/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /jobs? from (the last|any date)/i })).toBeVisible();
   test.skip(!(await page.getByText("Showing fictional sample employers").isVisible()), "Dev server isn't running with JOBS_FIXTURES=1");
 
   // 1. The crawler reads the employers' boards (here, on demand).
@@ -67,10 +67,10 @@ test("import, review, search verified jobs, improvement notes, AI tailoring and 
   const [original] = await Promise.all([page.waitForEvent("download"), page.getByRole("link", { name: "Download" }).first().click()]);
   expect(readFileSync((await original.path())!).subarray(0, 5).toString()).toBe("%PDF-");
 
-  // 4. Search: verified listings only, the date range widens (and says so), duplicates merged.
+  // 4. Search: verified listings only, the date range widens to every open posting (and says so), duplicates merged.
   await page.goto("/jobs?q=Developer");
-  await expect(page.getByText("Only 2 verified jobs were found in the last 24 hours, so the search was expanded to the last 7 days.").first()).toBeVisible();
-  await expect(toast(page, "2 verified Developer jobs found.")).toBeVisible();
+  await expect(page.getByText(/Only \d+ verified jobs? (was|were) found in the last 7 days, so the search was expanded to any date\./).first()).toBeVisible();
+  await expect(toast(page, /\d+ verified Developer jobs? found\./)).toBeVisible();
   // Sites the app can't read are one click away, with the same search.
   const elsewhere = page.getByRole("navigation", { name: "Search other job sites" });
   await expect(elsewhere.getByRole("link", { name: /^LinkedIn/ })).toHaveAttribute("href", /linkedin\.com\/jobs\/search\/\?keywords=Developer/);

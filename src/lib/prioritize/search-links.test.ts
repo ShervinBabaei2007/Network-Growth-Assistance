@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
+import { TEST_CATALOG } from "@/test/catalog";
 import type { Discipline } from "@/lib/domain";
 import { computeProgress, type ProgressInput } from "@/lib/progress";
-import { linkedInPeopleSearch, searchLinks } from "./search-links";
+import { linkedInPeopleSearch, searchLinks as searchLinksFor } from "./search-links";
 
 const DISCIPLINES: Discipline[] = ["ce", "ee", "mech", "cs"];
 
 function progress(invitations: ProgressInput["invitations"] = [], targets?: ProgressInput["targets"]) {
   return computeProgress({
     now: new Date("2026-10-09T16:00:00Z"),
-    settings: { overallTarget: 2000, baselineConnections: 1000, projectStartDate: "2026-10-01", timezone: "America/Toronto", disciplinePriority: DISCIPLINES },
+    settings: { overallTarget: 2000, baselineConnections: 1000, projectStartDate: "2026-10-01", timezone: "America/Toronto" },
+    catalog: TEST_CATALOG,
     targets: targets ?? DISCIPLINES.flatMap((d) => [
       { discipline: d, university: null, targetCount: 250 },
       { discipline: d, university: "uoft" as const, targetCount: 125 },
@@ -20,6 +22,9 @@ function progress(invitations: ProgressInput["invitations"] = [], targets?: Prog
     discovered: { today: 0, thisWeek: 0 },
   }).disciplines;
 }
+
+/** The user's catalog is the test one throughout. */
+const searchLinks = (disciplines: Parameters<typeof searchLinksFor>[0], limit?: number) => searchLinksFor(disciplines, TEST_CATALOG, limit);
 
 describe("linkedInPeopleSearch", () => {
   it("builds an encoded people-search URL", () => {
@@ -33,13 +38,13 @@ describe("searchLinks", () => {
   it("lists primary schools of every active discipline before alternates, in priority order", () => {
     const links = searchLinks(progress(), 10);
     expect(links.map((l) => l.label).slice(0, 8)).toEqual([
-      "Computer Engineering · U of T",
+      "Computer Engineering · University of Toronto",
       "Computer Engineering · UBC",
-      "Electrical Engineering · U of T",
+      "Electrical Engineering · University of Toronto",
       "Electrical Engineering · UBC",
-      "Mechatronics Engineering · U of T",
+      "Mechatronics Engineering · University of Toronto",
       "Mechatronics Engineering · UBC",
-      "Computer Science · U of T",
+      "Computer Science · University of Toronto",
       "Computer Science · UBC",
     ]);
     expect(links.slice(8).every((l) => l.isAlternate)).toBe(true);
@@ -57,7 +62,7 @@ describe("searchLinks", () => {
     }));
     const [first, second] = searchLinks(progress(accepted));
     expect(first).toMatchObject({ label: "Computer Engineering · UBC", remaining: 125 });
-    expect(second).toMatchObject({ label: "Computer Engineering · U of T", remaining: 115 });
+    expect(second).toMatchObject({ label: "Computer Engineering · University of Toronto", remaining: 115 });
   });
 
   it("skips completed disciplines", () => {
@@ -69,8 +74,8 @@ describe("searchLinks", () => {
     expect(searchLinks(progress([], targets)).some((l) => l.discipline === "ce")).toBe(false);
   });
 
-  it("uses each school's own program wording", () => {
+  it("searches with the user's own names for the discipline and school", () => {
     const sfuMech = searchLinks(progress(), 50).find((l) => l.discipline === "mech" && l.university === "sfu");
-    expect(decodeURIComponent(sfuMech!.url)).toContain("mechatronic systems engineering student SFU");
+    expect(decodeURIComponent(sfuMech!.url)).toContain("keywords=Mechatronics Engineering SFU");
   });
 });

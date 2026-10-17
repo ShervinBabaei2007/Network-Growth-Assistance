@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { loadCatalog } from "@/lib/data/catalog";
 import { classifyCandidate } from "@/lib/classify";
 import { applyConnectionImport, planImport } from "@/lib/connections/import";
 import { normalizeName, splitName } from "@/lib/text/names";
@@ -97,8 +98,9 @@ export async function importLinkedInExport(_: ExportState, formData: FormData): 
     projectStartDate: ctx.settings.project_start_date,
   });
 
-  // New connections are only worth tracking as candidates if they're at a target school.
-  const classify = (c: ExportConnection) => classifyCandidate(c.company, c.position, { countUbcoAsUbc: ctx.settings.count_ubco_as_ubc });
+  // New connections are only worth tracking as candidates if they're at one of the user's schools.
+  const catalog = await loadCatalog(ctx.supabase);
+  const classify = (c: ExportConnection) => classifyCandidate(c.company, c.position, catalog);
   const targetSchool = plan.newConnections.filter((c) => classify(c).university.value !== null);
 
   const summary: ExportSummary = {

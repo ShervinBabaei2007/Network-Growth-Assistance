@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { currentUserId } from "@/lib/data/dashboard";
 import { localDate, startOfLocalDay } from "@/lib/dates";
 import { aiNotesEnabled } from "@/lib/notes/ai-rewrite";
-import { DISCIPLINE_LABELS, SHORT_UNIVERSITY, type Discipline } from "@/lib/domain";
+import { disciplineName, universityName, type Discipline } from "@/lib/domain";
 import { computeTodaysPlan } from "@/lib/jobs/daily-queue";
 import { MIN_RESOLVED_FOR_RATE, type Shortfall } from "@/lib/prioritize";
 import { createClient } from "@/lib/supabase/server";
@@ -50,7 +50,7 @@ async function QueueContent() {
         .order("rank"),
       supabase.from("settings").select("daily_invite_target, weekly_invite_cap, stale_pending_days, timezone, note_char_limit, monthly_note_allowance").single(),
       loadStalePending(supabase, settingsRow?.stale_pending_days ?? 21),
-      countNotesThisMonth(supabase, progress.today, settingsRow?.timezone ?? "America/Vancouver"),
+      countNotesThisMonth(supabase, progress.today, settingsRow?.timezone ?? "UTC"),
     ]);
     if (items.error || settings.error || stale.error) throw new Error("load");
     data = { plan, progress, items: items.data, settings: settings.data, stale: stale.data, notesUsed };
@@ -118,7 +118,7 @@ async function QueueContent() {
                         {item.is_alternate ? <Badge variant="outline">Alternate</Badge> : null}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {c.university ? SHORT_UNIVERSITY[c.university] : "?"} · {c.discipline ? DISCIPLINE_LABELS[c.discipline] : "?"}
+                        {c.university ? universityName(progress.catalog, c.university) : "?"} · {c.discipline ? disciplineName(progress.catalog, c.discipline) : "?"}
                         {c.role ? ` · ${c.role}` : ""}
                       </p>
                       <p className="text-xs text-muted-foreground">{item.reason}</p>
@@ -191,12 +191,12 @@ async function QueueContent() {
             {groupByDiscipline(plan.shortfalls).map(([discipline, list], i) => (
               <details key={discipline} open={i === 0} className="rounded-md border px-3 py-2">
                 <summary className="cursor-pointer font-medium">
-                  {DISCIPLINE_LABELS[discipline]} ({list.length})
+                  {disciplineName(progress.catalog, discipline)} ({list.length})
                 </summary>
                 <ul className="mt-2 grid gap-2">
                   {list.map((s) => (
                     <li key={`${s.discipline}-${s.university}`}>
-                      <span className="font-medium">{s.university ? SHORT_UNIVERSITY[s.university] : "All four schools"}</span>:{" "}
+                      <span className="font-medium">{s.university ? universityName(progress.catalog, s.university) : "All your schools"}</span>:{" "}
                       {s.available} ready for about {s.invitesWanted} invitations still needed. {s.suggestion}
                     </li>
                   ))}

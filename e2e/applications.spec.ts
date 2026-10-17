@@ -13,7 +13,7 @@ const toast = (page: Page, text: string | RegExp) => page.getByTestId("toast").f
 test("track an application from save to offer", async ({ page, context }) => {
   test.setTimeout(240_000);
   await signIn(page, uniqueEmail("apps"), "/jobs");
-  await expect(page.getByRole("heading", { name: /jobs? from the last/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /jobs? from (the last|any date)/i })).toBeVisible();
   test.skip(!(await page.getByText("Showing fictional sample employers").isVisible()), "Dev server isn't running with JOBS_FIXTURES=1");
 
   // An empty tracker explains itself.
@@ -75,7 +75,7 @@ test("track an application from save to offer", async ({ page, context }) => {
   const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("link", { name: /Add to calendar/ }).click()]);
   const ics = readFileSync((await download.path())!, "utf8");
   expect(ics).toContain("BEGIN:VEVENT");
-  expect(ics).toMatch(/DTSTART:20300115T1[78]0000Z/);
+  expect(ics).toMatch(/DTSTART:20300115T100000Z/);
   expect(ics).toContain("LOCATION:Video call\\, link by email");
 
   for (const [to, message] of [

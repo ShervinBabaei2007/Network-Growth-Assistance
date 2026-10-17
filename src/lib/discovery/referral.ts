@@ -22,11 +22,10 @@ export type ReferralFacts = {
   me: { school: string | null; program: string | null };
 };
 
-const article = (w: string) => (/^[aeiou]/i.test(w) ? "an" : "a");
 
 export function suggestReferralAsk(f: ReferralFacts): string {
   const hi = firstName(f.fullName) ? `Hi ${firstName(f.fullName)}` : "Hi";
-  const me = f.me.program && f.me.school ? ` I'm ${article(f.me.program)} ${f.me.program} student at ${f.me.school}.` : f.me.school ? ` I'm a student at ${f.me.school}.` : "";
+  const me = f.me.program && f.me.school ? ` I'm in ${f.me.program} at ${f.me.school}.` : f.me.school ? ` I'm at ${f.me.school}.` : "";
   const opener = f.priorContact ? `${hi}, thanks again for your time before.` : `${hi}, I hope you're well.`;
   return `${opener}${me} I'm applying for the ${f.jobTitle} role at ${f.company} and saw that you've been at ${f.company}. Would you be open to a short chat about the team? If you think I'd be a good fit, I'd be grateful for a referral, but no pressure at all. Thank you either way.`.slice(0, REFERRAL_LIMIT);
 }

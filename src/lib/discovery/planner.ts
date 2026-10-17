@@ -24,6 +24,9 @@ export type PlannedQuery = { provider: "web" | "github" | "orcid"; query: string
 
 export const LINKEDIN_EXCLUSION = "-site:linkedin.com";
 
+/** Fields where people commonly keep public code (so GitHub is worth searching). */
+const CODE_WORDS = /\b(software|computer|computing|programm\w*|developer|coding|data scien\w*|machine learning|artificial intelligence|web|devops|cyber\w*|informatics|computational)\b/i;
+
 const q = (s: string) => `"${s.replace(/"/g, "")}"`;
 
 /** Lowercase and collapse spaces, so trivially different spellings aren't searched twice. */
@@ -33,7 +36,9 @@ export function planQueries(criteria: NetworkingCriteria, max = 40): PlannedQuer
   const inst = institutionMatcher(criteria);
   const programs = programMatchers(criteria).map((p) => p.canonical);
   const roles = criteria.roles.length ? criteria.roles.slice(0, 3) : [];
-  const role0 = roles[0] ?? "engineer";
+  const role0 = roles[0] ?? null;
+  // GitHub only helps for people who write code; for other fields its queries are left out.
+  const codeField = CODE_WORDS.test([...programs, ...criteria.roles, ...criteria.education.programAliases].join(" "));
   const instName = inst?.name ?? null;
   // A short form people actually write in bios ("UofT"), if we have one.
   const shortName = criteria.education.institutionAliases.find((a) => a.length <= 8) ?? null;
@@ -46,29 +51,29 @@ export function planQueries(criteria: NetworkingCriteria, max = 40): PlannedQuer
   for (const p of progs) {
     const prog = p ? q(p) : null;
     for (const r of roles.length ? roles : [null]) web("core", instName && q(instName), prog, r && q(r));
-    if (shortName) web("alias", q(shortName), prog, role0);
+    if (shortName) web("alias", q(shortName), prog, role0 && q(role0));
     for (const c of criteria.companies.slice(0, 6)) web("company", instName && q(instName), prog, q(c));
     if (criteria.includeStartups) web("company", instName && q(instName), prog, "startup founder OR \"founding engineer\"");
-    for (const l of criteria.locations.slice(0, 3)) web("location", instName && q(instName), prog, role0, q(l));
-    web("alumni", instName && q(instName), prog, "alumni", role0);
+    for (const l of criteria.locations.slice(0, 3)) web("location", instName && q(instName), prog, role0 && q(role0), q(l));
+    web("alumni", instName && q(instName), prog, "alumni", role0 && q(role0));
     if (inst?.domains.length) web("university_site", `site:${inst.domains[0]}`, prog, "alumni");
-    web("portfolio", instName && q(instName), prog, "portfolio", q(role0));
-    web("github", "site:github.com", instName && q(instName), prog);
-    web("design_team", instName && q(instName), prog, "design team", "software lead");
+    web("portfolio", instName && q(instName), prog, "portfolio", role0 && q(role0));
+    if (codeField) web("github", "site:github.com", instName && q(instName), prog);
+    // Student clubs, societies and associations exist in every field.
+    web("design_team", instName && q(instName), prog, "(club OR society OR association OR team)", "members");
     web("research_lab", instName && q(instName), prog, "research lab", "members");
   }
 
-  // GitHub's own user search: free text matches names and bios; location narrows it.
-  if (instName) {
+  // GitHub's own user search (software and computing fields only): free text matches names and bios; location narrows it.
+  if (instName && codeField) {
     const school = shortName ?? instName;
     const gh = (...terms: (string | null | undefined)[]) => out.push({ provider: "github", family: "github", query: terms.filter(Boolean).map((t) => q(t!)).join(" ") });
     gh(school, programs[0]);
     // People write their school both ways in bios.
     if (shortName) gh(instName, programs[0]);
-    if (programs[0] === "Computer Engineering") gh(school, "CompEng");
     for (const r of roles.slice(0, 2)) gh(school, r);
     for (const c of criteria.companies.slice(0, 4)) gh(school, c);
-    // Lean towards people in the requested places (Canada by default); results are still checked one by one.
+    // Lean towards people in the requested places; results are still checked one by one.
     const places = criteria.locations.length ? criteria.locations.slice(0, 2) : countrySearchTerms(criteria.country);
     for (const l of places) out.push({ provider: "github", family: "github", query: `${q(school)} location:${q(l)}` });
   }

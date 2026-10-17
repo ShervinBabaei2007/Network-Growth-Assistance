@@ -25,7 +25,7 @@ async function handle(request: Request) {
     const summary = await crawlDue(createAdminClient(), { deadline, embedder: services.embedder, fixtures: services.fixtures });
     // A feed failing never fails the crawl: board jobs and link checks still run.
     const feeds = Date.now() < deadline ? await syncFeeds({ fixtures: services.fixtures }) : null;
-    const linksChecked = Date.now() < deadline ? await verifyPending(30, deadline) : 0;
+    const linksChecked = Date.now() < deadline ? await verifyPending(100, deadline) : 0;
     log("info", "cron.crawl", "finished", { boards: summary.boards, newJobs: summary.newJobs, linksChecked });
     return NextResponse.json({ ok: true, ...summary, feeds, linksChecked });
   } catch (e) {

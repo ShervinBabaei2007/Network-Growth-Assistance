@@ -10,7 +10,7 @@ export async function actionContext() {
   if (!userId) throw new Error("Not signed in");
   const { data: settings, error } = await supabase
     .from("settings")
-    .select("timezone, discipline_priority, count_ubco_as_ubc, project_start_date, paused, auto_approve")
+    .select("timezone, project_start_date, paused, auto_approve")
     .single();
   if (error) throw error;
   return { supabase, userId, settings };

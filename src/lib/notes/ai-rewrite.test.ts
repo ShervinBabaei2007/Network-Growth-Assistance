@@ -9,8 +9,8 @@ const { rewriteNoteWithAI, aiNotesEnabled } = await import("./ai-rewrite");
 const facts: NoteFacts = {
   candidateId: "c1",
   fullName: "Ada Lovelace",
-  university: "ubc",
-  discipline: "ce",
+  university: { name: "UBC", aliases: ["University of British Columbia"] },
+  discipline: { name: "Computer Engineering", aliases: ["comp eng"] },
   programText: "Computer Engineering",
   candidateNotes: "UBC Rocket team",
   me: { school: "BCIT", program: "Computer Systems Technology", interests: null },

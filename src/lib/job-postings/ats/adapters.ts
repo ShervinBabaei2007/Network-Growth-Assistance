@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { countryCode, countryName } from "@/lib/geo/countries";
 import { boardHtmlToText, BoardError, getJson, type AtsAdapter, type AtsJob, type BoardResult, type ExperienceLevel, type SalaryRange } from "./types";
 
 /**
@@ -398,5 +399,159 @@ export const recruitee: AtsAdapter = {
           : null,
       ),
     };
+  },
+};
+
+// ------------------------------------------------------------------ Workday
+
+/**
+ * Workday career sites ({tenant}.wd{N}.myworkdayjobs.com/{site}) all run on the same public
+ * JSON API that the careers page itself calls. The board token is "tenant.wdN.site". The
+ * list is read 20 postings at a time and filtered by country; links and descriptions come
+ * from each posting's detail (`externalUrl` is Workday's own link, never built from a pattern).
+ */
+
+const WD_TOKEN = /^([A-Za-z0-9_-]+)\.(wd\d{1,3})\.([A-Za-z0-9_-]+)$/;
+const WD_PAGE = 20;
+/** Pages read per searched country: the newest 300 postings there. */
+export const WD_PAGES = 15;
+
+export function workdayParts(token: string): { tenant: string; pod: string; site: string; base: string } {
+  const m = WD_TOKEN.exec(token);
+  if (!m) throw new BoardError("Not a Workday board token (tenant.wdN.site).", true);
+  const [, tenant, pod, site] = m;
+  return { tenant, pod, site, base: `https://${tenant}.${pod}.myworkdayjobs.com/wday/cxs/${tenant}/${site}` };
+}
+
+type WdFacetValue = { id?: string | null; descriptor?: string | null; facetParameter?: string | null; values?: WdFacetValue[] | null };
+const WdFacet: z.ZodType<WdFacetValue> = z.lazy(() => z.object({ id: s, descriptor: s, facetParameter: s, values: z.array(WdFacet).nullish() }));
+const WdList = z.object({ total: z.number().nullish(), jobPostings: z.array(z.unknown()), facets: z.array(WdFacet).nullish() });
+const WdJob = z.object({ title: z.string(), externalPath: z.string(), locationsText: s, postedOn: s });
+const WdDetail = z.object({
+  jobPostingInfo: z.object({
+    jobDescription: s,
+    location: s,
+    additionalLocations: z.array(z.string()).nullish(),
+    externalUrl: s,
+    country: z.object({ descriptor: s }).nullish(),
+    jobRequisitionLocation: z.object({ country: z.object({ alpha2Code: s }).nullish() }).nullish(),
+  }),
+});
+
+/**
+ * The facet that filters by country, and each searched country's value id in it. Tenants
+ * name it differently ("locationCountry", "Location_Country", "locationHierarchy1"), and it
+ * may sit inside a location group, so it's recognised by its values: mostly country names.
+ */
+export function workdayCountryFacet(facets: WdFacetValue[], countries: readonly string[]): { param: string; ids: Map<string, string> } | null {
+  const groups: { param: string; values: WdFacetValue[] }[] = [];
+  const walk = (list: WdFacetValue[]) => {
+    for (const f of list) {
+      if (!f.facetParameter || !f.values?.length) continue;
+      if (f.values.some((v) => v.id)) groups.push({ param: f.facetParameter, values: f.values });
+      walk(f.values);
+    }
+  };
+  walk(facets);
+  let best: { param: string; ids: Map<string, string>; share: number } | null = null;
+  for (const g of groups) {
+    const named = g.values.filter((v) => v.id && v.descriptor);
+    const codes = named.map((v) => countryCode(v.descriptor));
+    const share = named.length ? codes.filter(Boolean).length / named.length : 0;
+    if (share < 0.6 || (best && share <= best.share)) continue;
+    const ids = new Map<string, string>();
+    named.forEach((v, i) => {
+      const code = codes[i];
+      if (code && countries.includes(code)) ids.set(code, v.id!);
+    });
+    best = { param: g.param, ids, share };
+  }
+  return best ? { param: best.param, ids: best.ids } : null;
+}
+
+/** "Posted Today" / "Posted Yesterday" / "Posted 3 Days Ago" / "Posted 30+ Days Ago" → that day (UTC), or null. */
+export function workdayPostedOn(text: string | null | undefined, now = Date.now()): string | null {
+  const t = (text ?? "").toLowerCase();
+  const days = /today/.test(t) ? 0 : /yesterday/.test(t) ? 1 : Number(/(\d+)\+?\s*days?/.exec(t)?.[1] ?? NaN);
+  if (!Number.isFinite(days)) return null;
+  return new Date(now - days * 86_400_000).toISOString().slice(0, 10);
+}
+
+/** "2 Locations" says nothing about where. */
+const vagueWhere = (text: string | null | undefined) => !text || /^\d+\s+locations?$/i.test(text.trim());
+
+export const workday: AtsAdapter = {
+  kind: "workday",
+  label: "Workday",
+  detailsPerRead: 120,
+  boardTimeoutMs: 35_000,
+  // Big boards read page by page: less often, so they don't crowd out the other boards.
+  activeIntervalMin: 180,
+  boardUrl: (t) => {
+    const { tenant, pod, site } = workdayParts(t);
+    return `https://${tenant}.${pod}.myworkdayjobs.com/${site}`;
+  },
+  async fetchBoard(token, opts): Promise<BoardResult> {
+    const { base } = workdayParts(token);
+    const countries = (opts.countries ?? ["CA"]).filter((c) => /^[A-Z]{2}$/.test(c));
+    const page = async (appliedFacets: Record<string, string[]>, offset: number) => {
+      const r = await getJson(`${base}/jobs`, { signal: opts.signal, body: { appliedFacets, limit: WD_PAGE, offset, searchText: "" } });
+      const p = r.notModified ? null : WdList.safeParse(r.body);
+      if (!p?.success) throw new BoardError("Unexpected Workday response.");
+      return p.data;
+    };
+    const first = await page({}, 0);
+    const facet = workdayCountryFacet(first.facets ?? [], countries);
+    // One series per searched country the board lists, so each job's country is known;
+    // with no country facet, the board is read as it comes.
+    const series: { country: string | null; facets: Record<string, string[]> }[] = facet
+      ? [...facet.ids].map(([country, id]) => ({ country, facets: { [facet.param]: [id] } }))
+      : [{ country: null, facets: {} }];
+    const jobs: AtsJob[] = [];
+    const seen = new Set<string>();
+    let capped = false;
+    for (const q of series) {
+      // Workday gives the total on a series' first page only (later pages say 0).
+      let total = 0;
+      for (let n = 0; n < WD_PAGES; n++) {
+        const data = q.country === null && n === 0 ? first : await page(q.facets, n * WD_PAGE);
+        if (n === 0) total = data.total ?? 0;
+        const parsed = parseJobs(WdJob, data.jobPostings, (j) => {
+          const where = vagueWhere(j.locationsText) ? "" : (j.locationsText ?? "");
+          const text = [where, q.country ? countryName(q.country) : null].filter(Boolean).join(", ");
+          return {
+            // The posting's path ("job/Toronto/Analyst_R123"): its link contains it, and its detail is read by it.
+            externalId: j.externalPath.replace(/^\/+/, "").slice(0, 200),
+            title: j.title,
+            company: null,
+            places: text ? [{ text, country: q.country }] : [],
+            remote: /\bremote\b/i.test(where),
+            postedAt: workdayPostedOn(j.postedOn),
+            precision: "day",
+            applyUrl: null,
+            description: null,
+            salary: null,
+            employmentType: null,
+            department: null,
+          };
+        });
+        for (const j of parsed) if (!seen.has(j.externalId)) jobs.push((seen.add(j.externalId), j));
+        if ((n + 1) * WD_PAGE >= total || !data.jobPostings.length) break;
+        if (n + 1 === WD_PAGES) capped = true;
+      }
+    }
+    // Read by country (and capped): what isn't listed here can't be judged closed from this read.
+    return { notModified: false, etag: null, jobs, partial: capped || facet !== null };
+  },
+  async fetchDetail(token, id, opts) {
+    const { base } = workdayParts(token);
+    const r = await getJson(`${base}/${id.split("/").map(encodeURIComponent).join("/")}`, opts);
+    if (r.notModified) return null;
+    const d = WdDetail.safeParse(r.body);
+    if (!d.success) return null;
+    const i = d.data.jobPostingInfo;
+    const country = i.jobRequisitionLocation?.country?.alpha2Code ?? countryCode(i.country?.descriptor) ?? null;
+    const places = [i.location, ...(i.additionalLocations ?? [])].filter((t): t is string => Boolean(t)).map((text, k) => ({ text, country: k === 0 ? country : null }));
+    return { description: boardHtmlToText(i.jobDescription) || null, applyUrl: i.externalUrl ?? null, places: places.length ? places : null };
   },
 };

@@ -245,7 +245,7 @@ export function draftFromGitHub(profile: GitHubProfile, criteria: NetworkingCrit
     const p = matchProgram(bio, programs, criteria.education.broadenEce)!;
     facts.push({ ...source, field: "program", value: p.kind === "ece" ? "Electrical and Computer Engineering" : p.program, extractedText: bio.slice(0, 500) });
   }
-  const role = bio ? matchRole(bio, roleAliases(criteria.roles.length ? criteria.roles : ["software engineer"])) : null;
+  const role = bio ? matchRole(bio, roleAliases(criteria.roles)) : null;
   if (role) facts.push({ ...source, field: "role", value: role, extractedText: bio.slice(0, 500) });
   // A school in the company field ("@UofT") is not an employer.
   const companyIsSchool = companyField && inst ? matchInstitution(companyField, inst) !== null : false;
@@ -338,8 +338,8 @@ export function draftFromOrcid(profile: OrcidProfile, criteria: NetworkingCriter
     // Where their current employer is: good, not certain, evidence of where they are.
     if (place) facts.push({ ...source, field: "location", value: place.slice(0, 200), extractedText: text, confidence: "medium" });
   } else if (bio) {
-    const role = sentencesWith(bio, (x) => matchRole(x, roleAliases(criteria.roles.length ? criteria.roles : ["software engineer"])) !== null)[0];
-    if (role) facts.push({ ...source, field: "role", value: matchRole(role, roleAliases(criteria.roles.length ? criteria.roles : ["software engineer"]))!, extractedText: role });
+    const role = sentencesWith(bio, (x) => matchRole(x, roleAliases(criteria.roles)) !== null)[0];
+    if (role) facts.push({ ...source, field: "role", value: matchRole(role, roleAliases(criteria.roles))!, extractedText: role });
   }
 
   // The country they list on their own record.

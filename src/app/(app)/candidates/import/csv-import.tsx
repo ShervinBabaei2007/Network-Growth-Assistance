@@ -7,7 +7,6 @@ import { NativeSelect } from "@/components/native-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DISCIPLINE_LABELS, SHORT_UNIVERSITY } from "@/lib/domain";
 import { CANDIDATE_FIELDS, type CandidateField } from "@/lib/imports/candidates-csv";
 import { importCandidatesCsv, type CsvPreview } from "../actions";
 
@@ -59,7 +58,7 @@ export function CsvImport() {
                 <li key={s.profile_key} className="flex flex-wrap gap-x-2">
                   <span className="font-medium">{s.full_name}</span>
                   <span className="text-muted-foreground">
-                    {s.university ? SHORT_UNIVERSITY[s.university] : "?"} · {s.discipline ? DISCIPLINE_LABELS[s.discipline] : "?"} —{" "}
+                    {s.schoolName ?? "?"} · {s.disciplineName ?? "?"} —{" "}
                     {s.classificationNote}
                   </span>
                 </li>

@@ -1,9 +1,10 @@
-import { DISCIPLINE_LABELS } from "@/lib/domain";
+import { disciplineName, targetUniversities } from "@/lib/domain";
 import type { Progress } from "./index";
 
 export type NextAction = {
   kind:
     | "paused"
+    | "set-up"
     | "set-baseline"
     | "classify-accepted"
     | "find-candidates"
@@ -25,6 +26,14 @@ export function nextAction(progress: Progress, paused: boolean): NextAction {
       title: "Review the LinkedIn warning before doing anything else",
       detail: "Outreach is paused. Resume it in Settings once your account is in good standing.",
       href: "/settings",
+    };
+  }
+  if (!progress.catalog.disciplines.length || !progress.catalog.universities.length || overall.target === null) {
+    return {
+      kind: "set-up",
+      title: "Set up your networking plan",
+      detail: "Add the schools and disciplines you want to connect with, and your connection goal. Nothing is assumed until you do.",
+      href: "/settings#plan",
     };
   }
   if (overall.baseline === null) {
@@ -52,7 +61,9 @@ export function nextAction(progress: Progress, paused: boolean): NextAction {
     };
   }
 
-  const name = DISCIPLINE_LABELS[focus.discipline];
+  const name = disciplineName(progress.catalog, focus.discipline);
+  const schools = targetUniversities(progress.catalog).map((u) => u.name);
+  const where = schools.length ? ` at ${schools.length > 2 ? `${schools.slice(0, 2).join(", ")} and others` : schools.join(" and ")}` : "";
   if (overall.readyForOutreach > 0) {
     return {
       kind: "send-invitations",
@@ -71,7 +82,7 @@ export function nextAction(progress: Progress, paused: boolean): NextAction {
   }
   return {
     kind: "find-candidates",
-    title: `Find ${name} candidates at U of T and UBC`,
+    title: `Find ${name} candidates${where}`,
     detail: `${focus.remaining} accepted connections still needed in ${name}. Add profiles you find through LinkedIn search.`,
     href: "/candidates",
   };

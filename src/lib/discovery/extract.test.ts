@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { testCriteria } from "@/test/discovery";
 import { htmlToText } from "./fetch-page";
 import { draftFromGitHub, identityKeys, verifyExtraction, type Extraction } from "./extract";
 import { FIXTURE_EXTRACTIONS, FIXTURE_PAGES } from "./fixtures";
-import { parseRequestDeterministic } from "./parse-request";
 
-const criteria = parseRequestDeterministic("Find 50 UofT Computer Engineering software engineers");
+const criteria = testCriteria("Find 50 UofT Computer Engineering software engineers");
 const pageFor = (url: string) => ({ url, ...htmlToText(FIXTURE_PAGES[url], url) });
 
 describe("verifyExtraction", () => {

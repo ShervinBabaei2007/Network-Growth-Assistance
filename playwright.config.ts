@@ -33,6 +33,8 @@ export default defineConfig({
       SMTP_FROM: "Network Growth <alerts@example.test>",
       APP_URL: "http://localhost:3000",
       EMAIL_TOKEN_SECRET: "e2e-only-not-a-real-secret-0123456789abcdef",
+      // AI is unlimited by default; the jobs test checks what happens when an operator sets a quota.
+      AI_DAILY_QUOTA: "3",
     },
     timeout: 120_000,
   },

@@ -30,7 +30,7 @@ export type Rankable = {
 
 export type RankContext = {
   searched: string[];
-  /** Provinces in the user's order of preference (when searching Canada). */
+  /** The user's provinces when searching Canada (empty: all of Canada). */
   provinces: string[];
   /** The country searched ("*" for remote anywhere). Default Canada. */
   country?: string;
@@ -45,13 +45,12 @@ export function recencyScore(postedAt: string, dateSource: string, now = Date.no
 }
 
 /**
- * In Canada, the user's provinces in their order of preference. Elsewhere, a job in the
- * searched country first; remote jobs open to it next.
+ * In Canada, a job in one of the user's provinces (or anywhere in Canada when they chose
+ * none), all alike. Elsewhere, a job in the searched country first. Remote jobs open to it next.
  */
 export function locationScore(j: Pick<Rankable, "province" | "remote" | "country">, provinces: string[], country = "CA"): number {
   if (country === "CA") {
-    const i = j.province ? provinces.indexOf(j.province) : -1;
-    if (i >= 0) return Math.max(0.4, 1 - i * 0.15);
+    if (j.province && (provinces.length === 0 || provinces.includes(j.province))) return 1;
   } else if (j.country === country && !j.remote) return 1;
   if (j.remote) return 0.8;
   return 0.3;

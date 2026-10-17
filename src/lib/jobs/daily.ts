@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { classifyCandidate } from "@/lib/classify";
+import { loadCatalog } from "@/lib/data/catalog";
 import { localDate, startOfLocalDay } from "@/lib/dates";
 import type { Database } from "@/lib/supabase/database.types";
 import { buildTodaysQueue } from "./daily-queue";
@@ -58,7 +59,7 @@ async function claim(db: Client, userId: string, runDate: string, force: boolean
   return taken.length > 0;
 }
 
-async function reclassifyNew(db: Client, userId: string, countUbcoAsUbc: boolean, autoApprove: boolean): Promise<number> {
+async function reclassifyNew(db: Client, userId: string, autoApprove: boolean): Promise<number> {
   const { data, error } = await db
     .from("candidates")
     .select("id, raw_school_text, raw_program_text")
@@ -66,8 +67,11 @@ async function reclassifyNew(db: Client, userId: string, countUbcoAsUbc: boolean
     .eq("status", "new")
     .limit(2000);
   if (error) throw error;
+  if (!data.length) return 0;
+  // Against the user's own schools and disciplines.
+  const catalog = await loadCatalog(db, userId);
   for (const c of data) {
-    const r = classifyCandidate(c.raw_school_text, c.raw_program_text, { countUbcoAsUbc });
+    const r = classifyCandidate(c.raw_school_text, c.raw_program_text, catalog);
     const recognised = r.university.confidence === "confirmed" && r.discipline.confidence === "confirmed";
     const { error: upError } = await db
       .from("candidates")
@@ -125,13 +129,13 @@ async function countStalePending(db: Client, userId: string, days: number): Prom
 async function runSteps(db: Client, userId: string, now: Date): Promise<DailyStats> {
   const { data: s, error } = await db
     .from("settings")
-    .select("timezone, count_ubco_as_ubc, stale_pending_days, auto_approve")
+    .select("timezone, stale_pending_days, auto_approve")
     .eq("user_id", userId)
     .single();
   if (error) throw error;
 
   const today = localDate(now, s.timezone);
-  const reclassified = await reclassifyNew(db, userId, s.count_ubco_as_ubc, s.auto_approve);
+  const reclassified = await reclassifyNew(db, userId, s.auto_approve);
   const markedPending = await markOlderSentAsPending(db, userId, startOfLocalDay(today, s.timezone));
   // Stops preparing candidates for completed categories and respects pause/limits.
   const { plan, queued } = await buildTodaysQueue(db, userId, now);

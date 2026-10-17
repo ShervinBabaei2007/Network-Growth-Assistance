@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { classifyCandidate } from "@/lib/classify";
 import { localDate } from "@/lib/dates";
-import { DEGREE_LABELS, DISCIPLINE_LABELS, UNIVERSITY_LABELS } from "@/lib/domain";
+import { loadCatalog } from "@/lib/data/catalog";
+import { DEGREE_LABELS } from "@/lib/domain";
 import { createClient } from "@/lib/supabase/server";
 import {
   confirmClassification,
@@ -45,23 +46,22 @@ async function CandidateDetail({ params }: Pick<PageProps<"/candidates/[id]">, "
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
 
   const supabase = await createClient();
-  const [{ data: c }, { data: settings }] = await Promise.all([
+  const [{ data: c }, { data: settings }, catalog] = await Promise.all([
     supabase
       .from("candidates")
       .select("*, invitations(sent_at, note_text, outcome, resolved_at, source)")
       .eq("id", id)
       .maybeSingle(),
-    supabase.from("settings").select("timezone, count_ubco_as_ubc").single(),
+    supabase.from("settings").select("timezone").single(),
+    loadCatalog(supabase),
   ]);
   if (!c) notFound();
 
-  const tz = settings?.timezone ?? "America/Vancouver";
+  const tz = settings?.timezone ?? "UTC";
   const today = localDate(new Date(), tz);
   const invitation = c.invitations[0] ?? null;
   const confirmed = c.university_confidence === "confirmed" && c.discipline_confidence === "confirmed";
-  const suggestion = classifyCandidate(c.raw_school_text, c.raw_program_text, {
-    countUbcoAsUbc: settings?.count_ubco_as_ubc ?? true,
-  });
+  const suggestion = classifyCandidate(c.raw_school_text, c.raw_program_text, catalog);
   const hidden = <input type="hidden" name="id" value={c.id} />;
 
   return (
@@ -72,7 +72,7 @@ async function CandidateDetail({ params }: Pick<PageProps<"/candidates/[id]">, "
           <p className="text-sm text-muted-foreground">{c.role}</p>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <StatusBadge status={c.status} />
-            <CategoryLabel university={c.university} discipline={c.discipline} confirmed={confirmed} />
+            <CategoryLabel university={c.university} discipline={c.discipline} confirmed={confirmed} catalog={catalog} />
           </div>
         </div>
         <a
@@ -167,26 +167,26 @@ async function CandidateDetail({ params }: Pick<PageProps<"/candidates/[id]">, "
           ) : null}
         </Section>
 
-        <Section title="School and program" description="Only confirmed values count toward targets.">
+        <Section title="School and discipline" description="Only confirmed values count toward targets. Choose from your own lists (Settings → Your networking plan).">
           <ActionForm action={confirmClassification} submitLabel="Confirm">
             {hidden}
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field id="university" label="University">
+              <Field id="university" label="School">
                 <NativeSelect id="university" name="university" defaultValue={c.university ?? ""}>
-                  <option value="">Unknown / not a target school</option>
-                  {Object.entries(UNIVERSITY_LABELS).map(([v, l]) => (
-                    <option key={v} value={v}>
-                      {l}
+                  <option value="">Unknown / not one of my schools</option>
+                  {catalog.universities.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
                     </option>
                   ))}
                 </NativeSelect>
               </Field>
               <Field id="discipline" label="Discipline">
                 <NativeSelect id="discipline" name="discipline" defaultValue={c.discipline ?? ""}>
-                  <option value="">Unknown / not a target program</option>
-                  {Object.entries(DISCIPLINE_LABELS).map(([v, l]) => (
-                    <option key={v} value={v}>
-                      {l}
+                  <option value="">Unknown / not one of my disciplines</option>
+                  {catalog.disciplines.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
                     </option>
                   ))}
                 </NativeSelect>

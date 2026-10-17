@@ -1,11 +1,6 @@
-import type { ProvinceCode } from "./types";
+import { PROVINCE_CODES, type ProvinceCode } from "./types";
 
-/** Provinces in priority order: British Columbia first, then Ontario. */
-export const PROVINCE_PRIORITY: ProvinceCode[] = ["BC", "ON", "AB", "QC", "MB", "SK", "NS", "NB", "NL", "PE", "YT", "NT", "NU"];
-
-export const DEFAULT_PROVINCES: ProvinceCode[] = ["BC", "ON"];
-
-/** Provinces sorted by priority, so BC and Ontario always come first. */
-export function byPriority(provinces: readonly string[]): ProvinceCode[] {
-  return PROVINCE_PRIORITY.filter((p) => provinces.includes(p));
+/** The provinces a user chose, in the usual order, ignoring anything that isn't a province. No province is preferred over another. */
+export function validProvinces(provinces: readonly string[]): ProvinceCode[] {
+  return PROVINCE_CODES.filter((p) => provinces.includes(p));
 }

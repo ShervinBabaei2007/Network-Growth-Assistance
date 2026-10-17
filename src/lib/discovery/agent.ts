@@ -1,4 +1,5 @@
 import "server-only";
+import { loadCatalog } from "@/lib/data/catalog";
 import type { Json } from "@/lib/supabase/database.types";
 import { clean } from "@/lib/text/match";
 import { normalizeName } from "@/lib/text/names";
@@ -131,7 +132,9 @@ export async function advanceSearch(db: Db, userId: string, searchId: string, se
   try {
     if (stage === "understanding" || !criteria) {
       if (!criteria) {
-        const outcome = await parseRequest(services.llm, row.original_query);
+        // The user's own schools and disciplines help read the request (their spellings count).
+        const catalog = await loadCatalog(db, userId).catch(() => undefined);
+        const outcome = await parseRequest(services.llm, row.original_query, catalog);
         criteria = outcome.criteria;
         state.usedAi = outcome.usedAi;
         state.parseNote = outcome.note;

@@ -54,7 +54,7 @@ Or create an empty private repository on github.com and push to it.
    | `GITHUB_TOKEN` | Optional. A token with no scopes; raises GitHub's rate limit for Discover. |
    | `EMBED_SECRET` | Recommended. Any random string of 16+ characters; turns on Jobs' matching by meaning (step 3b). |
    | `APP_ENCRYPTION_KEY` | Optional. 32+ random characters (`openssl rand -hex 32`); lets users store their own AI key (Gemini, or Anthropic). Never change it once keys are stored. |
-   | `AI_DAILY_QUOTA` | Optional. AI uses (tailoring, notes, AI resume reading) per user per day on your server key (default 3; `0` = users' own keys only). Keep it within your Gemini free-tier limits. |
+   | `AI_DAILY_QUOTA` | Optional. AI uses (tailoring, notes, AI resume reading) per user per day on your server key (unset = no limit; `0` = users' own keys only). Without a limit, every user's AI runs on your key: watch your Gemini usage and billing. |
    | `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` | Optional, not required. With both, Jobs also searches Adzuna (whose free allowance is small). |
 
    Never set `JOBS_FIXTURES` or `DISCOVERY_FIXTURES` in production. They are ignored in production builds anyway, so fictional data can't appear.
@@ -73,12 +73,12 @@ Vercel reads `vercel.json` and registers the daily job (`/api/cron/daily`, sched
 
    To find more employers, add names to `scripts/employer-candidates.txt` and run `npm run employers:discover`, then load again. Users can also add employers under **Jobs → Employers**.
 
-2. **Schedule the crawler every 10 minutes** with Supabase's pg_cron and pg_net (both on the free plan). Vercel Hobby crons run only once a day. In the Supabase SQL editor, enable both extensions under **Database → Extensions**, then run:
+2. **Schedule the crawler every 5 minutes** with Supabase's pg_cron and pg_net (both on the free plan). Vercel Hobby crons run only once a day. In the Supabase SQL editor, enable both extensions under **Database → Extensions**, then run:
 
    ```sql
    select vault.create_secret('https://<your-app>.vercel.app', 'app_url');
    select vault.create_secret('<your CRON_SECRET>', 'cron_secret');
-   select cron.schedule('jobs-crawl', '*/10 * * * *', $$
+   select cron.schedule('jobs-crawl', '*/5 * * * *', $$
      select net.http_post(
        url := (select decrypted_secret from vault.decrypted_secrets where name = 'app_url') || '/api/cron/crawl',
        headers := jsonb_build_object('Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')),
@@ -87,7 +87,7 @@ Vercel reads `vercel.json` and registers the daily job (`/api/cron/daily`, sched
    $$);
    ```
 
-   Each tick reads up to 150 due boards in under a minute. To stop it: `select cron.unschedule('jobs-crawl');`.
+   Each tick reads up to 150 due boards in under a minute. Workday career sites (most large employers) are read page by page, so they come round every 3 hours instead of 30 minutes. With many employers, Vercel Pro lets the crawl route run longer: raise `maxDuration` in `src/app/api/cron/crawl/route.ts` to 300. To stop it: `select cron.unschedule('jobs-crawl');`.
 
 3. **Deploy the embedding function** (Supabase's built-in `gte-small` model; no key, billed only as Edge Function CPU time):
 
@@ -102,7 +102,9 @@ Vercel reads `vercel.json` and registers the daily job (`/api/cron/daily`, sched
 
 5. **Jobicy and Remotive need nothing.** Searches ask Jobicy's public API (no key; each answer reused for an hour, as Jobicy asks). The crawl cron reads Remotive's public feed at most every 6 hours (Remotive asks for at most 4 reads a day). New listings from both start "not yet verified"; the crawl cron checks them with whatever time each tick has left (Jobicy jobs first through Jobicy's free status endpoint), and a listing becomes Apply-able only once its link checks out. Both sites ask to be credited and linked: the app shows the source on every job and links only to their listing pages.
 
-6. **Optional: Adzuna search.** Set `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` in Vercel. Searches then also ask Adzuna (cached for 30 minutes per search). Not needed for a useful search.
+6. **Recommended: Careerjet search.** Create a free publisher account at https://www.careerjet.com/partners/ and set `CAREERJET_API_KEY` in Vercel. Searches on the Jobs page then also ask Careerjet (90+ countries; cached for 30 minutes per search). Careerjet requires the searcher's IP address and browser with each request, so the page passes them along; alerts never call it.
+
+   **Optional: Adzuna search.** Set `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` in Vercel. Searches then also ask Adzuna (cached for 30 minutes per search). Its free plan is small (25 calls while pending, then 250 a day).
 
    **Arbeitnow** (Europe and the UK) needs nothing: the crawl cron reads its newest feed pages at most every 6 hours. **Optional: USAJOBS** (U.S. federal jobs): request a free key at https://developer.usajobs.gov/apirequest/ and set `USAJOBS_API_KEY` and `USAJOBS_EMAIL` (the email you requested it with).
 
@@ -185,7 +187,7 @@ These are from the providers' pricing pages at the time of writing. Check the cu
 - **Gemini (recommended, free tier)**
   - The Gemini Developer API's free tier covers Flash models at no cost, with per-minute and per-day request limits (see your limits in Google AI Studio). When they're reached, AI calls fail cleanly: Tailor Resume gives Improvement Notes, and the rest of the app works the same.
   - **Privacy:** on the free tier, Google may use the prompts and answers (resume text, postings) to improve its products; on the paid tier it says it doesn't. Tell your users, or use a paid key.
-  - The app caps note rewrites at 25 per user per day, and Jobs AI at `AI_DAILY_QUOTA` per user per day on your key.
+  - AI on your key isn't limited per user unless you set `AI_DAILY_QUOTA`.
 - **Anthropic (optional, not required)**
   - Pay-as-you-go. Used only if you set `ANTHROPIC_API_KEY` without `GEMINI_API_KEY`, or a user adds their own Anthropic key.
 
@@ -202,7 +204,7 @@ These are from the providers' pricing pages at the time of writing. Check the cu
   - Coverage grows with the directory, not with keys: about 100 employers gave roughly 25–40 new Canadian jobs on a weekday.
   - Matching by meaning embeds requirements of open jobs from the last 90 days (the feed's longest range), newest first, at about 55 ms of Edge Function CPU each, in batches of 16. Resume lines are embedded once per upload.
   - Fit checks and free tailoring run in the app: one database call per page of jobs, no AI.
-  - Optional AI rewording uses your Gemini model: one call per rewrite, plus up to one retry. It runs on the user's own key, or on yours within `AI_DAILY_QUOTA`.
+  - Optional AI rewording uses your Gemini model: one call per rewrite, plus up to one retry. It runs on the user's own key, or on yours (limited per user only if you set `AI_DAILY_QUOTA`).
   - Jobs no longer on their board are closed after 3 days. Closed jobs are deleted after 30 days unless someone saved or applied to them. The resume PDF is never stored, only its text.
 
 Running costs are $0: Gemini's free tier, free job APIs and free hosting tiers. Only optional extras (a paid Gemini tier, Anthropic, Brave) cost money.

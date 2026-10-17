@@ -118,7 +118,8 @@ export type RequirementResult = z.infer<typeof RequirementResult>;
 
 // ------------------------------------------------------------------ places and levels
 
-export const PROVINCE_CODES = ["BC", "ON", "AB", "QC", "MB", "SK", "NS", "NB", "NL", "PE", "YT", "NT", "NU"] as const;
+/** Provinces and territories, alphabetical by name (none is preferred over another). */
+export const PROVINCE_CODES = ["AB", "BC", "MB", "NB", "NL", "NT", "NS", "NU", "ON", "PE", "QC", "SK", "YT"] as const;
 export type ProvinceCode = (typeof PROVINCE_CODES)[number];
 
 export const PROVINCE_NAMES: Record<ProvinceCode, string> = {

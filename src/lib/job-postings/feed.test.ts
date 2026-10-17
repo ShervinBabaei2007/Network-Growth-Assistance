@@ -1,20 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { chooseRange, ENOUGH_RESULTS, expansionNotice, parseRange, RANGES, titleQuery, titleSimilarity, type Range } from "./feed";
+import { chooseRange, ENOUGH_RESULTS, expansionNotice, inRange, parseRange, RANGES, titleQuery, titleSimilarity, type Range } from "./feed";
 import { rankScore } from "./rank";
 
 const byKey = (k: string) => RANGES.find((r) => r.key === k)!;
 const counts = (c: Record<string, number>) => (r: Range) => c[r.key] ?? 0;
 
-describe("chooseRange: freshness first, widening only when needed", () => {
-  it("keeps 24 hours when there are enough verified jobs", () => {
-    expect(chooseRange(counts({ "1d": ENOUGH_RESULTS, "3d": 30, "7d": 60 }), null)).toEqual({ range: byKey("1d"), expandedFrom: null, firstCount: ENOUGH_RESULTS });
+describe("chooseRange: freshness first, widening until there are plenty of jobs", () => {
+  it("keeps the last 7 days when there are enough verified jobs", () => {
+    expect(chooseRange(counts({ "7d": ENOUGH_RESULTS, "30d": 300, any: 900 }), null)).toEqual({ range: byKey("7d"), expandedFrom: null, firstCount: ENOUGH_RESULTS });
   });
 
-  it("widens to 3 days, then 7, and says so", () => {
-    expect(chooseRange(counts({ "1d": 3, "3d": 12, "7d": 40 }), null)).toMatchObject({ range: byKey("3d"), expandedFrom: byKey("1d"), firstCount: 3 });
-    const r = chooseRange(counts({ "1d": 4, "3d": 6, "7d": 9 }), null);
-    expect(r).toMatchObject({ range: byKey("7d"), expandedFrom: byKey("1d") });
-    expect(expansionNotice(r.firstCount, r.expandedFrom!, r.range)).toBe("Only 4 verified jobs were found in the last 24 hours, so the search was expanded to the last 7 days.");
+  it("widens to 30 days, then to every open posting, and says so", () => {
+    expect(chooseRange(counts({ "7d": 30, "30d": ENOUGH_RESULTS + 1, any: 400 }), null)).toMatchObject({ range: byKey("30d"), expandedFrom: byKey("7d"), firstCount: 30 });
+    const r = chooseRange(counts({ "7d": 4, "30d": 6, any: 9 }), null);
+    expect(r).toMatchObject({ range: byKey("any"), expandedFrom: byKey("7d") });
+    expect(expansionNotice(r.firstCount, r.expandedFrom!, r.range)).toBe("Only 4 verified jobs were found in the last 7 days, so the search was expanded to any date.");
+  });
+
+  it("counts jobs with an unknown posting date only for 'any time'", () => {
+    const now = Date.parse("2026-10-12T12:00:00Z");
+    const old = { posted_at: "2026-01-01T00:00:00Z", date_source: "source" };
+    const unknown = { posted_at: "2026-10-12T11:00:00Z", date_source: "unknown" };
+    expect(inRange(old, byKey("30d"), now)).toBe(false);
+    expect(inRange(old, byKey("any"), now)).toBe(true);
+    expect(inRange(unknown, byKey("1d"), now)).toBe(false);
+    expect(inRange(unknown, byKey("any"), now)).toBe(true);
   });
 
   it("never changes a range the user chose", () => {
@@ -71,7 +81,9 @@ describe("rankScore", () => {
     expect(rankScore({ ...base, title: "Software Developer" }, { score: 80, tier: "strong" }, null, ctx)).toBeLessThan(a);
     expect(rankScore({ ...base, posted_at: "2026-10-01T08:00:00Z" }, { score: 80, tier: "strong" }, null, ctx)).toBeLessThan(a);
     expect(rankScore({ ...base, verification_status: "pending_validation" }, { score: 80, tier: "strong" }, null, ctx)).toBeLessThan(a);
-    expect(rankScore({ ...base, province: "ON" }, { score: 80, tier: "strong" }, null, ctx)).toBeLessThan(a);
+    // A job outside the chosen provinces ranks lower; the chosen ones rank alike.
+    expect(rankScore({ ...base, province: "QC" }, { score: 80, tier: "strong" }, null, ctx)).toBeLessThan(a);
+    expect(rankScore({ ...base, province: "ON" }, { score: 80, tier: "strong" }, null, { ...ctx, provinces: ["BC", "ON"] })).toBe(rankScore(base, { score: 80, tier: "strong" }, null, { ...ctx, provinces: ["BC", "ON"] }));
   });
 
   it("gives a job the user doesn't qualify for no fit credit", () => {

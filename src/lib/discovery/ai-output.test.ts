@@ -39,7 +39,8 @@ describe("intro messages", () => {
   it("uses only verified facts and stays short", () => {
     const m = suggestIntro(facts);
     expect(m.length).toBeLessThanOrEqual(300);
-    expect(m).toContain("UofT Computer Engineering");
+    // The school as the facts give it: no built-in short forms.
+    expect(m).toContain("University of Toronto Computer Engineering");
     expect(m).toContain("AMD");
     expect(checkGrounded(m, [facts.fullName, "UofT", facts.institution, facts.program, facts.role, facts.company, facts.me.school, facts.me.program, facts.me.interests], 300).ok).toBe(true);
   });
@@ -54,8 +55,13 @@ describe("intro messages", () => {
     expect(r.ok).toBe(false);
   });
 
+  it("discards a short form of the school that isn't in the facts", async () => {
+    const llm: LLMProvider = { enabled: true, structured: async () => ({ ok: true, data: { message: "Hi Alex, your path from UofT to AMD stood out. I'd love to connect." } as never }) };
+    expect(await rewriteIntro(llm, facts, "draft")).toMatchObject({ ok: false });
+  });
+
   it("keeps a grounded AI rewrite", async () => {
-    const llm: LLMProvider = { enabled: true, structured: async () => ({ ok: true, data: { message: "Hi Alex, I study Computer Science at UBC and your path from UofT Computer Engineering to AMD stood out. I'd love to connect." } as never }) };
+    const llm: LLMProvider = { enabled: true, structured: async () => ({ ok: true, data: { message: "Hi Alex, I study Computer Science at UBC and your path from University of Toronto Computer Engineering to AMD stood out. I'd love to connect." } as never }) };
     expect(await rewriteIntro(llm, facts, "draft")).toMatchObject({ ok: true });
   });
 });

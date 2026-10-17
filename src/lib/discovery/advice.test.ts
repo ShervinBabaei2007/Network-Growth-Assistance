@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { testCriteria } from "@/test/discovery";
 import { emptyAdvice } from "./advice";
-import { parseRequestDeterministic } from "./parse-request";
 
-const ce = parseRequestDeterministic("Find 10 UofT Computer Engineering software engineers");
+const ce = testCriteria("Find 10 UofT Computer Engineering software engineers");
 
 describe("emptyAdvice", () => {
   it("leads with the most common real reason", () => {
@@ -10,7 +10,7 @@ describe("emptyAdvice", () => {
     people.push({ tierReason: "Weaker evidence for program, role", program: "Electrical and Computer Engineering" });
     const tips = emptyAdvice(ce, people, 8);
     expect(tips[0]).toMatch(/8 people's public pages don't state a current job title/);
-    expect(tips[1]).toMatch(/Try broadening Computer Engineering → ECE/);
+    expect(tips[1]).toMatch(/add other names people use for Computer Engineering/);
     expect(tips.at(-1)).toBe("There are 8 possible matches with weaker evidence below.");
   });
 

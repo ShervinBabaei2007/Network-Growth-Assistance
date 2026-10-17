@@ -32,7 +32,7 @@ export const NAV_ITEMS = [
   { href: "/applications", label: "Applications", icon: ClipboardList },
   { href: "/connections", label: "Connections", icon: Contact },
   { href: "/disciplines", label: "Disciplines", icon: Shapes },
-  { href: "/universities", label: "Universities", icon: GraduationCap },
+  { href: "/universities", label: "Schools", icon: GraduationCap },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;

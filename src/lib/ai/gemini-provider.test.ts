@@ -125,6 +125,9 @@ describe("choosing the model service", () => {
 
   it("recognises a user's own key by its shape", () => {
     expect(looksLikeGeminiKey(KEY)).toBe(true);
+    // Google's newer key format.
+    expect(looksLikeGeminiKey("AQ.Ab8RN6TEST-not-a-real-key_0000000000000000000000")).toBe(true);
+    expect(looksLikeGeminiKey("AQ.short")).toBe(false);
     expect(keyVendor(KEY)).toBe("gemini");
     expect(keyVendor("sk-ant-api03-abcdefghijklmnopqrstuvwxyz")).toBe("anthropic");
     expect(keyVendor("hello")).toBeNull();

@@ -20,7 +20,7 @@ import { dedupeKey } from "@/lib/job-postings/normalize";
 import { groundPastedFields, type PastedPosting } from "@/lib/job-postings/paste-parse";
 import { loadActiveResume, saveRequirements, scoreJobs } from "@/lib/job-postings/service";
 import { jobServices } from "@/lib/job-postings/services";
-import { PROVINCE_CODES, SENIORITY } from "@/lib/job-postings/types";
+import { PROVINCE_CODES } from "@/lib/job-postings/types";
 import { checkUrlLive } from "@/lib/job-postings/verify-job";
 import { checkUrlShape } from "@/lib/job-postings/verify-url";
 import { actionContext, logActivity } from "@/lib/server/action-context";
@@ -46,17 +46,14 @@ const Preferences = z
     titles: z.array(z.string().max(80, "Keep each title under 80 characters.")).max(6, "Use at most 6 titles."),
     country: z.string().refine((c) => c === ANYWHERE || isCountryCode(c), "Pick a country."),
     provinces: z.array(z.enum(PROVINCE_CODES)),
-    seniority: z.enum(SENIORITY),
     exclude: z.array(z.string().max(40)).max(20),
-  })
-  .refine((p) => p.country !== "CA" || p.provinces.length > 0, { message: "Pick at least one province.", path: ["provinces"] });
+  });
 
 export async function saveJobPreferences(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = Preferences.safeParse({
     titles: list(formData.get("titles"), 7),
     country: (formData.get("country")?.toString() || "CA").toUpperCase(),
     provinces: formData.getAll("provinces").map(String),
-    seniority: formData.get("seniority"),
     exclude: list(formData.get("exclude"), 21),
   });
   if (!parsed.success) return failed(firstIssue(parsed.error));
@@ -68,9 +65,8 @@ export async function saveJobPreferences(_: FormState, formData: FormData): Prom
     .update({
       job_titles: parsed.data.titles,
       job_country: parsed.data.country,
-      // Provinces only narrow a Canadian search; other countries keep the last Canadian choice.
-      ...(parsed.data.provinces.length ? { job_provinces: parsed.data.provinces } : {}),
-      job_seniority: parsed.data.seniority,
+      // Provinces only narrow a Canadian search (none: all of Canada); other countries keep the last Canadian choice.
+      ...(parsed.data.country === "CA" ? { job_provinces: parsed.data.provinces } : {}),
       job_exclude_keywords: parsed.data.exclude,
     })
     .eq("user_id", ctx.userId);
@@ -235,7 +231,7 @@ export async function addEmployer(_: FormState, formData: FormData): Promise<For
   if ((count ?? 0) >= MAX_EMPLOYERS_PER_DAY) return failed(`You can add ${MAX_EMPLOYERS_PER_DAY} employers a day.`);
 
   const board = await detectFromCareersUrl(url, new HttpPageFetcher());
-  if (!board) return failed("Couldn't find a supported job board there. Supported: Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee.");
+  if (!board) return failed("Couldn't find a supported job board there. Supported: Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee and Workday.");
   const { data: existing } = await admin.from("employers").select("id, name").eq("ats", board.ats).eq("board_token", board.token).maybeSingle();
   if (existing) return saved(`${existing.name} is already in the directory.`);
 
@@ -275,7 +271,7 @@ export async function crawlNow(): Promise<ActionResult> {
 export async function saveOwnAiKey(_: FormState, formData: FormData): Promise<FormState> {
   const key = formData.get("key")?.toString().trim() ?? "";
   if (!canStoreKeys()) return failed("This server can't store keys (APP_ENCRYPTION_KEY isn't set).");
-  if (!(await validateOwnKey(key))) return failed("That key didn't work. Use a Gemini API key from Google AI Studio (starts with AIza) or an Anthropic key, and try again.");
+  if (!(await validateOwnKey(key))) return failed("That key didn't work. Use a Gemini API key from Google AI Studio (starts with AIza or AQ.) or an Anthropic key, and try again.");
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("user_ai").upsert({ user_id: ctx.userId, own_key_ciphertext: encryptSecret(key), own_key_hint: `…${key.slice(-4)}` }, { onConflict: "user_id" });
   if (error) return failed("Couldn't save. Try again.");

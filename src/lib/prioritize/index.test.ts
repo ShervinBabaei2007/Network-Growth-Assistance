@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { TEST_CATALOG } from "@/test/catalog";
 import type { Discipline, University } from "@/lib/domain";
 import { computeProgress, type ProgressInput } from "@/lib/progress";
 import { acceptanceRate, planQueue, type EligibleCandidate, type PlanInput } from "./index";
@@ -18,8 +19,8 @@ function disciplines(opts: { targets?: Partial<Record<string, number>>; invitati
       baselineConnections: 1000,
       projectStartDate: "2026-10-01",
       timezone: "America/Toronto",
-      disciplinePriority: DISCIPLINES,
     },
+    catalog: TEST_CATALOG,
     targets: DISCIPLINES.flatMap((d) => [t(d, null, 250), t(d, "uoft", 125), t(d, "ubc", 125)]),
     latestSnapshot: null,
     invitations: opts.invitations ?? [],
@@ -39,6 +40,7 @@ function people(discipline: Discipline, university: University, n: number): Elig
 function plan(overrides: Partial<PlanInput> = {}) {
   return planQueue({
     disciplines: disciplines(),
+    catalog: TEST_CATALOG,
     eligible: [],
     skippedToday: [],
     outcomes: { accepted: 0, declined: 0, withdrawn: 0 },
@@ -88,7 +90,7 @@ describe("planQueue", () => {
     const alternates = p.items.filter((i) => i.isAlternate);
     expect(primary).toHaveLength(2);
     expect(alternates).toHaveLength(6);
-    expect(alternates[0].reason).toContain("U of T and UBC pools are short");
+    expect(alternates[0].reason).toContain("University of Toronto and UBC pools are short");
     // Primary candidates are always ranked ahead of alternates.
     expect(p.items.slice(0, 2).every((i) => !i.isAlternate)).toBe(true);
   });

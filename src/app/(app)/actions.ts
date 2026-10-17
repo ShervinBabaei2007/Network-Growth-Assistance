@@ -4,7 +4,9 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isValidTimeZone, localDate, startOfLocalDay } from "@/lib/dates";
-import { DISCIPLINE_LABELS, type Discipline, type University } from "@/lib/domain";
+import { classifyCandidate } from "@/lib/classify";
+import { loadCatalog } from "@/lib/data/catalog";
+import { targetUniversities, type Discipline, type University } from "@/lib/domain";
 import {
   failed,
   firstIssue,
@@ -20,7 +22,6 @@ import { actionContext as context, logActivity as log } from "@/lib/server/actio
 
 // LinkedIn caps a member's network at 30,000 connections.
 const MAX_CONNECTIONS = 30_000;
-const DISCIPLINES = Object.keys(DISCIPLINE_LABELS) as Discipline[];
 
 /** A snapshot time for a chosen local date: now for today, local noon for past dates. */
 function snapshotInstant(date: string, timeZone: string): string | FormState {
@@ -95,7 +96,7 @@ export async function recordSnapshot(_: FormState, formData: FormData): Promise<
 // ---------------------------------------------------------------- settings
 
 const goalSchema = z.object({
-  overallTarget: formInt("Overall target", { min: 1, max: MAX_CONNECTIONS }),
+  overallTarget: optionalFormInt("Connection goal", { max: MAX_CONNECTIONS }),
   baseline: optionalFormInt("Starting count", { max: MAX_CONNECTIONS }),
   startDate: formDate("Start date"),
 });
@@ -104,8 +105,9 @@ export async function updateGoal(_: FormState, formData: FormData): Promise<Form
   const parsed = goalSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return failed(firstIssue(parsed.error));
   const { overallTarget, baseline, startDate } = parsed.data;
-  if (baseline !== null && baseline >= overallTarget) {
-    return failed("The overall target must be higher than your starting count.");
+  if (overallTarget !== null && overallTarget < 1) return failed("Set a goal of at least 1 connection, or leave it empty.");
+  if (baseline !== null && overallTarget !== null && baseline >= overallTarget) {
+    return failed("The goal must be higher than your starting count.");
   }
   const ctx = await context();
 
@@ -131,14 +133,12 @@ const planningSchema = z.object({
   noteCharLimit: formInt("Note length limit", { min: 1, max: 1000 }),
   stalePendingDays: formInt("Stale invitation age", { min: 1, max: 365 }),
   timezone: z.string().refine(isValidTimeZone, "Choose a valid time zone."),
-  countUbcoAsUbc: z.preprocess((v) => v === "on", z.boolean()),
   autoApprove: z.preprocess((v) => v === "on", z.boolean()),
 });
 
 export async function updatePlanning(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = planningSchema.safeParse({
     ...Object.fromEntries(formData),
-    countUbcoAsUbc: formData.get("countUbcoAsUbc"),
     autoApprove: formData.get("autoApprove"),
   });
   if (!parsed.success) return failed(firstIssue(parsed.error));
@@ -154,7 +154,6 @@ export async function updatePlanning(_: FormState, formData: FormData): Promise<
       note_char_limit: d.noteCharLimit,
       stale_pending_days: d.stalePendingDays,
       timezone: d.timezone,
-      count_ubco_as_ubc: d.countUbcoAsUbc,
       auto_approve: d.autoApprove,
     })
     .eq("user_id", ctx.userId);
@@ -165,69 +164,170 @@ export async function updatePlanning(_: FormState, formData: FormData): Promise<
   return saved();
 }
 
+/**
+ * Targets for the user's own disciplines: a total per discipline, and a share for each of
+ * their schools that has its own targets. An empty field means no target there.
+ */
 export async function updateTargets(_: FormState, formData: FormData): Promise<FormState> {
-  const rows: { discipline: Discipline; university: University | null; target_count: number }[] = [];
-  for (const discipline of DISCIPLINES) {
-    for (const university of [null, "uoft", "ubc"] as const) {
-      const field = `${discipline}.${university ?? "total"}`;
-      const label = `${DISCIPLINE_LABELS[discipline]} ${university ? university.toUpperCase() : "total"}`;
-      const parsed = formInt(label, { max: MAX_CONNECTIONS }).safeParse(formData.get(field));
+  const ctx = await context();
+  const catalog = await loadCatalog(ctx.supabase);
+  const set: { discipline: Discipline; university: University | null; target_count: number }[] = [];
+  const cleared: { discipline: Discipline; university: University | null }[] = [];
+  for (const d of catalog.disciplines) {
+    for (const u of [null, ...targetUniversities(catalog)]) {
+      const raw = formData.get(`${d.id}.${u?.id ?? "total"}`)?.toString().trim() ?? "";
+      if (!raw) {
+        cleared.push({ discipline: d.id, university: u?.id ?? null });
+        continue;
+      }
+      const parsed = formInt(`${d.name} ${u ? u.name : "total"}`, { max: MAX_CONNECTIONS }).safeParse(raw);
       if (!parsed.success) return failed(firstIssue(parsed.error));
-      rows.push({ discipline, university, target_count: parsed.data });
+      set.push({ discipline: d.id, university: u?.id ?? null, target_count: parsed.data });
     }
   }
-  const ctx = await context();
 
-  for (const row of rows) {
-    let query = ctx.supabase
-      .from("targets")
-      .update({ target_count: row.target_count })
-      .eq("user_id", ctx.userId)
-      .eq("discipline", row.discipline);
-    query = row.university ? query.eq("university", row.university) : query.is("university", null);
-    const { error } = await query;
-    if (error) return failed("Couldn't save every target. Reload and check the values.");
+  if (set.length) {
+    const { error } = await ctx.supabase.from("targets").upsert(set.map((r) => ({ ...r, user_id: ctx.userId })), { onConflict: "user_id,discipline,university" });
+    if (error) return failed("Couldn't save the targets. Reload and check the values.");
+  }
+  for (const c of cleared) {
+    let q = ctx.supabase.from("targets").delete().eq("user_id", ctx.userId).eq("discipline", c.discipline);
+    q = c.university ? q.eq("university", c.university) : q.is("university", null);
+    const { error } = await q;
+    if (error) return failed("Couldn't clear every target. Reload and check the values.");
   }
 
-  await log(ctx, "settings.targets", {
-    targets: rows.map((r) => [r.discipline, r.university, r.target_count]),
-  });
+  await log(ctx, "settings.targets", { set: set.length, cleared: cleared.length });
   refresh();
 
-  const over = DISCIPLINES.filter((d) => {
-    const [total, ...cells] = rows.filter((r) => r.discipline === d).map((r) => r.target_count);
-    return cells.reduce((a, b) => a + b, 0) > total;
+  const over = catalog.disciplines.filter((d) => {
+    const total = set.find((r) => r.discipline === d.id && r.university === null)?.target_count;
+    const cells = set.filter((r) => r.discipline === d.id && r.university !== null).reduce((n, r) => n + r.target_count, 0);
+    return total !== undefined && cells > total;
   });
-  return saved(
-    over.length
-      ? `Saved. Note: U of T + UBC targets exceed the total for ${over.map((d) => DISCIPLINE_LABELS[d]).join(", ")}.`
-      : undefined,
-  );
+  return saved(over.length ? `Saved. Note: the school targets add up to more than the total for ${over.map((d) => d.name).join(", ")}.` : undefined);
+}
+
+// ---------------------------------------------------------------- your schools and disciplines
+
+/** "UBC, University of British Columbia\nubc vancouver" → distinct, trimmed spellings. */
+const spellings = (v: FormDataEntryValue | null) => [...new Set((v?.toString() ?? "").split(/[\n,;]/).map((x) => x.trim().replace(/\s+/g, " ")).filter(Boolean))];
+
+const categorySchema = z.object({
+  kind: z.enum(["university", "discipline"]),
+  id: z.preprocess((v) => (v === "" || v == null ? undefined : v), z.uuid().optional()),
+  name: z.string().trim().min(1, "Add a name.").max(200, "Keep the name under 200 characters."),
+  aliases: z.array(z.string().max(100, "Keep each spelling under 100 characters.")).max(40, "Use at most 40 other spellings."),
+  hasTargets: z.boolean(),
+});
+
+/**
+ * Re-sorts candidates whose school or discipline is still unconfirmed against the user's
+ * current lists, after one changes. Only fills in what's unconfirmed; never overrides a
+ * choice already confirmed. Returns how many candidates got a new match.
+ */
+async function sortUnconfirmed(ctx: Awaited<ReturnType<typeof context>>): Promise<number> {
+  const catalog = await loadCatalog(ctx.supabase);
+  const { data } = await ctx.supabase
+    .from("candidates")
+    .select("id, status, raw_school_text, raw_program_text, university_confidence, discipline_confidence")
+    .or("university_confidence.eq.needs_review,discipline_confidence.eq.needs_review")
+    .not("status", "in", "(not_a_match,do_not_contact)")
+    .limit(2000);
+  let sorted = 0;
+  for (const c of data ?? []) {
+    const r = classifyCandidate(c.raw_school_text, c.raw_program_text, catalog);
+    const school = c.university_confidence === "needs_review" && r.university.confidence === "confirmed" ? r.university.value : null;
+    const field = c.discipline_confidence === "needs_review" && r.discipline.confidence === "confirmed" ? r.discipline.value : null;
+    if (!school && !field) continue;
+    const both = (school !== null || c.university_confidence === "confirmed") && (field !== null || c.discipline_confidence === "confirmed");
+    const { error } = await ctx.supabase
+      .from("candidates")
+      .update({
+        ...(school ? { university: school, university_confidence: "confirmed" as const } : {}),
+        ...(field ? { discipline: field, discipline_confidence: "confirmed" as const } : {}),
+        ...(ctx.settings.auto_approve && both && (c.status === "new" || c.status === "awaiting_review") ? { status: "approved" as const } : {}),
+      })
+      .eq("id", c.id);
+    if (!error) sorted++;
+  }
+  return sorted;
+}
+
+/** Adds or edits one of the user's schools or disciplines, then sorts unconfirmed candidates against it. */
+export async function saveCategory(_: FormState, formData: FormData): Promise<FormState> {
+  const parsed = categorySchema.safeParse({
+    kind: formData.get("kind"),
+    id: formData.get("id"),
+    name: formData.get("name"),
+    aliases: spellings(formData.get("aliases")),
+    hasTargets: formData.get("hasTargets") === "on",
+  });
+  if (!parsed.success) return failed(firstIssue(parsed.error));
+  const { kind, id, name, aliases, hasTargets } = parsed.data;
+  const ctx = await context();
+
+  let error: { code?: string } | null;
+  if (kind === "university") {
+    const fields = { name, aliases, has_targets: hasTargets };
+    if (id) ({ error } = await ctx.supabase.from("universities").update(fields).eq("id", id));
+    else {
+      const { data: last } = await ctx.supabase.from("universities").select("position").order("position", { ascending: false }).limit(1).maybeSingle();
+      ({ error } = await ctx.supabase.from("universities").insert({ ...fields, user_id: ctx.userId, position: (last?.position ?? -1) + 1 }));
+    }
+  } else {
+    const fields = { name, aliases };
+    if (id) ({ error } = await ctx.supabase.from("disciplines").update(fields).eq("id", id));
+    else {
+      const { data: last } = await ctx.supabase.from("disciplines").select("position").order("position", { ascending: false }).limit(1).maybeSingle();
+      ({ error } = await ctx.supabase.from("disciplines").insert({ ...fields, user_id: ctx.userId, position: (last?.position ?? -1) + 1 }));
+    }
+  }
+  const what = kind === "university" ? "school" : "discipline";
+  if (error?.code === "23505") return failed(`You already have a ${what} named “${name}”.`);
+  if (error) return failed("Couldn't save. Try again.");
+
+  const sorted = await sortUnconfirmed(ctx);
+  await log(ctx, `settings.${kind}.${id ? "updated" : "added"}`, { sorted });
+  refresh();
+  return saved(`${id ? "Saved" : "Added"} “${name}”.${sorted ? ` ${sorted} candidate${sorted === 1 ? " was" : "s were"} matched to your lists.` : ""}`);
+}
+
+/** Removes a school or discipline. Its candidates go back to review and its targets are removed. */
+export async function deleteCategory(kind: "university" | "discipline", id: string): Promise<ActionResult> {
+  if ((kind !== "university" && kind !== "discipline") || !z.uuid().safeParse(id).success) return err("Unknown entry.");
+  const ctx = await context();
+  const { data, error } =
+    kind === "university"
+      ? await ctx.supabase.from("universities").delete().eq("id", id).select("name").maybeSingle()
+      : await ctx.supabase.from("disciplines").delete().eq("id", id).select("name").maybeSingle();
+  if (error || !data) return err("Couldn't remove it. Try again.");
+  await log(ctx, `settings.${kind}.removed`);
+  refresh();
+  return ok(`Removed “${data.name}”. Its candidates are back in review.`);
 }
 
 const moveSchema = z.object({
-  discipline: z.enum(["ce", "ee", "mech", "cs"]),
+  discipline: z.uuid(),
   direction: z.enum(["up", "down"]),
 });
 
+/** Moves a discipline up or down the user's priority order. */
 export async function moveDiscipline(formData: FormData): Promise<void> {
   const parsed = moveSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return;
   const ctx = await context();
-
-  const order = [...ctx.settings.discipline_priority];
+  const order = (await loadCatalog(ctx.supabase)).disciplines.map((d) => d.id);
   const i = order.indexOf(parsed.data.discipline);
   const j = parsed.data.direction === "up" ? i - 1 : i + 1;
   if (i < 0 || j < 0 || j >= order.length) return;
   [order[i], order[j]] = [order[j], order[i]];
-
-  const { error } = await ctx.supabase
-    .from("settings")
-    .update({ discipline_priority: order })
-    .eq("user_id", ctx.userId);
-  if (error) throw error;
-
-  await log(ctx, "settings.priority", { order });
+  // Positions are rewritten 0..n so the order stays exact.
+  for (const [position, id] of order.entries()) {
+    const { error } = await ctx.supabase.from("disciplines").update({ position }).eq("id", id);
+    if (error) throw error;
+  }
+  await log(ctx, "settings.priority", { moved: parsed.data.discipline, direction: parsed.data.direction });
   refresh();
 }
 

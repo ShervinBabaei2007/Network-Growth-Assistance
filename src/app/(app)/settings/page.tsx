@@ -5,6 +5,7 @@ import {
   pauseOutreach,
   resumeOutreach,
   runDailyJobNow,
+  saveCategory,
   deleteAccount,
   updateNoteProfile,
   updateGoal,
@@ -19,7 +20,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { DISCIPLINE_LABELS } from "@/lib/domain";
+import { loadCatalog } from "@/lib/data/catalog";
+import { targetUniversities } from "@/lib/domain";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { normalizeAppearance } from "@/lib/appearance";
@@ -27,18 +29,18 @@ import { updateNotificationSettings } from "@/app/(app)/jobs/searches/actions";
 import { emailConfigured } from "@/lib/email/mailer";
 import { AiKeySection } from "./ai-key-section";
 import { AppearanceForm } from "./appearance-form";
+import { DeleteCategoryButton } from "./category-delete";
 
 export const metadata = { title: "Settings · Network Growth" };
 
-const TIME_ZONES = [
-  "America/Vancouver",
-  "America/Edmonton",
-  "America/Regina",
-  "America/Winnipeg",
-  "America/Toronto",
-  "America/Halifax",
-  "America/St_Johns",
-];
+/** Every time zone the runtime knows, for the time-zone field's suggestions. */
+const TIME_ZONES: string[] = (() => {
+  try {
+    return Intl.supportedValuesOf("timeZone");
+  } catch {
+    return [];
+  }
+})();
 
 export default function SettingsPage() {
   return (
@@ -56,18 +58,101 @@ export default function SettingsPage() {
 
 async function SettingsContent() {
   const supabase = await createClient();
-  const [{ data: s, error }, { data: targets }, { data: runs }] = await Promise.all([
+  const [{ data: s, error }, { data: targets }, { data: runs }, catalog] = await Promise.all([
     supabase.from("settings").select("*").single(),
     supabase.from("targets").select("discipline, university, target_count"),
     supabase.from("job_runs").select("run_date, status, stats, error, finished_at").order("run_date", { ascending: false }).limit(7),
+    loadCatalog(supabase),
   ]);
   if (error || !s) return <LoadError what="your settings" />;
 
   const targetValue = (d: string, u: string | null) =>
-    targets?.find((t) => t.discipline === d && t.university === u)?.target_count ?? 0;
+    targets?.find((t) => t.discipline === d && t.university === u)?.target_count ?? null;
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
+      <Section
+        id="plan"
+        title="Your networking plan"
+        description="The schools and disciplines you want to connect with, in your own words, and your goals. Nothing is built in: candidates are sorted only into what you add here."
+        className="lg:col-span-2"
+      >
+        <div className="grid gap-6">
+          <ActionForm action={updateGoal} submitLabel="Save goal">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field id="overallTarget" label="Connection goal (total)">
+                <Input id="overallTarget" name="overallTarget" type="number" min={1} max={30000} defaultValue={s.overall_target ?? ""} placeholder="Not set" />
+              </Field>
+              <Field id="baselineSetting" label="Starting count">
+                <Input id="baselineSetting" name="baseline" type="number" min={0} max={30000} defaultValue={s.baseline_connections ?? ""} />
+              </Field>
+              <Field id="startDateSetting" label="Start date">
+                <Input id="startDateSetting" name="startDate" type="date" defaultValue={s.project_start_date} required />
+              </Field>
+            </div>
+            <p className="text-xs text-muted-foreground">Growth is measured from your starting count. Only acceptances on or after the start date count toward your targets.</p>
+          </ActionForm>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid content-start gap-3">
+              <h3 className="text-sm font-semibold">Schools</h3>
+              <p className="text-xs text-muted-foreground">
+                Universities, colleges or any institution. List the other ways people write it (short forms, campuses) so profiles are matched to it.
+                Schools with their own targets get a share of each discipline&apos;s goal; the others add extra candidates.
+              </p>
+              {catalog.universities.length ? (
+                <ul className="grid gap-2">
+                  {catalog.universities.map((u) => (
+                    <CategoryRow key={u.id} kind="university" entry={u} hasTargets={u.hasTargets} />
+                  ))}
+                </ul>
+              ) : (
+                <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">No schools yet. Add the first one below.</p>
+              )}
+              <CategoryForm kind="university" />
+            </div>
+            <div className="grid content-start gap-3">
+              <h3 className="text-sm font-semibold">Disciplines, in priority order</h3>
+              <p className="text-xs text-muted-foreground">
+                Any field of study or work: nursing, law, finance, software, design, trades… Attention moves down this list as each target is met.
+              </p>
+              {catalog.disciplines.length ? (
+                <ol className="grid gap-2">
+                  {catalog.disciplines.map((d, i) => (
+                    <CategoryRow key={d.id} kind="discipline" entry={d} rank={i + 1} first={i === 0} last={i === catalog.disciplines.length - 1} />
+                  ))}
+                </ol>
+              ) : (
+                <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">No disciplines yet. Add the first one below.</p>
+              )}
+              <CategoryForm kind="discipline" />
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            <h3 className="text-sm font-semibold">Targets</h3>
+            {catalog.disciplines.length ? (
+              <ActionForm action={updateTargets} submitLabel="Save targets">
+                <p className="text-xs text-muted-foreground">New accepted connections per discipline, and the share from each school with its own targets. Leave a field empty for no target there.</p>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {catalog.disciplines.map((d) => (
+                    <fieldset key={d.id} className="grid gap-2 rounded-md border p-3">
+                      <legend className="px-1 text-sm font-medium">{d.name}</legend>
+                      {[{ key: "total", id: null as string | null, label: "Total" }, ...targetUniversities(catalog).map((u) => ({ key: u.id, id: u.id as string | null, label: u.name }))].map((t) => (
+                        <Field key={t.key} id={`${d.id}.${t.key}`} label={t.label} inline>
+                          <Input id={`${d.id}.${t.key}`} name={`${d.id}.${t.key}`} type="number" min={0} max={30000} defaultValue={targetValue(d.id, t.id) ?? ""} placeholder="—" className="w-24" />
+                        </Field>
+                      ))}
+                    </fieldset>
+                  ))}
+                </div>
+              </ActionForm>
+            ) : (
+              <p className="text-sm text-muted-foreground">Add a discipline first; then set how many new connections you want in it.</p>
+            )}
+          </div>
+        </div>
+      </Section>
       <Section title="Appearance" description="How the app looks on every device you sign in on.">
         <AppearanceForm initial={normalizeAppearance({ theme: s.theme, density: s.density, text: s.text_size })} />
       </Section>
@@ -121,41 +206,6 @@ async function SettingsContent() {
         )}
       </Section>
 
-      <Section title="Goal" description="Growth is measured from the starting count to the overall target.">
-        <ActionForm action={updateGoal} submitLabel="Save goal">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Field id="overallTarget" label="Overall target">
-              <Input id="overallTarget" name="overallTarget" type="number" min={1} max={30000} defaultValue={s.overall_target} required />
-            </Field>
-            <Field id="baselineSetting" label="Starting count">
-              <Input id="baselineSetting" name="baseline" type="number" min={0} max={30000} defaultValue={s.baseline_connections ?? ""} />
-            </Field>
-            <Field id="startDateSetting" label="Start date">
-              <Input id="startDateSetting" name="startDate" type="date" defaultValue={s.project_start_date} required />
-            </Field>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Only acceptances on or after the start date count toward discipline targets.
-          </p>
-        </ActionForm>
-      </Section>
-
-      <Section title="Discipline priority" description="Attention moves down this list as each target is met.">
-        <ol className="grid gap-2">
-          {s.discipline_priority.map((d, i) => (
-            <li key={d} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
-              <span>
-                {i + 1}. {DISCIPLINE_LABELS[d]}
-              </span>
-              <span className="flex gap-1">
-                <MoveButton discipline={d} direction="up" disabled={i === 0} />
-                <MoveButton discipline={d} direction="down" disabled={i === s.discipline_priority.length - 1} />
-              </span>
-            </li>
-          ))}
-        </ol>
-      </Section>
-
       <Section
         title="Daily planning"
         description="LinkedIn's limits vary by account and change over time, so nothing is assumed. Enter what you plan to do and any limits LinkedIn has shown you."
@@ -195,10 +245,6 @@ async function SettingsContent() {
               </span>
             </span>
           </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="countUbcoAsUbc" defaultChecked={s.count_ubco_as_ubc} className="size-4 accent-primary" />
-            Count UBC Okanagan as UBC
-          </label>
         </ActionForm>
       </Section>
 
@@ -208,13 +254,13 @@ async function SettingsContent() {
       >
         <ActionForm action={updateNoteProfile} submitLabel="Save">
           <Field id="mySchool" label="Your school">
-            <Input id="mySchool" name="mySchool" maxLength={200} defaultValue={s.my_school_text ?? ""} placeholder="e.g. BCIT" />
+            <Input id="mySchool" name="mySchool" maxLength={200} defaultValue={s.my_school_text ?? ""} placeholder="Your school, college or employer" />
           </Field>
           <Field id="myProgram" label="Your program">
-            <Input id="myProgram" name="myProgram" maxLength={200} defaultValue={s.my_program_text ?? ""} placeholder="e.g. Computer Systems Technology" />
+            <Input id="myProgram" name="myProgram" maxLength={200} defaultValue={s.my_program_text ?? ""} placeholder="Your program or field" />
           </Field>
           <Field id="myInterests" label="Interests to mention (optional)">
-            <Input id="myInterests" name="myInterests" maxLength={300} defaultValue={s.my_interests ?? ""} placeholder="e.g. embedded systems and robotics" />
+            <Input id="myInterests" name="myInterests" maxLength={300} defaultValue={s.my_interests ?? ""} placeholder="Topics you care about" />
           </Field>
         </ActionForm>
       </Section>
@@ -260,40 +306,18 @@ async function SettingsContent() {
         </div>
       </Section>
 
-      <Section
-        title="Targets"
-        description="New accepted connections per discipline, and the U of T and UBC share of each. SFU and Waterloo have no separate targets."
-        className="lg:col-span-2"
-      >
-        <ActionForm action={updateTargets} submitLabel="Save targets">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {s.discipline_priority.map((d) => (
-              <fieldset key={d} className="grid gap-2 rounded-md border p-3">
-                <legend className="px-1 text-sm font-medium">{DISCIPLINE_LABELS[d]}</legend>
-                {([
-                  ["total", null, "Total"],
-                  ["uoft", "uoft", "U of T"],
-                  ["ubc", "ubc", "UBC"],
-                ] as const).map(([key, u, label]) => (
-                  <Field key={key} id={`${d}.${key}`} label={label} inline>
-                    <Input id={`${d}.${key}`} name={`${d}.${key}`} type="number" min={0} max={30000} defaultValue={targetValue(d, u)} required className="w-24" />
-                  </Field>
-                ))}
-              </fieldset>
-            ))}
-          </div>
-        </ActionForm>
-      </Section>
     </div>
   );
 }
 
 function MoveButton({
   discipline,
+  name,
   direction,
   disabled,
 }: {
   discipline: string;
+  name: string;
   direction: "up" | "down";
   disabled: boolean;
 }) {
@@ -307,7 +331,7 @@ function MoveButton({
         variant="ghost"
         size="icon-sm"
         disabled={disabled}
-        aria-label={`Move ${DISCIPLINE_LABELS[discipline as keyof typeof DISCIPLINE_LABELS]} ${direction}`}
+        aria-label={`Move ${name} ${direction}`}
       >
         <Icon />
       </Button>
@@ -355,5 +379,74 @@ function Field({
       <Label htmlFor={id}>{label}</Label>
       {children}
     </div>
+  );
+}
+
+/** One of the user's schools or disciplines: its name and spellings, editable in place. */
+function CategoryRow({
+  kind,
+  entry,
+  hasTargets,
+  rank,
+  first,
+  last,
+}: {
+  kind: "university" | "discipline";
+  entry: { id: string; name: string; aliases: string[] };
+  hasTargets?: boolean;
+  rank?: number;
+  first?: boolean;
+  last?: boolean;
+}) {
+  return (
+    <li className="rounded-md border px-3 py-2 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="min-w-0">
+          {rank ? `${rank}. ` : ""}
+          <span className="font-medium">{entry.name}</span>
+          {kind === "university" ? <span className="text-xs text-muted-foreground"> · {hasTargets ? "own targets" : "extra pool"}</span> : null}
+          {entry.aliases.length ? <span className="block truncate text-xs text-muted-foreground">Also: {entry.aliases.join(", ")}</span> : null}
+        </span>
+        <span className="flex items-center gap-1">
+          {kind === "discipline" ? (
+            <>
+              <MoveButton discipline={entry.id} name={entry.name} direction="up" disabled={Boolean(first)} />
+              <MoveButton discipline={entry.id} name={entry.name} direction="down" disabled={Boolean(last)} />
+            </>
+          ) : null}
+          <DeleteCategoryButton kind={kind} id={entry.id} name={entry.name} />
+        </span>
+      </div>
+      <details className="mt-1">
+        <summary className="cursor-pointer text-xs text-muted-foreground">Edit</summary>
+        <div className="mt-2">
+          <CategoryForm kind={kind} entry={entry} hasTargets={hasTargets} />
+        </div>
+      </details>
+    </li>
+  );
+}
+
+/** Adds a school or discipline, or edits one (with `entry`). */
+function CategoryForm({ kind, entry, hasTargets = true }: { kind: "university" | "discipline"; entry?: { id: string; name: string; aliases: string[] }; hasTargets?: boolean }) {
+  const prefix = `${kind}-${entry?.id ?? "new"}`;
+  const noun = kind === "university" ? "school" : "discipline";
+  return (
+    <ActionForm action={saveCategory} submitLabel={entry ? "Save" : `Add ${noun}`} size="sm" variant={entry ? "default" : "outline"} resetOnSuccess={!entry}>
+      <input type="hidden" name="kind" value={kind} />
+      {entry ? <input type="hidden" name="id" value={entry.id} /> : null}
+      <Field id={`${prefix}-name`} label={entry ? "Name" : `New ${noun}`}>
+        <Input id={`${prefix}-name`} name="name" maxLength={200} defaultValue={entry?.name ?? ""} required placeholder={kind === "university" ? "School name" : "Discipline name"} />
+      </Field>
+      <Field id={`${prefix}-aliases`} label="Other ways it's written (optional, comma-separated)">
+        <Input id={`${prefix}-aliases`} name="aliases" maxLength={2000} defaultValue={entry?.aliases.join(", ") ?? ""} placeholder="Short forms, abbreviations, campuses" />
+      </Field>
+      {kind === "university" ? (
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="hasTargets" defaultChecked={hasTargets} className="size-4 accent-primary" />
+          Give this school its own targets
+        </label>
+      ) : null}
+    </ActionForm>
   );
 }

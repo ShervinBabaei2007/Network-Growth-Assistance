@@ -197,17 +197,29 @@ isOneToOne: false
                   ]
                 },"candidates": {
                   Row: {
-                    "connected_at": string | null,"connected_via": Database["public"]['Enums']["connection_source"] | null,"created_at": string,"degree_level": Database["public"]['Enums']["degree_level"] | null,"discipline": Database["public"]['Enums']["discipline"] | null,"discipline_confidence": Database["public"]['Enums']["classification_confidence"],"discovered_at": string,"full_name": string,"grad_year": number | null,"id": string,"is_preexisting_connection": boolean,"notes": string | null,"profile_key": string,"profile_url": string,"raw_program_text": string | null,"raw_school_text": string | null,"role": string | null,"source": Database["public"]['Enums']["candidate_source"],"status": Database["public"]['Enums']["candidate_status"],"university": Database["public"]['Enums']["university"] | null,"university_confidence": Database["public"]['Enums']["classification_confidence"],"updated_at": string,"user_id": string
+                    "connected_at": string | null,"connected_via": Database["public"]['Enums']["connection_source"] | null,"created_at": string,"degree_level": Database["public"]['Enums']["degree_level"] | null,"discipline": string | null,"discipline_confidence": Database["public"]['Enums']["classification_confidence"],"discovered_at": string,"full_name": string,"grad_year": number | null,"id": string,"is_preexisting_connection": boolean,"notes": string | null,"profile_key": string,"profile_url": string,"raw_program_text": string | null,"raw_school_text": string | null,"role": string | null,"source": Database["public"]['Enums']["candidate_source"],"status": Database["public"]['Enums']["candidate_status"],"university": string | null,"university_confidence": Database["public"]['Enums']["classification_confidence"],"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "connected_at"?: string | null,"connected_via"?: Database["public"]['Enums']["connection_source"] | null,"created_at"?: string,"degree_level"?: Database["public"]['Enums']["degree_level"] | null,"discipline"?: Database["public"]['Enums']["discipline"] | null,"discipline_confidence"?: Database["public"]['Enums']["classification_confidence"],"discovered_at"?: string,"full_name": string,"grad_year"?: number | null,"id"?: string,"is_preexisting_connection"?: boolean,"notes"?: string | null,"profile_key": string,"profile_url": string,"raw_program_text"?: string | null,"raw_school_text"?: string | null,"role"?: string | null,"source"?: Database["public"]['Enums']["candidate_source"],"status"?: Database["public"]['Enums']["candidate_status"],"university"?: Database["public"]['Enums']["university"] | null,"university_confidence"?: Database["public"]['Enums']["classification_confidence"],"updated_at"?: string,"user_id"?: string
+                    "connected_at"?: string | null,"connected_via"?: Database["public"]['Enums']["connection_source"] | null,"created_at"?: string,"degree_level"?: Database["public"]['Enums']["degree_level"] | null,"discipline"?: string | null,"discipline_confidence"?: Database["public"]['Enums']["classification_confidence"],"discovered_at"?: string,"full_name": string,"grad_year"?: number | null,"id"?: string,"is_preexisting_connection"?: boolean,"notes"?: string | null,"profile_key": string,"profile_url": string,"raw_program_text"?: string | null,"raw_school_text"?: string | null,"role"?: string | null,"source"?: Database["public"]['Enums']["candidate_source"],"status"?: Database["public"]['Enums']["candidate_status"],"university"?: string | null,"university_confidence"?: Database["public"]['Enums']["classification_confidence"],"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "connected_at"?: string | null,"connected_via"?: Database["public"]['Enums']["connection_source"] | null,"created_at"?: string,"degree_level"?: Database["public"]['Enums']["degree_level"] | null,"discipline"?: Database["public"]['Enums']["discipline"] | null,"discipline_confidence"?: Database["public"]['Enums']["classification_confidence"],"discovered_at"?: string,"full_name"?: string,"grad_year"?: number | null,"id"?: string,"is_preexisting_connection"?: boolean,"notes"?: string | null,"profile_key"?: string,"profile_url"?: string,"raw_program_text"?: string | null,"raw_school_text"?: string | null,"role"?: string | null,"source"?: Database["public"]['Enums']["candidate_source"],"status"?: Database["public"]['Enums']["candidate_status"],"university"?: Database["public"]['Enums']["university"] | null,"university_confidence"?: Database["public"]['Enums']["classification_confidence"],"updated_at"?: string,"user_id"?: string
+                    "connected_at"?: string | null,"connected_via"?: Database["public"]['Enums']["connection_source"] | null,"created_at"?: string,"degree_level"?: Database["public"]['Enums']["degree_level"] | null,"discipline"?: string | null,"discipline_confidence"?: Database["public"]['Enums']["classification_confidence"],"discovered_at"?: string,"full_name"?: string,"grad_year"?: number | null,"id"?: string,"is_preexisting_connection"?: boolean,"notes"?: string | null,"profile_key"?: string,"profile_url"?: string,"raw_program_text"?: string | null,"raw_school_text"?: string | null,"role"?: string | null,"source"?: Database["public"]['Enums']["candidate_source"],"status"?: Database["public"]['Enums']["candidate_status"],"university"?: string | null,"university_confidence"?: Database["public"]['Enums']["classification_confidence"],"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
-                    
+                    {
+      foreignKeyName: "candidates_discipline_owned"
+      columns: ["discipline","user_id"]
+isOneToOne: false
+      referencedRelation: "disciplines"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "candidates_university_owned"
+      columns: ["university","user_id"]
+isOneToOne: false
+      referencedRelation: "universities"
+      referencedColumns: ["id","user_id"]
+    }
                   ]
                 },"company_aliases": {
                   Row: {
@@ -256,6 +268,20 @@ isOneToOne: false
       referencedRelation: "candidates"
       referencedColumns: ["id","user_id"]
     }
+                  ]
+                },"disciplines": {
+                  Row: {
+                    "aliases": (string)[],"created_at": string,"id": string,"name": string,"position": number,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "aliases"?: (string)[],"created_at"?: string,"id"?: string,"name": string,"position"?: number,"user_id"?: string
+                  }
+                  Update: {
+                    "aliases"?: (string)[],"created_at"?: string,"id"?: string,"name"?: string,"position"?: number,"user_id"?: string
+                  }
+                  Relationships: [
+                    
                   ]
                 },"email_deliveries": {
                   Row: {
@@ -447,14 +473,14 @@ isOneToOne: false
                   ]
                 },"jobs": {
                   Row: {
-                    "apply_url": string | null,"canonical_url": string | null,"city": string | null,"closed_at": string | null,"company": string | null,"countries": (string)[],"country": string | null,"created_at": string,"date_note": string | null,"date_source": string,"dedupe_key": string | null,"department": string | null,"desc_fingerprint": string | null,"description": string,"description_is_partial": boolean,"employer_id": string | null,"employment_type": string | null,"experience_level": string | null,"external_id": string,"final_url": string | null,"first_seen_at": string,"fts": unknown,"id": string,"last_seen_at": string,"level_source": string | null,"location_text": string | null,"posted_at": string,"provider_key": string | null,"province": string | null,"remote": boolean,"salary": string | null,"salary_currency": string | null,"salary_max": number | null,"salary_min": number | null,"salary_period": string | null,"source": string,"source_url": string | null,"title": string,"updated_at": string,"user_id": string | null,"verification_note": string | null,"verification_status": Database["public"]['Enums']["job_verification_status"],"verified_at": string | null,"workplace_type": string | null
+                    "apply_url": string | null,"canonical_url": string | null,"city": string | null,"closed_at": string | null,"company": string | null,"countries": (string)[],"country": string | null,"created_at": string,"date_note": string | null,"date_source": string,"dedupe_key": string | null,"department": string | null,"desc_fingerprint": string | null,"description": string,"description_head": string | null,"description_is_partial": boolean,"employer_id": string | null,"employment_type": string | null,"experience_level": string | null,"external_id": string,"final_url": string | null,"first_seen_at": string,"fts": unknown,"id": string,"last_seen_at": string,"level_source": string | null,"location_text": string | null,"posted_at": string,"provider_key": string | null,"province": string | null,"remote": boolean,"salary": string | null,"salary_currency": string | null,"salary_max": number | null,"salary_min": number | null,"salary_period": string | null,"source": string,"source_url": string | null,"title": string,"updated_at": string,"user_id": string | null,"verification_note": string | null,"verification_status": Database["public"]['Enums']["job_verification_status"],"verified_at": string | null,"workplace_type": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "apply_url"?: string | null,"canonical_url"?: string | null,"city"?: string | null,"closed_at"?: string | null,"company"?: string | null,"countries"?: (string)[],"country"?: string | null,"created_at"?: string,"date_note"?: string | null,"date_source"?: string,"dedupe_key"?: string | null,"department"?: string | null,"desc_fingerprint"?: string | null,"description"?: string,"description_is_partial"?: boolean,"employer_id"?: string | null,"employment_type"?: string | null,"experience_level"?: string | null,"external_id": string,"final_url"?: string | null,"first_seen_at"?: string,"fts"?: never,"id"?: string,"last_seen_at"?: string,"level_source"?: string | null,"location_text"?: string | null,"posted_at": string,"provider_key"?: string | null,"province"?: string | null,"remote"?: boolean,"salary"?: string | null,"salary_currency"?: string | null,"salary_max"?: number | null,"salary_min"?: number | null,"salary_period"?: string | null,"source"?: string,"source_url"?: string | null,"title": string,"updated_at"?: string,"user_id"?: string | null,"verification_note"?: string | null,"verification_status"?: Database["public"]['Enums']["job_verification_status"],"verified_at"?: string | null,"workplace_type"?: string | null
+                    "apply_url"?: string | null,"canonical_url"?: string | null,"city"?: string | null,"closed_at"?: string | null,"company"?: string | null,"countries"?: (string)[],"country"?: string | null,"created_at"?: string,"date_note"?: string | null,"date_source"?: string,"dedupe_key"?: string | null,"department"?: string | null,"desc_fingerprint"?: string | null,"description"?: string,"description_head"?: never,"description_is_partial"?: boolean,"employer_id"?: string | null,"employment_type"?: string | null,"experience_level"?: string | null,"external_id": string,"final_url"?: string | null,"first_seen_at"?: string,"fts"?: never,"id"?: string,"last_seen_at"?: string,"level_source"?: string | null,"location_text"?: string | null,"posted_at": string,"provider_key"?: string | null,"province"?: string | null,"remote"?: boolean,"salary"?: string | null,"salary_currency"?: string | null,"salary_max"?: number | null,"salary_min"?: number | null,"salary_period"?: string | null,"source"?: string,"source_url"?: string | null,"title": string,"updated_at"?: string,"user_id"?: string | null,"verification_note"?: string | null,"verification_status"?: Database["public"]['Enums']["job_verification_status"],"verified_at"?: string | null,"workplace_type"?: string | null
                   }
                   Update: {
-                    "apply_url"?: string | null,"canonical_url"?: string | null,"city"?: string | null,"closed_at"?: string | null,"company"?: string | null,"countries"?: (string)[],"country"?: string | null,"created_at"?: string,"date_note"?: string | null,"date_source"?: string,"dedupe_key"?: string | null,"department"?: string | null,"desc_fingerprint"?: string | null,"description"?: string,"description_is_partial"?: boolean,"employer_id"?: string | null,"employment_type"?: string | null,"experience_level"?: string | null,"external_id"?: string,"final_url"?: string | null,"first_seen_at"?: string,"fts"?: never,"id"?: string,"last_seen_at"?: string,"level_source"?: string | null,"location_text"?: string | null,"posted_at"?: string,"provider_key"?: string | null,"province"?: string | null,"remote"?: boolean,"salary"?: string | null,"salary_currency"?: string | null,"salary_max"?: number | null,"salary_min"?: number | null,"salary_period"?: string | null,"source"?: string,"source_url"?: string | null,"title"?: string,"updated_at"?: string,"user_id"?: string | null,"verification_note"?: string | null,"verification_status"?: Database["public"]['Enums']["job_verification_status"],"verified_at"?: string | null,"workplace_type"?: string | null
+                    "apply_url"?: string | null,"canonical_url"?: string | null,"city"?: string | null,"closed_at"?: string | null,"company"?: string | null,"countries"?: (string)[],"country"?: string | null,"created_at"?: string,"date_note"?: string | null,"date_source"?: string,"dedupe_key"?: string | null,"department"?: string | null,"desc_fingerprint"?: string | null,"description"?: string,"description_head"?: never,"description_is_partial"?: boolean,"employer_id"?: string | null,"employment_type"?: string | null,"experience_level"?: string | null,"external_id"?: string,"final_url"?: string | null,"first_seen_at"?: string,"fts"?: never,"id"?: string,"last_seen_at"?: string,"level_source"?: string | null,"location_text"?: string | null,"posted_at"?: string,"provider_key"?: string | null,"province"?: string | null,"remote"?: boolean,"salary"?: string | null,"salary_currency"?: string | null,"salary_max"?: number | null,"salary_min"?: number | null,"salary_period"?: string | null,"source"?: string,"source_url"?: string | null,"title"?: string,"updated_at"?: string,"user_id"?: string | null,"verification_note"?: string | null,"verification_status"?: Database["public"]['Enums']["job_verification_status"],"verified_at"?: string | null,"workplace_type"?: string | null
                   }
                   Relationships: [
                     {
@@ -825,14 +851,14 @@ isOneToOne: false
                   ]
                 },"settings": {
                   Row: {
-                    "auto_approve": boolean,"baseline_connections": number | null,"count_ubco_as_ubc": boolean,"created_at": string,"daily_invite_target": number | null,"density": string,"discipline_priority": (Database["public"]['Enums']["discipline"])[],"email_notifications": boolean,"job_country": string,"job_exclude_keywords": (string)[],"job_provinces": (string)[],"job_seniority": string,"job_titles": (string)[],"monthly_note_allowance": number | null,"my_interests": string | null,"my_program_text": string | null,"my_school_text": string | null,"networking_goal": string | null,"no_response_days": number,"note_char_limit": number,"notify_interviews": boolean,"notify_reminders": boolean,"overall_target": number,"pause_reason": string | null,"paused": boolean,"paused_at": string | null,"project_start_date": string,"stale_pending_days": number,"text_size": string,"theme": string,"timezone": string,"updated_at": string,"user_id": string,"weekly_invite_cap": number | null,"weekly_summary": boolean
+                    "auto_approve": boolean,"baseline_connections": number | null,"created_at": string,"daily_invite_target": number | null,"density": string,"email_notifications": boolean,"job_country": string,"job_exclude_keywords": (string)[],"job_provinces": (string)[],"job_titles": (string)[],"monthly_note_allowance": number | null,"my_interests": string | null,"my_program_text": string | null,"my_school_text": string | null,"networking_goal": string | null,"no_response_days": number,"note_char_limit": number,"notify_interviews": boolean,"notify_reminders": boolean,"overall_target": number | null,"pause_reason": string | null,"paused": boolean,"paused_at": string | null,"project_start_date": string,"stale_pending_days": number,"text_size": string,"theme": string,"timezone": string,"updated_at": string,"user_id": string,"weekly_invite_cap": number | null,"weekly_summary": boolean
                   }
                   ComputedFields: never
                   Insert: {
-                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"count_ubco_as_ubc"?: boolean,"created_at"?: string,"daily_invite_target"?: number | null,"density"?: string,"discipline_priority"?: (Database["public"]['Enums']["discipline"])[],"email_notifications"?: boolean,"job_country"?: string,"job_exclude_keywords"?: (string)[],"job_provinces"?: (string)[],"job_seniority"?: string,"job_titles"?: (string)[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"no_response_days"?: number,"note_char_limit"?: number,"notify_interviews"?: boolean,"notify_reminders"?: boolean,"overall_target"?: number,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"text_size"?: string,"theme"?: string,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null,"weekly_summary"?: boolean
+                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"created_at"?: string,"daily_invite_target"?: number | null,"density"?: string,"email_notifications"?: boolean,"job_country"?: string,"job_exclude_keywords"?: (string)[],"job_provinces"?: (string)[],"job_titles"?: (string)[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"no_response_days"?: number,"note_char_limit"?: number,"notify_interviews"?: boolean,"notify_reminders"?: boolean,"overall_target"?: number | null,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"text_size"?: string,"theme"?: string,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null,"weekly_summary"?: boolean
                   }
                   Update: {
-                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"count_ubco_as_ubc"?: boolean,"created_at"?: string,"daily_invite_target"?: number | null,"density"?: string,"discipline_priority"?: (Database["public"]['Enums']["discipline"])[],"email_notifications"?: boolean,"job_country"?: string,"job_exclude_keywords"?: (string)[],"job_provinces"?: (string)[],"job_seniority"?: string,"job_titles"?: (string)[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"no_response_days"?: number,"note_char_limit"?: number,"notify_interviews"?: boolean,"notify_reminders"?: boolean,"overall_target"?: number,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"text_size"?: string,"theme"?: string,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null,"weekly_summary"?: boolean
+                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"created_at"?: string,"daily_invite_target"?: number | null,"density"?: string,"email_notifications"?: boolean,"job_country"?: string,"job_exclude_keywords"?: (string)[],"job_provinces"?: (string)[],"job_titles"?: (string)[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"no_response_days"?: number,"note_char_limit"?: number,"notify_interviews"?: boolean,"notify_reminders"?: boolean,"overall_target"?: number | null,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"text_size"?: string,"theme"?: string,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null,"weekly_summary"?: boolean
                   }
                   Relationships: [
                     
@@ -865,14 +891,40 @@ isOneToOne: false
                   ]
                 },"targets": {
                   Row: {
-                    "created_at": string,"discipline": Database["public"]['Enums']["discipline"],"id": string,"target_count": number,"university": Database["public"]['Enums']["university"] | null,"updated_at": string,"user_id": string
+                    "created_at": string,"discipline": string,"id": string,"target_count": number,"university": string | null,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"discipline": Database["public"]['Enums']["discipline"],"id"?: string,"target_count": number,"university"?: Database["public"]['Enums']["university"] | null,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"discipline": string,"id"?: string,"target_count": number,"university"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"discipline"?: Database["public"]['Enums']["discipline"],"id"?: string,"target_count"?: number,"university"?: Database["public"]['Enums']["university"] | null,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"discipline"?: string,"id"?: string,"target_count"?: number,"university"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "targets_discipline_owned"
+      columns: ["discipline","user_id"]
+isOneToOne: false
+      referencedRelation: "disciplines"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "targets_university_owned"
+      columns: ["university","user_id"]
+isOneToOne: false
+      referencedRelation: "universities"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"universities": {
+                  Row: {
+                    "aliases": (string)[],"created_at": string,"has_targets": boolean,"id": string,"name": string,"position": number,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "aliases"?: (string)[],"created_at"?: string,"has_targets"?: boolean,"id"?: string,"name": string,"position"?: number,"user_id"?: string
+                  }
+                  Update: {
+                    "aliases"?: (string)[],"created_at"?: string,"has_targets"?: boolean,"id"?: string,"name"?: string,"position"?: number,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -896,11 +948,23 @@ isOneToOne: false
           Views: {
             "candidate_category_counts": {
                   Row: {
-                    "candidate_count": number | null,"classified": boolean | null,"discipline": Database["public"]['Enums']["discipline"] | null,"status": Database["public"]['Enums']["candidate_status"] | null,"university": Database["public"]['Enums']["university"] | null,"user_id": string | null
+                    "candidate_count": number | null,"classified": boolean | null,"discipline": string | null,"status": Database["public"]['Enums']["candidate_status"] | null,"university": string | null,"user_id": string | null
                   }
                   ComputedFields: never
                   Relationships: [
-                    
+                    {
+      foreignKeyName: "candidates_discipline_owned"
+      columns: ["discipline","user_id"]
+isOneToOne: false
+      referencedRelation: "disciplines"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "candidates_university_owned"
+      columns: ["university","user_id"]
+isOneToOne: false
+      referencedRelation: "universities"
+      referencedColumns: ["id","user_id"]
+    }
                   ]
                 }
           }
@@ -1004,7 +1068,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "application_stage": "saved"|"applied"|"screening"|"interviewing"|"offer"|"accepted"|"rejected"|"withdrawn"|"no_response","ats_kind": "greenhouse"|"lever"|"ashby"|"smartrecruiters"|"workable"|"recruitee"|"fixture","candidate_source": "manual"|"csv"|"linkedin_export","candidate_status": "new"|"awaiting_review"|"approved"|"invitation_sent"|"invitation_pending"|"connected"|"declined_withdrawn"|"not_a_match"|"do_not_contact","classification_confidence": "confirmed"|"needs_review","connection_source": "invitation"|"export","degree_level": "undergraduate"|"masters"|"doctoral"|"alumni"|"other","discipline": "ce"|"ee"|"mech"|"cs","employer_status": "active"|"failing"|"disabled","evidence_confidence": "high"|"medium"|"low","invitation_outcome": "pending"|"accepted"|"declined"|"withdrawn","job_fit_tier": "strong"|"good"|"stretch"|"excluded","job_status": "running"|"succeeded"|"failed","job_user_status": "saved"|"applied"|"dismissed","job_verification_status": "verified"|"expired"|"unavailable"|"failed_validation"|"pending_validation","known_connection_source": "csv"|"linkedin_export"|"manual","known_match_state": "none"|"auto_hidden"|"needs_review"|"confirmed_same"|"confirmed_different","network_fact_field": "institution"|"program"|"degree"|"grad_year"|"role"|"company"|"location"|"github"|"website"|"linkedin","network_person_status": "discovered"|"shortlisted"|"ready_to_connect"|"connection_sent_manually"|"connected"|"replied"|"follow_up"|"archived"|"not_relevant","network_proximity": "connected"|"not_connected"|"unknown"|"manual_second"|"manual_third","network_search_status": "queued"|"running"|"completed"|"failed"|"cancelled","person_feedback_kind": "great_match"|"not_relevant"|"already_connected"|"wrong_person"|"wrong_program","queue_item_state": "queued"|"sent"|"skipped","record_source": "manual"|"linkedin_export","search_person_tier": "verified"|"possible"|"hidden_connected"|"rejected","tailor_mode": "normal"|"apply_anyway","tailored_doc_kind": "resume"|"cover_letter"|"cv","university": "uoft"|"ubc"|"sfu"|"waterloo"
+            "application_stage": "saved"|"applied"|"screening"|"interviewing"|"offer"|"accepted"|"rejected"|"withdrawn"|"no_response","ats_kind": "greenhouse"|"lever"|"ashby"|"smartrecruiters"|"workable"|"recruitee"|"fixture"|"workday","candidate_source": "manual"|"csv"|"linkedin_export","candidate_status": "new"|"awaiting_review"|"approved"|"invitation_sent"|"invitation_pending"|"connected"|"declined_withdrawn"|"not_a_match"|"do_not_contact","classification_confidence": "confirmed"|"needs_review","connection_source": "invitation"|"export","degree_level": "undergraduate"|"masters"|"doctoral"|"alumni"|"other","employer_status": "active"|"failing"|"disabled","evidence_confidence": "high"|"medium"|"low","invitation_outcome": "pending"|"accepted"|"declined"|"withdrawn","job_fit_tier": "strong"|"good"|"stretch"|"excluded","job_status": "running"|"succeeded"|"failed","job_user_status": "saved"|"applied"|"dismissed","job_verification_status": "verified"|"expired"|"unavailable"|"failed_validation"|"pending_validation","known_connection_source": "csv"|"linkedin_export"|"manual","known_match_state": "none"|"auto_hidden"|"needs_review"|"confirmed_same"|"confirmed_different","network_fact_field": "institution"|"program"|"degree"|"grad_year"|"role"|"company"|"location"|"github"|"website"|"linkedin","network_person_status": "discovered"|"shortlisted"|"ready_to_connect"|"connection_sent_manually"|"connected"|"replied"|"follow_up"|"archived"|"not_relevant","network_proximity": "connected"|"not_connected"|"unknown"|"manual_second"|"manual_third","network_search_status": "queued"|"running"|"completed"|"failed"|"cancelled","person_feedback_kind": "great_match"|"not_relevant"|"already_connected"|"wrong_person"|"wrong_program","queue_item_state": "queued"|"sent"|"skipped","record_source": "manual"|"linkedin_export","search_person_tier": "verified"|"possible"|"hidden_connected"|"rejected","tailor_mode": "normal"|"apply_anyway","tailored_doc_kind": "resume"|"cover_letter"|"cv"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -1124,7 +1188,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "application_stage": ["saved", "applied", "screening", "interviewing", "offer", "accepted", "rejected", "withdrawn", "no_response"],"ats_kind": ["greenhouse", "lever", "ashby", "smartrecruiters", "workable", "recruitee", "fixture"],"candidate_source": ["manual", "csv", "linkedin_export"],"candidate_status": ["new", "awaiting_review", "approved", "invitation_sent", "invitation_pending", "connected", "declined_withdrawn", "not_a_match", "do_not_contact"],"classification_confidence": ["confirmed", "needs_review"],"connection_source": ["invitation", "export"],"degree_level": ["undergraduate", "masters", "doctoral", "alumni", "other"],"discipline": ["ce", "ee", "mech", "cs"],"employer_status": ["active", "failing", "disabled"],"evidence_confidence": ["high", "medium", "low"],"invitation_outcome": ["pending", "accepted", "declined", "withdrawn"],"job_fit_tier": ["strong", "good", "stretch", "excluded"],"job_status": ["running", "succeeded", "failed"],"job_user_status": ["saved", "applied", "dismissed"],"job_verification_status": ["verified", "expired", "unavailable", "failed_validation", "pending_validation"],"known_connection_source": ["csv", "linkedin_export", "manual"],"known_match_state": ["none", "auto_hidden", "needs_review", "confirmed_same", "confirmed_different"],"network_fact_field": ["institution", "program", "degree", "grad_year", "role", "company", "location", "github", "website", "linkedin"],"network_person_status": ["discovered", "shortlisted", "ready_to_connect", "connection_sent_manually", "connected", "replied", "follow_up", "archived", "not_relevant"],"network_proximity": ["connected", "not_connected", "unknown", "manual_second", "manual_third"],"network_search_status": ["queued", "running", "completed", "failed", "cancelled"],"person_feedback_kind": ["great_match", "not_relevant", "already_connected", "wrong_person", "wrong_program"],"queue_item_state": ["queued", "sent", "skipped"],"record_source": ["manual", "linkedin_export"],"search_person_tier": ["verified", "possible", "hidden_connected", "rejected"],"tailor_mode": ["normal", "apply_anyway"],"tailored_doc_kind": ["resume", "cover_letter", "cv"],"university": ["uoft", "ubc", "sfu", "waterloo"]
+            "application_stage": ["saved", "applied", "screening", "interviewing", "offer", "accepted", "rejected", "withdrawn", "no_response"],"ats_kind": ["greenhouse", "lever", "ashby", "smartrecruiters", "workable", "recruitee", "fixture", "workday"],"candidate_source": ["manual", "csv", "linkedin_export"],"candidate_status": ["new", "awaiting_review", "approved", "invitation_sent", "invitation_pending", "connected", "declined_withdrawn", "not_a_match", "do_not_contact"],"classification_confidence": ["confirmed", "needs_review"],"connection_source": ["invitation", "export"],"degree_level": ["undergraduate", "masters", "doctoral", "alumni", "other"],"employer_status": ["active", "failing", "disabled"],"evidence_confidence": ["high", "medium", "low"],"invitation_outcome": ["pending", "accepted", "declined", "withdrawn"],"job_fit_tier": ["strong", "good", "stretch", "excluded"],"job_status": ["running", "succeeded", "failed"],"job_user_status": ["saved", "applied", "dismissed"],"job_verification_status": ["verified", "expired", "unavailable", "failed_validation", "pending_validation"],"known_connection_source": ["csv", "linkedin_export", "manual"],"known_match_state": ["none", "auto_hidden", "needs_review", "confirmed_same", "confirmed_different"],"network_fact_field": ["institution", "program", "degree", "grad_year", "role", "company", "location", "github", "website", "linkedin"],"network_person_status": ["discovered", "shortlisted", "ready_to_connect", "connection_sent_manually", "connected", "replied", "follow_up", "archived", "not_relevant"],"network_proximity": ["connected", "not_connected", "unknown", "manual_second", "manual_third"],"network_search_status": ["queued", "running", "completed", "failed", "cancelled"],"person_feedback_kind": ["great_match", "not_relevant", "already_connected", "wrong_person", "wrong_program"],"queue_item_state": ["queued", "sent", "skipped"],"record_source": ["manual", "linkedin_export"],"search_person_tier": ["verified", "possible", "hidden_connected", "rejected"],"tailor_mode": ["normal", "apply_anyway"],"tailored_doc_kind": ["resume", "cover_letter", "cv"]
           }
         }
 } as const

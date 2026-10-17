@@ -64,8 +64,8 @@ select throws_ok(
 reset role;
 select is(
   (select project_start_date from public.settings where user_id = '11111111-1111-1111-1111-111111111111'),
-  (now() at time zone 'America/Vancouver')::date,
-  'a new workspace starts on today''s date in the default time zone, not UTC');
+  current_date,
+  'a new workspace starts on today''s date (UTC until the user picks their time zone)');
 
 select * from finish();
 rollback;

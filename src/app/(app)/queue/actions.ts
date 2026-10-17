@@ -1,8 +1,8 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { loadCatalog } from "@/lib/data/catalog";
 import { z } from "zod";
-import { localDate, startOfLocalDay } from "@/lib/dates";
 import { failed, saved, type FormState } from "@/lib/form-state";
 import { suggestNote } from "@/lib/notes";
 import { rewriteNoteWithAI } from "@/lib/notes/ai-rewrite";
@@ -57,32 +57,21 @@ export async function skipQueueItem(_: FormState, formData: FormData): Promise<F
   return saved("Skipped for today.");
 }
 
-/** Per-user cap on AI rewrites, to keep API use (and any cost) predictable. */
-const DAILY_REWRITE_LIMIT = 25;
-
-export type RewriteResponse = { ok: true; text: string; left: number } | { ok: false; message: string };
+export type RewriteResponse = { ok: true; text: string } | { ok: false; message: string };
 
 /** Asks the AI for a more natural version of the template note. Called from the note box. */
 export async function suggestNoteWithAI(queueId: string): Promise<RewriteResponse> {
   if (!z.uuid().safeParse(queueId).success) return { ok: false, message: "Unknown queue item." };
   const ctx = await actionContext();
 
-  const since = startOfLocalDay(localDate(new Date(), ctx.settings.timezone), ctx.settings.timezone).toISOString();
-  const { count } = await ctx.supabase
-    .from("activity_logs")
-    .select("id", { count: "exact", head: true })
-    .eq("kind", "note.rewrite")
-    .gte("created_at", since);
-  const used = count ?? 0;
-  if (used >= DAILY_REWRITE_LIMIT) return { ok: false, message: `You've used today's ${DAILY_REWRITE_LIMIT} AI suggestions. The template note is still there.` };
-
-  const [{ data: item }, { data: me }] = await Promise.all([
+  const [{ data: item }, { data: me }, catalog] = await Promise.all([
     ctx.supabase
       .from("daily_queue")
       .select("candidate_id, candidates(full_name, university, discipline, raw_program_text, notes)")
       .eq("id", queueId)
       .single(),
     ctx.supabase.from("settings").select("my_school_text, my_program_text, my_interests, note_char_limit").single(),
+    loadCatalog(ctx.supabase),
   ]);
   if (!item || !me) return { ok: false, message: "Couldn't load this person." };
 
@@ -90,8 +79,8 @@ export async function suggestNoteWithAI(queueId: string): Promise<RewriteRespons
   const facts = {
     candidateId: item.candidate_id,
     fullName: c.full_name,
-    university: c.university,
-    discipline: c.discipline,
+    university: catalog.universities.find((u) => u.id === c.university) ?? null,
+    discipline: catalog.disciplines.find((d) => d.id === c.discipline) ?? null,
     programText: c.raw_program_text,
     candidateNotes: c.notes,
     me: { school: me.my_school_text, program: me.my_program_text, interests: me.my_interests },
@@ -105,5 +94,5 @@ export async function suggestNoteWithAI(queueId: string): Promise<RewriteRespons
   if (!result.ok) return { ok: false, message: result.reason };
 
   await ctx.supabase.from("daily_queue").update({ note_draft: result.text }).eq("id", queueId);
-  return { ok: true, text: result.text, left: DAILY_REWRITE_LIMIT - used - 1 };
+  return { ok: true, text: result.text };
 }

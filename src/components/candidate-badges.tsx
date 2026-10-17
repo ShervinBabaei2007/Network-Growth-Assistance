@@ -1,12 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import {
-  DISCIPLINE_LABELS,
-  SHORT_UNIVERSITY,
-  STATUS_LABELS,
-  type CandidateStatus,
-  type Discipline,
-  type University,
-} from "@/lib/domain";
+import { disciplineName, STATUS_LABELS, universityName, type CandidateStatus, type Catalog, type Discipline, type University } from "@/lib/domain";
 
 const STATUS_VARIANT: Partial<Record<CandidateStatus, "default" | "secondary" | "outline" | "destructive">> = {
   approved: "default",
@@ -24,16 +17,18 @@ export function CategoryLabel({
   university,
   discipline,
   confirmed,
+  catalog,
 }: {
   university: University | null;
   discipline: Discipline | null;
   confirmed: boolean;
+  /** The user's own schools and disciplines, for their names. */
+  catalog: Catalog;
 }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
       <span>
-        {university ? SHORT_UNIVERSITY[university] : "?"} ·{" "}
-        {discipline ? DISCIPLINE_LABELS[discipline] : "?"}
+        {university ? universityName(catalog, university) : "?"} · {discipline ? disciplineName(catalog, discipline) : "?"}
       </span>
       {confirmed ? null : <Badge variant="outline">Needs review</Badge>}
     </span>

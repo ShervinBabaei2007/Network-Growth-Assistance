@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Catalog } from "@/lib/domain";
 import { loadProgress } from "@/lib/data/dashboard";
 import { suggestNote } from "@/lib/notes";
 import { planQueue, type EligibleCandidate } from "@/lib/prioritize";
@@ -52,6 +53,7 @@ export async function computeTodaysPlan(supabase: Client, userId: string, now?: 
 
   const plan = planQueue({
     disciplines: progress.disciplines,
+    catalog: progress.catalog,
     eligible,
     skippedToday: todays.filter((r) => r.state === "skipped").map((r) => r.candidate_id),
     outcomes: progress.outcomes,
@@ -84,7 +86,7 @@ export async function buildTodaysQueue(supabase: Client, userId: string, now?: D
 
   const kept = todays.filter((r) => r.state !== "queued").length;
   if (plan.items.length > 0) {
-    const notes = await draftNotes(supabase, userId, plan.items.map((i) => i.candidateId));
+    const notes = await draftNotes(supabase, userId, plan.items.map((i) => i.candidateId), progress.catalog);
     const { error } = await supabase.from("daily_queue").upsert(
       plan.items.map((i) => ({
         user_id: userId,
@@ -104,7 +106,7 @@ export async function buildTodaysQueue(supabase: Client, userId: string, now?: D
 }
 
 /** Template note drafts for the queued people (no AI here; that's on request only). */
-async function draftNotes(supabase: Client, userId: string, candidateIds: string[]) {
+async function draftNotes(supabase: Client, userId: string, candidateIds: string[], catalog: Catalog) {
   const [{ data: me, error: meError }, { data: people, error }] = await Promise.all([
     supabase.from("settings").select("my_school_text, my_program_text, my_interests, note_char_limit").eq("user_id", userId).single(),
     supabase
@@ -122,8 +124,8 @@ async function draftNotes(supabase: Client, userId: string, candidateIds: string
         {
           candidateId: c.id,
           fullName: c.full_name,
-          university: c.university,
-          discipline: c.discipline,
+          university: catalog.universities.find((u) => u.id === c.university) ?? null,
+          discipline: catalog.disciplines.find((d) => d.id === c.discipline) ?? null,
           programText: c.raw_program_text,
           candidateNotes: c.notes,
           me: { school: me.my_school_text, program: me.my_program_text, interests: me.my_interests },

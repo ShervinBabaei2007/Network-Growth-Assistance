@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { DISCIPLINE_ALIASES, UNIVERSITY_ALIASES } from "@/lib/classify";
-import { UNIVERSITY_LABELS, type University } from "@/lib/domain";
+import { phrasesFor } from "@/lib/classify";
+import type { Catalog } from "@/lib/domain";
+import { countryCode, countryName } from "@/lib/geo/countries";
 import { clean, has, hasAny } from "@/lib/text/match";
-import { DEFAULT_TARGET, knownInstitution, NetworkingCriteria } from "./criteria";
+import { DEFAULT_TARGET, NetworkingCriteria } from "./criteria";
 import type { LLMProvider } from "./llm";
 
 /** What the model may return. Kept flat and permissive; `toCriteria` validates and clamps. */
@@ -10,13 +11,15 @@ const ParsedRequest = z.object({
   targetCount: z.number().nullable(),
   institution: z.string().nullable(),
   institutionAliases: z.array(z.string()),
+  institutionDomains: z.array(z.string()),
   programs: z.array(z.string()),
-  countEceAsMatch: z.boolean(),
+  programAliases: z.array(z.string()),
   graduationYearMin: z.number().nullable(),
   graduationYearMax: z.number().nullable(),
   studentStatus: z.enum(["any", "alumni", "student"]),
   roles: z.array(z.string()),
   locations: z.array(z.string()),
+  country: z.string().nullable(),
   companies: z.array(z.string()),
   includeStartups: z.boolean(),
   excludeExistingConnections: z.boolean(),
@@ -24,24 +27,26 @@ const ParsedRequest = z.object({
 });
 type ParsedRequest = z.infer<typeof ParsedRequest>;
 
-const SYSTEM = `You turn a networking research request into structured search criteria.
+const SYSTEM = `You turn a networking research request into structured search criteria. The request can be about any field: health care, law, business, the arts, education, trades, science, technology or anything else.
 
 The user is looking for people to meet professionally. Extract only what the request says:
 - targetCount: the number of people asked for, or null.
-- institution: the school's full official name (e.g. "University of Toronto" for "UofT"), or null.
-- institutionAliases: common short forms of that school (e.g. "UofT", "U of T").
-- programs: academic programs named, spelled out in full (e.g. "Computer Engineering" for "CE" or "Comp Eng").
-- countEceAsMatch: true only if the request explicitly accepts "ECE" / "Electrical and Computer Engineering" as a match. "ECE alumni" counts; "Computer Engineering" alone does not.
+- institution: the school's full official name (e.g. "McGill University" for "McGill", "University of Toronto" for "UofT"), or null.
+- institutionAliases: common short forms of that school, as people write them on profiles.
+- institutionDomains: the school's official website domain (e.g. "mcgill.ca"), only if you are sure of it; otherwise empty.
+- programs: academic programs or fields named, spelled out in full (e.g. "Nursing", "Law", "Mechanical Engineering", "Business Administration").
+- programAliases: other names people use for those programs on profiles (e.g. "BSN", "BScN" for Nursing; "JD" for Law; "BBA" for Business Administration).
 - graduationYearMin / Max: only if a graduation year or range is stated.
-- studentStatus: "alumni" if the request asks for graduates or alumni only, "student" if it asks for current students only, otherwise "any" (including "students or alumni").
-- roles: job titles asked for, plus close equivalents (e.g. "Software Engineer", "Software Developer", "Backend Engineer").
+- studentStatus: "alumni" if the request asks for graduates or alumni only, "student" if it asks for current students only, otherwise "any".
+- roles: job titles asked for, plus close equivalents in that field (e.g. "Registered Nurse", "RN"; "Associate Lawyer", "Litigation Associate"; "Software Engineer", "Software Developer").
 - locations: cities or regions asked for.
-- companies: employers asked for, by their common names.
+- country: the country people must be in, only if the request names or clearly implies one (e.g. "in Toronto" implies Canada); otherwise null.
+- companies: employers asked for, by their common names (hospitals, firms, agencies and companies alike).
 - includeStartups: true if startups are mentioned as acceptable employers.
 - excludeExistingConnections: false only if the request says to include people the user already knows.
-- goal: the user's stated reason or situation (e.g. "I'm a junior developer looking for internships"), or null.
+- goal: the user's stated reason or situation, or null.
 
-Never add a school, program, company, role or location the request doesn't mention or clearly imply.`;
+Never add a school, program, company, role, location or country the request doesn't mention or clearly imply.`;
 
 const trimList = (xs: string[], max: number, len: number) =>
   [...new Set(xs.map((x) => x.trim().replace(/\s+/g, " ")).filter((x) => x && x.length <= len))].slice(0, max);
@@ -57,16 +62,18 @@ export function toCriteria(p: ParsedRequest, query: string): NetworkingCriteria 
     education: {
       institution,
       institutionAliases: trimList(p.institutionAliases, 12, 60),
+      vettedAliases: [],
+      institutionDomains: trimList(p.institutionDomains, 5, 100),
       programs: trimList(p.programs, 8, 80),
-      broadenEce: p.countEceAsMatch,
+      programAliases: trimList(p.programAliases, 30, 80),
+      broadenEce: false,
       graduationYearMin: year(p.graduationYearMin),
       graduationYearMax: year(p.graduationYearMax),
       status: p.studentStatus,
     },
     roles: trimList(p.roles, 12, 80),
     locations: trimList(p.locations, 10, 80),
-    // Discovery looks for people in Canada only; a search can be changed under Modify.
-    country: "Canada",
+    country: p.country?.trim() ? p.country.trim().slice(0, 60) : null,
     companies: trimList(p.companies, 15, 80),
     includeStartups: p.includeStartups,
     excludeExistingConnections: p.excludeExistingConnections,
@@ -79,59 +86,68 @@ function countFromText(query: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
-const KNOWN_COMPANIES = ["NVIDIA", "AMD", "Microsoft", "Amazon", "Apple", "Google", "Meta", "Intel", "Qualcomm", "Shopify", "Tesla", "IBM", "Cisco", "Oracle", "Salesforce", "Uber", "Stripe", "Wealthsimple", "Cohere", "OpenAI", "Anthropic"];
-const KNOWN_LOCATIONS = ["Toronto", "Vancouver", "Waterloo", "Montreal", "Ottawa", "Calgary", "Seattle", "San Francisco", "New York", "Bay Area", "Burnaby", "Mississauga"];
-const PROGRAM_NAMES: Record<string, string> = { ce: "Computer Engineering", ee: "Electrical Engineering", mech: "Mechatronics Engineering", cs: "Computer Science" };
+const WORD = "[A-Z][\\p{L}'’.&-]*";
+const NAME = `(?:${WORD}\\s?){1,5}`;
+/** "at Vancouver General Hospital", "at Deloitte": capitalized names after "at" (not a school already found). */
+const AT = new RegExp(`\\b(?:at|for|with)\\s+(${NAME})`, "gu");
+/** "in Vancouver", "in New York": capitalized places after "in". */
+const IN = new RegExp(`\\bin\\s+(?:the\\s+)?(${NAME})`, "gu");
+/** "working as a Registered Nurse", "who are Paralegals". */
+const AS = /\b(?:working as|work as|who are|as an?|as)\s+(?:an?\s+)?([A-Za-z][A-Za-z /&-]{2,60}?)(?=\s+(?:at|in|from|who|with|and)\b|[,.;]|$)/i;
 
-/** Understands common requests without a model: schools, programs, roles, companies, places, count. */
-export function parseRequestDeterministic(query: string): NetworkingCriteria {
+const tidy = (s: string) => s.trim().replace(/\s+(?:who|working|and|in|at|from)$/i, "").trim();
+
+/**
+ * Understands a request without a model: the user's own schools and disciplines (by their
+ * names and spellings), any "University of X" / "X College" name, people "working as" a role,
+ * employers "at" a name, places "in" a name, a count and student/alumni status. Nothing about
+ * a particular field or country is assumed.
+ */
+export function parseRequestDeterministic(query: string, catalog?: Catalog): NetworkingCriteria {
   const t = clean(query);
   let institution: string | null = null;
   let aliases: string[] = [];
-  for (const [u, list] of Object.entries(UNIVERSITY_ALIASES) as [University, readonly string[]][]) {
-    if (hasAny(t, list)) {
-      institution = UNIVERSITY_LABELS[u];
-      aliases = list.filter((a) => a.length <= 8).map((a) => (a === "uoft" ? "UofT" : a === "u of t" ? "U of T" : a.toUpperCase()));
-      break;
-    }
-  }
-  if (!institution) {
-    // Other schools by their written name: "University of Ottawa", "McGill University", "Georgia Institute of Technology".
-    const word = "[A-Z][\\p{L}'’.&-]*";
+  const school = catalog?.universities.find((u) => hasAny(t, phrasesFor(u)));
+  if (school) {
+    institution = school.name;
+    aliases = school.aliases;
+  } else {
+    // Schools by their written name: "University of Ottawa", "McGill University", "Humber College".
     const m =
-      query.match(new RegExp(`\\b(?:University|Université) of (?:${word}\\s?)+`, "u")) ??
-      query.match(new RegExp(`\\b(?:${word}\\s)+(?:University|Institute of Technology|Polytechnic(?: University)?|College)\\b`, "u"));
-    const name = m?.[0].trim().replace(/\s+(?:who|working|and|in|at)$/i, "");
+      query.match(new RegExp(`\\b(?:University|Université) of (?:${WORD}\\s?)+`, "u")) ??
+      query.match(new RegExp(`\\b(?:${WORD}\\s)+(?:University|Institute of Technology|Polytechnic(?: University)?|College)\\b`, "u"));
+    const name = m ? tidy(m[0]) : "";
     if (name && !/^(Find|Show|Get|List)\b/.test(name)) institution = name;
   }
-  const programs: string[] = [];
-  for (const [d, list] of Object.entries(DISCIPLINE_ALIASES)) {
-    // "cs" and "ce" alone are too short to trust inside free text unless written as words.
-    if (hasAny(t, list) || (d === "ce" && has(t, "ce"))) programs.push(PROGRAM_NAMES[d]);
-  }
-  const ece = hasAny(t, ["ece", "electrical and computer engineering"]);
-  if (ece && !programs.length) programs.push("Electrical and Computer Engineering");
 
-  const roles: string[] = [];
-  if (hasAny(t, ["software", "swe", "developer", "developers", "backend", "full stack", "fullstack"])) roles.push("Software Engineer", "Software Developer");
-  if (hasAny(t, ["hardware", "asic", "fpga"])) roles.push("Hardware Engineer");
-  if (hasAny(t, ["machine learning", "ml", "ai engineer"])) roles.push("Machine Learning Engineer");
+  const fields = catalog?.disciplines.filter((d) => hasAny(t, phrasesFor(d))) ?? [];
+  const programs = fields.map((d) => d.name);
+  const programAliases = fields.flatMap((d) => d.aliases);
 
-  const companies = KNOWN_COMPANIES.filter((c) => has(t, clean(c).trim()));
-  const locations = KNOWN_LOCATIONS.filter((l) => has(t, clean(l).trim()) && !(l === "Toronto" && institution === UNIVERSITY_LABELS.uoft && !/\bin\s+(?:\w+\s+or\s+)?toronto\b/i.test(query)));
+  const role = query.match(AS)?.[1];
+  const roles = role ? [tidy(role)] : [];
+  const names = (re: RegExp) => [...query.matchAll(re)].map((m) => tidy(m[1])).filter((n) => n && n !== institution && !/^(Find|Show|Get|List|The)$/.test(n));
+  const companies = names(AT).filter((c) => !/\b(University|College|Institute|Polytechnic)\b/.test(c));
+  const places = names(IN).filter((l) => !companies.includes(l));
+  // "in Canada", "in the United Kingdom": a country the people must be in; other places are cities or regions.
+  const countryPlace = places.find((l) => countryCode(l.replace(/^the\s+/i, "")));
+  const country = countryPlace ? (countryName(countryCode(countryPlace.replace(/^the\s+/i, ""))!) ?? countryPlace) : null;
+  const locations = places.filter((l) => l !== countryPlace);
 
-  return toCriteria(
+  const criteria = toCriteria(
     {
       targetCount: countFromText(query),
       institution,
-      institutionAliases: aliases,
+      institutionAliases: aliases.slice(0, 12),
+      institutionDomains: [],
       programs,
-      countEceAsMatch: ece,
+      programAliases,
       graduationYearMin: null,
       graduationYearMax: null,
       studentStatus: statusFromText(t),
       roles,
       locations,
+      country,
       companies,
       includeStartups: has(t, "startups") || has(t, "startup"),
       excludeExistingConnections: true,
@@ -139,6 +155,7 @@ export function parseRequestDeterministic(query: string): NetworkingCriteria {
     },
     query,
   );
+  return withUserLists(criteria, catalog);
 }
 
 /** "alumni", "graduates" → alumni only; "students" → students only; both or neither → any. */
@@ -148,11 +165,32 @@ export function statusFromText(t: string): "any" | "alumni" | "student" {
   return alumni && !students ? "alumni" : students && !alumni ? "student" : "any";
 }
 
+/**
+ * Adds what the user's own lists know: the spellings of their school (trusted like its full
+ * name) and the other names of their disciplines, when the search names one of them.
+ */
+export function withUserLists(criteria: NetworkingCriteria, catalog?: Catalog): NetworkingCriteria {
+  if (!catalog) return criteria;
+  const e = criteria.education;
+  const inst = e.institution ? clean(e.institution) : "";
+  const school = inst.trim() ? catalog.universities.find((u) => phrasesFor(u).some((p) => has(inst, p)) || hasAny(clean(u.name), [inst.trim()])) : undefined;
+  const programs = e.programs.map((p) => clean(p));
+  const fields = catalog.disciplines.filter((d) => programs.some((p) => hasAny(p, phrasesFor(d)) || hasAny(clean(d.name), [p.trim()])));
+  return {
+    ...criteria,
+    education: {
+      ...e,
+      vettedAliases: school ? [...new Set([...e.vettedAliases, school.name, ...school.aliases])].slice(0, 40) : e.vettedAliases,
+      programAliases: [...new Set([...e.programAliases, ...fields.flatMap((d) => [d.name, ...d.aliases])])].slice(0, 30),
+    },
+  };
+}
+
 export type ParseOutcome = { criteria: NetworkingCriteria; usedAi: boolean; note?: string };
 
 /** The model's reading of the request, checked against the deterministic one so it can't drop the school. */
-export async function parseRequest(llm: LLMProvider, query: string): Promise<ParseOutcome> {
-  const fallback = parseRequestDeterministic(query);
+export async function parseRequest(llm: LLMProvider, query: string, catalog?: Catalog): Promise<ParseOutcome> {
+  const fallback = parseRequestDeterministic(query, catalog);
   if (!llm.enabled) return { criteria: fallback, usedAi: false };
 
   const res = await llm.structured({ tier: "smart", system: SYSTEM, user: `Request:\n${query}`, schema: ParsedRequest, maxTokens: 4000 });
@@ -166,9 +204,6 @@ export async function parseRequest(llm: LLMProvider, query: string): Promise<Par
   }
   // Keep explicit facts the deterministic parser is sure about.
   if (!criteria.education.institution && fallback.education.institution) criteria.education.institution = fallback.education.institution;
-  if (knownInstitution(criteria.education.institution) && fallback.education.institutionAliases.length) {
-    criteria.education.institutionAliases = [...new Set([...criteria.education.institutionAliases, ...fallback.education.institutionAliases])].slice(0, 12);
-  }
   if (!criteria.education.programs.length) criteria.education.programs = fallback.education.programs;
-  return { criteria, usedAi: true };
+  return { criteria: withUserLists(criteria, catalog), usedAi: true };
 }

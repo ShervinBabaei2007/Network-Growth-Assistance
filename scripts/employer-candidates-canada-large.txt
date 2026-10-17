@@ -1,0 +1,370 @@
+# Large employers hiring in Canada, on Workday career sites.
+# `node scripts/employers.mjs discover scripts/employer-candidates-canada-large.txt` keeps only
+# the sites that answer. Each line: "Name | hints…", where a hint is a Workday site
+# ("tenant.wd3.Site"), "wd:tenant1,tenant2" (find the site from tenant guesses) or a careers page
+# that links to the Workday site. These are guesses: an employer whose site isn't found is left out.
+
+# Banks, insurance and finance
+BMO | bmo.wd3.External
+CIBC | cibc.wd3.Search
+TD Bank | td.wd3.td_bank_careers | wd:td
+RBC | wd:rbc,rbcglobal | https://jobs.rbc.com/ca/en
+Scotiabank | wd:scotiabank,bns | https://jobs.scotiabank.com
+National Bank of Canada | wd:bnc,nbc,nationalbank | https://emplois.bnc.ca/en
+Desjardins | wd:desjardins | https://www.desjardins.com/en/careers.html
+Laurentian Bank | wd:laurentianbank,lbcfg
+EQ Bank | wd:eqbank,equitablebank
+ATB Financial | wd:atb,atbfinancial | https://www.atb.com/company/careers/
+Vancity | wd:vancity | https://www.vancity.com/about-vancity/careers/
+Coast Capital | wd:coastcapital,coastcapitalsavings
+Servus Credit Union | wd:servus
+Meridian Credit Union | wd:meridian,meridiancu
+Manulife | wd:manulife,mfcgd | https://careers.manulife.com
+Sun Life | wd:sunlife,sunlifefinancial | https://www.sunlife.com/en/careers/
+Canada Life | wd:canadalife,greatwestlife,gwl | https://www.canadalife.com/about-us/careers.html
+Great-West Lifeco | wd:gwl,greatwestlifeco
+Intact Financial | wd:intact,intactfc | https://careers.intact.ca
+Definity Financial | wd:definity,economical
+Aviva Canada | wd:aviva,avivacanada
+The Co-operators | wd:cooperators,thecooperators
+Industrial Alliance (iA) | wd:ia,iafinancial,inalco
+Empire Life | wd:empirelife
+Wawanesa | wd:wawanesa
+Beneva | wd:beneva
+Fairfax Financial | wd:fairfax
+Brookfield | wd:brookfield | https://www.brookfield.com/careers
+Onex | wd:onex
+CPP Investments | wd:cppinvestments,cppib
+OMERS | wd:omers
+Ontario Teachers' Pension Plan | wd:otpp
+Caisse de dépôt et placement (CDPQ) | wd:cdpq
+PSP Investments | wd:investpsp,psp
+Healthcare of Ontario Pension Plan | wd:hoopp
+TMX Group | tmx.wd3.tmx_Careers
+Moneris | wd:moneris
+Interac | wd:interac
+Equifax Canada | wd:equifax
+TransUnion | wd:transunion
+Global Payments | wd:globalpayments,tsys
+Nuvei | wd:nuvei
+Mogo | wd:mogo
+Questrade | wd:questrade
+Wealthsimple | wd:wealthsimple
+IGM Financial | wd:igm,igmfinancial,investorsgroup
+CI Financial | wd:cifinancial,ci
+Fiera Capital | wd:fiera,fieracapital
+Element Fleet Management | wd:elementfleet,element
+goeasy | wd:goeasy
+KPMG Canada | wd:kpmg,kpmgcanada
+Deloitte Canada | wd:deloitte,deloittecanada
+PwC Canada | wd:pwc
+BDO Canada | bdo.wd3.BDO
+Grant Thornton Canada | wd:grantthornton,gtcanada
+MNP | wd:mnp | https://careers.mnp.ca
+Accenture | wd:accenture
+Raymond Chabot Grant Thornton | wd:rcgt
+
+# Telecom, media and tech
+Telus | wd:telus | https://careers.telus.com
+Rogers Communications | wd:rogers | https://jobs.rogers.com
+Bell Canada | wd:bell,bce | https://jobs.bce.ca
+Videotron | wd:videotron,quebecor
+Quebecor | wd:quebecor
+Cogeco | wd:cogeco
+SaskTel | wd:sasktel
+Shaw | wd:shaw
+Corus Entertainment | wd:corus
+CBC Radio-Canada | wd:cbc,radiocanada
+OpenText | wd:opentext | https://careers.opentext.com
+CGI | wd:cgi
+Thomson Reuters | wd:thomsonreuters | https://careers.thomsonreuters.com
+Celestica | wd:celestica
+Constellation Software | wd:constellation,csisoftware
+Descartes Systems | wd:descartes
+Kinaxis | wd:kinaxis
+Lightspeed Commerce | wd:lightspeed,lightspeedhq
+Ciena | wd:ciena
+Nokia | wd:nokia
+Ericsson | wd:ericsson
+Blackberry | wd:blackberry | https://bb.wd3.myworkdayjobs.com/BlackBerry
+Sierra Wireless | wd:sierrawireless,semtech
+Mitel | wd:mitel
+D2L | wd:d2l
+Sandvine | wd:sandvine
+Electronic Arts | wd:ea | https://www.ea.com/careers
+Ubisoft | wd:ubisoft
+Workday | workday.wd5.Workday
+Salesforce | salesforce.wd12.External_Career_Site
+Adobe | adobe.wd5.external_experienced
+NVIDIA | nvidia.wd5.NVIDIAExternalCareerSite
+Intel | wd:intel
+IBM | wd:ibm
+SAP | wd:sap
+Autodesk | wd:autodesk
+Dell Technologies | wd:dell
+HP Inc | wd:hp
+Hewlett Packard Enterprise | wd:hpe
+Motorola Solutions | wd:motorolasolutions
+Cisco | wd:cisco
+Broadcom | wd:broadcom
+AMD | wd:amd
+Qualcomm | wd:qualcomm
+
+# Retail, grocery and consumer
+Loblaw Companies | wd:loblaw,loblaws | https://careers.loblaw.ca
+Sobeys (Empire Company) | wd:sobeys,empire | https://careers.sobeys.com
+Metro Inc | wd:metro,metroinc
+Walmart Canada | wd:walmart | https://careers.walmart.ca
+Costco Canada | wd:costco
+Canadian Tire | wd:canadiantire,cantire,ctc | https://corp.canadiantire.ca/English/careers
+Best Buy Canada | bestbuycanada.wd3.BestBuyCA_Career
+Hudson's Bay | wd:hbc,thebay
+Lululemon | wd:lululemon | https://careers.lululemon.com
+Aritzia | wd:aritzia
+Roots | wd:roots
+Indigo Books | wd:indigo,chapters
+Dollarama | wd:dollarama
+Shoppers Drug Mart | wd:shoppers,loblaw
+London Drugs | wd:londondrugs
+Save-On-Foods | wd:saveonfoods,pattisongroup
+Pattison Group | wd:pattison,jimpattison
+Couche-Tard | wd:couchetard,circlek
+Tim Hortons (RBI) | wd:rbi,restaurantbrands,timhortons
+McDonald's Canada | wd:mcdonalds
+Starbucks | wd:starbucks
+Recipe Unlimited | wd:recipe,recipeunlimited
+Saputo | wd:saputo
+Maple Leaf Foods | wd:mapleleaf,mapleleaffoods
+McCain Foods | wd:mccain
+Molson Coors | wd:molsoncoors
+Labatt | wd:labatt,abinbev
+Gildan | wd:gildan
+Canada Goose | wd:canadagoose
+Sleep Country | wd:sleepcountry
+IKEA Canada | wd:ikea
+Home Depot Canada | wd:homedepot
+Staples Canada | wd:staples
+Sport Chek (FGL) | wd:fgl,canadiantire
+Mark's | wd:marks,canadiantire
+Uniqlo | wd:uniqlo
+Nike | wd:nike
+Adidas | wd:adidas
+
+# Energy, mining, utilities and resources
+Enbridge | wd:enbridge | https://careers.enbridge.com
+Suncor | wd:suncor | https://careers.suncor.com
+TC Energy | wd:tcenergy,transcanada | https://www.tcenergy.com/careers/
+Cenovus | wd:cenovus | https://www.cenovus.com/Careers
+Canadian Natural Resources | wd:cnrl,cnq
+Imperial Oil | wd:imperialoil,exxonmobil
+Pembina Pipeline | wd:pembina
+ARC Resources | wd:arcresources,arc
+Tourmaline Oil | wd:tourmaline
+Keyera | wd:keyera
+AltaGas | wd:altagas
+Fortis | wd:fortis,fortisbc,fortisalberta
+Hydro One | wd:hydroone | https://www.hydroone.com/careers
+Ontario Power Generation | wd:opg
+BC Hydro | wd:bchydro
+Hydro-Québec | wd:hydroquebec
+Emera | wd:emera,novascotiapower
+ATCO | wd:atco
+TransAlta | wd:transalta
+Capital Power | wd:capitalpower
+Enmax | wd:enmax
+Epcor | wd:epcor
+Nutrien | wd:nutrien | https://www.nutrien.com/careers
+Teck Resources | wd:teck | https://www.teck.com/careers
+Barrick Gold | wd:barrick
+Agnico Eagle | wd:agnicoeagle
+Cameco | wd:cameco
+First Quantum | wd:firstquantum
+Kinross | wd:kinross
+Lundin Mining | wd:lundin,lundinmining
+Hudbay | wd:hudbay
+Vale Canada | wd:vale
+Rio Tinto | wd:riotinto
+Glencore | wd:glencore
+West Fraser | wd:westfraser
+Canfor | wd:canfor
+Interfor | wd:interfor
+Mosaic | wd:mosaic
+
+# Industrial, transportation and engineering
+Magna International | wd:magna | https://www.magna.com/careers
+Bombardier | wd:bombardier | https://careers.bombardier.com
+CAE | cae.wd3.career
+CN (Canadian National Railway) | wd:cn,cnrailway | https://www.cn.ca/en/careers/
+CPKC | wd:cpkc,cpr | https://www.cpkcr.com/en/careers
+Air Canada | wd:aircanada
+WestJet | wd:westjet | https://www.westjet.com/en-ca/about-us/careers
+Porter Airlines | wd:porter,porterairlines
+Purolator | wd:purolator
+Canada Post | wd:canadapost
+TFI International | wd:tfi,tfiinternational
+WSP | wd:wsp | https://www.wsp.com/en-ca/careers
+Stantec | wd:stantec | https://www.stantec.com/en/careers
+AtkinsRéalis (SNC-Lavalin) | wd:atkinsrealis,snclavalin
+Aecon | wd:aecon
+EllisDon | wd:ellisdon
+PCL Construction | wd:pcl
+Ledcor | wd:ledcor
+Finning | wd:finning
+Toromont | wd:toromont
+Linamar | wd:linamar
+Martinrea | wd:martinrea
+ABB | wd:abb
+Siemens | wd:siemens
+Honeywell | wd:honeywell
+GE Vernova | wd:gevernova,ge
+Hatch | wd:hatch
+Thales | wd:thales
+Lockheed Martin Canada | wd:lmco,lockheedmartin
+General Dynamics Mission Systems | wd:gdms,gd
+Pratt & Whitney Canada | wd:rtx,prattwhitney
+Rolls-Royce | wd:rollsroyce
+Boeing | wd:boeing
+Toyota Canada | wd:toyota
+Honda Canada | wd:honda
+Ford Canada | wd:ford
+General Motors Canada | wd:generalmotors,gm
+Stellantis | wd:stellantis
+Cascades | wd:cascades
+CCL Industries | wd:ccl,cclind
+Waste Connections | wd:wasteconnections
+GFL Environmental | wd:gfl
+Brookfield Renewable | wd:brookfield
+Ritchie Bros (RB Global) | wd:rbglobal,ritchiebros
+
+# Health, pharmacy and life sciences
+McKesson Canada | wd:mckesson
+Shoppers Drug Mart Pharmacy | wd:shoppers
+Rexall | wd:rexall
+Jean Coutu | wd:jeancoutu
+Apotex | wd:apotex
+Bausch Health | wd:bauschhealth,bausch
+Pfizer Canada | wd:pfizer
+Johnson & Johnson | wd:jj,jnj
+AstraZeneca | wd:astrazeneca
+GSK | wd:gsk
+Sanofi | wd:sanofi
+Novartis | wd:novartis
+Roche | wd:roche
+Merck | wd:msd,merck
+AbbVie | wd:abbvie
+Medtronic | wd:medtronic
+Stryker | wd:stryker
+Philips | wd:philips
+LifeLabs | wd:lifelabs
+Dynacare | wd:dynacare
+Telus Health | wd:telus
+Dialogue | wd:dialogue
+Sienna Senior Living | wd:sienna,siennaliving
+Extendicare | wd:extendicare
+Chartwell Retirement | wd:chartwell
+Alberta Health Services | wd:ahs,albertahealthservices
+Vancouver Coastal Health | wd:vch
+Fraser Health | wd:fraserhealth
+Island Health | wd:islandhealth,viha
+Interior Health | wd:interiorhealth
+Northern Health | wd:northernhealth
+Provincial Health Services Authority | wd:phsa
+Providence Health Care | wd:providencehealth,phc
+Nova Scotia Health | wd:nshealth
+Saskatchewan Health Authority | wd:saskhealthauthority,sha
+Shared Health Manitoba | wd:sharedhealth
+SickKids | wd:sickkids
+University Health Network | wd:uhn
+Sunnybrook | wd:sunnybrook
+Unity Health Toronto | wd:unityhealth
+Hamilton Health Sciences | wd:hhsc
+Trillium Health Partners | wd:thp
+Canadian Blood Services | wd:blood,canadianbloodservices
+
+# Education and research
+McGill University | mcgill.wd3.McGill_Careers
+University of British Columbia | wd:ubc
+University of Toronto | wd:utoronto,uoft
+Simon Fraser University | wd:sfu
+University of Alberta | wd:ualberta
+University of Calgary | wd:ucalgary
+University of Waterloo | wd:uwaterloo
+Western University | wd:uwo
+York University | wd:yorku
+Toronto Metropolitan University | wd:torontomu,tmu,ryerson
+McMaster University | wd:mcmaster
+Queen's University | wd:queensu
+University of Ottawa | wd:uottawa
+Carleton University | wd:carleton
+Concordia University | wd:concordia
+Université de Montréal | wd:umontreal
+Université Laval | wd:ulaval
+Dalhousie University | wd:dal,dalhousie
+University of Victoria | wd:uvic
+University of Manitoba | wd:umanitoba
+University of Saskatchewan | wd:usask
+University of Guelph | wd:uoguelph
+Wilfrid Laurier University | wd:wlu
+Memorial University | wd:mun
+BCIT | wd:bcit
+Humber College | wd:humber
+Seneca Polytechnic | wd:seneca
+George Brown College | wd:georgebrown
+Sheridan College | wd:sheridan
+NAIT | wd:nait
+SAIT | wd:sait
+Langara College | wd:langara
+Douglas College | wd:douglascollege
+Mitacs | wd:mitacs
+National Research Council | wd:nrc
+
+# Public sector, transit and services
+City of Vancouver | wd:cityofvancouver,vancouver
+City of Calgary | wd:calgary,cityofcalgary
+City of Edmonton | wd:edmonton,cityofedmonton
+City of Ottawa | wd:ottawa,cityofottawa
+City of Toronto | wd:toronto,cityoftoronto
+City of Mississauga | wd:mississauga
+Region of Peel | wd:peelregion,peel
+York Region | wd:yorkregion
+TransLink | wd:translink
+TTC | wd:ttc
+Metrolinx | wd:metrolinx
+BC Ferries | wd:bcferries
+ICBC | wd:icbc
+WorkSafeBC | wd:worksafebc
+BC Lottery Corporation | wd:bclc
+OLG | wd:olg
+LCBO | wd:lcbo
+SAQ | wd:saq
+Canada Mortgage and Housing (CMHC) | wd:cmhc
+Export Development Canada | wd:edc
+Business Development Bank (BDC) | wd:bdc
+Bank of Canada | wd:bankofcanada,boc
+Farm Credit Canada | wd:fcc
+Canada Infrastructure Bank | wd:cib
+Ontario Securities Commission | wd:osc
+Elections Canada | wd:elections
+Toronto Pearson (GTAA) | wd:gtaa,torontopearson
+Vancouver Airport Authority (YVR) | wd:yvr
+Calgary Airport Authority | wd:yyc
+Cineplex | wd:cineplex
+Maple Leaf Sports & Entertainment | wd:mlse
+Rogers Sports & Media | wd:rogers
+Live Nation | wd:livenation
+Fairmont (Accor) | wd:accor
+Marriott | wd:marriott
+Hilton | wd:hilton
+Compass Group Canada | wd:compass,compassgroup
+Aramark Canada | wd:aramark
+Sodexo | wd:sodexo
+Securitas | wd:securitas
+GardaWorld | wd:garda,gardaworld
+Paladin Security | wd:paladin
+Cintas | wd:cintas
+Ceridian (Dayforce) | wd:dayforce,ceridian
+ADP Canada | wd:adp
+Randstad | wd:randstad
+Adecco | wd:adecco
+Robert Half | wd:roberthalf
+ManpowerGroup | wd:manpowergroup,manpower

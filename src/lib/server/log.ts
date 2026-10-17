@@ -9,6 +9,7 @@ type Level = "info" | "warn" | "error";
 
 const SECRETS: [RegExp, string][] = [
   [/AIza[0-9A-Za-z_-]{20,}/g, "[gemini-key]"],
+  [/\bAQ\.[0-9A-Za-z_-]{20,}/g, "[gemini-key]"],
   [/sk-ant-[0-9A-Za-z_-]{10,}/g, "[anthropic-key]"],
   [/\bBearer\s+[0-9A-Za-z._~+/=-]{8,}/gi, "Bearer [redacted]"],
   [/\beyJ[0-9A-Za-z_-]{8,}\.[0-9A-Za-z_-]{8,}\.[0-9A-Za-z_-]{8,}/g, "[jwt]"],

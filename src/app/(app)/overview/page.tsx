@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentUserId, loadProgress } from "@/lib/data/dashboard";
-import { DISCIPLINE_LABELS } from "@/lib/domain";
+import { disciplineName } from "@/lib/domain";
 import { nextAction } from "@/lib/progress/next-action";
 import { createClient } from "@/lib/supabase/server";
 
@@ -91,7 +91,7 @@ async function OverviewContent() {
                 {overall.current.toLocaleString("en-CA")}
                 <span className="text-lg font-normal text-muted-foreground">
                   {" "}
-                  / {overall.target.toLocaleString("en-CA")}
+                  {overall.target === null ? " · no goal set" : ` / ${overall.target.toLocaleString("en-CA")}`}
                 </span>
               </p>
             )}
@@ -181,7 +181,7 @@ async function OverviewContent() {
             <div key={d.discipline} className="grid gap-1.5">
               <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
                 <span className="font-medium">
-                  {d.rank}. {DISCIPLINE_LABELS[d.discipline]}{" "}
+                  {d.rank}. {disciplineName(progress.catalog, d.discipline)}{" "}
                   {d.isFocus ? <Badge>Focus</Badge> : null}
                   {d.complete ? <Badge variant="secondary">Complete</Badge> : null}
                 </span>
@@ -191,7 +191,7 @@ async function OverviewContent() {
                 </span>
               </div>
               <ProgressMeter
-                label={`${DISCIPLINE_LABELS[d.discipline]} progress`}
+                label={`${disciplineName(progress.catalog, d.discipline)} progress`}
                 accepted={d.accepted}
                 pending={d.pending}
                 target={d.target}

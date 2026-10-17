@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { testCriteria } from "@/test/discovery";
 import { evaluateCriteria, type Fact } from "./evidence";
-import { parseRequestDeterministic } from "./parse-request";
 import { decideTier, scorePerson } from "./score";
 
 const fact = (field: Fact["field"], value: string, extractedText = value, confidence: Fact["confidence"] = "high", sourceUrl = "https://a.dev"): Fact => ({ field, value, extractedText, confidence, sourceUrl, sourceTitle: null });
 
-const criteria = parseRequestDeterministic("Find 50 UofT Computer Engineering software engineers in Toronto");
+const criteria = testCriteria("Find 50 UofT Computer Engineering software engineers in Toronto");
 
 describe("evaluateCriteria", () => {
   it("credits each criterion only with matching facts", () => {
@@ -15,12 +15,6 @@ describe("evaluateCriteria", () => {
     expect(e.role.confidence).toBe("high");
     expect(e.location.confidence).toBe("high");
     expect(e.company.requested).toBe(false);
-  });
-
-  it("treats ECE as weaker evidence for Computer Engineering", () => {
-    const e = evaluateCriteria([fact("program", "Electrical and Computer Engineering")], criteria);
-    expect(e.program.confidence).toBe("medium");
-    expect(e.program.note).toMatch(/not confirmed/);
   });
 
   it("a known school's short form counts fully; an unvetted acronym is medium confidence", () => {
@@ -70,19 +64,19 @@ describe("scorePerson", () => {
   });
 
   it("rejects a known employer outside the requested list", () => {
-    const c = parseRequestDeterministic("UofT Computer Engineering grads at NVIDIA or AMD");
+    const c = testCriteria("UofT Computer Engineering grads at NVIDIA or AMD");
     const facts = [fact("institution", "University of Toronto"), fact("program", "Computer Engineering"), fact("company", "Shopify")];
     expect(decideTier(evaluateCriteria(facts, c)).tier).toBe("rejected");
     expect(decideTier(evaluateCriteria([...facts.slice(0, 2), fact("company", "AMD"), fact("location", "Toronto, ON")], c)).tier).toBe("verified");
   });
 });
 
-describe("located in Canada only", () => {
-  const c = parseRequestDeterministic("Find UofT Computer Engineering software engineers");
+describe("located in a requested country", () => {
+  const c = testCriteria("Find UofT Computer Engineering software engineers", { country: "Canada" });
   const base = [fact("institution", "University of Toronto"), fact("program", "Computer Engineering"), fact("role", "Software Engineer")];
 
-  it("searches are limited to Canada by default", () => {
-    expect(c.country).toBe("Canada");
+  it("searches cover anywhere unless they ask for a country", () => {
+    expect(testCriteria("Find UofT Computer Engineering software engineers").country).toBeNull();
   });
 
   it("verifies people located in Canada", () => {

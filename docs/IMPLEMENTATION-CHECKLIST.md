@@ -180,6 +180,21 @@ Local data note: the local database holds the owner's own data. **Never run `db:
 
 **Browser review.** Job page "People at" card and company page, in light and dark, desktop and phone, with no horizontal overflow.
 
+## Batch after Phase 3 (2026-10-17): Workday, Careerjet, user-defined networking
+
+| Item | Status | Evidence |
+|---|---|---|
+| Workday career sites as a job source; Careerjet search (optional key) | implemented, tested | `src/lib/job-postings/ats/workday*.ts`, `providers/careerjet*.ts`, `20261027000000_workday_and_careerjet.sql`, `workday_and_careerjet.test.sql` |
+| Tailored documents kept when their job is pruned | implemented, pgTAP-tested | `20261026000000_keep_documents_on_prune.sql`, `prune_keeps_documents.test.sql` |
+| Schools, disciplines, targets and the connection goal are the user's own; nothing built in; default time zone UTC; existing users keep their data as ordinary rows | implemented, pgTAP-tested | `20261028000000_user_defined_networking.sql`, `user_defined_networking.test.sql`, `src/lib/data/catalog.ts` |
+| `AI_DAILY_QUOTA` unset = no limit; crawl cadence 5 minutes | implemented, documented | `docs/DEPLOYMENT.md` |
+
+**Test fixes:** `alerts.test.sql` claimed at most 10 due searches, so it failed on a database holding more than 10 real overdue searches; it now claims up to 10000. The applications e2e expected a Vancouver default time zone; the default is now UTC.
+
+**Verification (2026-10-17, local):** typecheck, lint, build and `check:bundle` (49 files) pass; unit tests 787 pass; pgTAP 217 pass (16 files); generated DB types match; e2e 14/14.
+
+Still open: restore rehearsal, staging smoke checks, performance budget, accessibility scan. Improvement-plan phases 4 onward are not started.
+
 ## Fixes outside the roadmap
 
 | Item | Status | Evidence |

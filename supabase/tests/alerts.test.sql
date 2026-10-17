@@ -46,8 +46,8 @@ select throws_ok(
 reset role;
 set local role service_role;
 
-select is((select count(*)::int from public.claim_due_saved_searches(10, 300) where user_id = '11111111-1111-1111-1111-111111111111'), 1, 'a due search is claimed');
-select is((select count(*)::int from public.claim_due_saved_searches(10, 300) where user_id = '11111111-1111-1111-1111-111111111111'), 0, 'a leased search is not claimed again by an overlapping run');
+select is((select count(*)::int from public.claim_due_saved_searches(10000, 300) where user_id = '11111111-1111-1111-1111-111111111111'), 1, 'a due search is claimed');
+select is((select count(*)::int from public.claim_due_saved_searches(10000, 300) where user_id = '11111111-1111-1111-1111-111111111111'), 0, 'a leased search is not claimed again by an overlapping run');
 
 insert into public.saved_search_matches (saved_search_id, job_id, user_id, status)
 values

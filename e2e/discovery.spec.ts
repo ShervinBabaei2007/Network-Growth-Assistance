@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signIn, uniqueEmail } from "./helpers";
+import { setUpPlan, signIn, uniqueEmail } from "./helpers";
 
 /**
  * Discovery end to end against the built-in fictional dataset. The dev server
@@ -32,10 +32,14 @@ test("import connections, research people, review evidence and track one", async
   await expect(page.getByText(/2 known connections imported/).first()).toBeVisible();
   await expect(page.getByRole("cell", { name: "Sam Patel" })).toBeVisible();
 
-  // 2. Ask for people in plain language.
+  // 2. Ask for people in plain language. The user's own lists say how their school and program are written.
+  await setUpPlan(page, {
+    schools: [{ name: "University of Toronto", aliases: "UofT, U of T" }],
+    disciplines: [{ name: "Computer Engineering", aliases: "CompEng, comp eng" }],
+  });
   await page.goto("/discover");
   await expect(page.getByText("2 known connections will be left out of results.")).toBeVisible();
-  await page.getByLabel("Who would you like to meet?").fill("Find 5 UofT Computer Engineering alumni working as software engineers");
+  await page.getByLabel("Who would you like to meet?").fill("Find 5 UofT Computer Engineering alumni working as software engineers in Canada");
   await page.getByRole("button", { name: "Find people" }).click();
   await page.waitForURL(/\/discover\/[0-9a-f-]{36}$/);
 
@@ -58,7 +62,7 @@ test("import connections, research people, review evidence and track one", async
   await expect(wei.getByRole("link", { name: /Search LinkedIn for Wei Zhang/ })).toHaveAttribute("href", /linkedin\.com\/search\/results\/people\/\?keywords=Wei%20Zhang%20Apple/);
   await expect(page.getByText("Verifying the top matches on their own pages")).toBeVisible();
 
-  // Canada only: Sam Lee matches everything else but lives in Seattle, so is left out, with the reason shown.
+  // The search asked for Canada: Sam Lee matches everything else but lives in Seattle, so is left out, with the reason shown.
   await expect(page.getByRole("article", { name: "Sam Lee" })).toHaveCount(0);
   await page.getByText(/Found but didn't qualify/).click();
   await expect(page.getByText("Located outside Canada (Seattle, WA)")).toBeVisible();
@@ -68,7 +72,7 @@ test("import connections, research people, review evidence and track one", async
   await page.getByText(/Hidden: likely already in your connections/).click();
   await expect(page.getByText(/Sam Patel/)).toBeVisible();
 
-  // ECE is not treated as Computer Engineering: Jordan Lee is only a possible match.
+  // Lower-confidence matches can be shown too.
   await page.getByText(/Include lower-confidence matches/).click();
   await expect(page.getByRole("article", { name: "Jordan Lee" })).toBeVisible();
   // A lookalike school never qualifies.
@@ -85,7 +89,7 @@ test("import connections, research people, review evidence and track one", async
   await drawer.getByRole("button", { name: "2nd degree" }).click();
   await expect(drawer.getByText("2nd degree (marked by you)").first()).toBeVisible();
   const intro = drawer.getByLabel("Intro message");
-  await expect(intro).toHaveValue(/UofT Computer Engineering/);
+  await expect(intro).toHaveValue(/University of Toronto Computer Engineering/);
   await drawer.getByRole("button", { name: "Copy message" }).click();
   await expect(page.getByTestId("toast").filter({ hasText: "Intro copied." }).filter({ hasText: "Paste it into LinkedIn yourself" })).toBeVisible();
   await drawer.getByRole("button", { name: "I sent a connection request" }).click();

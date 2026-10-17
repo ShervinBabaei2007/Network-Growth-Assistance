@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { Building2, FileText, Plus, Search, SlidersHorizontal } from "lucide-react";
 import type { TierKey } from "@/components/jobs/job-visuals";
@@ -26,7 +27,7 @@ import { alsoListedOn, jobSource } from "@/lib/job-postings/source";
 import { externalSearchLinks } from "@/lib/job-postings/external-search";
 import { skillsIn } from "@/lib/job-postings/taxonomy";
 import { ANYWHERE, countryOptions } from "@/lib/geo/countries";
-import { PROVINCE_CODES, PROVINCE_NAMES, SENIORITY, SENIORITY_LABELS, type ProvinceCode } from "@/lib/job-postings/types";
+import { PROVINCE_CODES, PROVINCE_NAMES, type ProvinceCode } from "@/lib/job-postings/types";
 import { createClient } from "@/lib/supabase/server";
 import { describeSearch, fromSearchParams, searchOnly } from "@/lib/job-postings/feed-query";
 import { emailConfigured } from "@/lib/email/mailer";
@@ -89,6 +90,14 @@ function SearchingState() {
   );
 }
 
+/** The person searching, as some job sources require (Careerjet): their IP and browser. */
+async function searchingClient(): Promise<{ ip: string; userAgent: string } | null> {
+  const h = await headers();
+  const ip = (h.get("x-forwarded-for") ?? "").split(",")[0]?.trim() || h.get("x-real-ip")?.trim() || "";
+  const userAgent = h.get("user-agent")?.slice(0, 500) ?? "";
+  return ip && userAgent ? { ip, userAgent } : null;
+}
+
 async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) {
   const raw = await searchParams;
   // Checkbox groups arrive as repeated params (level=a&level=b): joined, they read like "a,b".
@@ -103,7 +112,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
 
   const query = fromSearchParams(raw);
   const [feed, { data: lastRun }, { count: employerCount }, { data: me }] = await Promise.all([
-    loadFeed(supabase, userId, query, { refresh: true }),
+    loadFeed(supabase, userId, query, { refresh: true, client: await searchingClient() }),
     supabase.from("job_crawl_runs").select("finished_at").not("finished_at", "is", null).order("started_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("employers").select("id", { count: "exact", head: true }).neq("status", "disabled").neq("ats", "fixture"),
     supabase.from("settings").select("timezone").eq("user_id", userId).single(),
@@ -149,12 +158,13 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
       <ToastOnMount specs={toasts} />
       {/* On phones the results come first and the filters follow; side by side from lg up. */}
       <aside className="order-last grid gap-4 lg:sticky lg:top-6 lg:order-none" aria-label="Filters and preferences">
-        <FiltersPanel sp={sp} filters={filters} provinces={inCanada ? provinces : []} provFilter={provFilter} hrefBase={href} explicitRange={explicitRange} showAdzuna={providerNames.includes("adzuna")} showUsajobs={providerNames.includes("usajobs")} currency={currency} />
-        <PreferencesCard settings={settings} />
+        <FiltersPanel sp={sp} filters={filters} provinces={inCanada ? provinces : []} provFilter={provFilter} hrefBase={href} explicitRange={explicitRange} showAdzuna={providerNames.includes("adzuna")} showUsajobs={providerNames.includes("usajobs")} showCareerjet={providerNames.includes("careerjet")} currency={currency} />
+        <PreferencesCard settings={settings} resumeTitles={feed.resolved.titlesFromResume ? searched : []} />
         <div className="grid gap-1 px-1 text-xs text-muted-foreground">
           <p>
             Sources: {(employerCount ?? 0).toLocaleString("en-CA")} employers&apos; job boards ({lastRun?.finished_at ? `last read ${timeAgo(lastRun.finished_at)}` : "not read yet"}), remote jobs from Jobicy and Remotive, jobs in Europe and the UK from Arbeitnow
             {providerNames.includes("usajobs") ? ", U.S. federal jobs from USAJOBS" : ""}
+            {providerNames.includes("careerjet") ? ", Careerjet job search" : ""}
             {providerNames.includes("adzuna") ? ", and Adzuna job search" : ""}.
           </p>
           <p>Jobicy and Remotive links go to their own listing pages, not the employer&apos;s. Remotive shares jobs 24 hours after it posts them.</p>
@@ -177,7 +187,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
             <Label htmlFor="q" className="sr-only">
               Job title or keywords
             </Label>
-            <Input id="q" name="q" defaultValue={q} placeholder={settings.job_titles[0] ? `e.g. ${settings.job_titles[0]}` : "e.g. Full Stack Developer"} />
+            <Input id="q" name="q" defaultValue={q} placeholder={settings.job_titles[0] ? `e.g. ${settings.job_titles[0]}` : "A job title, e.g. one you're aiming for"} />
           </div>
           <div className="grid gap-1">
             <Label htmlFor="country" className="sr-only">
@@ -225,7 +235,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
           </div>
           <nav aria-label="Posted within" className="inline-flex flex-wrap rounded-lg border bg-card p-0.5 shadow-xs">
             <Link href={href({ range: "", page: "" })} aria-current={!explicitRange ? "page" : undefined} className={cn("rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground", !explicitRange && "bg-primary text-primary-foreground hover:text-primary-foreground")}>
-              Newest
+              Best match
             </Link>
             {RANGES.map((r) => (
               <Link
@@ -390,6 +400,7 @@ function FiltersPanel({
   explicitRange,
   showAdzuna,
   showUsajobs,
+  showCareerjet,
   currency,
 }: {
   sp: Record<string, string>;
@@ -401,6 +412,7 @@ function FiltersPanel({
   /** Adzuna and USAJOBS are optional: their filters show only when they're configured. */
   showAdzuna: boolean;
   showUsajobs: boolean;
+  showCareerjet: boolean;
   /** The searched country's currency; the minimum-pay filter compares only pay stated in it. */
   currency: string | null;
 }) {
@@ -499,6 +511,7 @@ function FiltersPanel({
                 ["arbeitnow", "Arbeitnow"],
                 ...(showUsajobs ? ([["usajobs", "USAJOBS"]] as const) : []),
                 ...(showAdzuna ? ([["adzuna", "Adzuna"]] as const) : []),
+                ...(showCareerjet ? ([["careerjet", "Careerjet"]] as const) : []),
                 ["manual", "Pasted by me"],
               ] as const
             ).map(([v, l]) => (
@@ -528,12 +541,16 @@ function FiltersPanel({
   );
 }
 
-function PreferencesCard({ settings }: { settings: { job_titles: string[]; job_country: string; job_provinces: string[]; job_seniority: string; job_exclude_keywords: string[] } }) {
+function PreferencesCard({ settings, resumeTitles }: { settings: { job_titles: string[]; job_country: string; job_provinces: string[]; job_exclude_keywords: string[] }; resumeTitles: string[] }) {
   return (
     <Card size="sm" id="preferences">
       <CardHeader>
         <CardTitle className="text-sm">Search preferences</CardTitle>
-        <CardDescription className="text-xs">{settings.job_titles.length ? `Default search: ${settings.job_titles.join(", ")}.` : "No titles set: searches show every job."}</CardDescription>
+        <CardDescription className="text-xs">{settings.job_titles.length
+            ? `Default search: ${settings.job_titles.join(", ")}.`
+            : resumeTitles.length
+              ? `No titles set, so searches use the roles in your resume: ${resumeTitles.join(", ")}.`
+              : "No titles set: searches show every job."}</CardDescription>
       </CardHeader>
       <CardContent>
         <details>
@@ -541,7 +558,7 @@ function PreferencesCard({ settings }: { settings: { job_titles: string[]; job_c
           <ActionForm action={saveJobPreferences} submitLabel="Save preferences" size="sm" className="mt-3">
             <div className="grid gap-1.5">
               <Label htmlFor="titles">Job titles (one per line, up to 6)</Label>
-              <Textarea id="titles" name="titles" rows={3} defaultValue={settings.job_titles.join("\n")} placeholder={"Junior Software Developer\nQA Analyst"} />
+              <Textarea id="titles" name="titles" rows={3} defaultValue={settings.job_titles.join("\n")} placeholder={"One job title per line"} />
               <p className="text-xs text-muted-foreground">&ldquo;Developer&rdquo; also finds Engineer and Programmer roles, &ldquo;Designer&rdquo; finds UX and Product Designer, and so on. Level words like &ldquo;Junior&rdquo; aren&apos;t required in titles: the level filter handles them.</p>
             </div>
             <div className="grid gap-1.5">
@@ -560,16 +577,6 @@ function PreferencesCard({ settings }: { settings: { job_titles: string[]; job_c
                 ))}
               </div>
             </fieldset>
-            <div className="grid gap-1.5">
-              <Label htmlFor="seniority">Your level (the default level filter)</Label>
-              <NativeSelect id="seniority" name="seniority" defaultValue={settings.job_seniority}>
-                {SENIORITY.map((s) => (
-                  <option key={s} value={s}>
-                    {SENIORITY_LABELS[s]}
-                  </option>
-                ))}
-              </NativeSelect>
-            </div>
             <div className="grid gap-1.5">
               <Label htmlFor="exclude">Leave out titles with</Label>
               <Input id="exclude" name="exclude" defaultValue={settings.job_exclude_keywords.join(", ")} placeholder="Senior, Manager" />

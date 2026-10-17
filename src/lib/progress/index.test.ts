@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { TEST_CATALOG, withPriority } from "@/test/catalog";
 import type { Discipline, University } from "@/lib/domain";
 import { computeProgress, type ProgressInput } from "./index";
 
@@ -21,8 +22,8 @@ function input(overrides: Partial<ProgressInput> = {}): ProgressInput {
       baselineConnections: 1000,
       projectStartDate: "2026-10-01",
       timezone: "America/Toronto",
-      disciplinePriority: DISCIPLINES,
     },
+    catalog: TEST_CATALOG,
     targets: defaultTargets(),
     latestSnapshot: null,
     invitations: [],
@@ -172,7 +173,7 @@ describe("computeProgress: priority and focus", () => {
   it("follows a custom priority order", () => {
     const p = computeProgress(
       input({
-        settings: { ...input().settings, disciplinePriority: ["cs", "ce", "ee", "mech"] },
+        catalog: withPriority(["cs", "ce", "ee", "mech"]),
       }),
     );
     expect(p.disciplines.map((d) => d.discipline)).toEqual(["cs", "ce", "ee", "mech"]);

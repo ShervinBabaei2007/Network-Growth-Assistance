@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { classifyDiscipline, classifyUniversity } from "@/lib/classify";
-import { DISCIPLINE_LABELS, SHORT_UNIVERSITY, type Discipline, type University } from "@/lib/domain";
+import type { Catalog, Discipline, University } from "@/lib/domain";
 import { captureFromHtml, captureFromText, type CapturedPerson } from "@/lib/imports/page-capture";
 import { addCapturedPeople, findExistingProfiles } from "./actions";
 
@@ -26,7 +26,7 @@ function nameFromSlug(key: string) {
     .join(" ");
 }
 
-export function QuickCapture({ countUbcoAsUbc, autoApprove }: { countUbcoAsUbc: boolean; autoApprove: boolean }) {
+export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoApprove: boolean }) {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [approve, setApprove] = useState(true);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
@@ -56,9 +56,9 @@ export function QuickCapture({ countUbcoAsUbc, autoApprove }: { countUbcoAsUbc: 
     }
     const prepared: Row[] = people.map((p) => {
       const context = [p.headline, ...p.details].filter(Boolean).join(" · ");
-      const uni = classifyUniversity(context, { countUbcoAsUbc });
+      const uni = classifyUniversity(context, catalog);
       // The program comes from the headline only: "Past:" lines can mention other fields.
-      const disc = classifyDiscipline(p.headline, uni.value);
+      const disc = classifyDiscipline(p.headline, catalog);
       const university = uni.confidence === "confirmed" ? uni.value : null;
       const discipline = disc.confidence === "confirmed" ? disc.value : null;
       return {
@@ -150,7 +150,7 @@ export function QuickCapture({ countUbcoAsUbc, autoApprove }: { countUbcoAsUbc: 
           />
           <p className="text-xs text-muted-foreground">
             Only what you copied is read. Nothing is fetched from LinkedIn. Tip: use LinkedIn&apos;s School filter with a
-            program keyword, then paste each results page.
+            discipline keyword, then paste each results page.
           </p>
         </>
       ) : (
@@ -165,20 +165,20 @@ export function QuickCapture({ countUbcoAsUbc, autoApprove }: { countUbcoAsUbc: 
               School for rows without one
               <NativeSelect className="w-40" defaultValue="" onChange={(e) => fillBlank("university", e.target.value)}>
                 <option value="">—</option>
-                {Object.entries(SHORT_UNIVERSITY).map(([v, l]) => (
-                  <option key={v} value={v}>
-                    {l}
+                {catalog.universities.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
                   </option>
                 ))}
               </NativeSelect>
             </label>
             <label className="grid gap-1 text-xs">
-              Program for rows without one
+              Discipline for rows without one
               <NativeSelect className="w-48" defaultValue="" onChange={(e) => fillBlank("discipline", e.target.value)}>
                 <option value="">—</option>
-                {Object.entries(DISCIPLINE_LABELS).map(([v, l]) => (
-                  <option key={v} value={v}>
-                    {l}
+                {catalog.disciplines.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
                   </option>
                 ))}
               </NativeSelect>
@@ -211,17 +211,17 @@ export function QuickCapture({ countUbcoAsUbc, autoApprove }: { countUbcoAsUbc: 
                 </div>
                 <NativeSelect aria-label={`School for ${r.name}`} value={r.university ?? ""} onChange={(e) => update(r.key, { university: (e.target.value || null) as University | null })}>
                   <option value="">School?</option>
-                  {Object.entries(SHORT_UNIVERSITY).map(([v, l]) => (
-                    <option key={v} value={v}>
-                      {l}
+                  {catalog.universities.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
                     </option>
                   ))}
                 </NativeSelect>
                 <NativeSelect aria-label={`Program for ${r.name}`} value={r.discipline ?? ""} onChange={(e) => update(r.key, { discipline: (e.target.value || null) as Discipline | null })}>
-                  <option value="">Program?</option>
-                  {Object.entries(DISCIPLINE_LABELS).map(([v, l]) => (
-                    <option key={v} value={v}>
-                      {l}
+                  <option value="">Discipline?</option>
+                  {catalog.disciplines.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
                     </option>
                   ))}
                 </NativeSelect>

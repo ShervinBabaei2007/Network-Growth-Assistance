@@ -1,11 +1,9 @@
 import { localDate, weekStart } from "@/lib/dates";
-import { PRIMARY_UNIVERSITIES, type Discipline, type University } from "@/lib/domain";
+import { poolUniversities, targetUniversities, type Catalog, type Discipline, type University } from "@/lib/domain";
 import type { Database } from "@/lib/supabase/database.types";
 
 type CandidateStatus = Database["public"]["Enums"]["candidate_status"];
 type InvitationOutcome = Database["public"]["Enums"]["invitation_outcome"];
-
-export const ADDITIONAL_UNIVERSITIES: readonly University[] = ["sfu", "waterloo"];
 
 /** Statuses that make a candidate unavailable for any outreach or count. */
 const EXCLUDED_STATUSES: readonly CandidateStatus[] = ["not_a_match", "do_not_contact"];
@@ -13,12 +11,14 @@ const EXCLUDED_STATUSES: readonly CandidateStatus[] = ["not_a_match", "do_not_co
 export type ProgressInput = {
   now: Date;
   settings: {
-    overallTarget: number;
+    /** The user's connection goal; null until they set one. */
+    overallTarget: number | null;
     baselineConnections: number | null;
     projectStartDate: string;
     timezone: string;
-    disciplinePriority: Discipline[];
   };
+  /** The user's own schools and disciplines (disciplines in priority order). */
+  catalog: Catalog;
   targets: { discipline: Discipline; university: University | null; targetCount: number }[];
   latestSnapshot: { totalConnections: number; recordedAt: string } | null;
   invitations: {
@@ -186,9 +186,11 @@ export function computeProgress(input: ProgressInput) {
   };
 
   let focusAssigned = false;
-  const disciplines: DisciplineProgress[] = settings.disciplinePriority.map((d, i) => {
-    const primaryCells = PRIMARY_UNIVERSITIES.map((u) => cell(d, u));
-    const additionalCells = ADDITIONAL_UNIVERSITIES.map((u) => cell(d, u));
+  const primary = targetUniversities(input.catalog).map((u) => u.id);
+  const additional = poolUniversities(input.catalog).map((u) => u.id);
+  const disciplines: DisciplineProgress[] = input.catalog.disciplines.map(({ id: d }, i) => {
+    const primaryCells = primary.map((u) => cell(d, u));
+    const additionalCells = additional.map((u) => cell(d, u));
     const all = [...primaryCells, ...additionalCells];
     const sum = (f: (c: CellProgress) => number, cells = all) =>
       cells.reduce((n, c) => n + f(c), 0);
@@ -219,7 +221,7 @@ export function computeProgress(input: ProgressInput) {
 
   const { baselineConnections: baseline, overallTarget } = settings;
   const current = input.latestSnapshot?.totalConnections ?? null;
-  const growthGoal = baseline === null ? null : Math.max(0, overallTarget - baseline);
+  const growthGoal = baseline === null || overallTarget === null ? null : Math.max(0, overallTarget - baseline);
   const additionalSinceStart = baseline === null || current === null ? null : current - baseline;
 
   return {
@@ -232,7 +234,7 @@ export function computeProgress(input: ProgressInput) {
       snapshotAt: input.latestSnapshot?.recordedAt ?? null,
       growthGoal,
       additionalSinceStart,
-      remaining: current === null ? null : Math.max(0, overallTarget - current),
+      remaining: current === null || overallTarget === null ? null : Math.max(0, overallTarget - current),
       percent:
         growthGoal === null || additionalSinceStart === null
           ? null
@@ -250,5 +252,6 @@ export function computeProgress(input: ProgressInput) {
     activity: { ...activity, discoveredToday: input.discovered.today, discoveredThisWeek: input.discovered.thisWeek },
     disciplines,
     focus: disciplines.find((d) => d.isFocus) ?? null,
+    catalog: input.catalog,
   };
 }

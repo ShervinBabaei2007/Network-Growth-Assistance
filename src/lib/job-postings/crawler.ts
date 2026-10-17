@@ -1,7 +1,7 @@
 import "server-only";
 import type { Database } from "@/lib/supabase/database.types";
 import { adapterFor } from "./ats";
-import { BoardError, jobPlace, RateLimitedError, wantedScope, type AtsAdapter, type AtsJob, type JobDetail } from "./ats/types";
+import { BoardError, jobPlace, RateLimitedError, wantedScope, type AtsAdapter, type AtsJob, type JobDetail, type JobPlace } from "./ats/types";
 import { jobDedupeKey, simhash64 } from "./dedupe";
 import { toVector, type Embedder } from "./embeddings";
 import { FIXTURE_EMPLOYERS } from "./fixtures";
@@ -34,9 +34,11 @@ export const QUIET_INTERVAL_MIN = 6 * 60;
 const MAX_BACKOFF_MIN = 24 * 60;
 const LEASE_MIN = 15;
 const BOARDS_PER_TICK = 150;
-const CONCURRENCY = 20;
+const CONCURRENCY = 30;
 const DETAILS_PER_BOARD = 30;
 const EMBED_PER_TICK = 400;
+/** How long one board read may take, unless its adapter says otherwise. */
+const BOARD_TIMEOUT_MS = 20_000;
 
 export type CrawlSummary = { boards: number; notModified: number; failed: number; newJobs: number; closedJobs: number; embedded: number };
 
@@ -79,16 +81,32 @@ export async function ensureFixtureEmployers(db: Db) {
   );
 }
 
-async function withDetails(adapter: AtsAdapter, token: string, jobs: { job: AtsJob; needs: boolean }[]): Promise<Map<string, JobDetail>> {
+async function withDetails(adapter: AtsAdapter, token: string, jobs: { job: AtsJob; needs: boolean }[], deadline = Number.POSITIVE_INFINITY): Promise<Map<string, JobDetail>> {
   const out = new Map<string, JobDetail>();
   if (!adapter.fetchDetail) return out;
-  const wanted = jobs.filter((j) => j.needs).slice(0, DETAILS_PER_BOARD);
-  for (let i = 0; i < wanted.length; i += 5) {
+  const wanted = jobs.filter((j) => j.needs).slice(0, adapter.detailsPerRead ?? DETAILS_PER_BOARD);
+  // Details left unread now are read on the board's next crawl.
+  for (let i = 0; i < wanted.length && Date.now() + 10_000 < deadline; i += 5) {
     const batch = wanted.slice(i, i + 5);
     const details = await Promise.all(batch.map(({ job }) => adapter.fetchDetail!(token, job.externalId, { signal: AbortSignal.timeout(10_000) }).catch(() => null)));
     batch.forEach(({ job }, k) => details[k] && out.set(job.externalId, details[k]!));
   }
   return out;
+}
+
+type KnownPlace = Pick<Database["public"]["Tables"]["jobs"]["Row"], "city" | "province" | "country" | "countries" | "location_text" | "remote">;
+
+/**
+ * Where a job is: the posting's own detail when it was read (exact places), else the list,
+ * unless the list is vaguer than an earlier read ("2 Locations" after the detail named
+ * them), in which case the earlier place stands.
+ */
+export function bestPlace(listed: JobPlace, fromDetail: JobPlace | null, old: KnownPlace | null | undefined): JobPlace {
+  if (fromDetail) return fromDetail;
+  if (old && !listed.city && !listed.province && (old.city || old.province) && (!listed.country || listed.country === old.country)) {
+    return { country: old.country, province: old.province, city: old.city, locationText: old.location_text ?? listed.locationText, remote: old.remote, countries: old.countries.length ? old.countries : listed.countries };
+  }
+  return listed;
 }
 
 /**
@@ -103,12 +121,19 @@ export function verifyBoardLink(applyUrl: string | null, emp: Pick<Employer, "at
 }
 
 /** Reads one board and updates its jobs. Returns counts; never throws. */
-export async function crawlEmployer(db: Db, emp: Employer, wanted: ReadonlySet<string> = wantedScope(["CA"]), countries: readonly string[] = ["CA"]): Promise<{ status: "ok" | "not_modified" | "failed"; newJobs: number; closedJobs: number }> {
+export async function crawlEmployer(
+  db: Db,
+  emp: Employer,
+  wanted: ReadonlySet<string> = wantedScope(["CA"]),
+  countries: readonly string[] = ["CA"],
+  deadline = Number.POSITIVE_INFINITY,
+): Promise<{ status: "ok" | "not_modified" | "failed"; newJobs: number; closedJobs: number }> {
   const adapter = adapterFor(emp.ats);
+  const activeInterval = adapter.activeIntervalMin ?? ACTIVE_INTERVAL_MIN;
   try {
-    const board = await adapter.fetchBoard(emp.board_token, { etag: emp.etag, signal: AbortSignal.timeout(20_000), countries });
+    const board = await adapter.fetchBoard(emp.board_token, { etag: emp.etag, signal: AbortSignal.timeout(adapter.boardTimeoutMs ?? BOARD_TIMEOUT_MS), countries });
     if (board.notModified) {
-      await db.from("employers").update({ last_crawled_at: new Date().toISOString(), next_crawl_at: minutes(emp.matching_jobs > 0 ? ACTIVE_INTERVAL_MIN : QUIET_INTERVAL_MIN), failures: 0, last_error: null, status: "active" }).eq("id", emp.id);
+      await db.from("employers").update({ last_crawled_at: new Date().toISOString(), next_crawl_at: minutes(emp.matching_jobs > 0 ? activeInterval : QUIET_INTERVAL_MIN), failures: 0, last_error: null, status: "active" }).eq("id", emp.id);
       // Jobs on an unchanged board are still there.
       await db.from("jobs").update({ last_seen_at: new Date().toISOString() }).eq("employer_id", emp.id).is("closed_at", null);
       return { status: "not_modified", newJobs: 0, closedJobs: 0 };
@@ -118,7 +143,10 @@ export async function crawlEmployer(db: Db, emp: Employer, wanted: ReadonlySet<s
       const place = jobPlace(job.places, job.remote, wanted);
       return place ? [{ job, place }] : [];
     });
-    const { data: existingRows } = await db.from("jobs").select("id, external_id, posted_at, date_source, first_seen_at, description, closed_at, apply_url").eq("employer_id", emp.id);
+    const { data: existingRows } = await db
+      .from("jobs")
+      .select("id, external_id, posted_at, date_source, first_seen_at, description, closed_at, apply_url, city, province, country, countries, location_text, remote")
+      .eq("employer_id", emp.id);
     const existing = new Map((existingRows ?? []).map((r) => [r.external_id, r]));
     const firstCrawl = emp.last_crawled_at === null;
     const details = await withDetails(
@@ -128,14 +156,16 @@ export async function crawlEmployer(db: Db, emp: Employer, wanted: ReadonlySet<s
         const old = existing.get(job.externalId);
         return { job, needs: (job.description === null && !old?.description) || (job.applyUrl === null && !old?.apply_url) };
       }),
+      deadline,
     );
 
     const now = new Date();
-    const rows = kept.map(({ job, place }) => {
+    const rows = kept.map(({ job, place: listed }) => {
       const old = existing.get(job.externalId);
+      const detail = details.get(job.externalId);
+      const place = bestPlace(listed, detail?.places ? jobPlace(detail.places, job.remote, wanted) : null, old);
       // A job keeps the date it was first given. Sample boards are re-dated each read so tests stay "recent".
       const dated = old && emp.ats !== "fixture" ? { postedAt: old.posted_at, dateSource: old.date_source as DatedJob["dateSource"] } : dateJob(job, firstCrawl && !old, now);
-      const detail = details.get(job.externalId);
       // Links come only from the board: the list, the posting's own detail, or an earlier read of either.
       const applyUrl = job.applyUrl ?? detail?.applyUrl ?? old?.apply_url ?? null;
       const company = (job.company ?? emp.name).slice(0, 300);
@@ -213,7 +243,7 @@ export async function crawlEmployer(db: Db, emp: Employer, wanted: ReadonlySet<s
       .from("employers")
       .update({
         last_crawled_at: now.toISOString(),
-        next_crawl_at: minutes(valid.length > 0 ? ACTIVE_INTERVAL_MIN : QUIET_INTERVAL_MIN),
+        next_crawl_at: minutes(valid.length > 0 ? activeInterval : QUIET_INTERVAL_MIN),
         failures: 0,
         last_error: null,
         status: "active",
@@ -287,10 +317,16 @@ export async function crawlDue(db: Db, opts: { deadline: number; embedder: Embed
   if (boards.length) await db.from("employers").update({ next_crawl_at: minutes(LEASE_MIN) }).in("id", boards.map((b) => b.id));
 
   let next = 0;
+  const notStarted: string[] = [];
   const worker = async () => {
     while (next < boards.length && Date.now() < opts.deadline) {
       const emp = boards[next++];
-      const r = await crawlEmployer(db, emp, wanted, countries);
+      // A board that can't be read in the time left waits for the next tick instead of overrunning this one.
+      if (Date.now() + (adapterFor(emp.ats).boardTimeoutMs ?? BOARD_TIMEOUT_MS) > opts.deadline) {
+        notStarted.push(emp.id);
+        continue;
+      }
+      const r = await crawlEmployer(db, emp, wanted, countries, opts.deadline);
       summary.boards++;
       if (r.status === "not_modified") summary.notModified++;
       if (r.status === "failed") summary.failed++;
@@ -300,7 +336,7 @@ export async function crawlDue(db: Db, opts: { deadline: number; embedder: Embed
   };
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, boards.length) }, worker));
   // Boards not reached before the deadline are due again right away.
-  const unreached = boards.slice(next).map((b) => b.id);
+  const unreached = [...notStarted, ...boards.slice(next).map((b) => b.id)];
   if (unreached.length) await db.from("employers").update({ next_crawl_at: new Date().toISOString() }).in("id", unreached);
 
   if (Date.now() < opts.deadline) summary.embedded = await embedPending(db, opts.embedder);

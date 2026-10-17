@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { loadCatalog } from "@/lib/data/catalog";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { classifyCandidate } from "@/lib/classify";
@@ -248,7 +249,7 @@ export async function sendToCandidates(personId: string): Promise<ActionResult> 
   if (!candidateId) {
     const school = detail.introFacts.institution;
     const program = detail.introFacts.program;
-    const c = classifyCandidate(school, program, { countUbcoAsUbc: ctx.settings.count_ubco_as_ubc });
+    const c = classifyCandidate(school, program, await loadCatalog(ctx.supabase));
     const classified = c.university.confidence === "confirmed" && c.discipline.confidence === "confirmed";
     const { data, error } = await ctx.supabase
       .from("candidates")

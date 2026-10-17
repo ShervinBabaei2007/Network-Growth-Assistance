@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signIn, uniqueEmail } from "./helpers";
+import { setUpPlan, signIn, uniqueEmail } from "./helpers";
 
 test("signed-out visitors are sent to sign in", async ({ page }) => {
   await page.goto("/queue");
@@ -11,7 +11,17 @@ test("main flow: sign in → add → approve → queue → sent → accepted →
   await signIn(page, uniqueEmail("main"));
   const main = page.locator("main");
 
+  // A new user starts with nothing assumed and is asked to set up their own plan.
+  await expect(main).toContainText("Set up your networking plan", { useInnerText: true });
+  await setUpPlan(page, {
+    goal: 2000,
+    schools: [{ name: "UBC", aliases: "University of British Columbia" }],
+    disciplines: [{ name: "Computer Engineering", aliases: "comp eng" }],
+    targets: { "Computer Engineering": { total: 250, schools: { UBC: 125 } } },
+  });
+
   // Starting point
+  await page.goto("/overview");
   await page.getByLabel("Connections when you started").fill("1000");
   await page.getByRole("button", { name: "Save starting count" }).click();
   await expect(main).toContainText("1,000 / 2,000", { useInnerText: true });

@@ -38,7 +38,7 @@ test("a saved search announces only new jobs, once, in the app and by email", as
   test.setTimeout(180_000);
   const email = uniqueEmail("alerts");
   await signIn(page, email, "/jobs");
-  await expect(page.getByRole("heading", { name: /jobs? from the last/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /jobs? from (the last|any date)/i })).toBeVisible();
   test.skip(!(await page.getByText("Showing fictional sample employers").isVisible()), "Dev server isn't running with JOBS_FIXTURES=1");
   const tags: string[] = [];
 

@@ -18,6 +18,7 @@ const serverSchema = z.object({
   ADZUNA_APP_KEY: z.string().min(1).optional(),
   USAJOBS_API_KEY: z.string().min(1).optional(),
   USAJOBS_EMAIL: z.email().optional(),
+  CAREERJET_API_KEY: z.string().min(1).optional(),
   SMTP_HOST: z.string().min(1).optional(),
   SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
   SMTP_USER: z.string().min(1).optional(),
@@ -44,6 +45,7 @@ export function serverEnv() {
     ADZUNA_APP_KEY: process.env.ADZUNA_APP_KEY || undefined,
     USAJOBS_API_KEY: process.env.USAJOBS_API_KEY || undefined,
     USAJOBS_EMAIL: process.env.USAJOBS_EMAIL || undefined,
+    CAREERJET_API_KEY: process.env.CAREERJET_API_KEY || undefined,
     SMTP_HOST: process.env.SMTP_HOST || undefined,
     SMTP_PORT: process.env.SMTP_PORT || undefined,
     SMTP_USER: process.env.SMTP_USER || undefined,
@@ -55,15 +57,15 @@ export function serverEnv() {
 }
 
 /**
- * Free AI uses per user per day on the server's key. Read on its own so a typo here
- * falls back to the default (with a warning) instead of silently turning AI off.
+ * AI uses per user per day on the server's key, or null for no limit (the default). Read on
+ * its own so a typo here falls back to no limit (with a warning) instead of turning AI off.
  */
-export function aiDailyQuota(fallback: number): number {
+export function aiDailyQuota(): number | null {
   const raw = process.env.AI_DAILY_QUOTA || undefined;
   const parsed = serverSchema.shape.AI_DAILY_QUOTA.safeParse(raw);
   if (!parsed.success) {
-    console.warn(`AI_DAILY_QUOTA must be a whole number of 0 or more; using ${fallback}.`);
-    return fallback;
+    console.warn("AI_DAILY_QUOTA must be a whole number of 0 or more; AI use is not limited.");
+    return null;
   }
-  return parsed.data ?? fallback;
+  return parsed.data ?? null;
 }

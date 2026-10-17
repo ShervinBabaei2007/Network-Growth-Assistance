@@ -1,72 +1,112 @@
 import { describe, expect, it } from "vitest";
+import { NURSING_CATALOG, TEST_CATALOG } from "@/test/catalog";
 import { institutionMatcher, matchInstitution, matchProgram, programMatchers, roleAliases, type NetworkingCriteria } from "./criteria";
 import { disabledLLM, type LLMProvider } from "./llm";
-import { parseRequest, parseRequestDeterministic, toCriteria } from "./parse-request";
+import { parseRequest, parseRequestDeterministic, toCriteria, withUserLists } from "./parse-request";
 
 const base = (over: Partial<NetworkingCriteria["education"]> = {}): NetworkingCriteria => ({
   targetCount: 50,
-  education: { institution: "University of Toronto", institutionAliases: ["UofT", "U of T"], programs: ["Computer Engineering"], broadenEce: false, graduationYearMin: null, graduationYearMax: null, status: "any", ...over },
+  education: {
+    institution: "University of Toronto",
+    institutionAliases: ["UofT", "U of T"],
+    vettedAliases: [],
+    institutionDomains: [],
+    programs: ["Computer Engineering"],
+    programAliases: [],
+    broadenEce: false,
+    graduationYearMin: null,
+    graduationYearMax: null,
+    status: "any",
+    ...over,
+  },
   roles: ["Software Engineer"],
   locations: [],
-  country: "Canada",
+  country: null,
   companies: [],
   includeStartups: false,
   excludeExistingConnections: true,
   goal: null,
 });
 
-describe("parseRequestDeterministic", () => {
-  it("understands the headline example", () => {
-    const c = parseRequestDeterministic("Find me 50 people who studied Computer Engineering at the University of Toronto who I am not already connected with.");
+const modelAnswer = (over: Record<string, unknown> = {}) => ({
+  targetCount: 10,
+  institution: null,
+  institutionAliases: [],
+  institutionDomains: [],
+  programs: [],
+  programAliases: [],
+  graduationYearMin: null,
+  graduationYearMax: null,
+  studentStatus: "any",
+  roles: [],
+  locations: [],
+  country: null,
+  companies: [],
+  includeStartups: false,
+  excludeExistingConnections: true,
+  goal: null,
+  ...over,
+});
+
+describe("parseRequestDeterministic: nothing built in", () => {
+  it("reads the user's own school and discipline from the request", () => {
+    const c = parseRequestDeterministic("Find me 50 people who studied Computer Engineering at the University of Toronto who I am not already connected with.", TEST_CATALOG);
     expect(c.targetCount).toBe(50);
     expect(c.education.institution).toBe("University of Toronto");
     expect(c.education.programs).toEqual(["Computer Engineering"]);
+    // The user's own spellings count as strongly as the full name.
+    expect(c.education.vettedAliases).toEqual(expect.arrayContaining(["UofT", "U of T"]));
+    expect(c.education.programAliases).toEqual(expect.arrayContaining(["cpen"]));
     expect(c.excludeExistingConnections).toBe(true);
-    expect(c.locations).toEqual([]);
+    expect(c.country).toBeNull();
   });
 
-  it("reads aliases, roles and two cities", () => {
-    const c = parseRequestDeterministic("Find me 30 UofT ECE alumni working in software engineering in Vancouver or Toronto");
-    expect(c.targetCount).toBe(30);
-    expect(c.education.institution).toBe("University of Toronto");
-    expect(c.education.programs).toEqual(["Electrical and Computer Engineering"]);
-    expect(c.education.broadenEce).toBe(true);
-    expect(c.roles).toContain("Software Engineer");
-    expect(c.locations.sort()).toEqual(["Toronto", "Vancouver"]);
+  it("works for any field", () => {
+    const c = parseRequestDeterministic("Find 20 McGill BScN alumni working as registered nurses in Montreal", NURSING_CATALOG);
+    expect(c.education.institution).toBe("McGill University");
+    expect(c.education.programs).toEqual(["Nursing"]);
+    expect(c.roles).toEqual(["registered nurses"]);
+    expect(c.locations).toEqual(["Montreal"]);
+    expect(c.education.status).toBe("alumni");
   });
 
-  it("reads companies and startups", () => {
-    const c = parseRequestDeterministic("Find me UofT Computer Engineering graduates working at NVIDIA, AMD, Microsoft, Amazon, Apple, or startups.");
-    expect(c.companies).toEqual(["NVIDIA", "AMD", "Microsoft", "Amazon", "Apple"]);
+  it("finds schools by their written name and employers after “at”, with no lists", () => {
+    const c = parseRequestDeterministic("Find graduates of Humber College working at Sunnybrook Hospital or startups");
+    expect(c.education.institution).toBe("Humber College");
+    expect(c.companies).toEqual(["Sunnybrook Hospital"]);
     expect(c.includeStartups).toBe(true);
     expect(c.targetCount).toBe(25);
   });
 
-  it("doesn't treat Computer Engineering as ECE", () => {
-    const c = parseRequestDeterministic("UofT Computer Engineering software engineers");
-    expect(c.education.broadenEce).toBe(false);
+  it("reads a country only when the request names one", () => {
+    expect(parseRequestDeterministic("Find 5 nurses in Canada").country).toBe("Canada");
+    expect(parseRequestDeterministic("Find 5 lawyers in the United Kingdom").country).toBe("United Kingdom");
+    const city = parseRequestDeterministic("Find 5 nurses in Vancouver");
+    expect(city.country).toBeNull();
+    expect(city.locations).toEqual(["Vancouver"]);
+  });
+
+  it("assumes no school, program or country it wasn't told", () => {
+    const c = parseRequestDeterministic("Find 10 people I could learn from");
+    expect(c.education.institution).toBeNull();
+    expect(c.education.programs).toEqual([]);
+    expect(c.roles).toEqual([]);
+    expect(c.country).toBeNull();
   });
 });
 
 describe("toCriteria", () => {
   it("clamps and cleans model output", () => {
     const c = toCriteria(
-      {
+      modelAnswer({
         targetCount: 5000,
         institution: "  University of Toronto ",
         institutionAliases: ["UofT", "UofT", ""],
         programs: ["Computer Engineering", "x".repeat(200)],
-        countEceAsMatch: false,
         graduationYearMin: 1800,
         graduationYearMax: 2024,
-        studentStatus: "any",
-        roles: [],
-        locations: [],
-        companies: [],
-        includeStartups: false,
-        excludeExistingConnections: true,
-        goal: null,
-      },
+        country: "  Canada ",
+      }) as never,
       "",
     );
     expect(c.targetCount).toBe(100);
@@ -74,60 +114,72 @@ describe("toCriteria", () => {
     expect(c.education.programs).toEqual(["Computer Engineering"]);
     expect(c.education.graduationYearMin).toBeNull();
     expect(c.education.graduationYearMax).toBe(2024);
+    expect(c.country).toBe("Canada");
   });
 });
 
 describe("parseRequest", () => {
   it("falls back to the deterministic parser without AI", async () => {
-    const r = await parseRequest(disabledLLM, "Find 20 UBC Computer Science students");
+    const r = await parseRequest(disabledLLM, "Find 20 UBC Computer Science students", TEST_CATALOG);
     expect(r.usedAi).toBe(false);
-    expect(r.criteria.education.institution).toBe("University of British Columbia");
+    expect(r.criteria.education.institution).toBe("UBC");
+    expect(r.criteria.education.programs).toEqual(["Computer Science"]);
   });
 
-  it("keeps the school if the model drops it", async () => {
+  it("keeps the school if the model drops it, and adds the user's own spellings", async () => {
     const llm: LLMProvider = {
       enabled: true,
       async structured() {
-        return {
-          ok: true,
-          data: { targetCount: 10, institution: null, institutionAliases: [], programs: [], countEceAsMatch: false, graduationYearMin: null, graduationYearMax: null, studentStatus: "any", roles: ["Software Engineer"], locations: [], companies: [], includeStartups: false, excludeExistingConnections: true, goal: "internships" },
-        } as never;
+        return { ok: true, data: modelAnswer({ roles: ["Software Engineer"], goal: "internships" }) } as never;
       },
     };
-    const r = await parseRequest(llm, "Find 10 UofT Computer Engineering grads");
+    const r = await parseRequest(llm, "Find 10 UofT Computer Engineering grads", TEST_CATALOG);
     expect(r.usedAi).toBe(true);
     expect(r.criteria.education.institution).toBe("University of Toronto");
     expect(r.criteria.education.programs).toEqual(["Computer Engineering"]);
+    expect(r.criteria.education.vettedAliases).toContain("UofT");
     expect(r.criteria.goal).toBe("internships");
   });
 
   it("falls back when the model fails", async () => {
     const llm: LLMProvider = { enabled: true, structured: async () => ({ ok: false, reason: "busy" }) };
-    const r = await parseRequest(llm, "Find 10 UofT Computer Engineering grads");
+    const r = await parseRequest(llm, "Find 10 UofT Computer Engineering grads", TEST_CATALOG);
     expect(r).toMatchObject({ usedAi: false, note: "busy" });
   });
 });
 
+describe("withUserLists", () => {
+  it("adds nothing for a school or program the user hasn't listed", () => {
+    const c = withUserLists(base({ institution: "Harvard University", programs: ["Law"] }), TEST_CATALOG);
+    expect(c.education.vettedAliases).toEqual([]);
+    expect(c.education.programAliases).toEqual([]);
+  });
+});
+
 describe("matching", () => {
-  it("matches the school by full name and its known short forms, but not lookalikes", () => {
+  it("matches the school by its full name and longer short forms; short unvetted ones are weaker", () => {
     const m = institutionMatcher(base())!;
     expect(matchInstitution("BASc, University of Toronto", m)).toBe("strong");
-    expect(matchInstitution("UofT '24", m)).toBe("strong");
     expect(matchInstitution("U of T Engineering", m)).toBe("strong");
+    expect(matchInstitution("UofT '24", m)).toBe("acronym");
     expect(matchInstitution("Toronto Metropolitan University", m)).toBeNull();
-    expect(matchInstitution("UTM Malaysia", m)).toBeNull();
   });
 
-  it("never reads ECE as Computer Engineering unless broadened", () => {
-    const programs = programMatchers(base());
-    expect(matchProgram("Computer Engineering", programs, false)).toEqual({ kind: "exact", program: "Computer Engineering" });
-    expect(matchProgram("Comp Eng 2T4", programs, false)?.kind).toBe("exact");
-    expect(matchProgram("Electrical and Computer Engineering", programs, false)?.kind).toBe("ece");
-    expect(matchProgram("ECE", programs, true)?.kind).toBe("exact");
-    expect(matchProgram("Electrical Engineering", programs, false)).toBeNull();
+  it("trusts the user's own spellings fully", () => {
+    const m = institutionMatcher(base({ vettedAliases: ["UofT"] }))!;
+    expect(matchInstitution("UofT '24", m)).toBe("strong");
   });
 
-  it("expands roles to common equivalents", () => {
+  it("matches programs by their name and the other names given for them", () => {
+    const programs = programMatchers(base({ programs: ["Nursing"], programAliases: ["BScN", "BSN"] }));
+    expect(matchProgram("Nursing graduate", programs)).toEqual({ kind: "exact", program: "Nursing" });
+    expect(matchProgram("BScN 2022", programs)?.program).toBe("Nursing");
+    expect(matchProgram("Computer Engineering", programs)).toBeNull();
+  });
+
+  it("expands roles to common equivalents, in any field", () => {
     expect(roleAliases(["Software Engineer"])).toEqual(expect.arrayContaining(["software developer", "backend engineer", "sde"]));
+    expect(roleAliases(["Nurse"])).toEqual(expect.arrayContaining(["registered nurse", "rn"]));
+    expect(roleAliases(["Lawyer"])).toEqual(expect.arrayContaining(["associate", "barrister"]));
   });
 });

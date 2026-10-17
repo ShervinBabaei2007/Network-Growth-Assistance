@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { testCriteria } from "@/test/discovery";
 import { evaluateCriteria, type Fact } from "./evidence";
 import { FIXTURE_READMES } from "./fixtures";
 import { linkedInSearchUrl } from "./linkedin-link";
-import { parseRequestDeterministic, statusFromText } from "./parse-request";
+import { statusFromText } from "./parse-request";
 import { decideTier } from "./score";
 import { factsFromOwnPage, gradYearIn, linksInMarkdown, markdownToText, ownLinkedIn } from "./verify";
 
-const criteria = parseRequestDeterministic("Find 20 UofT Computer Engineering alumni working as software engineers");
+const criteria = testCriteria("Find 20 UofT Computer Engineering alumni working as software engineers");
 
 describe("factsFromOwnPage", () => {
   it("reads a profile README line by line, quoting each line", () => {
@@ -69,11 +70,6 @@ describe("stricter verification", () => {
     const two = evaluateCriteria([fact("role", "Software Engineer", "https://a", "medium"), fact("role", "software engineer", "https://b", "medium")], criteria);
     expect(two.role.confidence).toBe("high");
     expect(two.role.note).toMatch(/2 independent sources/);
-  });
-
-  it("ECE is never upgraded to Computer Engineering by repetition", () => {
-    const e = evaluateCriteria([fact("program", "Electrical and Computer Engineering", "https://a"), fact("program", "Electrical and Computer Engineering", "https://b")], criteria);
-    expect(e.program.confidence).toBe("medium");
   });
 
   it("asking for alumni doesn't verify current students", () => {

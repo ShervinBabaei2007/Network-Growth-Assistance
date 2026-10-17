@@ -4,9 +4,9 @@ import { errorMessage, redact } from "./log";
 describe("redact", () => {
   it("removes keys, tokens and emails from messages", () => {
     const text = redact(
-      "failed for sam@example.com with key AIzaSyA1234567890abcdefghijk and Bearer abc.def.ghi123 at https://api.example.com/x?app_key=s3cret&page=2 (sk-ant-api03-abcdefghijkl)",
+      "failed for sam@example.com with key AIzaSyA1234567890abcdefghijk, AQ.Ab8RN6TEST_not_a_real_key_000000 and Bearer abc.def.ghi123 at https://api.example.com/x?app_key=s3cret&page=2 (sk-ant-api03-abcdefghijkl)",
     );
-    expect(text).not.toMatch(/sam@example\.com|AIzaSy|abc\.def|s3cret|sk-ant-api03/);
+    expect(text).not.toMatch(/sam@example\.com|AIzaSy|AQ\.Ab8|abc\.def|s3cret|sk-ant-api03/);
     expect(text).toContain("page=2");
   });
 

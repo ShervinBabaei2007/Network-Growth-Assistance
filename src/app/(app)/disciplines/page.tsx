@@ -5,7 +5,7 @@ import { MeterLegend, ProgressMeter } from "@/components/progress-meter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentUserId, loadProgress } from "@/lib/data/dashboard";
-import { DISCIPLINE_LABELS } from "@/lib/domain";
+import { disciplineName, poolUniversities, targetUniversities } from "@/lib/domain";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Disciplines · Network Growth" };
@@ -41,7 +41,7 @@ async function DisciplineCards() {
       <MeterLegend />
       <div className="grid gap-4 lg:grid-cols-2">
         {progress.disciplines.map((d) => {
-          const name = DISCIPLINE_LABELS[d.discipline];
+          const name = disciplineName(progress.catalog, d.discipline);
           const shortOfCandidates = !d.complete && d.available < d.remaining;
           return (
             <Card key={d.discipline} className={d.isFocus ? "border-primary/40" : undefined}>
@@ -64,8 +64,8 @@ async function DisciplineCards() {
                   <Fact label="Remaining" value={d.remaining} />
                   <Fact label="Pending" value={d.pending} />
                   <Fact label="Ready for outreach" value={d.available} />
-                  <Fact label="From U of T + UBC" value={d.acceptedPrimary} />
-                  <Fact label="From SFU + Waterloo" value={d.acceptedAdditional} />
+                  <Fact label={`From ${targetUniversities(progress.catalog).map((u) => u.name).join(" + ") || "schools with targets"}`} value={d.acceptedPrimary} />
+                  {poolUniversities(progress.catalog).length ? <Fact label={`From ${poolUniversities(progress.catalog).map((u) => u.name).join(" + ")}`} value={d.acceptedAdditional} /> : null}
                 </dl>
                 {shortOfCandidates ? (
                   <p className="text-sm">

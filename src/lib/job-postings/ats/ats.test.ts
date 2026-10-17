@@ -193,8 +193,8 @@ describe("adapters", () => {
 });
 
 describe("canadianPlace", () => {
-  it("finds the Canadian place among several, preferring BC then Ontario", () => {
-    expect(canadianPlace([{ text: "New York, NY; Toronto, ON; Vancouver, BC" }], false)).toMatchObject({ province: "BC" });
+  it("finds the Canadian place among several: the first one the board lists", () => {
+    expect(canadianPlace([{ text: "New York, NY; Toronto, ON; Vancouver, BC" }], false)).toMatchObject({ province: "ON" });
     expect(canadianPlace([{ text: "San Francisco, CA" }, { text: "Toronto, Ontario, Canada" }], false)).toMatchObject({ province: "ON", city: "Toronto" });
   });
   it("counts remote only when it says Canada", () => {

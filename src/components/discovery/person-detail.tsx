@@ -284,7 +284,7 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor={`tags-${p.id}`}>Tags</Label>
-              <Input id={`tags-${p.id}`} name="tags" defaultValue={p.tags.join(", ")} placeholder="UofT, CE, Backend, Internship target" />
+              <Input id={`tags-${p.id}`} name="tags" defaultValue={p.tags.join(", ")} placeholder="Comma-separated, e.g. school, field, follow up" />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor={`category-${p.id}`}>Category</Label>

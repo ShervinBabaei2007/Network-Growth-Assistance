@@ -16,7 +16,7 @@ export function defaultLLM(env: Record<string, string | undefined> = process.env
 export type AiVendor = "gemini" | "anthropic";
 export const AI_VENDOR_LABELS: Record<AiVendor, string> = { gemini: "Google Gemini", anthropic: "Anthropic Claude" };
 
-/** Which vendor a user's own key is for, from its shape: "AIza…" is Gemini, "sk-ant-…" is Anthropic. */
+/** Which vendor a user's own key is for, from its shape: "AIza…" or "AQ.…" is Gemini, "sk-ant-…" is Anthropic. */
 export function keyVendor(key: string): AiVendor | null {
   if (looksLikeGeminiKey(key)) return "gemini";
   if (/^sk-ant-[A-Za-z0-9_-]{20,}$/.test(key.trim())) return "anthropic";

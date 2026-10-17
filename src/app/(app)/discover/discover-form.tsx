@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { NetworkingCriteria } from "@/lib/discovery/criteria";
 
+// Examples from different fields: anyone can look for anyone.
 const EXAMPLES = [
-  "Find 50 UofT Computer Engineering alumni working as software engineers",
-  "Find 30 UofT ECE alumni working in software engineering in Vancouver or Toronto",
-  "Find UofT Computer Engineering graduates working at NVIDIA, AMD, Microsoft, Amazon, Apple, or startups",
+  "Find 25 McGill Nursing alumni working as registered nurses in Montreal",
+  "Find 30 law school graduates working as litigation associates at firms in Toronto",
+  "Find 20 Computer Science alumni working as software engineers at startups",
 ];
 
 async function start(body: { query: string; criteria?: NetworkingCriteria | null; parentSearchId?: string | null }): Promise<{ id?: string; error?: string }> {
@@ -55,7 +56,7 @@ export function DiscoverForm({ initialQuery = "", error: initialError }: { initi
         onChange={(e) => setQuery(e.target.value)}
         rows={3}
         maxLength={1000}
-        placeholder="Find 50 UofT CE alumni working in software engineering"
+        placeholder="e.g. Find 25 alumni of my school who studied my program and now work in my field"
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) (e.currentTarget.form as HTMLFormElement | null)?.requestSubmit();
         }}
@@ -108,8 +109,11 @@ export function CriteriaEditor({ query, criteria, parentSearchId }: { query: str
       education: {
         institution: text("institution") || null,
         institutionAliases: list(text("aliases")),
+        vettedAliases: criteria.education.vettedAliases,
+        institutionDomains: list(text("domains")),
         programs: list(text("programs")),
-        broadenEce: f.get("broadenEce") === "on",
+        programAliases: list(text("programAliases")),
+        broadenEce: false,
         graduationYearMin: year("gradMin"),
         graduationYearMax: year("gradMax"),
         status: (["alumni", "student"].includes(text("status")) ? text("status") : "any") as NetworkingCriteria["education"]["status"],
@@ -148,8 +152,10 @@ export function CriteriaEditor({ query, criteria, parentSearchId }: { query: str
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {field("targetCount", "How many people", String(c.targetCount), undefined, "number")}
         {field("institution", "School", c.education.institution ?? "")}
-        {field("aliases", "School also written as", c.education.institutionAliases.join(", "), "Comma-separated, e.g. UofT, U of T")}
-        {field("programs", "Programs", c.education.programs.join(", "), "Comma-separated")}
+        {field("aliases", "School also written as", c.education.institutionAliases.join(", "), "Comma-separated short forms people use for it")}
+        {field("domains", "School website (optional)", c.education.institutionDomains.join(", "), "e.g. its domain, so its own pages can be searched")}
+        {field("programs", "Programs or fields", c.education.programs.join(", "), "Comma-separated, any field")}
+        {field("programAliases", "Programs also written as", c.education.programAliases.join(", "), "Comma-separated abbreviations and other names, e.g. a degree's short form")}
         {field("roles", "Roles", c.roles.join(", "))}
         {field("companies", "Companies", c.companies.join(", "))}
         {field("locations", "Cities or regions", c.locations.join(", "))}
@@ -165,12 +171,8 @@ export function CriteriaEditor({ query, criteria, parentSearchId }: { query: str
           <option value="student">Current students only</option>
         </NativeSelect>
       </div>
-      {field("goal", "Your goal for this search (optional)", c.goal ?? "", "Used to rank people and word explanations, e.g. “junior developer looking for internships”")}
+      {field("goal", "Your goal for this search (optional)", c.goal ?? "", "Used to rank people and word explanations, e.g. what you're hoping to learn or find")}
       <div className="flex flex-wrap gap-4 text-sm">
-        <label className="flex items-center gap-2">
-          <input type="checkbox" name="broadenEce" defaultChecked={c.education.broadenEce} className="size-4 accent-primary" />
-          Count ECE (Electrical and Computer Engineering) as a match
-        </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" name="startups" defaultChecked={c.includeStartups} className="size-4 accent-primary" />
           Startups are fine

@@ -17,7 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DISCIPLINE_LABELS, STATUS_LABELS, UNIVERSITY_LABELS, type CandidateStatus, type Discipline, type University } from "@/lib/domain";
+import { STATUS_LABELS, type CandidateStatus, type Discipline, type University } from "@/lib/domain";
+import { loadCatalog } from "@/lib/data/catalog";
 import { currentUserId, loadProgress } from "@/lib/data/dashboard";
 import { searchLinks } from "@/lib/prioritize/search-links";
 import { createClient } from "@/lib/supabase/server";
@@ -84,6 +85,10 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
   const page = Math.max(1, Number(one(params.page)) || 1);
 
   const supabase = await createClient();
+  const catalog = await loadCatalog(supabase);
+  // Filters list the user's own schools and disciplines.
+  const disciplineOptions = Object.fromEntries(catalog.disciplines.map((d) => [d.id, d.name]));
+  const universityOptions = Object.fromEntries(catalog.universities.map((u) => [u.id, u.name]));
   let query = supabase
     .from("candidates")
     .select(
@@ -94,8 +99,8 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
   if (status && status in STATUS_LABELS) query = query.eq("status", status);
-  if (discipline && discipline in DISCIPLINE_LABELS) query = query.eq("discipline", discipline);
-  if (university && university in UNIVERSITY_LABELS) query = query.eq("university", university);
+  if (discipline && discipline in disciplineOptions) query = query.eq("discipline", discipline);
+  if (university && university in universityOptions) query = query.eq("university", university);
   if (review) query = query.or("university_confidence.eq.needs_review,discipline_confidence.eq.needs_review");
   if (q) {
     // Strip characters that have meaning in PostgREST filter syntax.
@@ -132,8 +137,8 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
           <Input id="q" name="q" defaultValue={q} placeholder="Name, school, program, role" />
         </div>
         <Filter id="status" label="Status" value={status} options={STATUS_LABELS} />
-        <Filter id="discipline" label="Discipline" value={discipline} options={DISCIPLINE_LABELS} />
-        <Filter id="university" label="University" value={university} options={UNIVERSITY_LABELS} />
+        <Filter id="discipline" label="Discipline" value={discipline} options={disciplineOptions} />
+        <Filter id="university" label="School" value={university} options={universityOptions} />
         <div className="flex items-end gap-3">
           <label className="flex h-8 items-center gap-2 text-sm">
             <input type="checkbox" name="review" value="1" defaultChecked={review} className="size-4 accent-primary" />
@@ -182,6 +187,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
                     university={c.university}
                     discipline={c.discipline}
                     confirmed={c.university_confidence === "confirmed" && c.discipline_confidence === "confirmed"}
+                    catalog={catalog}
                   />
                 </TableCell>
                 <TableCell className="hidden max-w-64 truncate text-muted-foreground md:table-cell">{c.role}</TableCell>
@@ -251,8 +257,8 @@ function Filter({
 
 async function QuickCaptureForUser() {
   const supabase = await createClient();
-  const { data } = await supabase.from("settings").select("count_ubco_as_ubc, auto_approve").single();
-  return <QuickCapture countUbcoAsUbc={data?.count_ubco_as_ubc ?? true} autoApprove={data?.auto_approve ?? false} />;
+  const [{ data }, catalog] = await Promise.all([supabase.from("settings").select("auto_approve").single(), loadCatalog(supabase)]);
+  return <QuickCapture catalog={catalog} autoApprove={data?.auto_approve ?? false} />;
 }
 
 /** One-click LinkedIn searches for the categories that still need people, most important first. */
@@ -260,7 +266,8 @@ async function SearchShortcuts() {
   let links;
   try {
     const supabase = await createClient();
-    links = searchLinks((await loadProgress(supabase, await currentUserId(supabase))).disciplines);
+    const progress = await loadProgress(supabase, await currentUserId(supabase));
+    links = searchLinks(progress.disciplines, progress.catalog);
   } catch (e) {
     unstable_rethrow(e);
     return null; // shortcuts are a convenience; the paste box still works without them

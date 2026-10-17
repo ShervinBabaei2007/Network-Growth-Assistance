@@ -7,6 +7,8 @@
 /** Exported whole: RLS limits each to the caller's own rows. */
 export const EXPORTED_TABLES = [
   "settings",
+  "universities",
+  "disciplines",
   "targets",
   "candidates",
   "invitations",
@@ -58,4 +60,4 @@ export const EXCLUDED_TABLES = {
   rate_limits: "internal counters for abuse limits",
 } as const;
 
-export const EXPORT_SCHEMA_VERSION = 2;
+export const EXPORT_SCHEMA_VERSION = 3;
