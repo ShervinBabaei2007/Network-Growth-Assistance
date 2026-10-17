@@ -82,7 +82,7 @@ Vercel reads `vercel.json` and registers the daily job (`/api/cron/daily`, sched
      select net.http_post(
        url := (select decrypted_secret from vault.decrypted_secrets where name = 'app_url') || '/api/cron/crawl',
        headers := jsonb_build_object('Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')),
-       timeout_milliseconds := 60000
+       timeout_milliseconds := 90000
      );
    $$);
    ```
@@ -119,7 +119,7 @@ Vercel reads `vercel.json` and registers the daily job (`/api/cron/daily`, sched
      select net.http_post(
        url := (select decrypted_secret from vault.decrypted_secrets where name = 'app_url') || '/api/cron/alerts',
        headers := jsonb_build_object('Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')),
-       timeout_milliseconds := 60000
+       timeout_milliseconds := 90000
      );
    $$);
    ```
