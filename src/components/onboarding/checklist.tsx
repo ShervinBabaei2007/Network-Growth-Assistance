@@ -25,8 +25,10 @@ async function hasSavedJob(supabase: Supabase) {
  * is never out of date, and it disappears by itself once everything is done.
  */
 export async function GettingStartedCard({ hasPlan, hasBaseline }: { hasPlan: boolean; hasBaseline: boolean }) {
-  const state = await getOnboarding();
-  if (!state || state.checklistDismissed || state.status === "new") return null;
+  const read = await getOnboarding();
+  if (!read?.saved) return null;
+  const { state } = read;
+  if (state.checklistDismissed || state.status === "new") return null;
   const supabase = await createClient();
 
   const [hasCandidates, hasSearch, hasResume, hasApplication, hasSaved] = await Promise.all([

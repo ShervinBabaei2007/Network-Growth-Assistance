@@ -37,7 +37,7 @@ export default function HelpPage() {
 }
 
 async function Guide() {
-  const state = (await getOnboarding()) ?? parseOnboarding(undefined);
+  const state = (await getOnboarding())?.state ?? parseOnboarding(undefined);
   const resumable = !state.tourDone && state.tourStep > 0;
   return (
     <Card data-tour="help-guide">
