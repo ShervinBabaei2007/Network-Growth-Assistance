@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoginForm } from "./login-form";
 
@@ -19,6 +20,11 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
             <LinkError searchParams={searchParams} />
           </Suspense>
           <LoginForm />
+          <p className="text-center text-xs text-muted-foreground">
+            By continuing you agree to the{" "}
+            <Link href="/terms" className="underline underline-offset-4">Terms</Link> and{" "}
+            <Link href="/privacy" className="underline underline-offset-4">Privacy Policy</Link>.
+          </p>
         </CardContent>
       </Card>
     </main>
