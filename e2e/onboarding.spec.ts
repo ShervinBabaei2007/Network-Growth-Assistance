@@ -173,3 +173,46 @@ test("a tour left part-way resumes at the same stop", async ({ page }) => {
   await page.getByRole("link", { name: "Resume the tour" }).click();
   await expect(page.getByTestId("tour-popover")).toContainText("Stop 4 of 18", { timeout: 30_000 });
 });
+
+test("a stop whose target never shows is still shown, then moves to its target when it appears", async ({ page }) => {
+  test.setTimeout(120_000);
+  await signIn(page, uniqueEmail("slowtarget"));
+  // Hide the first stop's target, as a slow or missing element would be.
+  await page.addInitScript(() => {
+    const style = document.createElement("style");
+    style.id = "hide-tour-target";
+    style.textContent = "[data-tour=primary-action]{display:none !important}";
+    document.addEventListener("DOMContentLoaded", () => document.head.appendChild(style));
+  });
+  await page.goto("/overview?tour=1");
+  const tour = page.getByTestId("tour-popover");
+  // The click gets feedback straight away, then the stop appears rather than being skipped.
+  await expect(page.getByRole("status").filter({ hasText: "Starting the tour" })).toBeVisible();
+  await expect(tour).toContainText("Stop 1 of 18", { timeout: 30_000 });
+  await expect(tour).toContainText("Overview: your next step");
+  await expect(page.getByRole("status").filter({ hasText: "Starting the tour" })).toBeHidden();
+
+  // Once the target exists the popover is still there (it re-anchors to it).
+  await page.evaluate(() => document.getElementById("hide-tour-target")?.remove());
+  await expect(tour).toContainText("Stop 1 of 18");
+  await tour.getByRole("button", { name: "Next" }).click();
+  await expect(tour).toContainText("Stop 2 of 18", { timeout: 30_000 });
+});
+
+test("asking for the tour again while one is running starts it again instead of doing nothing", async ({ page }) => {
+  test.setTimeout(120_000);
+  const email = uniqueEmail("restartactive");
+  await signIn(page, email);
+  // Stop 17 is the Help page, which holds the "Take the tour" link.
+  await adminRest("PATCH", `settings?user_id=eq.${await userIdFor(email)}`, { onboarding: { status: "done", tourDone: false, tourStep: 16, checklistDismissed: true } });
+  await page.goto("/overview?tour=1");
+  const tour = page.getByTestId("tour-popover");
+  await expect(tour).toContainText("Stop 17 of 18", { timeout: 30_000 });
+  await expect(page).toHaveURL(/\/help$/);
+
+  await page.getByRole("link", { name: /resume the tour|take the tour/i }).click();
+  // The tour begins again from its saved stop and is visible, with the address back to a plain page.
+  await expect(tour).toContainText("Stop 17 of 18", { timeout: 30_000 });
+  await expect(page).toHaveURL(/\/help$/);
+  await expect(page).not.toHaveURL(/tour=1/);
+});

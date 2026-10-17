@@ -40,7 +40,7 @@ async function Guide() {
   const state = (await getOnboarding()) ?? parseOnboarding(undefined);
   const resumable = !state.tourDone && state.tourStep > 0;
   return (
-    <Card>
+    <Card data-tour="help-guide">
       <CardHeader>
         <h2 className="font-medium">Getting started</h2>
         <CardDescription>None of this changes your data. It only shows you around.</CardDescription>
