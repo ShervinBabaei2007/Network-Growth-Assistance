@@ -1,4 +1,5 @@
-import { ContactLine, LegalPage } from "@/components/legal/legal-page";
+import Link from "next/link";
+import { ContactLine, LegalPage, Operator } from "@/components/legal/legal-page";
 
 export const metadata = { title: "Terms of Service · Network Growth" };
 
@@ -6,22 +7,25 @@ export default function TermsPage() {
   return (
     <LegalPage title="Terms of Service">
       <p>
-        By using Network Growth Assistant (“the service”) you agree to these terms. If you do not agree,
-        please do not use it. Questions: <ContactLine />.
+        These terms are an agreement between you and <Operator /> (“we”, “us”) about Network Growth
+        Assistant (“the service”). By using the service you agree to them. If you do not agree, please do not
+        use it. Questions: <ContactLine />. Our <Link href="/privacy" className="underline underline-offset-4">Privacy Policy</Link> explains how we handle personal information.
       </p>
 
       <h2>What the service is</h2>
       <p>
         A planning and tracking tool for networking and job searching. It keeps your lists, suggests who to
         contact and which jobs fit, and helps draft documents. It is a personal organizer, not a
-        recruiter, an employer or a job guarantee.
+        recruiter, an employer or a job guarantee. It is provided free of charge. If we ever charge for it,
+        we will tell you first and you will not be billed without agreeing.
       </p>
 
       <h2>Your account</h2>
       <ul>
-        <li>You are responsible for your account and for the email account used to sign in.</li>
-        <li>You must be at least 16 and provide accurate information.</li>
-        <li>You are responsible for what you add and for having the right to add it.</li>
+        <li>You are responsible for your account and for the email or Google account you use to sign in.</li>
+        <li>You must be at least 16. If you are under the age of majority where you live (19 in British Columbia), you confirm that a parent or guardian knows you are using the service and agrees.</li>
+        <li>Provide accurate information, and tell us if you think someone else has accessed your account.</li>
+        <li>You are responsible for what you add and for having the right to add it, including information about other people.</li>
       </ul>
 
       <h2>LinkedIn and other websites</h2>
@@ -55,23 +59,38 @@ export default function TermsPage() {
 
       <h2>No warranty and limits</h2>
       <p>
-        The service is provided “as is”, without promises that it will be available, error-free or fit for
-        a particular purpose, and it may change or be discontinued. To the extent the law allows, we are
-        not liable for lost opportunities, lost data or indirect damages arising from your use of the
-        service. Nothing here limits rights you have under law that cannot be waived. Keep your own copies
-        of anything important.
+        Subject to the next paragraph, the service is provided “as is”: we do not promise that it will be
+        available, error-free or suited to a particular purpose, and it may change or be discontinued. To
+        the extent the law allows, we are not liable for lost opportunities, lost data or indirect or
+        consequential damages arising from your use of the service, and our total liability to you for any
+        claim is limited to the amount you paid us for the service, which for a free service is nothing.
+        Keep your own copies of anything important.
+      </p>
+      <p>
+        Nothing in these terms excludes or limits any right or remedy you have under British Columbia or
+        Canadian law that cannot be excluded or limited, including consumer protection law such as the
+        Business Practices and Consumer Protection Act, or liability for our own fraud or gross negligence.
       </p>
 
       <h2>Ending use</h2>
       <p>
-        You can stop at any time and delete your account in Settings. We may suspend accounts that break
-        these terms or put the service at risk.
+        You can stop at any time and delete your account in Settings. We may suspend or close accounts that
+        break these terms or put the service or other people at risk. If we close your account for another
+        reason, we will give you reasonable notice and a chance to export your data where we can.
       </p>
 
       <h2>Changes</h2>
       <p>
-        We may update these terms. If a change matters, we will update the date above. Continuing to use the
-        service after a change means you accept it.
+        We may update these terms. If a change matters, we will update the date above and, where we can,
+        tell you in the app. Continuing to use the service after a change means you accept it.
+      </p>
+
+      <h2>Governing law</h2>
+      <p>
+        These terms are governed by the laws of the Province of British Columbia and the federal laws of
+        Canada that apply there. Any dispute that cannot be resolved by talking it through will be decided by
+        the courts of British Columbia, and you and we submit to their jurisdiction. This does not take away
+        any right you have to bring a claim in another place where the law gives you that right.
       </p>
     </LegalPage>
   );

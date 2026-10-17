@@ -3,9 +3,15 @@ import Link from "next/link";
 
 export const LEGAL_UPDATED = "17 October 2026";
 
-// Where people can reach the operator. Optional; without it the pages point to the in-app
-// feedback button.
+// Who runs the service and how to reach them. Both are optional public settings. Without a
+// contact address the pages point to the in-app feedback button, but a real address should
+// be set before launch: British Columbia's PIPA expects a privacy contact people can reach.
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
+const OPERATOR_NAME = process.env.NEXT_PUBLIC_OPERATOR_NAME;
+
+export function Operator() {
+  return <>{OPERATOR_NAME ?? "the operator of Network Growth Assistant"}</>;
+}
 
 export function ContactLine() {
   return CONTACT_EMAIL ? (
