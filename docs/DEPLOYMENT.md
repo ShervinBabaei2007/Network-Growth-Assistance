@@ -281,3 +281,14 @@ Discover follows the same rule. Every web query excludes linkedin.com, and the p
 LinkedIn limits how many invitations an account can send and how many personalized notes a free account gets per month. The limits vary by account and change over time, so the app assumes none. Enter the numbers you plan to stay under in **Settings → Daily planning**.
 
 If LinkedIn shows a warning or restriction, press **Pause outreach** in Settings. The queue stops until you resume.
+
+## Sharing it for user feedback
+
+Before sending the link to testers:
+
+1. **Cap AI spend.** Set `AI_DAILY_QUOTA` (for example `5`). Unset means every tester's AI use runs on your key with no limit.
+2. **Set up SMTP** (step 2.4). Without it, Supabase's built-in email only reaches your own team, so testers can't sign in.
+3. **Schedule the crawler** (step 3.1, pg_cron). Vercel Hobby crons run only once a day, so job boards and alerts won't refresh without it.
+4. **Check the redirect URLs** in Supabase Auth include your production address.
+5. The app serves `/robots.txt` with `Disallow: /` while in beta. Remove `src/app/robots.ts` when you launch publicly.
+6. Tell testers the AI privacy note: on Gemini's free tier, Google may use what is sent to improve its products.
