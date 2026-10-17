@@ -157,7 +157,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
     <div className="grid gap-6 lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start">
       <ToastOnMount specs={toasts} />
       {/* On phones the results come first and the filters follow; side by side from lg up. */}
-      <aside className="order-last grid gap-4 lg:sticky lg:top-6 lg:order-none" aria-label="Filters and preferences">
+      <aside className="order-last grid gap-4 lg:sticky lg:top-20 lg:order-none" aria-label="Filters and preferences">
         <FiltersPanel sp={sp} filters={filters} provinces={inCanada ? provinces : []} provFilter={provFilter} hrefBase={href} explicitRange={explicitRange} showAdzuna={providerNames.includes("adzuna")} showUsajobs={providerNames.includes("usajobs")} showCareerjet={providerNames.includes("careerjet")} currency={currency} />
         <PreferencesCard settings={settings} resumeTitles={feed.resolved.titlesFromResume ? searched : []} />
         <div className="grid gap-1 px-1 text-xs text-muted-foreground">

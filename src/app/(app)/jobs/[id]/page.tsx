@@ -263,7 +263,7 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
         </div>
 
         {/* Actions: always in reach, beside the content on wide screens. */}
-        <aside className="grid gap-4 lg:sticky lg:top-6" aria-label="Apply and track">
+        <aside className="grid gap-4 lg:sticky lg:top-20" aria-label="Apply and track">
           <Card size="sm">
             <CardContent className="grid gap-3">
               <VerificationBadge status={job.closed_at ? "expired" : job.verification_status} />

@@ -13,7 +13,8 @@ import { createClient } from "@/lib/supabase/server";
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-full flex-1">
-      <aside className="hidden w-56 shrink-0 border-r bg-sidebar p-4 md:block">
+      {/* Both bars stay in view while the page scrolls: the sidebar fills the screen height and scrolls on its own if it is taller. */}
+      <aside className="sticky top-0 z-20 hidden h-dvh w-56 shrink-0 self-start overflow-y-auto border-r bg-sidebar p-4 md:block">
         <p className="mb-4 flex items-center gap-2 px-3 font-semibold">
           <span aria-hidden className="size-2.5 rounded-full bg-primary" />
           Network Growth
@@ -21,7 +22,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         <SidebarNav />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-2 border-b bg-card px-4 py-2">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b bg-card px-4 py-2">
           <div className="flex min-w-0 items-center gap-2">
             <div className="md:hidden">
               <MobileNav />
