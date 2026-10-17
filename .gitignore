@@ -47,3 +47,21 @@ next-env.d.ts
 
 # Private planning notes
 docs/IMPROVEMENT-PLAN.md
+
+# Local-only notes and tools: nothing another contributor needs
+RUNNING.local.md
+*.local.md
+/.claude/
+/.vscode/
+/.idea/
+/supabase/snippets/
+
+# Secrets and local credentials (the example file above stays tracked)
+.env.keys
+*.key
+*.p12
+
+# Logs and operating-system files
+*.log
+Thumbs.db
+desktop.ini

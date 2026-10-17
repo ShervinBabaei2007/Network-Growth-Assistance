@@ -1,159 +1,210 @@
-# LinkedIn Network Growth Assistant
+# Network Growth Assistant
 
-Plans, prioritizes and tracks LinkedIn networking toward a connection goal you set, for the schools and fields of study you choose. Nothing is built in: you add your own schools and disciplines (with the other ways each is written) and set your own targets in **Settings**.
+A free web app that helps you grow a professional network and run a job search in one place. It keeps your lists, tells you who to contact next, finds recent jobs from employers' own career pages, and tracks every application.
 
-The app never scrapes LinkedIn, never automates invitations and never asks for LinkedIn credentials. You send every invitation yourself. The app keeps the candidate list, decides who to contact next and records the results.
+**You stay in control.** The app never scrapes LinkedIn, never sends invitations for you, and never asks for your LinkedIn password. You send every message yourself.
 
-## Status
+## Contents
 
-| Phase | Scope | State |
-|---|---|---|
-| 1 | Foundation: Next.js, Supabase schema + RLS, magic-link auth, app shell | Done |
-| 2 | Dashboard: progress, discipline and university targets, connection snapshots, settings | Done |
-| 3 | Candidate management: records, search, dedupe, classification, status, CSV import | Done |
-| 4 | Prioritization and the daily queue | Done |
-| 5 | Daily job and LinkedIn data export import | Done |
-| 6 | Connection-note suggestions | Done |
-| 7 | Analytics and end-to-end tests | Done |
-| 8 | Production hardening, data export/deletion, deployment guide | Done |
-| 9 | Network discovery: known connections, evidence-backed AI research, People CRM | Done |
-| 10 | Jobs: recent postings from employers' own job boards (BC and Ontario first), free fit checks and tailored resume and cover letter, optional AI | Done |
-| 11 | Trust and tailoring: verified job links (SSRF-safe), dedupe, freshness, filters and ranking; resume import with confidence and versions; AI tailoring with a materiality check; Improvement Notes; toasts | Done |
-| 12 | Free providers: Gemini is the default AI; Jobicy and Remotive add free job sources; Anthropic and Adzuna become optional | Done |
-| 13 | Worldwide, any field: pick your country; non-tech titles, skills and employers | Done |
-| 14 | Workday employer boards and Careerjet search; documents kept when jobs are pruned; user-defined schools, disciplines and targets (nothing built in) | Done |
+1. [What it does](#what-it-does)
+2. [How a day works](#how-a-day-works)
+3. [Quick start](#quick-start)
+4. [Configuration](#configuration)
+5. [Running the checks](#running-the-checks)
+6. [Deploying](#deploying)
+7. [How it is built](#how-it-is-built)
+8. [Privacy and data](#privacy-and-data)
+9. [Troubleshooting](#troubleshooting)
+10. [Limits](#limits)
+11. [Contributing and licence](#contributing-and-licence)
 
-To deploy, follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+## What it does
+
+| Area | What you get |
+|---|---|
+| **Network** | Candidates with search, de-duplication and status. Quick capture from a LinkedIn search page you copy yourself. CSV and LinkedIn data-export import. A daily queue ordered by your priorities, with suggested connection notes. |
+| **Discover** | A research assistant that finds people worth meeting from public sources (GitHub, ORCID and optional web search). Every fact quotes its source. It never visits LinkedIn. |
+| **People** | A small CRM: status, notes, tags, reminders, referrals and "people at this company". |
+| **Jobs** | Recent postings from employers' own job boards, plus free remote-job feeds. Verified links, fit checks against your resume, tailored resumes and cover letters, and saved-search alerts. |
+| **Applications** | A board and list from saved to offer, with timeline, interviews, reminders, contacts, documents and calendar (`.ics`) export. |
+| **Overview and Analytics** | Progress toward your goal, by discipline and school. Nothing is estimated or invented. |
+| **Your account** | Sign in with Google or an email link. Export or delete all your data from Settings. Light and dark themes, adjustable density and text size. |
+
+You choose your own schools, disciplines, targets and connection goal. Nothing is built in.
+
+For the detail behind Discover and Jobs, see the [feature guide](docs/FEATURES.md).
 
 ## How a day works
 
-0. **Add people fast:** on a LinkedIn people search (for example "Computer Engineering" with the School filter set to UBC), press Ctrl+A then Ctrl+C. On **Candidates → Quick capture**, press Ctrl+V. Everyone on the page appears with school and program filled in where their headline says them. Fix any blanks, then press **Add**. Repeat for the next results page. Only what you copied is read; the app never fetches anything from LinkedIn.
-1. The daily job (or **Run now**) classifies new candidates, marks older invitations as pending and builds today's queue. It works in your discipline priority order, schools with their own targets first and the others as labelled alternates. It stays within your daily target and pause setting.
-2. On **Daily Queue**, open each profile on LinkedIn and send the invitation yourself, with the suggested note if you like. Then press **Mark sent**.
-3. When someone accepts, mark it on their record, or import LinkedIn's data export to update everyone at once.
-4. **Overview**, **Disciplines**, **Universities** and **Analytics** update from what you've recorded. Nothing is estimated or invented.
+1. **Add people fast.** On a LinkedIn people search, press Ctrl+A then Ctrl+C. In **Candidates → Quick capture**, press Ctrl+V. Everyone on the page appears, with school and program filled in where the headline says them. Fix any blanks, then press **Add**. Only what you copied is read.
+2. **Let the daily job run** (or press **Run now**). It classifies new candidates, marks older invitations as pending and builds today's queue within your daily target.
+3. **Work the queue.** Open each profile on LinkedIn, send the invitation yourself, then press **Mark sent**.
+4. **Record acceptances.** Mark them on the person's record, or import LinkedIn's data export to update everyone at once.
+5. **Check progress** on Overview, Disciplines, Schools and Analytics.
+6. **Search jobs.** Save a search to get alerts, track what you apply for, and look up people you know at each company.
 
-## Network discovery
+## Quick start
 
-**Discover** is a research assistant for finding people worth meeting, for example "Find 50 UofT Computer Engineering alumni working as software engineers". It is not a LinkedIn tool: it never visits, searches or automates LinkedIn.
-
-1. **Connections**: import your Connections.csv (or any contact list) so people you already know are left out. The LinkedIn data export import on Candidates → Import fills this list too. Emails are never stored, and the file isn't kept.
-2. **Understand**: the AI (Gemini by default) turns the request into structured criteria (school and its aliases, programs, roles, companies, places, count). A built-in parser does it without a key. ECE is never treated as Computer Engineering unless you say so.
-3. **Plan and search**: many small, targeted searches (alumni, design teams, labs, personal sites, the school's own site, GitHub), deduplicated, each excluding LinkedIn. Sources: GitHub's and ORCID's public APIs (no key), plus Brave Search for the open web when configured, all behind a `SearchProvider` interface.
-4. **Evidence**: pages that mention the school are read (respecting robots.txt; LinkedIn URLs are never fetched). The AI extracts people, and **every fact must quote the page**. The server checks each quote and link against the page and drops anything it can't find. Confidence (high, medium, low) comes from rules, not from the model.
-5. **Verify**: the top 30 people are checked on their own pages, without AI: their GitHub profile README and social links, and the website they list. Each line that states their school, program, class year (including UofT's "2T4"), role or employer becomes a quoted fact. Two independent sources agreeing raise a fact to high confidence (never for ECE vs Computer Engineering), and an "alumni" request doesn't verify someone who is still studying.
-6. **Resolve and dedupe**: the same person across sources is merged only with a corroborating signal (same GitHub, site, or name plus employer and school); otherwise they're flagged as a possible duplicate. People matching your known connections are hidden (≥ 95%) or shown for review (75–95%). Your answers are remembered.
-7. **Rank and explain**: a transparent score (education 30, program 25, career 15, company 10, location 10, evidence 10) with a per-line breakdown, then an optional AI rerank that explains why each person is worth meeting, citing only verified facts.
-8. **Act yourself**: every person has a LinkedIn button. **LinkedIn profile** opens the profile link the person published themselves (on GitHub, ORCID or their website). Otherwise **Find on LinkedIn** opens LinkedIn's people search for their name and employer or school; check it's the right person and paste their profile link in the drawer to keep it. Save people to **People**, track status, notes, tags and reminders, mark 2nd or 3rd degree if you checked LinkedIn yourself, copy a suggested intro, open their profile in a new tab, or send them to Candidates and the Daily Queue.
-
-**No keys needed to start.** Without any API keys, Discover searches two free public sources whose data needs no AI to read: **GitHub** profiles (name, bio, company, location) and **ORCID** records (people's own education, with school, department, degree and years, and their employment, with employer and title). Requests are understood by a built-in parser, and matches are explained by their score breakdown. Working at a school is never counted as having studied there. Adding a free `GITHUB_TOKEN` (no permissions) raises GitHub's limit from about one search an hour. `BRAVE_SEARCH_API_KEY` and `GEMINI_API_KEY` (free) are optional upgrades: they add personal sites and team pages read by AI, and written explanations.
-
-**Canada only.** Every search looks for people located in Canada. Location comes from evidence: a GitHub profile's location, the country on an ORCID record or the city of their current employer, "Based in Toronto" on their own page, or a web page. Someone shown to live elsewhere (for example "Seattle, WA") is left out and listed under "didn't qualify" with the reason. Someone whose location isn't public can't be verified and is shown as a possible match. Sources that disagree lower confidence. "Vancouver, WA" counts as the United States, and city names shared with other countries (London, Hamilton) only count with a province. Under **Modify**, a search can use another country, or none.
-
-The research agent works in short, resumable steps with hard budgets (30 queries, 100 pages, 200 people, 60 AI calls per search). It stops when it has enough verified people, a budget runs out, or new searches stop finding new people. It returns fewer people rather than lowering the bar. Search results are cached for 3 days and pages for 14.
-
-## Jobs
-
-**Jobs** searches real, recent postings in any country and any field (tech, design, retail, sales, support, healthcare, finance, education…), checks each against your resume, and helps you apply: either by tailoring your resume with AI or with specific notes on what to change yourself. Trust comes first: **real > verified > relevant > recent > quantity**.
-
-**Your country.** You search one country at a time (or **Anywhere (remote)**), chosen in the search bar or your preferences. A search shows jobs located there plus remote jobs open to it, to its world region (for example EMEA or Latin America) or to anyone. Canadian searches can also be narrowed by province; elsewhere, type a city or region. Every job records where it can be done: country codes, region tokens and "anywhere", read from the source's structured fields or its location text. A place that can't be read is never guessed, and "Remote" with no country is not assumed to be anywhere.
-
-**Where jobs come from.** No paid job-data service and no job API key is needed.
-1. **Employers' own job boards: the preferred, direct source.** A shared crawler reads the public job-board APIs behind employers' careers pages (Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee, and Workday, which most large employers use) every 30 minutes to 6 hours, from a shared directory of employers (`supabase/seed/employers.json`, plus any added under **Jobs → Employers**). Boards list jobs worldwide; the crawler keeps only jobs open to a country some user searches, so storage grows with the countries people choose, not with every board's whole list. Choosing a country nobody searched before makes every board due for a fresh read, so its jobs appear within about 10 minutes.
-2. **Jobicy** ([public jobs API](https://jobicy.com/jobs-rss-feed), free, no key): remote jobs in many fields. Each search asks Jobicy for your country's location (or its region when Jobicy has none, e.g. India → APAC), with your search words, and with Jobicy's industry when the words clearly name one ("UX designer" → Web, UI & UX Design; asked again without it if that finds nothing). It follows Jobicy's cursor for later pages, and each answer is reused for an hour, as Jobicy asks. Jobicy has no city or date filter, so its jobs are remote with no city, and the app filters them by date itself. Pay is shown only when Jobicy states it, in its own currency.
-3. **Remotive** ([public API](https://github.com/remotive-com/remote-jobs-api), free, no key): remote jobs, kept when their required location covers a country someone searches (by name, region or "Worldwide"). Remotive asks for at most 4 reads a day, so the crawl job reads its feed at most every 6 hours and searches use the stored jobs. Remotive shares jobs 24 hours after it posts them, so its jobs never appear in the last-24-hours results.
-4. **Arbeitnow** ([free job board API](https://www.arbeitnow.com/blog/job-board-api), no key): jobs in Germany, elsewhere in Europe and the UK, in many fields. Its API is a feed without search, so the crawl job reads its newest pages at most every 6 hours and keeps the jobs open to countries people search. Its terms ask for a link back to Arbeitnow, so every Arbeitnow job is credited and links to its Arbeitnow page.
-5. **USAJOBS** (optional, [free key](https://developer.usajobs.gov/)): U.S. federal government jobs (nursing, administration, trades, science…), asked for searches in the United States when `USAJOBS_API_KEY` and `USAJOBS_EMAIL` are set. Each job links to its official announcement, and is ranked like an employer's own posting.
-6. **Careerjet** (optional, [free publisher key](https://www.careerjet.com/partners/)): job search across 90+ countries, asked from the Jobs page when `CAREERJET_API_KEY` is set (it needs the searcher's IP and browser, so alerts don't ask it). Its links go to Careerjet's listing pages; descriptions are snippets, so fit on those jobs is marked partial.
-7. **Adzuna** (optional): only when `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` are set, and only for the countries its API covers. Nothing depends on it. Its estimated salaries are never shown; its descriptions are snippets, so fit on those jobs is marked partial.
-8. **Postings you paste** (from LinkedIn, Indeed, Glassdoor or anywhere), private to you. Paste the whole job page (Ctrl+A, Ctrl+C) into **Quick fill** and the form fills itself from it (title, company, place, the posting text), read in your browser from what you pasted; every value is copied from the page and anything unclear is left for you. **Read with AI** (one AI use) suggests the same fields, and only values found word for word in the paste are kept.
-
-Not used: **The Muse** (its terms would allow it, but its API has no keyword search, so results wouldn't match what you typed).
-
-Jobicy and Remotive are credited on every job they supply ("Jobicy · a remote-jobs listing on Jobicy, not the employer's own page"), and their links go to their own listing pages exactly as their APIs give them: never a guessed employer, ATS or LinkedIn link. When the same job is on an employer's board too, it's shown once with the board's link, and "Also listed on Jobicy". A source that fails (timeout, rate limit, outage) never stops the others: you see "Some job sources are temporarily unavailable." and the rest of the results.
-
-LinkedIn, Indeed, Glassdoor and Google Jobs aren't searched: they have no public job-search API, and the app doesn't scrape (nor have an AI read them for it, which is still scraping). Instead, under the search bar, **Also search on LinkedIn · Indeed · Glassdoor · Google Jobs** opens the same search on each site in a new tab (your words, country and city filled in); bring a good find back with **Paste a posting**. Workday has no public API either.
-
-**Links are real and verified.** Every link comes from the source's own data, never from a pattern or a model. A job is **Verified** when its employer's board lists it in the latest read with a link that belongs to that board or employer, or (for Jobicy, Remotive, Adzuna and pasted jobs) when a live check finds the page. A Jobicy job is first checked with Jobicy's free status endpoint: "closed" marks it **Expired**, "unknown" leaves it **Not yet verified** (never verified), and only "active" goes on to the live check. In a live check, a 404 or "no longer accepting applications" page marks it **Expired**; a site that blocks automated checks leaves it **Not yet verified**, never "failed". Live checks follow redirects by hand and refuse any URL or redirect that resolves to a private or reserved address (`src/lib/net/safe-fetch.ts`). **Apply works only for verified listings.** Searches show verified listings by default; unverified ones can be included, with Apply off. Expired jobs stay in your saved list with Apply disabled.
-
-**Searching.** Search by keyword, country and place. Close variants of a title are included, in any field ("Full Stack Developer" also finds "Full-Stack Engineer"; "UX Designer" finds "Product Designer"; "Retail Associate" finds "Sales Associate" and "Cashier"; "Customer Service Representative" finds "Customer Support Specialist"), broader ones rank lower. Seniority words ("Junior", "Senior") aren't required in titles, since most postings don't say them; the level filter handles seniority. "Software development" is read as the developer role. With no date chosen, the search starts at 24 hours and widens to 3 days, then 7, when there are fewer than 10 verified results, and says so. Filters: workplace (remote, hybrid, on-site), level, employment type, salary (the minimum compares only pay stated in your country's currency; nothing is converted), company and source, each matching only what a source actually states (no visa filter: no source states it reliably). The same job from several sources is shown once, with the most direct link. Results are ranked by fit (40), title (25), recency (15), location (10) and source quality (10), 25 per page.
-
-**Fit, explained.** Each requirement line is matched against your resume by a skills list with aliases (technical skills, plus design tools and UX methods, office tools, retail and customer service, sales, marketing, accounting, HR, project management, health and safety certifications, hospitality, logistics, teaching and spoken languages) and (with `EMBED_SECRET`) by meaning; every "met" quotes a real line. Rules decide years, degree, clearance and work authorization (in the country you search). Cards say why: "Strong matches: React, TypeScript · Missing: AWS · Preferred not found: 3+ years".
-
-**Your resume.** Import a PDF, a Word document (DOCX) or pasted text. It's read without AI (optionally with a second AI read) into contact details, LinkedIn/GitHub/portfolio links, summary, skills (grouped into languages, frameworks, libraries and tools), experience, projects, education (school, degree, major, graduation), certifications, awards and activities. Every field carries a confidence: uncertain ones are filled but marked **Needs review** with the reason ("We found multiple possible dates"), unclear ones are left empty with the candidate offered, and missing ones say "Not found in your resume". A summary shows how many fields were filled, which need attention and how complete the profile is. The **original** (file and text) is kept unchanged and can be downloaded; the parsed original can be restored; every tailored version is kept and can be compared, edited or deleted (with Undo).
-
-**Two ways to improve your resume for a job.**
-- **Tailor Resume** (or **Tailor CV**): AI rewrites a new copy for the job. An accuracy check removes anything your resume doesn't support (new skills, employers, numbers), and a materiality check makes sure the result really is more specific than the original. If it isn't after one retry, nothing is saved and you get Improvement Notes instead. A comparison shows keyword match and requirement match before and after (computed the same way for both), what changed and which requirements are missing.
-- **Get Resume Improvement Notes**: advice only. Your resume isn't changed. Notes are grouped by section, prioritized (high, medium, optional), each with why it matters, plus a comparison of strong matches, terms that could be emphasized, and requirements not found ("Do not add it unless you genuinely have that experience").
-
-Without AI (no key, or today's free uses spent), **Tailor Resume doesn't fake it**: it says AI rewriting is unavailable and gives Improvement Notes, with links to add your own key or try later. A deterministic reordering is never labelled "AI Tailored". **Cover letters** are written by AI (checked sentence by sentence), or filled from a template that's labelled as one. Every document can be edited, regenerated and downloaded as PDF or Word.
-
-**AI is Google's Gemini by default**, through the official Gemini Developer API, which has a free tier (`GEMINI_API_KEY`; model in `GEMINI_MODEL`, default `gemini-3.8-flash`). It runs on your own key (Settings, stored encrypted) or the app's key with no limit (set `AI_DAILY_QUOTA` to cap uses per user per day). Every call asks for structured output and validates it; a malformed answer is rejected, never partly used. The AI sits behind a provider interface (`src/lib/ai/provider.ts`, implemented once in `src/lib/ai/llm-ai-provider.ts` over any model service). Anthropic Claude still works as an optional alternative (`ANTHROPIC_API_KEY`, or a user's own `sk-ant-…` key) but is never required. Match scores are always computed by rules, never by a model.
-
-**AI and your data.** AI is optional; everything except the AI rewrite itself works without it. When it's used, your resume text and the job posting are sent to the AI service (Google, for Gemini). On Gemini's **free tier, Google may use what you send to improve its products** (see Google's [Gemini API terms](https://ai.google.dev/gemini-api/terms)); on its paid tier it says it doesn't. Don't add a key if you don't want that. Keys never reach the browser: `npm run check:bundle` checks the built client files after `npm run build`.
-
-**Limitations.** Coverage depends on the employer directory: it started with tech employers, and non-tech and non-Canadian employers are added through `scripts/employer-candidates-worldwide.txt` and **Jobs → Employers**. Large retailers and many big employers use Workday or similar systems that have no public API, so in-store retail jobs stay thin (the app doesn't scrape). Jobicy and Remotive only list remote jobs. Jobicy can't filter by city, so a city search narrows only employer boards. Remotive's jobs arrive a day late. Gemini's free tier has daily request limits; when they're used up, Tailor Resume gives Improvement Notes. Links on job sites that block automated checks stay **Not yet verified**.
-
-Also: Saved / Applied / Not interested (each with Undo), and **Find people at {company}** in Discover. Feedback is announced with toasts (`src/components/toast/`): readable, dismissible, announced to screen readers, longer for errors and warnings, and F6 moves focus to them.
-
-## Stack
-
-Next.js 16 (App Router, Cache Components), TypeScript, Tailwind v4, shadcn/ui (Base UI), Recharts, Supabase (Postgres, Auth, RLS), Zod, Vitest, pgTAP, Playwright. AI: the Gemini Developer API over REST (no SDK); optional Anthropic SDK.
-
-## Local setup
-
-Prerequisites: Node 24, Docker Desktop (running).
+You need **Node 24** and **Docker Desktop** (running).
 
 ```sh
 npm install
-npm run db:start          # starts local Supabase in Docker and applies migrations
+npm run db:start            # starts local Supabase in Docker and applies migrations
 cp .env.example .env.local
-npx supabase status       # copy PUBLISHABLE_KEY and SECRET_KEY into .env.local
-npm run dev               # http://localhost:3000
+npx supabase status         # copy the publishable key and secret key into .env.local
+npm run dev                 # http://localhost:3000
 ```
 
-Set `CRON_SECRET` in `.env.local` to any random string of 16+ characters.
+Then:
 
-Sign-in emails don't leave your machine during local development. Open Mailpit at http://127.0.0.1:54324 to click the magic link.
+1. Set `CRON_SECRET` in `.env.local` to any random string of 16 or more characters.
+2. Open http://localhost:3000 and enter your email.
+3. Local sign-in emails never leave your machine. Open **Mailpit** at http://127.0.0.1:54324 and click the link.
 
-## Checks
+Google sign-in works only on a deployed site that has Google configured. Locally, use the email link.
+
+> **Careful with `npm run db:reset`.** It erases your local database. If it holds data you want, apply new migrations with `npx supabase migration up --local` instead.
+
+## Configuration
+
+Copy `.env.example` to `.env.local` for local work. On Vercel, add the same names under **Settings → Environment Variables** for the **Production** environment. Variable names must match exactly: a misspelled name is silently ignored.
+
+**Required**
+
+| Name | Purpose |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your project address, such as `https://<ref>.supabase.co`. Not the dashboard address. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Browser key. Access is enforced by row-level security. |
+| `SUPABASE_SECRET_KEY` | Server only. Bypasses row-level security. Used by scheduled jobs and account deletion. |
+| `CRON_SECRET` | Server only. Authenticates scheduled calls to `/api/cron/*`. Must match the value Supabase stores for its scheduled calls. |
+
+**Recommended**
+
+| Name | Purpose |
+|---|---|
+| `GEMINI_API_KEY` | Free key from [Google AI Studio](https://aistudio.google.com/apikey). Turns on AI features. Without it, every feature uses its non-AI path. |
+| `AI_DAILY_QUOTA` | AI uses per user per day on your key. Unset means no limit, so set it on a public site. `0` means users' own keys only. |
+| `APP_ENCRYPTION_KEY` | 32+ random characters. Lets users store their own AI key. Never change it once keys are stored. |
+| `EMBED_SECRET` | 16+ random characters. Turns on matching by meaning (see [Deploying](#deploying)). |
+| `GITHUB_TOKEN` | Free token with no scopes. Raises GitHub's limit for Discover. |
+| `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_OPERATOR_NAME` | Shown on the Privacy Policy and Terms pages. Set them before launch. |
+| `NEXT_PUBLIC_FEEDBACK_URL` | A `mailto:` or form link. Shows a **Send feedback** button in the navigation. |
+
+**Optional**
+
+| Name | Purpose |
+|---|---|
+| `GEMINI_MODEL` | Gemini model to use. Default `gemini-3.8-flash`. |
+| `ANTHROPIC_API_KEY` | Use Anthropic Claude when `GEMINI_API_KEY` is not set. |
+| `BRAVE_SEARCH_API_KEY` | Adds public web search to Discover. |
+| `CAREERJET_API_KEY` | Adds Careerjet to job searches (free publisher key). |
+| `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` | Adds Adzuna to job searches. |
+| `USAJOBS_API_KEY`, `USAJOBS_EMAIL` | Adds U.S. federal jobs. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Email digests for saved-search alerts. |
+| `APP_URL`, `EMAIL_TOKEN_SECRET` | Also needed for alert emails (links and one-click unsubscribe). `EMAIL_TOKEN_SECRET` needs 32+ characters. |
+
+Alert emails switch on only when `SMTP_HOST`, `SMTP_FROM`, `APP_URL` and `EMAIL_TOKEN_SECRET` are all set, and each person opts in. Otherwise alerts appear only in the app.
+
+**Tests only.** `DISCOVERY_FIXTURES` and `JOBS_FIXTURES` switch on built-in fictional data. Never set them in production. They are ignored in production builds.
+
+Sign-in email for other people needs custom SMTP in Supabase (Authentication → Emails → SMTP Settings). Supabase's built-in email reaches only your own team.
+
+## Running the checks
 
 ```sh
 npm run typecheck
 npm run lint
-npm test          # Vitest unit tests
-npm run test:db   # pgTAP: RLS isolation and data constraints (needs db:start)
-npm run test:e2e  # Playwright end to end (needs db:start; starts or reuses the dev server)
-                  # Discover's e2e test needs the server running with DISCOVERY_FIXTURES=1 (set
-                  # automatically when Playwright starts it); it is skipped otherwise. Jobs' e2e
-                  # test likewise needs JOBS_FIXTURES=1.
+npm test              # Vitest unit tests
+npm run test:db       # pgTAP: security rules and data constraints (needs db:start)
+npm run test:e2e      # Playwright end to end (needs db:start)
 npm run build
+npm run check:bundle  # confirms no AI key reaches the browser (run after build)
 ```
 
-After changing a migration, run `npm run db:reset` and then `npm run db:types` to regenerate `src/lib/supabase/database.types.ts`.
+The last full run passed 859 unit tests, 217 database tests and 18 end-to-end tests, plus the build and the bundle check.
 
-## Environment variables
+After you change a migration, run the new migration locally, then `npm run db:types` to regenerate `src/lib/supabase/database.types.ts`.
 
-| Name | Where | Purpose |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | public | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | public | Browser/server key; access is enforced by RLS |
-| `SUPABASE_SECRET_KEY` | server only | Bypasses RLS; used only by the daily job (cron and Run now) and account deletion, always for the verified user |
-| `CRON_SECRET` | server only | Authenticates Vercel Cron calls to `/api/cron/daily` |
-| `GEMINI_API_KEY` | server only, optional (recommended) | The default AI, free from [Google AI Studio](https://aistudio.google.com/apikey): connection-note rewrites; in Discover, request parsing, evidence extraction and explanations; in Jobs, tailoring, cover letters, AI Improvement Notes and AI resume reading. Never give it a `NEXT_PUBLIC_` name |
-| `GEMINI_MODEL` | server only, optional | The Gemini model (default `gemini-3.8-flash`, a Flash model on the free tier) |
-| `ANTHROPIC_API_KEY` | server only, optional | Use Anthropic Claude instead, when `GEMINI_API_KEY` isn't set. Not required |
-| `BRAVE_SEARCH_API_KEY` | server only, optional | Discover's public web search. Without it, Discover searches GitHub only |
-| `GITHUB_TOKEN` | server only, optional (recommended) | Free; no scopes needed. Raises GitHub's limit for Discover from about one search an hour |
-| `EMBED_SECRET` | server only, optional (recommended) | Jobs: turns on matching by meaning with the free `embed` Edge Function; set the same value as an Edge Function secret |
-| `APP_ENCRYPTION_KEY` | server only, optional | Jobs: encrypts users' own AI keys (32+ characters; never change it once keys are stored) |
-| `AI_DAILY_QUOTA` | server only, optional | Jobs: AI uses (tailoring, notes, AI resume reading) per user per day on the server's AI key (unset = no limit; 0 = users' own keys only) |
-| `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` | server only, optional | Jobs: also search Adzuna. Not needed: employer boards, Jobicy, Remotive and Arbeitnow need no keys |
-| `USAJOBS_API_KEY`, `USAJOBS_EMAIL` | server only, optional | Jobs: also search U.S. federal jobs ([free key](https://developer.usajobs.gov/apirequest/); the email is the one the key was requested with) |
-| `CAREERJET_API_KEY` | server only, optional | Jobs: also search Careerjet ([free publisher key](https://www.careerjet.com/partners/)) |
+Accessibility: a unit test (`src/lib/contrast.test.ts`) checks colour contrast for every text and form-field pair in both themes. It does not replace an automated scan or a screen-reader review, which are still to do.
 
-## Data model
+## Deploying
 
-The schema is in `supabase/migrations/`. Every table is scoped to its owner by row-level security. Signing up creates only a settings row: you add your own schools and disciplines and set targets per discipline (and per school within it) and an overall goal
+The app runs on **Vercel** (web app and one daily job) and **Supabase** (database, sign-in, file storage and an optional embedding function). The full, step-by-step guide is in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). In short:
 
-Only accepted invitations count toward targets, and only when they were accepted on or after the project start date, the candidate's school and program are both confirmed, and the person wasn't already a connection. The counting rules live in `src/lib/progress/` with unit tests. Day and week figures use the time zone in Settings, and weeks start on Monday. Pending invitations are tracked separately, and the database allows only one open invitation per person.
+1. Create a Supabase project, then link it and apply the migrations:
+   ```sh
+   npx supabase login
+   npx supabase link --project-ref <your-project-ref>
+   npx supabase db push
+   ```
+2. Import the repository in Vercel and add the environment variables above.
+3. In Supabase **Authentication → URL Configuration**, set **Site URL** to your Vercel address and add it, with `/**`, to **Redirect URLs**.
+4. Set up custom SMTP, and Google sign-in if you want it.
+5. Load the employer directory: `npm run employers:load` (with the project URL and secret key in your environment).
+6. Schedule the job crawler (every 5 minutes) and the alerts job (every 15 minutes) with Supabase `pg_cron`. Vercel's free plan runs a cron only once a day. The SQL is in the deployment guide.
+7. Optional: `npx supabase functions deploy embed`, for matching by meaning.
+
+The app serves `robots.txt` with `Disallow: /` while in beta. Delete `src/app/robots.ts` when you want search engines to find it.
+
+## How it is built
+
+**Stack.** Next.js 16 (App Router, Cache Components), TypeScript, Tailwind v4, shadcn/ui on Base UI, Recharts, Supabase (Postgres, Auth, Storage, RLS), Zod, Vitest, pgTAP and Playwright. AI is Google's Gemini over REST, with optional Anthropic.
+
+```text
+src/app/(app)/     signed-in pages: overview, queue, candidates, discover, people,
+                   jobs, applications, companies, notifications, settings, analytics
+src/app/api/       cron jobs (daily, crawl, alerts), export, email unsubscribe, JSON endpoints
+src/app/login/     sign-in (Google and email link); privacy and terms pages are public
+src/lib/           the logic: job-postings, discovery, ai, alerts, applications,
+                   progress, classify, net (safe fetching), server, email
+src/components/    shared interface pieces
+src/proxy.ts       refreshes the session and sends signed-out visitors to /login
+supabase/          migrations, pgTAP tests, seed employers, the embed function
+e2e/               Playwright tests and fixtures
+scripts/           employer directory tools and the client-bundle check
+docs/              deployment guide, feature guide, implementation checklist
+```
+
+**Design rules worth knowing**
+
+- Every table is protected by row-level security and scoped to its owner. Client input never names the user.
+- Fetching outside URLs goes through `src/lib/net/safe-fetch.ts`, which refuses private and reserved addresses.
+- Scores, rankings and fit are computed by rules, never by a model. AI writes text, and its output is checked before use.
+- Counting rules for targets live in `src/lib/progress/`, with unit tests. Only accepted invitations count, and only when the person's school and program are confirmed.
+- AI keys never reach the browser. `npm run check:bundle` checks the built files.
+
+## Privacy and data
+
+- Everything is stored only for your account. Your LinkedIn password and cookies are never stored. Email addresses in imported files are not stored, and the files are not kept.
+- Settings can export everything in your account and delete it for good.
+- When you use an AI feature, the text it needs (for example your resume and a job posting) goes to the AI provider. **On Gemini's free tier, Google may use it to improve its products.** Use a paid key, or skip AI features, if that matters to you.
+- The site has a [Privacy Policy](src/app/privacy/page.tsx) and [Terms of Service](src/app/terms/page.tsx), written to follow British Columbia law. They are a starting point, not legal advice. Have them reviewed before a wide launch.
+
+## Troubleshooting
+
+| Symptom | Likely cause and fix |
+|---|---|
+| Google button shows a Supabase page, or a "not found" page | `NEXT_PUBLIC_SUPABASE_URL` holds the dashboard address. It must be `https://<ref>.supabase.co`. Fix it and redeploy. |
+| `Unsupported provider: provider is not enabled` | Turn on Google in Supabase **Authentication → Sign In / Providers** and paste the client ID and secret. |
+| Sign-in sends people to a Vercel "request access" page | **Site URL** in Supabase is wrong. Use your public Vercel address, with no path. |
+| Scheduled crawl returns `401` | `CRON_SECRET` in Vercel differs from the one stored in Supabase. They must match exactly. Redeploy after changing it. |
+| Jobs page is empty | Run `npm run employers:load`, then schedule the crawler. First results take about 10 minutes. |
+| "Email isn't set up on this server" in Settings | One of `SMTP_HOST`, `SMTP_FROM`, `APP_URL` or `EMAIL_TOKEN_SECRET` is missing, misspelled, or not set for Production. Redeploy afterwards. |
+| Sign-in email never arrives | Supabase needs custom SMTP for anyone outside your team. Check spam, too: free sender addresses are often filtered. |
+| A new variable has no effect | Variables apply only to new deployments. Redeploy, and for `NEXT_PUBLIC_` ones, rebuild. |
+
+## Limits
+
+- Job coverage follows the employer directory. Large retailers and many big employers use systems with no public API, so in-store retail jobs stay thin. The app does not scrape.
+- Jobicy and Remotive list only remote jobs, and Remotive's arrive a day late.
+- Gemini's free tier has daily request limits. When they run out, Tailor Resume gives improvement notes instead.
+- Links on sites that block automated checks stay **Not yet verified**.
+- Still open: restoring from a backup, a staging deployment with smoke checks, a performance budget, and an automated accessibility scan.
+
+## Contributing and licence
+
+Questions, bug reports and ideas are welcome. Please open an issue, or use the **Send feedback** button in the app. If you plan to send a change, run the checks above first and keep the change small and focused.
+
+No licence has been chosen yet, so all rights are reserved. Please ask before reusing the code.
+
+This project is not affiliated with LinkedIn, Google or any employer.
