@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   ListChecks,
   Menu,
+  MessageSquare,
   Settings,
   Shapes,
   Telescope,
@@ -36,6 +37,25 @@ export const NAV_ITEMS = [
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
+
+// Where feedback goes: a mailto: or a form link. The button is hidden when it isn't set.
+const FEEDBACK_URL = process.env.NEXT_PUBLIC_FEEDBACK_URL;
+
+function FeedbackLink() {
+  if (!FEEDBACK_URL) return null;
+  const external = /^https?:/i.test(FEEDBACK_URL);
+  return (
+    <a
+      href={FEEDBACK_URL}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      className="mt-2 flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+    >
+      <MessageSquare className="size-4" aria-hidden />
+      Send feedback
+      {external && <span className="sr-only"> (opens in a new tab)</span>}
+    </a>
+  );
+}
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   return <NavList pathname={usePathname()} onNavigate={onNavigate} />;
@@ -63,6 +83,7 @@ function NavList({ pathname, onNavigate }: { pathname: string | null; onNavigate
           </Link>
         );
       })}
+      <FeedbackLink />
     </nav>
   );
 }
