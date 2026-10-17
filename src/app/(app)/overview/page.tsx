@@ -152,7 +152,7 @@ async function OverviewContent() {
         </Card>
       )}
 
-      <details open={hasActivity} className="group grid gap-4">
+      <details open={hasActivity} data-tour="breakdown" className="group grid gap-4">
         <summary className="w-fit cursor-pointer rounded-md py-1 font-medium focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
           Detailed breakdown
           <span className="font-normal text-muted-foreground"> · pipeline, activity and disciplines</span>

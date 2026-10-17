@@ -77,6 +77,11 @@ test("import, review, search verified jobs, improvement notes, AI tailoring and 
   await expect(elsewhere.getByRole("link", { name: /^Indeed/ })).toHaveAttribute("href", /ca\.indeed\.com\/jobs\?q=Developer/);
   const results = page.getByRole("region", { name: /jobs from/i });
   const junior = results.getByRole("listitem").filter({ hasText: "Junior Software Developer" });
+  // The card shows title, company and fit at a glance; source and verification are one click away under Details.
+  await expect(junior.getByRole("link", { name: "Junior Software Developer" })).toBeVisible();
+  await expect(junior.getByText("Northwind Labs", { exact: true })).toBeVisible();
+  await expect(junior.getByText("Verified", { exact: true })).toBeHidden();
+  await junior.getByText("Details", { exact: true }).click();
   await expect(junior.getByText("Verified", { exact: true })).toBeVisible();
   await expect(junior.getByText("Northwind Labs' job board")).toBeVisible();
   await expect(junior.locator('a[href="https://jobs.example.com/northwind-labs/jr-dev"]')).toBeVisible();
@@ -90,6 +95,7 @@ test("import, review, search verified jobs, improvement notes, AI tailoring and 
   await expect(harbour.locator('a[href*="jobs.example.com"]')).toHaveCount(0);
   await expect(harbour.getByText("CA$70,000–CA$85,000 per year")).toBeVisible();
   // It says where it came from, and links nowhere until verified (never to a guessed employer page).
+  await harbour.getByText("Details", { exact: true }).click();
   await expect(harbour.getByText("Jobicy", { exact: true })).toBeVisible();
   // The same Northwind job relisted on Jobicy is merged into the board's listing, whose link wins.
   await expect(junior.getByText("Also listed on Jobicy")).toBeVisible();

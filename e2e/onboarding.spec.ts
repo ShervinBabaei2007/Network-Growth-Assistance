@@ -60,21 +60,20 @@ test("welcome resumes at the step the user left, and Escape skips it", async ({ 
   await expect(welcome(page)).toBeHidden();
 });
 
-test("the tour is skippable, keyboard operable, and can be reopened from Help", async ({ page, isMobile }) => {
+test("the tour is skippable, keyboard operable, and can be reopened from Help", async ({ page }) => {
   await signIn(page, uniqueEmail("tour"), "/overview", { welcome: true });
   for (let i = 0; i < 3; i++) await wizardButton(page, "Next").click();
-  await wizardButton(page, "Take a 1-minute tour").click();
+  await wizardButton(page, "Take the tour (18 stops)").click();
 
   const tour = page.getByTestId("tour-popover");
   await expect(tour).toBeVisible();
-  await expect(tour).toContainText(/Tour step 1 of \d+/);
-  // Mobile has no sidebar, so the first stop is the menu button.
-  await expect(tour).toContainText(isMobile ? "Your menu" : "Grouped by goal");
+  await expect(tour).toContainText("Stop 1 of 18");
+  await expect(tour).toContainText("Overview: your next step");
 
   // Focus starts on Next, so Enter advances without a mouse.
   await expect(tour.getByRole("button", { name: "Next" })).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(tour).toContainText(/Tour step 2 of \d+/);
+  await expect(tour).toContainText("Stop 2 of 18");
 
   await page.keyboard.press("Escape");
   await expect(tour).toBeHidden();
@@ -111,4 +110,66 @@ test("welcome fits the screen and the menu can still be reached afterwards", asy
   expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height);
   await wizardButton(page, "Skip").click();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+});
+
+test("the tour opens every page in turn, one stop each", async ({ page }) => {
+  test.setTimeout(300_000);
+  await signIn(page, uniqueEmail("fulltour"));
+  await page.goto("/overview?tour=1");
+  const tour = page.getByTestId("tour-popover");
+  const stops: [string, RegExp][] = [
+    ["Overview: your next step", /\/overview$/],
+    ["Overview: the details", /\/overview$/],
+    ["Discover: find people", /\/discover$/],
+    ["Jobs: search", /\/jobs$/],
+    ["Jobs: sorted by fit", /\/jobs$/],
+    ["Your resume", /\/jobs\/resume$/],
+    ["Daily Queue", /\/queue$/],
+    ["Candidates", /\/candidates$/],
+    ["People", /\/people$/],
+    ["Known connections", /\/connections$/],
+    ["Applications", /\/applications$/],
+    ["Analytics", /\/analytics$/],
+    ["Disciplines", /\/disciplines$/],
+    ["Schools", /\/universities$/],
+    ["Notifications", /\/notifications$/],
+    ["Settings", /\/settings$/],
+    ["Help", /\/help$/],
+    ["That's the tour", /\/overview$/],
+  ];
+  for (const [i, [title, url]] of stops.entries()) {
+    await expect(tour).toContainText(`Stop ${i + 1} of ${stops.length}`, { timeout: 30_000 });
+    await expect(tour.getByText(title, { exact: true })).toBeVisible();
+    await expect(page).toHaveURL(url);
+    // The popover sits inside the screen, whatever the width.
+    const box = await tour.boundingBox();
+    const viewport = page.viewportSize()!;
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(viewport.width + 1);
+    await tour.getByRole("button", { name: i === stops.length - 1 ? "Finish" : "Next" }).click();
+  }
+  await expect(tour).toBeHidden();
+  await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
+});
+
+test("a tour left part-way resumes at the same stop", async ({ page }) => {
+  test.setTimeout(120_000);
+  const email = uniqueEmail("tourresume");
+  await signIn(page, email);
+  await page.goto("/overview?tour=1");
+  const tour = page.getByTestId("tour-popover");
+  for (let i = 1; i <= 3; i++) {
+    await expect(tour).toContainText(`Stop ${i} of 18`, { timeout: 30_000 });
+    await tour.getByRole("button", { name: "Next" }).click();
+  }
+  await expect(tour).toContainText("Stop 4 of 18", { timeout: 30_000 });
+  await expect.poll(async () => {
+    const rows = (await adminRest("GET", `settings?user_id=eq.${await userIdFor(email)}&select=onboarding`)) as { onboarding: { tourStep?: number } }[];
+    return rows[0]?.onboarding.tourStep;
+  }).toBe(3);
+
+  // Close the tab's page state (a hard reload) and come back through Help.
+  await page.goto("/help");
+  await page.getByRole("link", { name: "Resume the tour" }).click();
+  await expect(page.getByTestId("tour-popover")).toContainText("Stop 4 of 18", { timeout: 30_000 });
 });

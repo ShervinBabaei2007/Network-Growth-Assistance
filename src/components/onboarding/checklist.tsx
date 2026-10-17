@@ -2,14 +2,21 @@ import Link from "next/link";
 import { Check, Circle } from "lucide-react";
 import { ChecklistDismiss } from "@/components/onboarding/checklist-dismiss";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { buildChecklist, checklistComplete, parseOnboarding, type ChecklistFacts } from "@/lib/onboarding/state";
+import { getOnboarding } from "@/lib/onboarding/read";
+import { buildChecklist, checklistComplete, type ChecklistFacts } from "@/lib/onboarding/state";
 import { createClient } from "@/lib/supabase/server";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 /** True when the signed-in user has at least one row. RLS scopes every table to their own data. */
-async function hasAny(supabase: Supabase, table: "candidates" | "network_searches" | "resumes" | "applications" | "job_user_states") {
+async function hasAny(supabase: Supabase, table: "candidates" | "network_searches" | "resumes" | "applications") {
   const { data } = await supabase.from(table).select("id").limit(1);
+  return (data?.length ?? 0) > 0;
+}
+
+/** Saved or applied jobs only: hiding a posting also writes a row, and that isn't progress. */
+async function hasSavedJob(supabase: Supabase) {
+  const { data } = await supabase.from("job_user_states").select("job_id").in("status", ["saved", "applied"]).limit(1);
   return (data?.length ?? 0) > 0;
 }
 
@@ -18,19 +25,18 @@ async function hasAny(supabase: Supabase, table: "candidates" | "network_searche
  * is never out of date, and it disappears by itself once everything is done.
  */
 export async function GettingStartedCard({ hasPlan, hasBaseline }: { hasPlan: boolean; hasBaseline: boolean }) {
+  const state = await getOnboarding();
+  if (!state || state.checklistDismissed || state.status === "new") return null;
   const supabase = await createClient();
-  const { data } = await supabase.from("settings").select("onboarding").maybeSingle();
-  const state = parseOnboarding(data?.onboarding);
-  if (state.checklistDismissed || state.status === "new") return null;
 
-  const [hasCandidates, hasSearch, hasResume, hasApplication, hasSavedJob] = await Promise.all([
+  const [hasCandidates, hasSearch, hasResume, hasApplication, hasSaved] = await Promise.all([
     hasAny(supabase, "candidates"),
     hasAny(supabase, "network_searches"),
     hasAny(supabase, "resumes"),
     hasAny(supabase, "applications"),
-    hasAny(supabase, "job_user_states"),
+    hasSavedJob(supabase),
   ]);
-  const facts: ChecklistFacts = { hasPlan, hasBaseline, hasCandidates, hasSearch, hasResume, hasJobActivity: hasApplication || hasSavedJob };
+  const facts: ChecklistFacts = { hasPlan, hasBaseline, hasCandidates, hasSearch, hasResume, hasJobActivity: hasApplication || hasSaved };
   const items = buildChecklist(state.goal, facts);
   if (checklistComplete(items)) return null;
   const done = items.filter((i) => i.done).length;

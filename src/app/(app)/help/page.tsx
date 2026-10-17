@@ -4,8 +4,8 @@ import { RestartGuide } from "@/components/onboarding/restart-guide";
 import { PageHeader } from "@/components/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
+import { getOnboarding } from "@/lib/onboarding/read";
 import { parseOnboarding } from "@/lib/onboarding/state";
-import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Help · Network Growth" };
 
@@ -37,9 +37,7 @@ export default function HelpPage() {
 }
 
 async function Guide() {
-  const supabase = await createClient();
-  const { data } = await supabase.from("settings").select("onboarding").maybeSingle();
-  const state = parseOnboarding(data?.onboarding);
+  const state = (await getOnboarding()) ?? parseOnboarding(undefined);
   const resumable = !state.tourDone && state.tourStep > 0;
   return (
     <Card>

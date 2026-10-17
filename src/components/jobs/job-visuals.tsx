@@ -32,6 +32,26 @@ export function FitScore({ tier, score, size = "md" }: { tier: TierKey; score: n
   );
 }
 
+/** The fit as a small pill for list rows: "Strong match 86". The full block (FitScore) is for the detail page. */
+export function FitChip({ tier, score }: { tier: TierKey; score: number | null }) {
+  const s = TIER_STYLE[tier];
+  const showScore = score !== null && tier !== "excluded" && tier !== "unchecked";
+  return (
+    <span
+      className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap", s.soft, s.text)}
+      aria-label={`${s.label}${showScore ? `, ${score} out of 100` : ""}`}
+    >
+      <span aria-hidden className={cn("size-1.5 rounded-full", s.dot)} />
+      <span aria-hidden>{s.label}</span>
+      {showScore ? (
+        <span aria-hidden className="font-semibold tabular-nums">
+          {score}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 /** Where a posting came from. */
 export function SourceTag({ source, className }: { source: JobSource; className?: string }) {
   const Icon = source.kind === "pasted" ? ClipboardPaste : Globe;

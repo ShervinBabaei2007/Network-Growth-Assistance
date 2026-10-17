@@ -15,6 +15,7 @@ import {
   type Goal,
   type OnboardingState,
 } from "@/lib/onboarding/state";
+import { TOUR_STEPS } from "@/lib/onboarding/tour-steps";
 import { cn } from "@/lib/utils";
 
 const GOAL_OPTIONS: { value: Goal; label: string; detail: string; icon: typeof Users }[] = [
@@ -48,9 +49,13 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
     }
   }
 
+  // Closes only once the save has worked, so a failure is shown rather than vanishing with the dialog.
+  // If it already failed once, the next try closes anyway: nobody is trapped behind a broken connection.
   async function close(next: OnboardingState, href?: string) {
+    const alreadyFailed = saveFailed;
+    const saved = await persist(next);
+    if (!saved && !alreadyFailed) return;
     setOpen(false);
-    await persist(next);
     if (href) router.push(href);
     else router.refresh();
   }
@@ -157,7 +162,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
             <div className="flex flex-wrap gap-2">
               <Button onClick={() => void close(finish(state), action.href)}>{action.label}</Button>
               <Button variant="outline" onClick={() => void close({ ...finish(state), tourStep: 0, tourDone: false }, "/overview?tour=1")}>
-                Take a 1-minute tour
+                Take the tour ({TOUR_STEPS.length} stops)
               </Button>
             </div>
           </div>
@@ -165,7 +170,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
 
         {saveFailed ? (
           <p role="alert" className="text-xs text-destructive">
-            Couldn&apos;t save your progress. You can keep going; the welcome may show again next time.
+            Couldn&apos;t save your progress. Try again, or choose it a second time to continue anyway; the welcome may show again next time.
           </p>
         ) : null}
 

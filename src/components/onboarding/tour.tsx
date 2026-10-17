@@ -5,88 +5,125 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Popover } from "@base-ui/react/popover";
 import { saveOnboarding } from "@/app/(app)/actions";
 import { Button } from "@/components/ui/button";
-import { availableSteps, type OnboardingState, type TourStep } from "@/lib/onboarding/state";
+import type { OnboardingState } from "@/lib/onboarding/state";
+import { TOUR_STEPS } from "@/lib/onboarding/tour-steps";
 
-/**
- * Every step points at a real element by a stable data-tour attribute. Steps whose element is
- * missing or hidden on this screen (for example the sidebar on a phone) are dropped.
- */
-const STEPS: TourStep[] = [
-  { id: "menu", selector: "[data-tour=menu-button]", title: "Your menu", body: "Everything in the app is in this menu, grouped by what you are trying to do." },
-  { id: "nav", selector: "[data-tour=nav]", title: "Grouped by goal", body: "Find opportunities, work on your network, track applications, and check insights. Each group answers one question." },
-  { id: "primary", selector: "[data-tour=primary-action]", title: "Your next step", body: "The Overview always shows one recommended action. Start here when you are not sure what to do." },
-  { id: "discover", selector: "[data-tour=nav-discover]", title: "Find people", body: "Describe who you'd like to meet and Discover looks for real, verifiable matches." },
-  { id: "jobs", selector: "[data-tour=nav-jobs]", title: "Find jobs", body: "Search postings and see how well each one fits. Resume, employers and saved searches are on this page." },
-  { id: "queue", selector: "[data-tour=nav-queue]", title: "Your daily queue", body: "Approved people to contact today, in order." },
-  { id: "bell", selector: "[data-tour=bell]", title: "Notifications", body: "Reminders, interviews and job alerts collect here." },
-  { id: "help", selector: "[data-tour=nav-help]", title: "Help any time", body: "Replay this tour or restart the setup guide from Help." },
-];
+const TOTAL = TOUR_STEPS.length;
+/** How long to wait for a page to show the element a stop points at before moving on, unless the stop says otherwise. */
+const DEFAULT_WAIT_MS = 6000;
 
-function isVisible(selector: string): boolean {
+function visibleTarget(selector: string): HTMLElement | null {
   const el = document.querySelector<HTMLElement>(selector);
-  return !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden";
+  return el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden" ? el : null;
 }
 
-/** Runs when a page is opened with ?tour=1. Non-blocking: the page stays usable and Skip is always shown. */
+/**
+ * A guided walk through the app. Each stop opens its page and points at something real on it.
+ * It starts when a page is opened with ?tour=1, stays out of the way (non-modal), and can be
+ * skipped at any stop. It only navigates; it never changes a record.
+ */
 export function ProductTour({ initial }: { initial: OnboardingState }) {
   const params = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
   const wanted = params.get("tour") === "1";
   const [active, setActive] = useState(false);
-  const [steps, setSteps] = useState<TourStep[]>([]);
-  const [index, setIndex] = useState(initial.tourDone ? 0 : initial.tourStep);
+  const [index, setIndex] = useState(0);
+  // The stop whose target has been found on screen. Anything else shows nothing, so a popover never floats loose.
+  const [readyFor, setReadyFor] = useState<string | null>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
+  const pushedFor = useRef<string | null>(null);
   const lastAnchor = useRef<HTMLElement | null>(null);
-
-  const refresh = useCallback(() => setSteps(availableSteps(STEPS, isVisible)), []);
+  const step = TOUR_STEPS[index];
+  // The layout that supplies `initial` isn't re-rendered on client navigation, so progress made in this
+  // session is tracked here; `initial` only re-seeds it when the server sends fresh values (e.g. after a restart).
+  const progress = useRef({ done: initial.tourDone, step: initial.tourStep });
+  useEffect(() => {
+    progress.current = { done: initial.tourDone, step: initial.tourStep };
+  }, [initial.tourDone, initial.tourStep]);
 
   const end = useCallback(
     (completed: boolean, position: number) => {
       setActive(false);
+      pushedFor.current = null;
+      setReadyFor(null);
+      progress.current = { done: completed, step: completed ? 0 : position };
       void saveOnboarding({ tourDone: completed, tourStep: completed ? 0 : position });
-      router.replace(pathname);
+      if (new URLSearchParams(window.location.search).has("tour")) router.replace(window.location.pathname);
     },
-    [pathname, router],
+    [router],
   );
 
+  const go = useCallback(
+    (to: number) => {
+      if (to >= TOTAL) return end(true, 0);
+      const next = Math.max(0, to);
+      setIndex(next);
+      setReadyFor(null);
+      progress.current = { done: false, step: next };
+      void saveOnboarding({ tourDone: false, tourStep: next });
+    },
+    [end],
+  );
+
+  // Start: resume where the user left off, otherwise from the beginning.
   useEffect(() => {
-    if (!wanted) return;
-    // The page may still be streaming in; work out the steps after it paints, and again on resize.
+    if (!wanted || active) return;
     const id = window.setTimeout(() => {
-      const found = availableSteps(STEPS, isVisible);
-      // Nothing to point at (every target is hidden): end quietly instead of showing a stray popover.
-      if (found.length === 0) return end(true, 0);
-      setSteps(found);
+      const { done, step: saved } = progress.current;
+      setIndex(!done && saved < TOTAL ? saved : 0);
       setActive(true);
+      // The tour carries on from state now, so the address goes back to the plain page.
+      router.replace(window.location.pathname);
     }, 300);
-    window.addEventListener("resize", refresh);
-    return () => {
-      window.clearTimeout(id);
-      window.removeEventListener("resize", refresh);
-    };
-  }, [wanted, refresh, end]);
+    return () => window.clearTimeout(id);
+  }, [wanted, active, router]);
 
-  const step = steps[Math.min(index, Math.max(steps.length - 1, 0))];
-
+  // Open the stop's page, then wait for its target.
   useEffect(() => {
     if (!active || !step) return;
-    const el = document.querySelector<HTMLElement>(step.selector);
-    el?.scrollIntoView({ block: "nearest" });
-    lastAnchor.current = el;
-  }, [active, step]);
+    if (pathname !== step.href) {
+      if (pushedFor.current === step.id) {
+        // We already sent them here and they have since gone somewhere else: leave them be.
+        const id = window.setTimeout(() => end(false, index), 0);
+        return () => window.clearTimeout(id);
+      }
+      pushedFor.current = step.id;
+      router.push(step.href);
+      return;
+    }
+    pushedFor.current = step.id;
+    let done = false;
+    const finish = (fn: () => void) => {
+      if (done) return;
+      done = true;
+      window.clearInterval(poll);
+      window.clearTimeout(giveUp);
+      fn();
+    };
+    const poll = window.setInterval(() => {
+      const el = visibleTarget(step.selector);
+      if (!el) return;
+      finish(() => {
+        el.scrollIntoView({ block: "nearest" });
+        lastAnchor.current = el;
+        setReadyFor(step.id);
+      });
+    }, 150);
+    // The target never showed (for example it is hidden at this width): move on rather than point at nothing.
+    const giveUp = window.setTimeout(() => finish(() => go(index + 1)), step.waitMs ?? DEFAULT_WAIT_MS);
+    return () => {
+      done = true;
+      window.clearInterval(poll);
+      window.clearTimeout(giveUp);
+    };
+  }, [active, step, pathname, index, router, end, go]);
 
-  if (!active || !step) return null;
-
-  const total = steps.length;
-  const pos = Math.min(index, total - 1);
-  const go = (to: number) => {
-    setIndex(to);
-    void saveOnboarding({ tourDone: false, tourStep: to });
-  };
+  if (!active || !step || readyFor !== step.id || pathname !== step.href) return null;
 
   return (
     <Popover.Root
+      key={step.id}
       open
       modal={false}
       onOpenChange={(open, details) => {
@@ -95,15 +132,15 @@ export function ProductTour({ initial }: { initial: OnboardingState }) {
       }}
     >
       <Popover.Portal>
-        <Popover.Positioner anchor={() => document.querySelector<HTMLElement>(step.selector)} side="bottom" align="start" sideOffset={10} collisionPadding={12} className="z-[70]">
+        <Popover.Positioner anchor={() => visibleTarget(step.selector)} side="bottom" align="start" sideOffset={10} collisionPadding={12} className="z-[70]">
           <Popover.Popup
             data-testid="tour-popover"
             initialFocus={nextRef}
             finalFocus={() => (lastAnchor.current?.isConnected ? lastAnchor.current : null)}
-            className="grid w-72 max-w-[calc(100vw-1.5rem)] gap-2 rounded-lg bg-popover p-4 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/15"
+            className="grid w-80 max-w-[calc(100vw-1.5rem)] gap-2 rounded-lg bg-popover p-4 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/15"
           >
             <p className="text-xs font-medium text-muted-foreground" aria-live="polite">
-              Tour step {pos + 1} of {total}
+              Stop {index + 1} of {TOTAL}
             </p>
             <Popover.Title className="font-semibold">{step.title}</Popover.Title>
             <Popover.Description className="text-muted-foreground">{step.body}</Popover.Description>
@@ -112,11 +149,11 @@ export function ProductTour({ initial }: { initial: OnboardingState }) {
                 Skip tour
               </Button>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={pos === 0} onClick={() => go(pos - 1)}>
+                <Button variant="outline" size="sm" disabled={index === 0} onClick={() => go(index - 1)}>
                   Back
                 </Button>
-                <Button ref={nextRef} size="sm" onClick={() => (pos === total - 1 ? end(true, 0) : go(pos + 1))}>
-                  {pos === total - 1 ? "Finish" : "Next"}
+                <Button ref={nextRef} size="sm" onClick={() => go(index + 1)}>
+                  {index === TOTAL - 1 ? "Finish" : "Next"}
                 </Button>
               </div>
             </div>

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { Bookmark, Building2, FileText, Plus, Search, SlidersHorizontal } from "lucide-react";
+import { FileText, Plus, Search, SlidersHorizontal } from "lucide-react";
 import type { TierKey } from "@/components/jobs/job-visuals";
 import { TIER_STYLE } from "@/components/jobs/job-visuals";
 import { JobCard } from "@/components/jobs/job-card";
@@ -11,7 +11,7 @@ import { NativeSelect } from "@/components/native-select";
 import { PageHeader } from "@/components/page-header";
 import { ToastOnMount } from "@/components/toast/toast-on-mount";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,17 +55,11 @@ export default function JobsPage({ searchParams }: PageProps<"/jobs">) {
     <div className="grid gap-6">
       <PageHeader
         title="Jobs"
-        description="Real, recent postings in any country and any field: from employers' own job boards, plus Jobicy, Remotive and Arbeitnow (and USAJOBS when set up). Each listing shows where it came from and whether its link is verified, and is checked against your resume."
+        description="Real, recent postings, each checked against your resume. Every listing shows where it came from."
         actions={
           <>
             <Link href="/jobs/resume" className={buttonVariants({ variant: "outline", size: "sm" })}>
               <FileText aria-hidden /> Resume
-            </Link>
-            <Link href="/jobs/employers" className={buttonVariants({ variant: "outline", size: "sm" })}>
-              <Building2 aria-hidden /> Employers
-            </Link>
-            <Link href="/jobs/searches" className={buttonVariants({ variant: "outline", size: "sm" })}>
-              <Bookmark aria-hidden /> Saved searches
             </Link>
             <Link href="/jobs/add" className={buttonVariants({ size: "sm" })}>
               <Plus aria-hidden /> Paste a posting
@@ -163,29 +157,38 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
       <aside className="order-last grid gap-4 lg:sticky lg:top-20 lg:order-none" aria-label="Filters and preferences">
         <FiltersPanel sp={sp} filters={filters} provinces={inCanada ? provinces : []} provFilter={provFilter} hrefBase={href} explicitRange={explicitRange} showAdzuna={providerNames.includes("adzuna")} showUsajobs={providerNames.includes("usajobs")} showCareerjet={providerNames.includes("careerjet")} currency={currency} />
         <PreferencesCard settings={settings} resumeTitles={feed.resolved.titlesFromResume ? searched : []} />
-        <div className="grid gap-1 px-1 text-xs text-muted-foreground">
-          <p>
-            Sources: {(employerCount ?? 0).toLocaleString("en-CA")} employers&apos; job boards ({lastRun?.finished_at ? `last read ${timeAgo(lastRun.finished_at)}` : "not read yet"}), remote jobs from Jobicy and Remotive, jobs in Europe and the UK from Arbeitnow
-            {providerNames.includes("usajobs") ? ", U.S. federal jobs from USAJOBS" : ""}
-            {providerNames.includes("careerjet") ? ", Careerjet job search" : ""}
-            {providerNames.includes("adzuna") ? ", and Adzuna job search" : ""}.
+        <details className="px-1 text-xs text-muted-foreground">
+          <summary className="w-fit cursor-pointer rounded-md py-1 font-medium hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">About these results</summary>
+          <div className="mt-2 grid gap-1.5">
+            <p>
+              Sources: {(employerCount ?? 0).toLocaleString("en-CA")} employers&apos; job boards ({lastRun?.finished_at ? `last read ${timeAgo(lastRun.finished_at)}` : "not read yet"}), remote jobs from Jobicy and Remotive, jobs in Europe and the UK from Arbeitnow
+              {providerNames.includes("usajobs") ? ", U.S. federal jobs from USAJOBS" : ""}
+              {providerNames.includes("careerjet") ? ", Careerjet job search" : ""}
+              {providerNames.includes("adzuna") ? ", and Adzuna job search" : ""}.{" "}
+              <Link href="/jobs/employers" className="underline underline-offset-4">
+                See the employers
+              </Link>
+              .
+            </p>
+            <p>Jobicy and Remotive links go to their own listing pages, not the employer&apos;s. Remotive shares jobs 24 hours after it posts them.</p>
+            <p>
+              LinkedIn, Indeed, Glassdoor and Google Jobs aren&apos;t searched by the app: they don&apos;t offer a public job-search API. Search them yourself with the links under the search bar, then{" "}
+              <Link href="/jobs/add" className="underline underline-offset-4">
+                paste a posting
+              </Link>{" "}
+              to check it against your resume.
+            </p>
+          </div>
+        </details>
+        {services.limitations.map((l) => (
+          <p key={l} className="px-1 text-xs text-muted-foreground">
+            {l}
           </p>
-          <p>Jobicy and Remotive links go to their own listing pages, not the employer&apos;s. Remotive shares jobs 24 hours after it posts them.</p>
-          <p>
-            LinkedIn, Indeed, Glassdoor and Google Jobs aren&apos;t searched by the app: they don&apos;t offer a public job-search API. Search them yourself with the links under the search bar, then{" "}
-            <Link href="/jobs/add" className="underline underline-offset-4">
-              paste a posting
-            </Link>{" "}
-            to check it against your resume.
-          </p>
-          {services.limitations.map((l) => (
-            <p key={l}>{l}</p>
-          ))}
-        </div>
+        ))}
       </aside>
 
       <section aria-labelledby="results-heading" className="grid min-w-0 gap-4">
-        <form action="/jobs" className="grid gap-2 rounded-xl border bg-card p-3 shadow-xs sm:grid-cols-[minmax(0,1fr)_11rem_10rem_auto]" role="search" aria-label="Search jobs">
+        <form action="/jobs" className="grid gap-2 rounded-xl border bg-card p-3 shadow-xs sm:grid-cols-[minmax(0,1fr)_11rem_10rem_auto]" role="search" aria-label="Search jobs" data-tour="jobs-search">
           <div className="grid gap-1">
             <Label htmlFor="q" className="sr-only">
               Job title or keywords
@@ -209,8 +212,10 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
           </Button>
           {explicitRange ? <input type="hidden" name="range" value={explicitRange.key} /> : null}
         </form>
+        <div className="grid gap-2">
         <ExternalSearchRow what={searched[0] ?? ""} where={where || null} country={country} />
         <SaveSearch params={searchOnly(query).params as Record<string, string>} suggestedName={describeSearch(query, settings)} emailAvailable={emailConfigured()} timeZone={me?.timezone ?? "UTC"} />
+        </div>
 
         {!resume ? (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-info-soft p-4">
@@ -236,21 +241,6 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
               {feed.loadedRows >= MAX_FEED_ROWS ? ` · showing the newest ${MAX_FEED_ROWS.toLocaleString("en-CA")}` : ""}
             </p>
           </div>
-          <nav aria-label="Posted within" className="inline-flex flex-wrap rounded-lg border bg-card p-0.5 shadow-xs">
-            <Link href={href({ range: "", page: "" })} aria-current={!explicitRange ? "page" : undefined} className={cn("rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground", !explicitRange && "bg-primary text-primary-foreground hover:text-primary-foreground")}>
-              Best match
-            </Link>
-            {RANGES.map((r) => (
-              <Link
-                key={r.key}
-                href={href({ range: r.key, page: "" })}
-                aria-current={explicitRange?.key === r.key ? "page" : undefined}
-                className={cn("rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground", explicitRange?.key === r.key && "bg-primary text-primary-foreground hover:text-primary-foreground")}
-              >
-                {r.label}
-              </Link>
-            ))}
-          </nav>
         </div>
 
         {expandedFrom || trouble || excludedCount || !filters.includeUnchecked || newlyFetched ? (
@@ -262,24 +252,19 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
                 {newlyFetched} new listing{newlyFetched === 1 ? " was" : "s were"} found and {newlyFetched === 1 ? "its link is" : "their links are"} being checked now. Reload in a minute to see the ones that check out.
               </p>
             ) : null}
-            {excludedCount ? (
-              <p className="text-muted-foreground">
-                {excludedCount} listing{excludedCount === 1 ? " was" : "s were"} left out because {excludedCount === 1 ? "its" : "their"} link expired, broke or failed verification.
-              </p>
-            ) : null}
-            {!filters.includeUnchecked ? (
-              <p className="text-muted-foreground">
-                Only verified listings are shown.{" "}
+            <p className="text-muted-foreground">
+              {!filters.includeUnchecked ? "Only verified listings are shown. " : ""}
+              {excludedCount ? `${excludedCount} listing${excludedCount === 1 ? " was" : "s were"} left out because ${excludedCount === 1 ? "its" : "their"} link expired, broke or failed verification. ` : ""}
+              {!filters.includeUnchecked ? (
                 <Link href={href({ unchecked: "1", page: "" })} className="underline underline-offset-4">
                   Include listings not yet verified
-                </Link>{" "}
-                (you can view them, but Apply stays off until their link is confirmed).
-              </p>
-            ) : null}
+                </Link>
+              ) : null}
+            </p>
           </div>
         ) : null}
 
-        <nav aria-label="Fit" className="flex flex-wrap gap-2">
+        <nav aria-label="Fit" data-tour="jobs-tabs" className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
           {TABS.map((t) => {
             const active = tab === t.key;
             return (
@@ -287,7 +272,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
                 key={t.key}
                 href={href({ tab: t.key, page: "" })}
                 aria-current={active ? "page" : undefined}
-                className={cn("inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary/40", active && "border-primary bg-accent font-medium text-accent-foreground")}
+                className={cn("inline-flex shrink-0 items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary/40", active && "border-primary bg-accent font-medium text-accent-foreground")}
               >
                 <span aria-hidden className={cn("size-2 rounded-full", TIER_STYLE[t.tier].dot)} />
                 {t.label}
@@ -440,6 +425,15 @@ function FiltersPanel({
           </div>
         </div>
         ) : null}
+        <div className="grid gap-1.5" role="group" aria-label="Posted within">
+          <p className="text-xs font-medium text-muted-foreground">Posted</p>
+          <div className="flex flex-wrap gap-1.5">
+            <Chip href={hrefBase({ range: "", page: "" })} active={!explicitRange} label="Best match" />
+            {RANGES.map((r) => (
+              <Chip key={r.key} href={hrefBase({ range: r.key, page: "" })} active={explicitRange?.key === r.key} label={r.label} />
+            ))}
+          </div>
+        </div>
         {/* A plain GET form: works without JavaScript and keeps the search in the URL. */}
         <form action="/jobs" className="grid gap-3 text-sm">
           {["q", "where", "country", "prov", "tab", "all"].map((k) => (sp[k] ? <input key={k} type="hidden" name={k} value={sp[k]} /> : null))}
@@ -464,10 +458,13 @@ function FiltersPanel({
                 <input type="checkbox" name="level" value={l} defaultChecked={checked(filters.levels, l)} className="size-4 accent-primary" /> {LEVEL_LABELS[l]}
               </label>
             ))}
-            <p className="text-xs text-muted-foreground">
-              Read from the source, or from the job title. Until you choose, your level from Settings is used and jobs that don&apos;t state a level still show; once you choose, only jobs at those levels do.
-            </p>
+            <p className="text-xs text-muted-foreground">Until you choose, your level from Settings is used.</p>
           </fieldset>
+          <details className="grid gap-3 rounded-lg border p-3 open:pb-3" data-testid="more-filters">
+            <summary className="-m-1 w-fit cursor-pointer rounded-md p-1 text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+              More filters <span className="font-normal">(type, salary, company, source)</span>
+            </summary>
+            <div className="mt-3 grid gap-3">
           <fieldset className="grid gap-1">
             <legend className="mb-1 text-xs font-medium text-muted-foreground">Employment type</legend>
             {(
@@ -530,6 +527,8 @@ function FiltersPanel({
             </span>
           </label>
           <p className="text-xs text-muted-foreground">There&apos;s no visa sponsorship filter: no source states it reliably.</p>
+            </div>
+          </details>
           <div className="flex gap-2">
             <Button type="submit" size="sm">
               Apply filters
@@ -547,17 +546,18 @@ function FiltersPanel({
 function PreferencesCard({ settings, resumeTitles }: { settings: { job_titles: string[]; job_country: string; job_provinces: string[]; job_exclude_keywords: string[] }; resumeTitles: string[] }) {
   return (
     <Card size="sm" id="preferences">
-      <CardHeader>
-        <CardTitle className="text-sm">Search preferences</CardTitle>
-        <CardDescription className="text-xs">{settings.job_titles.length
-            ? `Default search: ${settings.job_titles.join(", ")}.`
-            : resumeTitles.length
-              ? `No titles set, so searches use the roles in your resume: ${resumeTitles.join(", ")}.`
-              : "No titles set: searches show every job."}</CardDescription>
-      </CardHeader>
       <CardContent>
         <details>
-          <summary className="cursor-pointer text-sm font-medium text-primary">Edit preferences</summary>
+          <summary className="cursor-pointer rounded-md text-sm font-medium focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+            Search preferences
+            <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+              {settings.job_titles.length
+                ? `Default search: ${settings.job_titles.join(", ")}.`
+                : resumeTitles.length
+                  ? `No titles set, so searches use the roles in your resume: ${resumeTitles.join(", ")}.`
+                  : "No titles set: searches show every job."}
+            </span>
+          </summary>
           <ActionForm action={saveJobPreferences} submitLabel="Save preferences" size="sm" className="mt-3">
             <div className="grid gap-1.5">
               <Label htmlFor="titles">Job titles (one per line, up to 6)</Label>
@@ -596,7 +596,7 @@ function ExternalSearchRow({ what, where, country }: { what: string; where: stri
   const links = externalSearchLinks({ what, where, country });
   if (!links.length) return null;
   return (
-    <nav aria-label="Search other job sites" className="-mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-xs text-muted-foreground">
+    <nav aria-label="Search other job sites" className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-xs text-muted-foreground">
       <span>Also search “{what}” on:</span>
       {links.map((l) => (
         <a key={l.site} href={l.url} target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline-offset-4 hover:underline">

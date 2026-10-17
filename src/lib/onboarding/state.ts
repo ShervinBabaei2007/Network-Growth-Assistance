@@ -103,10 +103,3 @@ export function buildChecklist(goal: Goal | undefined, facts: ChecklistFacts): C
 export function checklistComplete(items: ChecklistItem[]): boolean {
   return items.length > 0 && items.every((i) => i.done);
 }
-
-export type TourStep = { id: string; selector: string; title: string; body: string };
-
-/** Keeps only steps whose target exists and is visible, so the tour never points at nothing. */
-export function availableSteps(steps: TourStep[], isVisible: (selector: string) => boolean): TourStep[] {
-  return steps.filter((s) => isVisible(s.selector));
-}

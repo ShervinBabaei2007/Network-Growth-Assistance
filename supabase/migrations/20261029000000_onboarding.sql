@@ -6,7 +6,14 @@ alter table public.settings
   add constraint settings_onboarding_shape
     check (jsonb_typeof(onboarding) = 'object' and pg_column_size(onboarding) < 2048);
 
--- People who already set up a plan or recorded a starting count are not new; don't show them the welcome.
-update public.settings
+-- Anyone who already used the app is not new; don't show them the welcome. That means a plan or starting
+-- count, or any records of their own in Jobs, Discover or Candidates.
+update public.settings s
    set onboarding = '{"status":"done","tourDone":true,"checklistDismissed":true}'::jsonb
- where overall_target is not null or baseline_connections is not null;
+ where s.overall_target is not null
+    or s.baseline_connections is not null
+    or exists (select 1 from public.resumes r where r.user_id = s.user_id)
+    or exists (select 1 from public.applications a where a.user_id = s.user_id)
+    or exists (select 1 from public.job_user_states j where j.user_id = s.user_id)
+    or exists (select 1 from public.candidates c where c.user_id = s.user_id)
+    or exists (select 1 from public.network_searches n where n.user_id = s.user_id);

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  availableSteps,
   buildChecklist,
   checklistComplete,
   finish,
@@ -12,7 +11,6 @@ import {
   shouldShowWizard,
   skip,
   WIZARD_STEPS,
-  type TourStep,
 } from "./state";
 
 const facts = { hasPlan: false, hasBaseline: false, hasCandidates: false, hasSearch: false, hasResume: false, hasJobActivity: false };
@@ -92,17 +90,6 @@ describe("buildChecklist", () => {
     expect(items.find((i) => i.id === "resume")?.done).toBe(true);
     expect(checklistComplete(items)).toBe(false);
     expect(checklistComplete(buildChecklist("jobs", { ...facts, hasResume: true, hasJobActivity: true }))).toBe(true);
-  });
-});
-
-describe("availableSteps", () => {
-  const steps: TourStep[] = [
-    { id: "a", selector: "[data-tour=a]", title: "A", body: "" },
-    { id: "b", selector: "[data-tour=b]", title: "B", body: "" },
-  ];
-  it("drops steps whose target is hidden or missing", () => {
-    expect(availableSteps(steps, (s) => s.endsWith("=a]")).map((s) => s.id)).toEqual(["a"]);
-    expect(availableSteps(steps, () => false)).toEqual([]);
   });
 });
 
