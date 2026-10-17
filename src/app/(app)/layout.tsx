@@ -4,6 +4,7 @@ import { signOut } from "@/app/auth/actions";
 import { NotificationBell } from "@/components/alerts/notification-bell";
 import { MobileNav, SidebarNav } from "@/components/app-nav";
 import { AppearanceSync } from "@/components/appearance-sync";
+import { OnboardingLayer } from "@/components/onboarding/layer";
 import { Button } from "@/components/ui/button";
 import { normalizeAppearance } from "@/lib/appearance";
 import { createClient } from "@/lib/supabase/server";
@@ -13,8 +14,14 @@ import { createClient } from "@/lib/supabase/server";
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-full flex-1">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[80] focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:text-primary-foreground"
+      >
+        Skip to content
+      </a>
       {/* Both bars stay in view while the page scrolls: the sidebar fills the screen height and scrolls on its own if it is taller. */}
-      <aside className="sticky top-0 z-20 hidden h-dvh w-56 shrink-0 self-start overflow-y-auto border-r bg-sidebar p-4 md:block">
+      <aside aria-label="Sidebar" className="sticky top-0 z-20 hidden h-dvh w-56 shrink-0 self-start overflow-y-auto border-r bg-sidebar p-4 md:block">
         <p className="mb-4 flex items-center gap-2 px-3 font-semibold">
           <span aria-hidden className="size-2.5 rounded-full bg-primary" />
           Network Growth
@@ -49,8 +56,11 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={null}>
           <SavedAppearance />
         </Suspense>
+        <Suspense fallback={null}>
+          <OnboardingLayer />
+        </Suspense>
         {/* Content stays a readable width on large monitors instead of spanning the whole screen. */}
-        <main className="flex-1 px-4 py-5 md:px-8 md:py-8">
+        <main id="main" tabIndex={-1} className="flex-1 px-4 py-5 outline-none md:px-8 md:py-8">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>

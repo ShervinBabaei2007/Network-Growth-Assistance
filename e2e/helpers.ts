@@ -3,8 +3,12 @@ import { expect, type Page } from "@playwright/test";
 
 const MAILPIT = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
 
-/** Signs in through the real magic-link flow, reading the email from local Mailpit. */
-export async function signIn(page: Page, email: string, start = "/overview") {
+/**
+ * Signs in through the real magic-link flow, reading the email from local Mailpit.
+ * New users see the welcome on their first visit, so by default it is marked finished first and
+ * the tests are about everything else. Pass { welcome: true } to see it as a real first-time user would.
+ */
+export async function signIn(page: Page, email: string, start = "/overview", options: { welcome?: boolean } = {}) {
   await page.goto(start);
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: /sign-in link/i }).click();
@@ -24,8 +28,27 @@ export async function signIn(page: Page, email: string, start = "/overview") {
       { timeout: 20_000 },
     )
     .toBe(true);
+  // The signup trigger has already created the settings row, so this can be set before the first page load.
+  let skipped = options.welcome === true;
+  if (!skipped) skipped = await markOnboarded(email);
   await page.goto(link!);
   await page.waitForURL((u) => !u.pathname.startsWith("/auth") && !u.pathname.startsWith("/login"));
+  if (!skipped && !options.welcome) {
+    await markOnboarded(email, true);
+    await page.goto(start);
+  }
+}
+
+/** Marks the welcome as finished for a test user. Returns false if the user's row doesn't exist yet. */
+async function markOnboarded(email: string, strict = false): Promise<boolean> {
+  try {
+    const id = await userIdFor(email);
+    const rows = (await adminRest("PATCH", `settings?user_id=eq.${id}`, { onboarding: { status: "done", tourDone: true, checklistDismissed: true } })) as unknown[];
+    return rows.length > 0;
+  } catch (e) {
+    if (strict) throw e;
+    return false;
+  }
 }
 
 export const uniqueEmail = (tag: string) => `e2e-${tag}-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.test`;

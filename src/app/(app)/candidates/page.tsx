@@ -33,7 +33,13 @@ export default function CandidatesPage({ searchParams }: PageProps<"/candidates"
   return (
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">Candidates</h1>
+        <div className="grid gap-1">
+          <h1 className="text-xl font-semibold">Candidates</h1>
+          <p className="max-w-prose text-sm text-muted-foreground">
+            LinkedIn search results you paste in, tracked from review to invitation to acceptance. Accepted candidates count toward your targets.
+            Looking for people to research instead? Try Discover.
+          </p>
+        </div>
         <Link href="/candidates/import" className={buttonVariants({ variant: "outline", size: "sm" })}>
           <Upload aria-hidden /> Import
         </Link>

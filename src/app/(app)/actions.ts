@@ -18,6 +18,7 @@ import {
 } from "@/lib/form-state";
 import { err, ok, type ActionResult } from "@/lib/action-result";
 import { normalizeAppearance, type Appearance } from "@/lib/appearance";
+import { onboardingInputSchema, onboardingPatchSchema, parseOnboarding, type OnboardingState } from "@/lib/onboarding/state";
 import { actionContext as context, logActivity as log } from "@/lib/server/action-context";
 
 // LinkedIn caps a member's network at 30,000 connections.
@@ -416,6 +417,21 @@ export async function saveAppearance(input: Appearance): Promise<ActionResult> {
   const { error } = await ctx.supabase.from("settings").update({ theme: a.theme, density: a.density, text_size: a.text }).eq("user_id", ctx.userId);
   if (error) return err("Couldn't save your appearance settings. Try again.");
   return ok("Appearance saved.");
+}
+
+/** Saves where the user is in the welcome and tour. Only the caller's own settings row can change. */
+export async function saveOnboarding(patch: Partial<OnboardingState>): Promise<ActionResult> {
+  const parsed = onboardingPatchSchema.safeParse(patch);
+  if (!parsed.success) return err("Couldn't save your setup progress.");
+  const ctx = await context();
+  const { data: row, error: readError } = await ctx.supabase.from("settings").select("onboarding").eq("user_id", ctx.userId).single();
+  if (readError) return err("Couldn't save your setup progress. Try again.");
+  // Merge into what is stored, then check the whole thing, so only known fields are ever written.
+  const merged = onboardingInputSchema.safeParse({ ...parseOnboarding(row.onboarding), ...parsed.data });
+  if (!merged.success) return err("Couldn't save your setup progress.");
+  const { error } = await ctx.supabase.from("settings").update({ onboarding: merged.data }).eq("user_id", ctx.userId);
+  if (error) return err("Couldn't save your setup progress. Try again.");
+  return ok("Saved.");
 }
 
 const trackerSchema = z.object({ noResponseDays: formInt("Days", { min: 1, max: 365 }) });

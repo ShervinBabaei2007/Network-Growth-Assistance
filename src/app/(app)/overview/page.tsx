@@ -5,6 +5,8 @@ import { ArrowRight } from "lucide-react";
 import { JobSearchSummary } from "@/components/applications/job-search-summary";
 import { BaselineForm, SnapshotForm } from "@/components/connection-forms";
 import { LoadError } from "@/components/load-error";
+import { GettingStartedCard } from "@/components/onboarding/checklist";
+import { PageHeader } from "@/components/page-header";
 import { MeterLegend, ProgressMeter } from "@/components/progress-meter";
 import { StatTile } from "@/components/stat-tile";
 import { Badge } from "@/components/ui/badge";
@@ -20,10 +22,7 @@ export const metadata = { title: "Overview · Network Growth" };
 export default function OverviewPage() {
   return (
     <div className="grid gap-6">
-      <h1 className="text-xl font-semibold">Overview</h1>
-      <Suspense fallback={null}>
-        <JobSearchSummary />
-      </Suspense>
+      <PageHeader title="Overview" description="Your next step first, then where you stand." />
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading your progress…</p>}>
         <OverviewContent />
       </Suspense>
@@ -49,23 +48,46 @@ async function OverviewContent() {
 
   const { overall, activity, disciplines, today } = progress;
   const action = nextAction(progress, paused);
+  const planSet = progress.catalog.disciplines.length > 0 && progress.catalog.universities.length > 0 && overall.target !== null;
+  const todayLinks = [
+    overall.readyForOutreach > 0 ? { href: "/queue", label: `${overall.readyForOutreach} ready to send` } : null,
+    overall.awaitingReview > 0 ? { href: "/candidates?status=awaiting_review", label: `${overall.awaitingReview} awaiting review` } : null,
+  ].filter((t): t is { href: string; label: string } => t !== null);
+  // An empty dashboard of zeros is noise: keep the breakdown folded until there is something to show.
+  const hasActivity = overall.trackedAccepted + overall.pending + overall.awaitingReview + overall.readyForOutreach + activity.discoveredThisWeek + activity.sentThisWeek > 0;
 
   return (
     <>
-      <Card className="border-primary/30">
+      <Card className="border-primary/30" data-tour="primary-action">
         <CardHeader>
           <CardDescription>Next recommended action</CardDescription>
-          <CardTitle className="text-lg">{action.title}</CardTitle>
+          <h2 className="font-heading text-lg leading-snug font-medium">{action.title}</h2>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">{action.detail}</p>
-          {action.kind !== "set-baseline" ? (
-            <Link href={action.href} className={buttonVariants({ size: "sm" })}>
-              Go <ArrowRight aria-hidden />
-            </Link>
-          ) : null}
+          <p className="max-w-2xl text-sm text-muted-foreground">{action.detail}</p>
+          <Link href={action.href} className={buttonVariants({ size: "lg" })}>
+            {action.kind === "send-invitations" ? "Open the queue" : "Go"} <ArrowRight aria-hidden />
+          </Link>
         </CardContent>
       </Card>
+
+      <Suspense fallback={null}>
+        <GettingStartedCard hasPlan={planSet} hasBaseline={overall.baseline !== null} />
+      </Suspense>
+
+      {todayLinks.length ? (
+        <nav aria-label="Today" className="flex flex-wrap gap-2" data-tour="today">
+          {todayLinks.map((t) => (
+            <Link key={t.href} href={t.href} className={buttonVariants({ variant: "outline", size: "sm" })}>
+              {t.label}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
+
+      <Suspense fallback={null}>
+        <JobSearchSummary />
+      </Suspense>
 
       {overall.baseline === null ? (
         <Card id="starting-point">
@@ -130,6 +152,12 @@ async function OverviewContent() {
         </Card>
       )}
 
+      <details open={hasActivity} className="group grid gap-4">
+        <summary className="w-fit cursor-pointer rounded-md py-1 font-medium focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+          Detailed breakdown
+          <span className="font-normal text-muted-foreground"> · pipeline, activity and disciplines</span>
+        </summary>
+        <div className="grid gap-6 pt-3">
       <section aria-labelledby="pipeline" className="grid gap-2">
         <h2 id="pipeline" className="font-medium">
           Pipeline
@@ -204,6 +232,8 @@ async function OverviewContent() {
           </Link>
         </CardContent>
       </Card>
+        </div>
+      </details>
     </>
   );
 }

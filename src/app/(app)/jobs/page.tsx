@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { Building2, FileText, Plus, Search, SlidersHorizontal } from "lucide-react";
+import { Bookmark, Building2, FileText, Plus, Search, SlidersHorizontal } from "lucide-react";
 import type { TierKey } from "@/components/jobs/job-visuals";
 import { TIER_STYLE } from "@/components/jobs/job-visuals";
 import { JobCard } from "@/components/jobs/job-card";
@@ -63,6 +63,9 @@ export default function JobsPage({ searchParams }: PageProps<"/jobs">) {
             </Link>
             <Link href="/jobs/employers" className={buttonVariants({ variant: "outline", size: "sm" })}>
               <Building2 aria-hidden /> Employers
+            </Link>
+            <Link href="/jobs/searches" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              <Bookmark aria-hidden /> Saved searches
             </Link>
             <Link href="/jobs/add" className={buttonVariants({ size: "sm" })}>
               <Plus aria-hidden /> Paste a posting

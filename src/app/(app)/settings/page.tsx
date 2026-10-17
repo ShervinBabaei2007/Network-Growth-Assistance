@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import Link from "next/link";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import {
   moveDiscipline,
@@ -15,7 +16,7 @@ import {
 } from "@/app/(app)/actions";
 import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -152,6 +153,11 @@ async function SettingsContent() {
             )}
           </div>
         </div>
+      </Section>
+      <Section title="Help and setup guide" description="Replay the introduction or the tour, or see which page is for what.">
+        <Link href="/help" className={buttonVariants({ variant: "outline" })}>
+          Open Help
+        </Link>
       </Section>
       <Section title="Appearance" description="How the app looks on every device you sign in on.">
         <AppearanceForm initial={normalizeAppearance({ theme: s.theme, density: s.density, text: s.text_size })} />
