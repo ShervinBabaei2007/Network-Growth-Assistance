@@ -49,6 +49,27 @@ export async function sendMagicLink(_prev: SignInState, formData: FormData): Pro
   return { status: "sent" };
 }
 
+/** Starts Google sign-in; Supabase sends the person to Google and back to /auth/callback. */
+export async function signInWithGoogle(): Promise<void> {
+  const requestHeaders = await headers();
+  const origin = requestHeaders.get("origin");
+  if (!origin) redirect("/login?error=link");
+
+  const callback = new URL("/auth/callback", origin);
+  callback.searchParams.set(
+    "next",
+    safeNextPath(nextFromReferer(requestHeaders.get("referer"), origin)),
+  );
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: callback.toString() },
+  });
+  if (error || !data.url) redirect("/login?error=google");
+  redirect(data.url);
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

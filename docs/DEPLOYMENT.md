@@ -282,6 +282,17 @@ LinkedIn limits how many invitations an account can send and how many personaliz
 
 If LinkedIn shows a warning or restriction, press **Pause outreach** in Settings. The queue stops until you resume.
 
+## Google sign-in
+
+The login page has a **Continue with Google** button next to the email link. It needs one-time setup:
+
+1. In Google Cloud Console, create a project (or use one), then **APIs & Services → OAuth consent screen**. Set the app name, your support email and `https://<your-app>.vercel.app` as the home page. Publish it ("In production") so anyone can sign in, not just test users.
+2. **Credentials → Create credentials → OAuth client ID → Web application.** Under **Authorized redirect URIs** add `https://<project-ref>.supabase.co/auth/v1/callback`. Copy the Client ID and Client secret.
+3. In Supabase, **Authentication → Sign In / Providers → Google**: turn it on and paste the Client ID and secret.
+4. Make sure **Site URL** and **Redirect URLs** (§2.3) include your production address, and your custom domain if you add one.
+
+A Google sign-in with the same verified email as an existing account signs into that account (Supabase links them), so current users keep their data. It works locally only if you also enable Google in `supabase/config.toml` with your own client, which isn't needed for development.
+
 ## Sharing it for user feedback
 
 Before sending the link to testers:

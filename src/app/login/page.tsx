@@ -11,7 +11,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         <CardHeader>
           <CardTitle>Network Growth Assistant</CardTitle>
           <CardDescription>
-            Sign in with your email. This app never asks for your LinkedIn password.
+            Sign in with Google or your email. This app never asks for your LinkedIn password.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
@@ -29,6 +29,13 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 // shell and works the moment it appears. The action reads `next` from the Referer.
 async function LinkError({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
   const params = await searchParams;
+  if (params.error === "google") {
+    return (
+      <p className="text-sm text-destructive" role="alert">
+        Google sign-in isn&apos;t available right now. Use the email link instead.
+      </p>
+    );
+  }
   if (params.error !== "link") return null;
   return (
     <p className="text-sm text-destructive" role="alert">
