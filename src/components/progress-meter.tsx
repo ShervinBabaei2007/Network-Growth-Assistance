@@ -38,7 +38,7 @@ export function ProgressMeter({
         <div className="h-full rounded-full bg-meter-fill" style={{ width: `${acceptedPct}%` }} />
       ) : null}
       {pendingPct > 0 ? (
-        <div className="h-full rounded-full bg-meter-pending" style={{ width: `${pendingPct}%` }} />
+        <div className="h-full rounded-full bg-meter-pending bg-(image:--meter-stripes)" style={{ width: `${pendingPct}%` }} />
       ) : null}
     </div>
   );
@@ -51,7 +51,7 @@ export function MeterLegend({ className }: { className?: string }) {
         <span className="size-2.5 rounded-full bg-meter-fill" aria-hidden /> Accepted
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="size-2.5 rounded-full bg-meter-pending" aria-hidden /> Pending (not counted)
+        <span className="size-2.5 rounded-full bg-meter-pending bg-(image:--meter-stripes)" aria-hidden /> Pending (not counted)
       </span>
     </p>
   );
