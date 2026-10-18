@@ -46,6 +46,17 @@ export const EXPORTED_TABLES = [
   "company_aliases",
 ] as const;
 
+/** Tables whose rows can be flagged as example data (the demo workspace). Those rows are left out of the export. */
+export const SAMPLE_FLAGGED_TABLES: readonly string[] = [
+  "universities",
+  "disciplines",
+  "targets",
+  "candidates",
+  "invitations",
+  "connection_snapshots",
+  "applications",
+];
+
 /** Exported in part, by the export route itself. */
 export const PARTIAL_TABLES = {
   jobs: "only postings the user pasted (shared listings belong to their sources)",

@@ -4,6 +4,7 @@ import { signOut } from "@/app/auth/actions";
 import { NotificationBell } from "@/components/alerts/notification-bell";
 import { MobileNav, SidebarNav } from "@/components/app-nav";
 import { AppearanceSync } from "@/components/appearance-sync";
+import { SampleDataBanner } from "@/components/sample-data-banner";
 import { OnboardingLayer } from "@/components/onboarding/layer";
 import { Button } from "@/components/ui/button";
 import { normalizeAppearance } from "@/lib/appearance";
@@ -59,6 +60,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           <PauseBanner />
         </Suspense>
         <Suspense fallback={null}>
+          <SampleBanner />
+        </Suspense>
+        <Suspense fallback={null}>
           <SavedAppearance />
         </Suspense>
         <Suspense fallback={null}>
@@ -103,6 +107,11 @@ async function PauseBanner() {
       {settings.pause_reason ? ` Reason noted: ${settings.pause_reason}` : null}
     </div>
   );
+}
+
+async function SampleBanner() {
+  const { row: settings } = await getSettings();
+  return settings?.sample_data ? <SampleDataBanner /> : null;
 }
 
 /** Applies the appearance saved in Settings (the source of truth) and refreshes its cookie. */

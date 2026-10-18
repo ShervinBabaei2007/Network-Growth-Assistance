@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Briefcase, Compass, Users } from "lucide-react";
-import { saveOnboarding } from "@/app/(app)/actions";
+import { saveOnboarding, startSampleData } from "@/app/(app)/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -58,6 +58,23 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
     setOpen(false);
     // The menu depends on the chosen goal, and the shell isn't re-rendered by navigation alone.
     if (href) router.push(href);
+    router.refresh();
+  }
+
+  const [sampleError, setSampleError] = useState<string | null>(null);
+  const [sampling, setSampling] = useState(false);
+
+  async function lookAround() {
+    setSampling(true);
+    setSampleError(null);
+    const result = await startSampleData();
+    setSampling(false);
+    if (!result.ok) {
+      setSampleError(result.error);
+      return;
+    }
+    setOpen(false);
+    router.push("/overview?tour=1");
     router.refresh();
   }
 
@@ -137,6 +154,15 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
                 </span>
               </label>
             ))}
+            <div className="grid gap-1 border-t pt-3">
+              <Button type="button" variant="outline" className="w-fit" disabled={sampling} onClick={() => void lookAround()}>
+                {sampling ? "Adding examples…" : "Look around with example data"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Fills the app with made-up people and applications so you can see how it works. One click removes them.
+              </p>
+              {sampleError ? <p role="alert" className="text-xs text-destructive">{sampleError}</p> : null}
+            </div>
           </fieldset>
         ) : null}
 
