@@ -33,17 +33,10 @@ import { emailConfigured } from "@/lib/email/mailer";
 import { AiKeySection } from "./ai-key-section";
 import { AppearanceForm } from "./appearance-form";
 import { DeleteCategoryButton } from "./category-delete";
+import { LazyEdit } from "./lazy-edit";
+import { TimeZoneInput } from "./timezone-input";
 
 export const metadata = { title: "Settings · Network Growth" };
-
-/** Every time zone the runtime knows, for the time-zone field's suggestions. */
-const TIME_ZONES: string[] = (() => {
-  try {
-    return Intl.supportedValuesOf("timeZone");
-  } catch {
-    return [];
-  }
-})();
 
 export default function SettingsPage() {
   return (
@@ -235,12 +228,7 @@ async function SettingsContent() {
               <Input id="stalePendingDays" name="stalePendingDays" type="number" min={1} max={365} defaultValue={s.stale_pending_days} required />
             </Field>
             <Field id="timezone" label="Time zone">
-              <Input id="timezone" name="timezone" list="time-zones" defaultValue={s.timezone} required />
-              <datalist id="time-zones">
-                {TIME_ZONES.map((tz) => (
-                  <option key={tz} value={tz} />
-                ))}
-              </datalist>
+              <TimeZoneInput id="timezone" defaultValue={s.timezone} />
             </Field>
           </div>
           <label className="flex items-start gap-2 text-sm">
@@ -424,12 +412,9 @@ function CategoryRow({
           <DeleteCategoryButton kind={kind} id={entry.id} name={entry.name} />
         </span>
       </div>
-      <details className="mt-1">
-        <summary className="cursor-pointer text-xs text-muted-foreground">Edit</summary>
-        <div className="mt-2">
-          <CategoryForm kind={kind} entry={entry} hasTargets={hasTargets} />
-        </div>
-      </details>
+      <LazyEdit>
+        <CategoryForm kind={kind} entry={entry} hasTargets={hasTargets} />
+      </LazyEdit>
     </li>
   );
 }
