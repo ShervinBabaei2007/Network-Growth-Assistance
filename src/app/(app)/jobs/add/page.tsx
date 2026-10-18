@@ -23,7 +23,7 @@ export default function AddPostingPage() {
       <PageHeader
         back={{ href: "/jobs", label: "Jobs" }}
         title="Paste a posting"
-        description="Found a job yourself, on LinkedIn, Indeed, Glassdoor or a company site? Paste the whole page to fill the form, check it, and add the link. It's checked against your resume, and the site it came from is shown with it. The job's details come only from what you paste; the link is opened once, just to check the posting is still up."
+        description="Found a job elsewhere? Paste the whole page to fill the form, check it, and add the link. Details come only from what you paste."
       />
       <Card>
         <CardHeader>

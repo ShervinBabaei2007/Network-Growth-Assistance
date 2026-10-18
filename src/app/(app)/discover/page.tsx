@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { Disclosure } from "@/components/disclosure";
+import { PageHeader } from "@/components/page-header";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { ActionForm } from "@/components/action-form";
@@ -22,14 +23,7 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) 
 export default function DiscoverPage({ searchParams }: PageProps<"/discover">) {
   return (
     <div className="grid gap-6">
-      <div className="grid gap-1">
-        <h1 className="text-xl font-semibold">Network discovery</h1>
-        <p className="max-w-prose text-sm text-muted-foreground">
-          Describe the people worth meeting. The research assistant searches public sources (personal sites, school, faculty and team pages, research profiles, and GitHub for software fields),
-          keeps only facts it can quote from a source, leaves out people in your known connections and explains every match. It never visits or
-          automates LinkedIn. You decide who to contact, and you do it yourself.
-        </p>
-      </div>
+      <PageHeader title="Network discovery" description="Describe the people worth meeting. Every match comes from a public source, with the reason it fits. Nothing touches LinkedIn, and you make the contact yourself." />
 
       <Suspense fallback={null}>
         <RequestCard searchParams={searchParams} />

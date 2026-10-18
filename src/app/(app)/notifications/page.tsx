@@ -19,7 +19,7 @@ export default function NotificationsPage() {
     <div className="grid gap-6">
       <PageHeader
         title="Notifications"
-        description="New jobs from your saved searches, due reminders, upcoming interviews and problems with job boards you added. Read notifications are cleared after 90 days."
+        description="Job alerts, reminders, interviews and job board problems."
       />
       <Suspense fallback={<PageSkeleton label="Loading notifications…" />}>
         <Notifications />

@@ -28,7 +28,7 @@ export default function EmployersPage({ searchParams }: PageProps<"/jobs/employe
       <PageHeader
         back={{ href: "/jobs", label: "Jobs" }}
         title="Employers"
-        description="Jobs are read from these employers' own job boards (Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee and Workday), every 30 minutes (Workday sites every 3 hours) for employers hiring in the countries people search. Any field and any country: everyone shares this list, so add an employer you'd like to work for and everyone sees its jobs."
+        description="Jobs are read from these employers' own job boards. The list is shared, so an employer you add is seen by everyone."
       />
       <Card>
         <CardHeader>
