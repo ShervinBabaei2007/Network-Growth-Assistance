@@ -63,7 +63,7 @@ async function OverviewContent() {
         <CardContent className="flex flex-wrap items-center justify-between gap-3">
           <p className="max-w-2xl text-sm text-muted-foreground">{action.detail}</p>
           <Link href={action.href} className={buttonVariants({ size: "lg" })}>
-            {action.kind === "send-invitations" ? "Open the queue" : "Go"} <ArrowRight aria-hidden />
+            {action.cta} <ArrowRight aria-hidden />
           </Link>
         </CardContent>
       </Card>

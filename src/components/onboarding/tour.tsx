@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Popover } from "@base-ui/react/popover";
 import { saveOnboarding } from "@/app/(app)/actions";
 import { Button } from "@/components/ui/button";
-import type { OnboardingState } from "@/lib/onboarding/state";
+import type { OnboardingState } from "@/lib/onboarding/steps";
 import { TOUR_STEPS } from "@/lib/onboarding/tour-steps";
 
 const TOTAL = TOUR_STEPS.length;

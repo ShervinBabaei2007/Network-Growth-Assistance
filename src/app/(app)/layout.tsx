@@ -10,9 +10,6 @@ import { normalizeAppearance } from "@/lib/appearance";
 import { getOnboarding } from "@/lib/onboarding/read";
 import { getClaims, getSettings } from "@/lib/data/settings";
 
-// Everything behind sign-in stays out of search results.
-export const metadata = { robots: { index: false, follow: false } };
-
 // The shell is static; session-dependent parts stream in behind Suspense.
 // Signed-out visitors are redirected by src/proxy.ts and data is protected by RLS.
 export default function AppLayout({ children }: LayoutProps<"/">) {

@@ -5,13 +5,12 @@ import {
   finish,
   firstActionFor,
   goToStep,
-  onboardingInputSchema,
-  parseOnboarding,
   restart,
   shouldShowWizard,
   skip,
   WIZARD_STEPS,
-} from "./state";
+} from "./steps";
+import { onboardingInputSchema, parseOnboarding } from "./state";
 
 const facts = { hasPlan: false, hasBaseline: false, hasCandidates: false, hasSearch: false, hasResume: false, hasJobActivity: false };
 

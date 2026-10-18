@@ -8,7 +8,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { SECTION_HEADINGS, type CoverLetterDoc, type GuardIssue, type TailoredResumeDoc } from "@/lib/job-postings/documents";
+import { SECTION_HEADINGS } from "@/lib/job-postings/document-sections";
+import type { CoverLetterDoc, GuardIssue, TailoredResumeDoc } from "@/lib/job-postings/documents";
 import { discardDocumentEdit, saveDocumentEdit } from "../documents/actions";
 
 function useSave(docId: string) {

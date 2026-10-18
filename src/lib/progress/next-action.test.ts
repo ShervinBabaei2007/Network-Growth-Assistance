@@ -31,6 +31,21 @@ const counts = (status: "approved" | "awaiting_review", count: number) => ({
 });
 
 describe("nextAction", () => {
+  it("labels every button with what it does, never a bare \"Go\" (search engines read link text)", () => {
+    const cases = [
+      nextAction(progress(counts("approved", 5)), true),
+      nextAction(progress({}, { overallTarget: null }), false),
+      nextAction(progress({}, { baselineConnections: null }), false),
+      nextAction(progress(counts("approved", 5)), false),
+      nextAction(progress(counts("awaiting_review", 2)), false),
+      nextAction(progress(), false),
+    ];
+    for (const a of cases) {
+      expect(a.cta.length).toBeGreaterThan(6);
+      expect(a.cta).not.toMatch(/^(go|here|more|start|click here|learn more)$/i);
+    }
+  });
+
   it("puts a paused account ahead of everything", () => {
     expect(nextAction(progress(counts("approved", 5)), true).kind).toBe("paused");
   });

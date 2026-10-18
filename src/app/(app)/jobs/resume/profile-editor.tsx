@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { getAt, setAt } from "@/lib/job-postings/resume-fields";
+import { getAt, setAt } from "@/lib/job-postings/resume-paths";
 import { groupSkills, projectTechnologies, SKILL_GROUP_LABELS, type SkillGroup } from "@/lib/job-postings/skill-groups";
 import type { FieldMetaMap, ResumeEntry, ResumeProfile } from "@/lib/job-postings/types";
 import { cn } from "@/lib/utils";

@@ -2,7 +2,7 @@ import { unstable_rethrow } from "next/navigation";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
-import { DailyBars, NetworkLine } from "@/components/charts";
+import { LazyDailyBars, LazyNetworkLine } from "@/components/lazy-chart";
 import { LoadError } from "@/components/load-error";
 import { StatTile } from "@/components/stat-tile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -105,10 +105,10 @@ async function AnalyticsContent() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ChartCard title={`Invitations sent · last ${DAYS} days`} empty={!a.hasActivity} table={<DailyTable rows={a.daily} />}>
-          <DailyBars data={a.daily} dataKey="sent" unit="sent" label={`Invitations sent per day over the last ${DAYS} days`} />
+          <LazyDailyBars data={a.daily} dataKey="sent" unit="sent" label={`Invitations sent per day over the last ${DAYS} days`} />
         </ChartCard>
         <ChartCard title={`Connections accepted · last ${DAYS} days`} empty={!a.hasActivity} table={<DailyTable rows={a.daily} />}>
-          <DailyBars data={a.daily} dataKey="accepted" unit="accepted" label={`Connections accepted per day over the last ${DAYS} days`} />
+          <LazyDailyBars data={a.daily} dataKey="accepted" unit="accepted" label={`Connections accepted per day over the last ${DAYS} days`} />
         </ChartCard>
       </div>
 
@@ -156,7 +156,7 @@ async function AnalyticsContent() {
           </ul>
         }
       >
-        <NetworkLine data={a.networkHistory} label="Recorded network total by date" />
+        <LazyNetworkLine data={a.networkHistory} label="Recorded network total by date" />
       </ChartCard>
 
       <Card>

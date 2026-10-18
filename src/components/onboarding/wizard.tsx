@@ -14,7 +14,7 @@ import {
   WIZARD_STEPS,
   type Goal,
   type OnboardingState,
-} from "@/lib/onboarding/state";
+} from "@/lib/onboarding/steps";
 import { TOUR_STEPS } from "@/lib/onboarding/tour-steps";
 import { cn } from "@/lib/utils";
 

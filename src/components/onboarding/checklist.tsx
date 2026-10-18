@@ -3,7 +3,7 @@ import { Check, Circle } from "lucide-react";
 import { ChecklistDismiss } from "@/components/onboarding/checklist-dismiss";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getOnboarding } from "@/lib/onboarding/read";
-import { buildChecklist, checklistComplete, type ChecklistFacts } from "@/lib/onboarding/state";
+import { buildChecklist, checklistComplete, type ChecklistFacts } from "@/lib/onboarding/steps";
 import { createClient } from "@/lib/supabase/server";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;

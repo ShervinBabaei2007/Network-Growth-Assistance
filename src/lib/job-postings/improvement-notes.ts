@@ -16,9 +16,10 @@ import type { Requirement, RequirementResult, ResumeEntry, ResumeProfile } from 
  * doesn't show, and no note proposes numbers: it asks for the user's own, "if accurate".
  */
 
-export const NOTE_SECTIONS = ["summary", "skills", "experience", "projects", "education", "other"] as const;
-export type NoteSection = (typeof NOTE_SECTIONS)[number];
-export type NotePriority = "high" | "medium" | "optional";
+import { NOTE_SECTIONS, type NotePriority, type NoteSection } from "./note-sections";
+
+export { NOTE_SECTIONS };
+export type { NotePriority, NoteSection };
 
 export type Note = {
   id: string;

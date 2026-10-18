@@ -7,7 +7,7 @@ import { NativeSelect } from "@/components/native-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CANDIDATE_FIELDS, type CandidateField } from "@/lib/imports/candidates-csv";
+import { CANDIDATE_FIELDS, type CandidateField } from "@/lib/imports/candidate-fields";
 import { importCandidatesCsv, type CsvPreview } from "../actions";
 
 export function CsvImport() {

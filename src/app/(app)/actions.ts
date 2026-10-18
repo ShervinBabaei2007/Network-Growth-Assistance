@@ -18,7 +18,8 @@ import {
 } from "@/lib/form-state";
 import { err, ok, type ActionResult } from "@/lib/action-result";
 import { normalizeAppearance, type Appearance } from "@/lib/appearance";
-import { onboardingInputSchema, onboardingPatchSchema, parseOnboarding, type OnboardingState } from "@/lib/onboarding/state";
+import { onboardingInputSchema, onboardingPatchSchema, parseOnboarding } from "@/lib/onboarding/state";
+import type { OnboardingState } from "@/lib/onboarding/steps";
 import { actionContext as context, logActivity as log } from "@/lib/server/action-context";
 
 // LinkedIn caps a member's network at 30,000 connections.

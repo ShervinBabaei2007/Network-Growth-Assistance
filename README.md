@@ -144,7 +144,7 @@ The app runs on **Vercel** (web app and one daily job) and **Supabase** (databas
 6. Schedule the job crawler (every 5 minutes) and the alerts job (every 15 minutes) with Supabase `pg_cron`. Vercel's free plan runs a cron only once a day. The SQL is in the deployment guide.
 7. Optional: `npx supabase functions deploy embed`, for matching by meaning.
 
-The app serves `robots.txt` with `Disallow: /` while in beta. Delete `src/app/robots.ts` when you want search engines to find it.
+The app serves `robots.txt` (crawling allowed) and a sitemap of its three public pages. Pages behind sign-in redirect signed-out visitors, bots included, to `/login`, so only the public pages can be found.
 
 ## How it is built
 

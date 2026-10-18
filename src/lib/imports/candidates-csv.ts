@@ -4,18 +4,10 @@ import type { Catalog, DegreeLevel, Discipline, University } from "@/lib/domain"
 import { normalizeProfileUrl } from "@/lib/linkedin/normalize-url";
 import { parseCsv } from "./csv";
 
-export const CANDIDATE_FIELDS = {
-  fullName: "Name",
-  profileUrl: "LinkedIn URL",
-  school: "School",
-  program: "Program / major",
-  role: "Current role / headline",
-  degreeLevel: "Degree level",
-  gradYear: "Graduation year",
-  notes: "Notes",
-} as const;
+import { CANDIDATE_FIELDS, type CandidateField } from "./candidate-fields";
 
-export type CandidateField = keyof typeof CANDIDATE_FIELDS;
+export { CANDIDATE_FIELDS };
+export type { CandidateField };
 export type ColumnMapping = Partial<Record<CandidateField, number>>;
 
 const HEADER_ALIASES: Record<CandidateField, string[]> = {

@@ -118,25 +118,10 @@ export type RequirementResult = z.infer<typeof RequirementResult>;
 
 // ------------------------------------------------------------------ places and levels
 
-/** Provinces and territories, alphabetical by name (none is preferred over another). */
-export const PROVINCE_CODES = ["AB", "BC", "MB", "NB", "NL", "NT", "NS", "NU", "ON", "PE", "QC", "SK", "YT"] as const;
-export type ProvinceCode = (typeof PROVINCE_CODES)[number];
+import { PROVINCE_CODES, PROVINCE_NAMES, type ProvinceCode } from "./provinces";
 
-export const PROVINCE_NAMES: Record<ProvinceCode, string> = {
-  BC: "British Columbia",
-  ON: "Ontario",
-  AB: "Alberta",
-  QC: "Quebec",
-  MB: "Manitoba",
-  SK: "Saskatchewan",
-  NS: "Nova Scotia",
-  NB: "New Brunswick",
-  NL: "Newfoundland and Labrador",
-  PE: "Prince Edward Island",
-  YT: "Yukon",
-  NT: "Northwest Territories",
-  NU: "Nunavut",
-};
+export { PROVINCE_CODES, PROVINCE_NAMES };
+export type { ProvinceCode };
 
 export const SENIORITY = ["intern", "new_grad", "junior", "intermediate", "senior"] as const;
 export type Seniority = (typeof SENIORITY)[number];

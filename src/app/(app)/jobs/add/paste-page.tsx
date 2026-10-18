@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { countryName } from "@/lib/geo/countries";
 import { parsePastedPage, type PastedPosting } from "@/lib/job-postings/paste-parse";
-import { PROVINCE_CODES } from "@/lib/job-postings/types";
+import { PROVINCE_CODES } from "@/lib/job-postings/provinces";
 import { readPastedPostingWithAI } from "../actions";
 
 /** Sets a field of the posting form below, if it exists and there's a value. */

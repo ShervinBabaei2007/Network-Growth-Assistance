@@ -76,7 +76,7 @@ function SearchRow({ item, emailAvailable, timeZone }: { item: SearchItem; email
             </div>
             <div className="flex flex-wrap gap-1">
               <Link href={item.href} className={buttonVariants({ size: "sm", variant: "outline" })}>
-                Open
+                Open<span className="sr-only"> search {item.value.name}</span>
               </Link>
               <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
                 <Pencil aria-hidden /> Edit

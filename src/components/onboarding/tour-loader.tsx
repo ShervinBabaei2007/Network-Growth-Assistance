@@ -3,7 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import type { OnboardingState } from "@/lib/onboarding/state";
+import type { OnboardingState } from "@/lib/onboarding/steps";
 
 // The tour's code (and its popover library) is only fetched when someone starts it, not on every page.
 const ProductTour = dynamic(() => import("@/components/onboarding/tour").then((m) => m.ProductTour));

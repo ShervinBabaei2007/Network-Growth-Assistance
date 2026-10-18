@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import { OnboardingWizard } from "@/components/onboarding/wizard";
+import { WizardLoader } from "@/components/onboarding/wizard-loader";
 import { TourLoader } from "@/components/onboarding/tour-loader";
 import { getOnboarding } from "@/lib/onboarding/read";
-import { shouldShowWizard } from "@/lib/onboarding/state";
+import { shouldShowWizard } from "@/lib/onboarding/steps";
 
 /**
  * Mounted once in the app shell. Shows the welcome only to people who haven't finished or skipped
@@ -17,7 +17,7 @@ export async function OnboardingLayer() {
   // The shell isn't re-rendered on every navigation, so the tour is always mounted and waits for ?tour=1.
   return (
     <>
-      {saved && shouldShowWizard(state) ? <OnboardingWizard key={JSON.stringify(state)} initial={state} /> : null}
+      {saved && shouldShowWizard(state) ? <WizardLoader key={JSON.stringify(state)} initial={state} /> : null}
       <Suspense fallback={null}>
         <TourLoader initial={state} />
       </Suspense>

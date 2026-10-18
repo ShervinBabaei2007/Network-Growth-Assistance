@@ -7,7 +7,8 @@ import { toast } from "@/components/toast/notify";
 import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { NOTE_SECTIONS, type NotePriority, type NoteSection, type NotesReport } from "@/lib/job-postings/improvement-notes";
+import { NOTE_SECTIONS, type NotePriority, type NoteSection } from "@/lib/job-postings/note-sections";
+import type { NotesReport } from "@/lib/job-postings/improvement-notes";
 import { cn } from "@/lib/utils";
 import { setNoteDismissed, type FallbackReason } from "./actions";
 

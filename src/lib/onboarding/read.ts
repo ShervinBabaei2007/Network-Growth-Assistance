@@ -1,5 +1,6 @@
 import { getSettings } from "@/lib/data/settings";
-import { parseOnboarding, type OnboardingState } from "@/lib/onboarding/state";
+import { parseOnboarding } from "@/lib/onboarding/state";
+import type { OnboardingState } from "@/lib/onboarding/steps";
 
 /**
  * `saved` is false when the stored state couldn't be read (for example a deploy that is ahead of its

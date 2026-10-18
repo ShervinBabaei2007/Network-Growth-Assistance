@@ -303,6 +303,6 @@ Before sending the link to testers:
 2. **Set up SMTP** (step 2.4). Without it, Supabase's built-in email only reaches your own team, so testers can't sign in.
 3. **Schedule the crawler** (step 3.1, pg_cron). Vercel Hobby crons run only once a day, so job boards and alerts won't refresh without it.
 4. **Check the redirect URLs** in Supabase Auth include your production address.
-5. The app serves `/robots.txt` with `Disallow: /` while in beta. Remove `src/app/robots.ts` when you launch publicly.
+5. `/robots.txt` allows crawling and points to `/sitemap.xml`, which lists only `/login`, `/privacy` and `/terms`. That is safe for a private app: anyone not signed in, search bots included, is redirected to `/login`, so nothing behind sign-in is ever served to a crawler. Set `APP_URL` so the sitemap and canonical links use your real address.
 6. **Set `NEXT_PUBLIC_FEEDBACK_URL`** (a `mailto:` link or a form link) to show a "Send feedback" button in the navigation, and redeploy.
 7. Tell testers the AI privacy note: on Gemini's free tier, Google may use what is sent to improve its products.
