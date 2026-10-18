@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { formatDateTime } from "@/lib/applications/format";
 import { STAGE_LABEL } from "@/lib/applications/stages";
 import { buildPrepPack, type PrepBullet, type QuestionPrep } from "@/lib/interview-prep/prep";
-import { loadActiveResume } from "@/lib/job-postings/service";
+import { loadActiveResume, loadResumeForJob } from "@/lib/job-postings/service";
 import { createClient } from "@/lib/supabase/server";
 import { PrepExport } from "./export-buttons";
 
@@ -37,7 +37,8 @@ async function Prep({ params }: Pick<PageProps<"/applications/[id]/prep">, "para
     supabase.from("settings").select("timezone").single(),
     supabase.from("application_interviews").select("starts_at, timezone, kind, location, duration_minutes").eq("application_id", id).order("starts_at"),
     app.job_id ? supabase.from("job_requirements").select("text, kind, category, idx").eq("job_id", app.job_id).order("idx") : Promise.resolve({ data: [] as { text: string; kind: string; category: string; idx: number }[] }),
-    loadActiveResume(supabase),
+    // The resume track chosen for this job, else the main resume.
+    app.job_id ? loadResumeForJob(supabase, app.job_id) : loadActiveResume(supabase),
     supabase.from("interview_preps").select("id, created_at").eq("application_id", id).order("created_at", { ascending: false }).limit(10),
   ]);
   const tz = settings?.timezone ?? "UTC";

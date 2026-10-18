@@ -23,7 +23,8 @@ import type { NotesReport } from "@/lib/job-postings/improvement-notes";
 import { DOC_METHOD_LABELS, NOTES_METHOD_LABELS, placeLabel, postedLabel, timeAgo } from "@/lib/job-postings/labels";
 import { LEVEL_LABELS, WORKPLACE_LABELS, type Workplace } from "@/lib/job-postings/levels";
 import { StoredFit } from "@/lib/job-postings/schemas";
-import { loadActiveResume, scoreJobs } from "@/lib/job-postings/service";
+import { loadTrackResumes, scoreJobs } from "@/lib/job-postings/service";
+import { recommendTrack, requirementCoverage, sameTrack, trackLabel } from "@/lib/job-postings/tracks";
 import { jobServices } from "@/lib/job-postings/services";
 import { alsoListedOn, jobSource } from "@/lib/job-postings/source";
 import { skillsIn } from "@/lib/job-postings/taxonomy";
@@ -36,6 +37,7 @@ import { GuardReport, LetterDocEditor, ResumeDocEditor } from "./document-editor
 import { JobNote } from "./job-note";
 import { NotesView } from "./notes-view";
 import { OlderVersions } from "./older-versions";
+import { TrackCard, type TrackOption } from "./track-card";
 import { CheckFitButton, StatusActions, WorkActions } from "./posting-actions";
 
 export const metadata = { title: "Job · Jobs · Network Growth" };
@@ -61,14 +63,19 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims.sub;
-  const [{ data: job }, resume, { data: state }, ai, { data: tracked }, { data: noteRow }] = await Promise.all([
+  const [{ data: job }, trackResumes, { data: state }, ai, { data: tracked }, { data: noteRow }, { data: choiceRow }] = await Promise.all([
     supabase.from("jobs").select("*").eq("id", id).maybeSingle(),
-    loadActiveResume(supabase),
+    loadTrackResumes(supabase),
     supabase.from("job_user_states").select("status").eq("job_id", id).maybeSingle(),
     aiAccess(supabase),
     supabase.from("applications").select("id, stage, attempt").eq("job_id", id).order("attempt", { ascending: false }).limit(1),
     supabase.from("job_notes").select("body").eq("job_id", id).maybeSingle(),
+    supabase.from("job_track_choices").select("track").eq("job_id", id).maybeSingle(),
   ]);
+  // The track picked for this job (else the main resume, else the first track that exists).
+  const chosenTrack = choiceRow?.track ?? null;
+  const chosen = trackResumes.find((t) => sameTrack(t.track, chosenTrack)) ?? trackResumes.find((t) => t.track === null) ?? trackResumes[0] ?? null;
+  const resume = chosen?.resume ?? null;
   const application = tracked?.[0] ?? null;
   if (!job || !userId) notFound();
   const { data: employer } = job.employer_id ? await supabase.from("employers").select("name, ats, careers_url").eq("id", job.employer_id).maybeSingle() : { data: null };
@@ -81,6 +88,20 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
     await scoreJobs(supabase, userId, resume, [id], jobServices().embedder);
     ({ data: match } = await supabase.from("job_matches").select("*").eq("job_id", id).eq("resume_id", resume.id).maybeSingle());
   }
+  // Every track's fit for this job, so the best one can be suggested.
+  const trackOptions: TrackOption[] = [];
+  if (trackResumes.length > 1) {
+    const others = trackResumes.filter((t) => t.resume.id !== resume!.id);
+    const { data: otherMatches } = await supabase.from("job_matches").select("resume_id, fit_score, tier, updated_at").eq("job_id", id).in("resume_id", others.map((t) => t.resume.id));
+    const fresh = new Map((otherMatches ?? []).filter((m) => Date.parse(m.updated_at) >= Date.parse(others.find((t) => t.resume.id === m.resume_id)!.resume.updatedAt)).map((m) => [m.resume_id, m]));
+    for (const t of others.filter((t) => !fresh.has(t.resume.id))) await scoreJobs(supabase, userId, t.resume, [id], jobServices().embedder);
+    const { data: again } = await supabase.from("job_matches").select("resume_id, fit_score, tier").eq("job_id", id).in("resume_id", trackResumes.map((t) => t.resume.id));
+    for (const t of trackResumes) {
+      const m = t.resume.id === resume!.id ? match : (again ?? []).find((x) => x.resume_id === t.resume.id);
+      trackOptions.push({ track: t.track, resumeId: t.resume.id, label: trackLabel(t.track), score: m?.fit_score ?? null, tier: m?.tier ?? null });
+    }
+  }
+  const recommendation = recommendTrack(trackOptions.filter((o) => o.score !== null).map((o) => ({ track: o.track, score: o.score! })));
   const [{ data: docs }, { data: notesRows }, { data: twins }] = await Promise.all([
     match
       ? supabase
@@ -106,6 +127,7 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
   const requirements = fit?.success ? fit.data.requirements : [];
   const resultFor = (r: Requirement) => results.find((x) => x.requirementId === r.id);
   const explanation = explainFit(requirements, results, skillNames);
+  const coverage = fit?.success && requirements.length ? requirementCoverage(requirements, results) : null;
   const apply = applyState(job);
   const notes = notesRows?.[0];
   const byKind = (kind: string) => (docs ?? []).filter((d) => d.kind === kind);
@@ -151,6 +173,7 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
         <div className="grid min-w-0 gap-6">
+          {trackOptions.length > 1 ? <TrackCard jobId={job.id} options={trackOptions} selected={chosen?.track ?? null} recommendation={recommendation} coverage={coverage} /> : null}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Fit with your resume</CardTitle>
