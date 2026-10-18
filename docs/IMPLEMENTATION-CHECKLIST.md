@@ -291,6 +291,7 @@ Settings 82: its heading paints early, which puts the page's one startup task in
 - Performance: **now measured** (Lighthouse above, first-load JavaScript per route). Still missing: the proposed server-time budget for tracker pages with 500 applications, which needs a seeded dataset and a staging deploy.
 - Accessibility: Lighthouse scores 100, contrast is unit-tested and an **axe scan now runs in the end-to-end tests** (`e2e/a11y.spec.ts`, see `docs/ACCESSIBILITY.md`). There is still **no manual screen-reader pass**; the checklist for it is in that file.
 - A real SMTP provider (deliverability, SPF/DKIM, limits) is your configuration and is **unverified**.
+- **Release gates, 2026-10-18:** a CI workflow, per-route JavaScript budget (`npm run check:budget`), smoke script (`npm run smoke`) and a local backup-and-restore rehearsal (`scripts/restore-rehearsal.sh`, 46 tables matched, 8 seconds) are in place. **Still open:** a real staging deployment (needs a second Supabase and Vercel project), the smoke checks run against it, and a restore into a hosted scratch project. The CI workflow has not yet run on GitHub.
 - **Release status:** everything built so far is **implemented and verified locally**, and the signed-out and signed-in pages are measured on production. It is **not release-ready for a wide launch** until the restore rehearsal, staging smoke checks, a screen-reader pass and legal review of the Privacy Policy and Terms are done.
 
 ## Next
