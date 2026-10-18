@@ -60,12 +60,11 @@ export function CommandLauncher() {
         variant="outline"
         size="sm"
         aria-keyshortcuts="Control+K Meta+K /"
-        aria-label="Search and commands"
         onClick={() => setOpen("search")}
         className="text-muted-foreground"
       >
         <Search aria-hidden />
-        <span className="hidden sm:inline">Search</span>
+        <span className="sr-only sm:not-sr-only">Search</span>
         <kbd className="hidden rounded border px-1 font-mono text-[10px] sm:inline">Ctrl K</kbd>
       </Button>
       {open ? (
