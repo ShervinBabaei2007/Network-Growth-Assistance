@@ -132,6 +132,11 @@ export const frCA: Messages = {
     openSettings: "Ouvrir les paramètres",
     setUpPlan: "Configurer mon plan",
     takeTour: "Faire la visite guidée ({count} étapes)",
+    actionResume: "Ajouter votre CV",
+    actionResumeWhy: "Les correspondances d'emploi sont évaluées à partir de votre CV; c'est donc le moyen le plus rapide de voir de vrais résultats.",
+    actionDiscover: "Chercher des personnes",
+    actionDiscoverWhy: "Décrivez les personnes que vous aimeriez rencontrer, et l'application cherche des correspondances réelles et vérifiables.",
+    actionDiscoverBothWhy: "Décrivez les personnes que vous aimeriez rencontrer, et l'application cherche des correspondances réelles et vérifiables. Les emplois sont à un clic dans le menu.",
     saveFailed: "Impossible d'enregistrer votre progression. Réessayez, ou choisissez de nouveau pour continuer quand même; l'accueil pourrait s'afficher à nouveau la prochaine fois.",
   },
   palette: {

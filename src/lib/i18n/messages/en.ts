@@ -134,6 +134,11 @@ export const en = {
     openSettings: "Open Settings",
     setUpPlan: "Set up my plan",
     takeTour: "Take the tour ({count} stops)",
+    actionResume: "Add your resume",
+    actionResumeWhy: "Job matches are scored against your resume, so this is the quickest way to see real results.",
+    actionDiscover: "Search for people",
+    actionDiscoverWhy: "Describe who you'd like to meet and the app looks for real, verifiable matches.",
+    actionDiscoverBothWhy: "Describe who you'd like to meet and the app looks for real, verifiable matches. Jobs are one click away in the menu.",
     saveFailed: "Couldn't save your progress. Try again, or choose it a second time to continue anyway; the welcome may show again next time.",
   },
   palette: {

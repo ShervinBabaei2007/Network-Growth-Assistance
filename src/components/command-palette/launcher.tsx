@@ -4,6 +4,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n/client";
 import { CHORD_WINDOW_MS, intentFor, isTypingTarget, pageForChord } from "@/lib/shortcuts";
 
 // Downloaded the first time it is opened, so it adds nothing to a page's first load.
@@ -17,6 +18,7 @@ const DIALOG_SELECTOR = '[role="dialog"], [role="alertdialog"]';
  */
 export function CommandLauncher() {
   const router = useRouter();
+  const t = useT();
   const [open, setOpen] = useState<"search" | "shortcuts" | null>(null);
   const chordUntil = useRef(0);
 
@@ -64,7 +66,7 @@ export function CommandLauncher() {
         className="text-muted-foreground"
       >
         <Search aria-hidden />
-        <span className="sr-only sm:not-sr-only">Search</span>
+        <span className="sr-only sm:not-sr-only">{t("common.search")}</span>
         <kbd className="hidden rounded border px-1 font-mono text-[10px] sm:inline">Ctrl K</kbd>
       </Button>
       {open ? (
