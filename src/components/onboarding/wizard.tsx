@@ -16,7 +16,7 @@ import {
   type OnboardingState,
 } from "@/lib/onboarding/steps";
 import { useT } from "@/lib/i18n/client";
-import type { MessageKey } from "@/lib/i18n";
+import type { MessageKey } from "@/lib/i18n/core";
 import { TOUR_STEPS } from "@/lib/onboarding/tour-steps";
 import { cn } from "@/lib/utils";
 

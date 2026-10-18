@@ -8,7 +8,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { cleanQuery, type PaletteHit, type PaletteResults } from "@/lib/search/palette";
 import { useT } from "@/lib/i18n/client";
-import type { MessageKey } from "@/lib/i18n";
+import type { MessageKey } from "@/lib/i18n/core";
 import { PAGE_SHORTCUTS } from "@/lib/shortcuts";
 
 const PAGES: { href: string; labelKey: MessageKey; icon: typeof Plus }[] = [

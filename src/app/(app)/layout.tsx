@@ -10,7 +10,7 @@ import { OnboardingLayer } from "@/components/onboarding/layer";
 import { Button } from "@/components/ui/button";
 import { normalizeAppearance } from "@/lib/appearance";
 import { LanguageSwitch } from "@/components/language-switch";
-import { I18nProvider } from "@/lib/i18n/client";
+import { I18nProvider } from "@/lib/i18n/provider";
 import { translator } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
 import { getOnboarding } from "@/lib/onboarding/read";

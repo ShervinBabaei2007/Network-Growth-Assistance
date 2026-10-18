@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { refresh } from "next/cache";
 import { err, ok, type ActionResult } from "@/lib/action-result";
-import { isLocale, LOCALE_COOKIE } from "@/lib/i18n";
+import { isLocale, LOCALE_COOKIE } from "@/lib/i18n/core";
 import { createClient } from "@/lib/supabase/server";
 
 /**
