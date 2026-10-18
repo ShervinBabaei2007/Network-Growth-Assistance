@@ -27,12 +27,13 @@ import { loadCatalog } from "@/lib/data/catalog";
 import { loadMyProgress } from "@/lib/data/dashboard";
 import { searchLinks } from "@/lib/prioritize/search-links";
 import { createClient } from "@/lib/supabase/server";
+import { PAGE_SIZES, parsePageSize } from "@/lib/views";
+import { BulkBar, RowSelect, SelectAll } from "./bulk-select";
 import { QuickAddForm } from "./quick-add";
 import { QuickCapture } from "./quick-capture";
+import { RememberLastView, ViewsMenu, type SavedView } from "./views-menu";
 
 export const metadata = { title: "Candidates · Network Growth" };
-
-const PAGE_SIZE = 50;
 
 export default function CandidatesPage({ searchParams }: PageProps<"/candidates">) {
   return (
@@ -66,6 +67,10 @@ export default function CandidatesPage({ searchParams }: PageProps<"/candidates"
             <QuickAddForm />
       </Disclosure>
 
+      <Suspense fallback={null}>
+        <RememberLastView />
+      </Suspense>
+
       <Suspense fallback={<PageSkeleton label="Loading candidates…" />}>
         <CandidateList searchParams={searchParams} />
       </Suspense>
@@ -83,9 +88,14 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
   const university = one(params.university) as University | "";
   const review = one(params.review) === "1";
   const page = Math.max(1, Number(one(params.page)) || 1);
+  const pageSize = parsePageSize(one(params.size));
 
   const supabase = await createClient();
-  const catalog = await loadCatalog(supabase);
+  const [catalog, { data: viewRows }] = await Promise.all([
+    loadCatalog(supabase),
+    supabase.from("saved_views").select("id, name, query").eq("page", "candidates").order("created_at"),
+  ]);
+  const views: SavedView[] = viewRows ?? [];
   // Filters list the user's own schools and disciplines.
   const disciplineOptions = Object.fromEntries(catalog.disciplines.map((d) => [d.id, d.name]));
   const universityOptions = Object.fromEntries(catalog.universities.map((u) => [u.id, u.name]));
@@ -96,7 +106,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
       { count: "exact" },
     )
     .order("discovered_at", { ascending: false })
-    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+    .range((page - 1) * pageSize, page * pageSize - 1);
 
   if (status && status in STATUS_LABELS) query = query.eq("status", status);
   if (discipline && discipline in disciplineOptions) query = query.eq("discipline", discipline);
@@ -118,10 +128,10 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
   if (error) return <LoadError what="candidates" />;
 
   const total = count ?? 0;
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pages = Math.max(1, Math.ceil(total / pageSize));
   const pageHref = (p: number) => {
     const sp = new URLSearchParams();
-    for (const [k, v] of Object.entries({ q, status, discipline, university, review: review ? "1" : "" })) if (v) sp.set(k, v);
+    for (const [k, v] of Object.entries({ q, status, discipline, university, review: review ? "1" : "", size: pageSize === 50 ? "" : String(pageSize) })) if (v) sp.set(k, v);
     if (p > 1) sp.set("page", String(p));
     return `/candidates${sp.size ? `?${sp}` : ""}`;
   };
@@ -131,7 +141,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
       <h2 id="list-heading" className="sr-only">
         Candidate list
       </h2>
-      <form className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:grid-cols-6" role="search">
+      <form className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:grid-cols-7" role="search">
         <div className="grid gap-1.5 lg:col-span-2">
           <Label htmlFor="q">Search</Label>
           <Input id="q" name="q" defaultValue={q} placeholder="Name, school, program, role" />
@@ -139,6 +149,16 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
         <Filter id="status" label="Status" value={status} options={STATUS_LABELS} />
         <Filter id="discipline" label="Discipline" value={discipline} options={disciplineOptions} />
         <Filter id="university" label="School" value={university} options={universityOptions} />
+        <div className="grid gap-1.5">
+          <Label htmlFor="size">Per page</Label>
+          <AppSelect id="size" name="size" defaultValue={String(pageSize)}>
+            {PAGE_SIZES.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </AppSelect>
+        </div>
         <div className="flex items-end gap-3">
           <label className="flex h-8 items-center gap-2 text-sm">
             <Checkbox name="review" value="1" defaultChecked={review} />
@@ -147,12 +167,19 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
           <Button type="submit" size="sm">
             Filter
           </Button>
+          <Link href="/candidates?clear=1" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+            Clear
+          </Link>
         </div>
       </form>
 
+      <Disclosure id="views" summary={`Saved views${views.length ? ` (${views.length})` : ""}`}>
+        <ViewsMenu views={views} />
+      </Disclosure>
+
       <p className="text-sm text-muted-foreground" aria-live="polite">
         {total.toLocaleString("en-CA")} candidate{total === 1 ? "" : "s"}
-        {total > PAGE_SIZE ? ` · page ${page} of ${pages}` : ""}
+        {total > pageSize ? ` · page ${page} of ${pages}` : ""}
       </p>
 
       {data.length === 0 ? (
@@ -165,6 +192,9 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
         <Table stack>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <SelectAll ids={data.map((c) => c.id)} />
+              </TableHead>
               <TableHead>Name</TableHead>
               <TableHead>School · program</TableHead>
               <TableHead className="hidden md:table-cell">Role</TableHead>
@@ -177,6 +207,9 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
           <TableBody>
             {data.map((c) => (
               <TableRow key={c.id}>
+                <TableCell>
+                  <RowSelect id={c.id} name={c.full_name} />
+                </TableCell>
                 <TableCell className="max-w-48 truncate font-medium">
                   <Link href={`/candidates/${c.id}`} className="underline-offset-4 hover:underline">
                     {c.full_name}
@@ -212,6 +245,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
       )}
 
       <PageNav current={page} pages={pages} href={pageHref} />
+      <BulkBar />
     </section>
   );
 }
