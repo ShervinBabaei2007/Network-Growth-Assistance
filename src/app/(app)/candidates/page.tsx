@@ -141,7 +141,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
       <h2 id="list-heading" className="sr-only">
         Candidate list
       </h2>
-      <form className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:grid-cols-7" role="search">
+      <form key={`${q}|${status}|${discipline}|${university}|${review}|${pageSize}`} className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:grid-cols-7" role="search">
         <div className="grid gap-1.5 lg:col-span-2">
           <Label htmlFor="q">Search</Label>
           <Input id="q" name="q" defaultValue={q} placeholder="Name, school, program, role" />

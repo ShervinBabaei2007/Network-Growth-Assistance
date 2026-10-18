@@ -10,7 +10,8 @@ import { createSelectionStore } from "@/lib/selection";
 
 // One selection for the page; it lives as long as the page does.
 const store = createSelectionStore();
-const useSelection = () => useSyncExternalStore(store.subscribe, store.getSnapshot, () => []);
+const NONE: readonly string[] = [];
+const useSelection = () => useSyncExternalStore(store.subscribe, store.getSnapshot, () => NONE);
 
 /** The tick box at the start of a row. */
 export function RowSelect({ id, name }: { id: string; name: string }) {
