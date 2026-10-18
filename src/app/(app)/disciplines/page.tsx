@@ -1,12 +1,12 @@
 import { unstable_rethrow } from "next/navigation";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
 import { LoadError } from "@/components/load-error";
 import { MeterLegend, ProgressMeter } from "@/components/progress-meter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { currentUserId, loadProgress } from "@/lib/data/dashboard";
+import { loadMyProgress } from "@/lib/data/dashboard";
 import { disciplineName, poolUniversities, targetUniversities } from "@/lib/domain";
-import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Disciplines · Network Growth" };
 
@@ -19,7 +19,7 @@ export default function DisciplinesPage() {
           Attention goes to the highest-priority discipline whose target isn&apos;t met yet.
         </p>
       </div>
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading…" />}>
         <DisciplineCards />
       </Suspense>
     </div>
@@ -29,8 +29,7 @@ export default function DisciplinesPage() {
 async function DisciplineCards() {
   let progress;
   try {
-    const supabase = await createClient();
-    progress = await loadProgress(supabase, await currentUserId(supabase));
+    progress = await loadMyProgress();
   } catch (e) {
     unstable_rethrow(e); // let Next.js postpone/redirect signals through
     return <LoadError what="discipline progress" />;

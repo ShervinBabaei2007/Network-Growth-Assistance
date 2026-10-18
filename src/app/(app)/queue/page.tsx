@@ -1,4 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
@@ -28,7 +29,7 @@ export default function QueuePage() {
           Open each profile, send the invitation on LinkedIn yourself, then record it here.
         </p>
       </div>
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading today&apos;s queue…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading today&apos;s queue…" />}>
         <QueueContent />
       </Suspense>
     </div>

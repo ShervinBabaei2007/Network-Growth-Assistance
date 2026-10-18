@@ -7,7 +7,11 @@ import { AppearanceSync } from "@/components/appearance-sync";
 import { OnboardingLayer } from "@/components/onboarding/layer";
 import { Button } from "@/components/ui/button";
 import { normalizeAppearance } from "@/lib/appearance";
-import { createClient } from "@/lib/supabase/server";
+import { getOnboarding } from "@/lib/onboarding/read";
+import { getClaims, getSettings } from "@/lib/data/settings";
+
+// Everything behind sign-in stays out of search results.
+export const metadata = { robots: { index: false, follow: false } };
 
 // The shell is static; session-dependent parts stream in behind Suspense.
 // Signed-out visitors are redirected by src/proxy.ts and data is protected by RLS.
@@ -26,13 +30,17 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           <span aria-hidden className="size-2.5 rounded-full bg-primary" />
           Network Growth
         </p>
-        <SidebarNav />
+        <Suspense fallback={<SidebarNav />}>
+          <GoalSidebar />
+        </Suspense>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b bg-card px-4 py-2">
           <div className="flex min-w-0 items-center gap-2">
             <div className="md:hidden">
-              <MobileNav />
+              <Suspense fallback={<MobileNav />}>
+                <GoalMobileNav />
+              </Suspense>
             </div>
             <Suspense fallback={null}>
               <AccountEmail />
@@ -68,21 +76,27 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
   );
 }
 
+/** The menu for the user's chosen goal. Until that is known, the default (both) shows, so nothing jumps. */
+async function GoalSidebar() {
+  const read = await getOnboarding();
+  return <SidebarNav goal={read?.state.goal} />;
+}
+
+async function GoalMobileNav() {
+  const read = await getOnboarding();
+  return <MobileNav goal={read?.state.goal} />;
+}
+
 async function AccountEmail() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  const email = data?.claims.email;
+  const claims = await getClaims();
+  const email = claims?.email;
   return typeof email === "string" ? (
     <span className="truncate text-sm text-muted-foreground">{email}</span>
   ) : null;
 }
 
 async function PauseBanner() {
-  const supabase = await createClient();
-  const { data: settings } = await supabase
-    .from("settings")
-    .select("paused, pause_reason")
-    .maybeSingle();
+  const { row: settings } = await getSettings();
   if (!settings?.paused) return null;
 
   return (
@@ -96,8 +110,7 @@ async function PauseBanner() {
 
 /** Applies the appearance saved in Settings (the source of truth) and refreshes its cookie. */
 async function SavedAppearance() {
-  const supabase = await createClient();
-  const { data } = await supabase.from("settings").select("theme, density, text_size").maybeSingle();
+  const { row: data } = await getSettings();
   if (!data) return null;
   return <AppearanceSync value={normalizeAppearance({ theme: data.theme, density: data.density, text: data.text_size })} />;
 }

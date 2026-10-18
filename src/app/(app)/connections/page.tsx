@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { ActionForm } from "@/components/action-form";
@@ -57,7 +58,7 @@ export default function ConnectionsPage({ searchParams }: PageProps<"/connection
         </details>
       </Card>
 
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading connections…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading connections…" />}>
         <ConnectionList searchParams={searchParams} />
       </Suspense>
     </div>

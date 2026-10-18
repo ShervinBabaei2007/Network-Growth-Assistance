@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, Building2, Check, Clock, MapPin, Minus, X } from "lucide-react";
@@ -42,7 +43,7 @@ export const maxDuration = 60;
 
 export default function JobPage({ params }: PageProps<"/jobs/[id]">) {
   return (
-    <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+    <Suspense fallback={<PageSkeleton label="Loading…" />}>
       <Job params={params} />
     </Suspense>
   );

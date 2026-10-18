@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { PageHeader } from "@/components/page-header";
 import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
@@ -37,7 +38,7 @@ export default function ResumePage({ searchParams }: PageProps<"/jobs/resume">) 
         title="Your resume"
         description="Postings are checked against this profile, and tailored resumes, CVs and cover letters can only use what it says. Check what was read: anything uncertain is marked. Your original resume is kept unchanged."
       />
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading…" />}>
         <ResumeContent searchParams={searchParams} />
       </Suspense>
     </div>

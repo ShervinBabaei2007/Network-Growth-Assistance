@@ -89,16 +89,24 @@ export async function storeJobs(jobs: NormalizedJob[]): Promise<number> {
   return data.length;
 }
 
+/** Runs work after the response has been sent (Next's `after`), so a page isn't held up by it. */
+export type Background = (work: () => Promise<unknown>) => void;
+
 /**
  * Refreshes the providers for one search, skipping any whose answer for the same query is
  * still fresh. Returns a notice per provider for the UI.
+ *
+ * With `background`, a search that already has stored results from every provider that is due isn't held
+ * up by the refresh: those results are shown now and the refresh runs after the response. A search with
+ * nothing stored yet still waits, since there is nothing else to show.
  */
-export async function refreshFromProviders(providers: JobProvider[], query: SearchQuery): Promise<SourceNotice[]> {
+export async function refreshFromProviders(providers: JobProvider[], query: SearchQuery, options: { background?: Background } = {}): Promise<SourceNotice[]> {
   if (!providers.length || !query.what.trim()) return [];
   const db = createAdminClient();
   const keys = providers.flatMap((p) => [cacheKey(p.name, query), ...(p.paging === "cursor" && query.page > 1 ? [cacheKey(p.name, { ...query, page: query.page - 1 })] : [])]);
   const { data: rows } = await db.from("job_search_cache").select("query_key, status, result_count, fetched_at, next_cursor").in("query_key", keys);
-  const { fresh, due } = planRefresh(providers, query, new Map((rows ?? []).map((r) => [r.query_key, r])));
+  const byKey = new Map((rows ?? []).map((r) => [r.query_key, r]));
+  const { fresh, due } = planRefresh(providers, query, byKey);
   const notices: SourceNotice[] = fresh.map(({ provider: p, row: c }) => ({
     provider: p.name,
     label: p.label,
@@ -107,23 +115,38 @@ export async function refreshFromProviders(providers: JobProvider[], query: Sear
   }));
   if (!due.length) return notices;
 
-  const runs = await Promise.all(due.map(({ provider, cursor }) => runProviders([provider], { ...query, cursor })));
-  const results = runs.flatMap((r) => r.results);
-  const live = runs.flatMap((r) => r.notices);
-  const nextCursor = new Map(results.map((r) => [r.provider, r.nextCursor ?? null]));
-  await Promise.all(results.map((r) => storeJobs(r.jobs)));
-  await db.from("job_search_cache").upsert(
-    live.map((n) => ({
-      query_key: cacheKey(n.provider, query),
-      provider: n.provider,
-      fetched_at: new Date().toISOString(),
-      result_count: n.count,
-      status: n.outcome === "cached" ? "ok" : n.outcome,
-      next_cursor: nextCursor.get(n.provider)?.slice(0, 1000) ?? null,
-    })),
-    { onConflict: "query_key" },
-  );
-  return [...notices, ...live];
+  const runDue = async (): Promise<SourceNotice[]> => {
+    const runs = await Promise.all(due.map(({ provider, cursor }) => runProviders([provider], { ...query, cursor })));
+    const results = runs.flatMap((r) => r.results);
+    const live = runs.flatMap((r) => r.notices);
+    const nextCursor = new Map(results.map((r) => [r.provider, r.nextCursor ?? null]));
+    await Promise.all(results.map((r) => storeJobs(r.jobs)));
+    await db.from("job_search_cache").upsert(
+      live.map((n) => ({
+        query_key: cacheKey(n.provider, query),
+        provider: n.provider,
+        fetched_at: new Date().toISOString(),
+        result_count: n.count,
+        status: n.outcome === "cached" ? "ok" : n.outcome,
+        next_cursor: nextCursor.get(n.provider)?.slice(0, 1000) ?? null,
+      })),
+      { onConflict: "query_key" },
+    );
+    return live;
+  };
+
+  // Stored results to show meanwhile: a previous successful answer for this very query.
+  const storedAnswer = (provider: JobProvider) => {
+    const row = byKey.get(cacheKey(provider.name, query));
+    return row && (row.status === "ok" || row.status === "empty") && row.result_count > 0 ? row : null;
+  };
+  if (options.background && due.every(({ provider }) => storedAnswer(provider))) {
+    options.background(() => runDue().catch((e) => console.error("Background job search refresh failed:", e instanceof Error ? e.message : e)));
+    const shown: SourceNotice[] = due.map(({ provider }) => ({ provider: provider.name, label: provider.label, outcome: "cached", count: storedAnswer(provider)!.result_count }));
+    return [...notices, ...shown];
+  }
+
+  return [...notices, ...(await runDue())];
 }
 
 /** A job site read on a schedule rather than per search (it has no search, or asks for few calls). */

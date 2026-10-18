@@ -5,7 +5,10 @@ test("mobile: menu works and pages fit the screen", async ({ page }) => {
   await signIn(page, uniqueEmail("mobile"));
   for (const [link, path] of [["Daily Queue", "/queue"], ["Candidates", "/candidates"], ["Discover", "/discover"], ["People", "/people"], ["Connections", "/connections"], ["Analytics", "/analytics"], ["Jobs", "/jobs"], ["Applications", "/applications"]] as const) {
     await page.getByRole("button", { name: "Open menu" }).click();
-    await page.getByRole("link", { name: link }).click();
+    // Links that aren't everyday ones for the user's goal are under "More".
+    const item = page.getByRole("link", { name: link });
+    if (!(await item.isVisible())) await page.getByRole("button", { name: "More" }).click();
+    await item.click();
     await expect(page).toHaveURL(new RegExp(path));
     // The menu sheet closes. (Toasts also have role "dialog", so match the menu by its title.)
     await expect(page.getByRole("dialog", { name: "Network Growth" })).toBeHidden();

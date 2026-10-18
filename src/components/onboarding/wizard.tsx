@@ -56,8 +56,9 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
     const saved = await persist(next);
     if (!saved && !alreadyFailed) return;
     setOpen(false);
+    // The menu depends on the chosen goal, and the shell isn't re-rendered by navigation alone.
     if (href) router.push(href);
-    else router.refresh();
+    router.refresh();
   }
 
   const action = firstActionFor(state.goal);

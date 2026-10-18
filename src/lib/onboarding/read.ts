@@ -1,6 +1,5 @@
-import { cache } from "react";
+import { getSettings } from "@/lib/data/settings";
 import { parseOnboarding, type OnboardingState } from "@/lib/onboarding/state";
-import { createClient } from "@/lib/supabase/server";
 
 /**
  * `saved` is false when the stored state couldn't be read (for example a deploy that is ahead of its
@@ -9,17 +8,15 @@ import { createClient } from "@/lib/supabase/server";
 export type OnboardingRead = { state: OnboardingState; saved: boolean };
 
 /**
- * The signed-in user's onboarding state, or null when they have no settings row yet. Cached for the
- * request, so the layout, the page and the Getting Started card share one read and always agree.
- * RLS limits the read to the user's own row.
+ * The signed-in user's onboarding state, or null when they have no settings row yet. It comes from the
+ * request's shared settings read, so the layout, the page and the Getting Started card always agree.
  */
-export const getOnboarding = cache(async (): Promise<OnboardingRead | null> => {
-  const supabase = await createClient();
-  const { data, error } = await supabase.from("settings").select("onboarding").maybeSingle();
+export async function getOnboarding(): Promise<OnboardingRead | null> {
+  const { row, error } = await getSettings();
   if (error) {
     // Logged so a missing migration shows up in the server logs instead of silently hiding onboarding.
-    console.error("Couldn't read onboarding state:", error.message);
+    console.error("Couldn't read onboarding state:", error);
     return { state: parseOnboarding(undefined), saved: false };
   }
-  return data ? { state: parseOnboarding(data.onboarding), saved: true } : null;
-});
+  return row ? { state: parseOnboarding(row.onboarding), saved: true } : null;
+}

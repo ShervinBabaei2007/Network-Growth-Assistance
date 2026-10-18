@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { ActionForm } from "@/components/action-form";
@@ -49,7 +50,7 @@ export default function EmployersPage({ searchParams }: PageProps<"/jobs/employe
           </ActionForm>
         </CardContent>
       </Card>
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading employers…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading employers…" />}>
         <Directory searchParams={searchParams} />
       </Suspense>
     </div>

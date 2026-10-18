@@ -1,7 +1,12 @@
+import { canonicalFor } from "@/lib/site";
 import Link from "next/link";
 import { ContactLine, LegalPage, Operator } from "@/components/legal/legal-page";
 
-export const metadata = { title: "Terms of Service · Network Growth" };
+export const metadata = {
+  title: "Terms of Service · Network Growth",
+  description: "The terms for using Network Growth, a personal planning and tracking tool.",
+  ...canonicalFor("/terms"),
+};
 
 export default function TermsPage() {
   return (

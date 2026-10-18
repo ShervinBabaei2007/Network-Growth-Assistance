@@ -1,6 +1,11 @@
 import type { MetadataRoute } from "next";
+import { PUBLIC_PAGES, siteUrl } from "@/lib/site";
 
-// A private beta: keep it out of search engines.
+// Search engines may read the sign-in page and the legal pages. Everything behind sign-in is blocked.
 export default function robots(): MetadataRoute.Robots {
-  return { rules: { userAgent: "*", disallow: "/" } };
+  const site = siteUrl();
+  return {
+    rules: { userAgent: "*", allow: [...PUBLIC_PAGES], disallow: "/" },
+    ...(site ? { sitemap: new URL("/sitemap.xml", site).toString() } : {}),
+  };
 }

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import Link from "next/link";
 import { FileText, Plus, Search, SlidersHorizontal } from "lucide-react";
 import type { TierKey } from "@/components/jobs/job-visuals";
@@ -109,7 +110,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
 
   const query = fromSearchParams(raw);
   const [feed, { data: lastRun }, { count: employerCount }, { data: me }] = await Promise.all([
-    loadFeed(supabase, userId, query, { refresh: true, client: await searchingClient() }),
+    loadFeed(supabase, userId, query, { refresh: true, client: await searchingClient(), background: (work) => after(work) }),
     supabase.from("job_crawl_runs").select("finished_at").not("finished_at", "is", null).order("started_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("employers").select("id", { count: "exact", head: true }).neq("status", "disabled").neq("ats", "fixture"),
     supabase.from("settings").select("timezone").eq("user_id", userId).single(),
@@ -443,18 +444,18 @@ function FiltersPanel({
           <fieldset className="grid gap-1">
             <legend className="mb-1 text-xs font-medium text-muted-foreground">Workplace</legend>
             {(Object.keys(WORKPLACE_LABELS) as (keyof typeof WORKPLACE_LABELS)[]).map((w) => (
-              <label key={w} className="flex items-center gap-2">
+              <label key={w} className="flex min-h-7 items-center gap-2">
                 <input type="checkbox" name="wp" value={w} defaultChecked={checked(filters.workplace, w)} className="size-4 accent-primary" /> {WORKPLACE_LABELS[w]}
               </label>
             ))}
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <label className="flex min-h-7 items-center gap-2 text-xs text-muted-foreground">
               <input type="checkbox" name="wpu" value="1" defaultChecked={filters.includeUnknownWorkplace} className="size-3.5 accent-primary" /> Include jobs that don&apos;t say
             </label>
           </fieldset>
           <fieldset className="grid gap-1">
             <legend className="mb-1 text-xs font-medium text-muted-foreground">Level</legend>
             {LEVELS.map((l) => (
-              <label key={l} className="flex items-center gap-2">
+              <label key={l} className="flex min-h-7 items-center gap-2">
                 <input type="checkbox" name="level" value={l} defaultChecked={checked(filters.levels, l)} className="size-4 accent-primary" /> {LEVEL_LABELS[l]}
               </label>
             ))}
@@ -475,14 +476,14 @@ function FiltersPanel({
                 ["internship", "Internship / co-op"],
               ] as const
             ).map(([v, l]) => (
-              <label key={v} className="flex items-center gap-2">
+              <label key={v} className="flex min-h-7 items-center gap-2">
                 <input type="checkbox" name="type" value={v} defaultChecked={checked(filters.types, v)} className="size-4 accent-primary" /> {l}
               </label>
             ))}
           </fieldset>
           <fieldset className="grid gap-1.5">
             <legend className="mb-1 text-xs font-medium text-muted-foreground">Salary</legend>
-            <label className="flex items-center gap-2">
+            <label className="flex min-h-7 items-center gap-2">
               <input type="checkbox" name="pay" value="1" defaultChecked={filters.hasSalary} className="size-4 accent-primary" /> Salary stated
             </label>
             {currency ? (
@@ -515,12 +516,12 @@ function FiltersPanel({
                 ["manual", "Pasted by me"],
               ] as const
             ).map(([v, l]) => (
-              <label key={v} className="flex items-center gap-2">
+              <label key={v} className="flex min-h-7 items-center gap-2">
                 <input type="checkbox" name="src" value={v} defaultChecked={checked(filters.sources, v)} className="size-4 accent-primary" /> {l}
               </label>
             ))}
           </fieldset>
-          <label className="flex items-start gap-2">
+          <label className="flex min-h-7 items-start gap-2">
             <input type="checkbox" name="unchecked" value="1" defaultChecked={filters.includeUnchecked} className="mt-0.5 size-4 accent-primary" />
             <span>
               Include listings not yet verified <span className="block text-xs text-muted-foreground">Apply stays off until their link is confirmed.</span>
@@ -573,7 +574,7 @@ function PreferencesCard({ settings, resumeTitles }: { settings: { job_titles: s
               <legend className="mb-1 text-sm font-medium">Provinces (when searching Canada)</legend>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                 {PROVINCE_CODES.map((p) => (
-                  <label key={p} className="flex items-center gap-1.5 text-sm" title={PROVINCE_NAMES[p]}>
+                  <label key={p} className="flex min-h-7 items-center gap-1.5 text-sm" title={PROVINCE_NAMES[p]}>
                     <input type="checkbox" name="provinces" value={p} defaultChecked={settings.job_provinces.includes(p)} className="size-4 accent-primary" />
                     {PROVINCE_NAMES[p]}
                   </label>

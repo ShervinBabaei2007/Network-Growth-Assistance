@@ -63,6 +63,8 @@ Or create an empty private repository on github.com and push to it.
 
 Vercel reads `vercel.json` and registers the daily job (`/api/cron/daily`, scheduled for 12:00 UTC, which is early morning in Canada). Vercel automatically sends `Authorization: Bearer $CRON_SECRET` with each cron call, and the route rejects calls without it.
 
+**Keep the app and the database in the same region.** Every page makes several database calls, and each one pays the distance between them. `vercel.json` pins the functions to `pdx1` (Portland) because the Supabase project is in `us-west-2` (Oregon). If your Supabase project is somewhere else, change `regions` to the nearest Vercel region (for example `iad1` for `us-east-1`, `cle1` for Ohio, `fra1` for Frankfurt) and redeploy. After a deploy, the `x-vercel-id` response header starts with the region the request ran in.
+
 ## 3b. Set up Jobs (no API keys needed to start)
 
 1. **Load the employer directory** (tech employers first, plus non-tech and international ones found by `npm run employers:discover -- scripts/employer-candidates-worldwide.txt`) with your Supabase URL and secret key in the environment:

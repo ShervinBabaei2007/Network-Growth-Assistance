@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { LoadError } from "@/components/load-error";
 import { PageHeader } from "@/components/page-header";
@@ -26,7 +27,7 @@ export default function ApplicationsPage({ searchParams }: PageProps<"/applicati
           </Link>
         }
       />
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading applications…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading applications…" />}>
         <ApplicationsView searchParams={searchParams} />
       </Suspense>
     </div>

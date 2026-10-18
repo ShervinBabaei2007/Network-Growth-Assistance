@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { OnboardingWizard } from "@/components/onboarding/wizard";
-import { ProductTour } from "@/components/onboarding/tour";
+import { TourLoader } from "@/components/onboarding/tour-loader";
 import { getOnboarding } from "@/lib/onboarding/read";
 import { shouldShowWizard } from "@/lib/onboarding/state";
 
@@ -19,7 +19,7 @@ export async function OnboardingLayer() {
     <>
       {saved && shouldShowWizard(state) ? <OnboardingWizard key={JSON.stringify(state)} initial={state} /> : null}
       <Suspense fallback={null}>
-        <ProductTour initial={state} />
+        <TourLoader initial={state} />
       </Suspense>
     </>
   );

@@ -1,9 +1,14 @@
+import { canonicalFor } from "@/lib/site";
 import { Suspense } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoginForm } from "./login-form";
 
-export const metadata = { title: "Sign in · Network Growth" };
+export const metadata = {
+  title: "Sign in · Network Growth",
+  description: "Sign in to plan and track your professional networking and job search. We never ask for your LinkedIn password.",
+  ...canonicalFor("/login"),
+};
 
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (

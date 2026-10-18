@@ -8,7 +8,7 @@ import { matchesFilters } from "./filters";
 import { prefilterScore } from "./fit";
 import { searchProviders } from "./providers/registry";
 import { rankScore } from "./rank";
-import { refreshFromProviders, type SourceNotice } from "./search";
+import { refreshFromProviders, type Background, type SourceNotice } from "./search";
 import { chunk, loadActiveResume, MAX_SCORED_PER_VIEW, scoreJobs, type ActiveResume, type Db } from "./service";
 import { jobServices } from "./services";
 import { PROVINCE_NAMES } from "./types";
@@ -200,6 +200,8 @@ export type LoadFeedOptions = {
   refresh: boolean;
   /** The person searching (IP and browser), for job sources that require it (Careerjet). */
   client?: { ip: string; userAgent: string } | null;
+  /** Lets a search that already has stored results show them now and refresh after the response (the page passes `after`). */
+  background?: Background;
 };
 
 export async function loadFeed(db: Db, userId: string, query: FeedQuery, opts: LoadFeedOptions): Promise<Feed | { error: string }> {
@@ -232,7 +234,7 @@ export async function loadFeed(db: Db, userId: string, query: FeedQuery, opts: L
           maxDaysOld: Math.min(30, Math.round(windowRange.hours / 24)),
           page: Math.max(1, Math.ceil((page * FEED_PAGE_SIZE) / 50)),
           client: opts.client ?? null,
-        }),
+        }, { background: opts.background }),
       ),
     );
     notices = mergeNotices(runs.flat());

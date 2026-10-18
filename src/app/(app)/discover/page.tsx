@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
@@ -33,7 +34,7 @@ export default function DiscoverPage({ searchParams }: PageProps<"/discover">) {
         <RequestCard searchParams={searchParams} />
       </Suspense>
 
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading your searches…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading your searches…" />}>
         <History />
       </Suspense>
     </div>

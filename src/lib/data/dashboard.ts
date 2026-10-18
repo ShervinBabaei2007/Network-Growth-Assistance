@@ -1,5 +1,7 @@
 import "server-only";
 import { loadCatalog } from "./catalog";
+import { getClaims, getSettings } from "./settings";
+import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { connection } from "next/server";
 import { localDate, startOfLocalDay, weekStart } from "@/lib/dates";
@@ -75,23 +77,28 @@ async function countDiscoveredSince(supabase: Client, userId: string, since: Dat
   return count ?? 0;
 }
 
+type ProgressSettings = { overall_target: number | null; baseline_connections: number | null; project_start_date: string; timezone: string };
+
 /**
  * Loads everything the dashboard needs for one user. Every query filters by
  * user_id explicitly so this is also safe with the service-role client used by
  * the daily job; with the signed-in client, RLS applies as well.
  */
-export async function loadProgress(supabase: Client, userId: string, at?: Date) {
+export async function loadProgress(supabase: Client, userId: string, at?: Date, known?: ProgressSettings) {
   // Reading the clock makes this request-time work; tell Next.js before doing it.
   if (!at) await connection();
   const now = at ?? new Date();
-  const { data: settings, error: settingsError } = await supabase
-    .from("settings")
-    .select(
-      "overall_target, baseline_connections, project_start_date, timezone",
-    )
-    .eq("user_id", userId)
-    .single();
-  if (settingsError) throw settingsError;
+  // Pages pass the settings they already have (one shared read per request); the daily job reads them here.
+  let settings = known;
+  if (!settings) {
+    const { data, error: settingsError } = await supabase
+      .from("settings")
+      .select("overall_target, baseline_connections, project_start_date, timezone")
+      .eq("user_id", userId)
+      .single();
+    if (settingsError) throw settingsError;
+    settings = data;
+  }
 
   const today = localDate(now, settings.timezone);
   const [targets, snapshot, counts, invitations, discoveredToday, discoveredThisWeek, exportConnections, catalog] =
@@ -151,9 +158,18 @@ export async function loadProgress(supabase: Client, userId: string, at?: Date) 
 }
 
 /** The signed-in user's id, for pages that call the loaders. */
-export async function currentUserId(supabase: Client): Promise<string> {
-  const { data } = await supabase.auth.getClaims();
-  const id = data?.claims.sub;
+export async function currentUserId(_supabase?: Client): Promise<string> {
+  const id = (await getClaims())?.sub;
   if (!id) throw new Error("Not signed in");
   return id;
+}
+
+/**
+ * The signed-in user's progress for a page. The settings row and the user's id come from the request's
+ * shared reads, so the page's queries can start straight away instead of waiting on a settings round trip.
+ */
+export async function loadMyProgress() {
+  const [supabase, userId, { row, error }] = await Promise.all([createClient(), currentUserId(), getSettings()]);
+  if (error || !row) throw new Error(error ?? "Settings not found");
+  return loadProgress(supabase, userId, undefined, row);
 }

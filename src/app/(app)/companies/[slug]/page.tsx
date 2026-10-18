@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PeopleAtCompany } from "@/components/companies/people-at-company";
@@ -15,7 +16,7 @@ export const metadata = { title: "Company · Network Growth" };
 
 export default function CompanyPage({ params }: PageProps<"/companies/[slug]">) {
   return (
-    <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+    <Suspense fallback={<PageSkeleton label="Loading…" />}>
       <Company params={params} />
     </Suspense>
   );

@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import {
@@ -47,7 +48,7 @@ export default function SettingsPage() {
   return (
     <div className="grid gap-6">
       <h1 className="text-xl font-semibold">Settings</h1>
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading…" />}>
         <SettingsContent />
       </Suspense>
       <Suspense fallback={null}>
@@ -96,7 +97,7 @@ async function SettingsContent() {
 
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="grid content-start gap-3">
-              <h3 className="text-sm font-semibold">Schools</h3>
+              <h2 className="text-sm font-semibold">Schools</h2>
               <p className="text-xs text-muted-foreground">
                 Universities, colleges or any institution. List the other ways people write it (short forms, campuses) so profiles are matched to it.
                 Schools with their own targets get a share of each discipline&apos;s goal; the others add extra candidates.
@@ -113,7 +114,7 @@ async function SettingsContent() {
               <CategoryForm kind="university" />
             </div>
             <div className="grid content-start gap-3">
-              <h3 className="text-sm font-semibold">Disciplines, in priority order</h3>
+              <h2 className="text-sm font-semibold">Disciplines, in priority order</h2>
               <p className="text-xs text-muted-foreground">
                 Any field of study or work: nursing, law, finance, software, design, trades… Attention moves down this list as each target is met.
               </p>
@@ -131,7 +132,7 @@ async function SettingsContent() {
           </div>
 
           <div className="grid gap-3">
-            <h3 className="text-sm font-semibold">Targets</h3>
+            <h2 className="text-sm font-semibold">Targets</h2>
             {catalog.disciplines.length ? (
               <ActionForm action={updateTargets} submitLabel="Save targets">
                 <p className="text-xs text-muted-foreground">New accepted connections per discipline, and the share from each school with its own targets. Leave a field empty for no target there.</p>

@@ -1,4 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { DailyBars, NetworkLine } from "@/components/charts";
@@ -25,7 +26,7 @@ export default function AnalyticsPage() {
         <h1 className="text-xl font-semibold">Analytics</h1>
         <p className="text-sm text-muted-foreground">Built only from what you&apos;ve recorded here or imported from LinkedIn&apos;s export.</p>
       </div>
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading analytics…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading analytics…" />}>
         <AnalyticsContent />
       </Suspense>
     </div>

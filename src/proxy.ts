@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv } from "@/lib/env.public";
 
-const PUBLIC_PATHS = ["/login", "/auth", "/privacy", "/terms"];
+// Files for search engines and agents must be readable without signing in, or they only ever see the sign-in page.
+const PUBLIC_PATHS = ["/login", "/auth", "/privacy", "/terms", "/robots.txt", "/sitemap.xml", "/llms.txt", "/.well-known"];
 
 /** Refreshes the Supabase session cookie and sends signed-out visitors to /login. */
 export async function proxy(request: NextRequest) {

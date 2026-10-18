@@ -1,0 +1,9 @@
+# Network Growth Assistant
+
+> A personal planning and tracking tool for professional networking and job searching. Sign-in is required to use it, and it never asks for a LinkedIn password.
+
+## Public pages
+
+- [Sign in](/login): sign in with Google or an email link.
+- [Privacy Policy](/privacy): what is stored, why, and how to export or delete your data.
+- [Terms of Service](/terms): the terms for using the app.

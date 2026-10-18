@@ -1,4 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
 import { ExternalLink, Upload } from "lucide-react";
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { STATUS_LABELS, type CandidateStatus, type Discipline, type University } from "@/lib/domain";
 import { loadCatalog } from "@/lib/data/catalog";
-import { currentUserId, loadProgress } from "@/lib/data/dashboard";
+import { loadMyProgress } from "@/lib/data/dashboard";
 import { searchLinks } from "@/lib/prioritize/search-links";
 import { createClient } from "@/lib/supabase/server";
 import { QuickAddForm } from "./quick-add";
@@ -72,7 +73,7 @@ export default function CandidatesPage({ searchParams }: PageProps<"/candidates"
         </details>
       </Card>
 
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading candidates…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading candidates…" />}>
         <CandidateList searchParams={searchParams} />
       </Suspense>
     </div>
@@ -271,8 +272,7 @@ async function QuickCaptureForUser() {
 async function SearchShortcuts() {
   let links;
   try {
-    const supabase = await createClient();
-    const progress = await loadProgress(supabase, await currentUserId(supabase));
+    const progress = await loadMyProgress();
     links = searchLinks(progress.disciplines, progress.catalog);
   } catch (e) {
     unstable_rethrow(e);

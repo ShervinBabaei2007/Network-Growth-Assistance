@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ExternalLink } from "lucide-react";
@@ -18,7 +19,7 @@ const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-
 
 export default function ApplicationPage({ params }: PageProps<"/applications/[id]">) {
   return (
-    <Suspense fallback={<p className="text-sm text-muted-foreground">Loading the application…</p>}>
+    <Suspense fallback={<PageSkeleton label="Loading the application…" />}>
       <Application params={params} />
     </Suspense>
   );

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { LoadError } from "@/components/load-error";
 import { NativeSelect } from "@/components/native-select";
@@ -31,7 +32,7 @@ export default function PeoplePage({ searchParams }: PageProps<"/people">) {
           Discover more
         </Link>
       </div>
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading people…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading people…" />}>
         <PeopleList searchParams={searchParams} />
       </Suspense>
     </div>

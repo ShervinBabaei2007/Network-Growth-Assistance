@@ -1,4 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
 import { LoadError } from "@/components/load-error";
@@ -12,9 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { currentUserId, loadProgress } from "@/lib/data/dashboard";
+import { loadMyProgress } from "@/lib/data/dashboard";
 import { disciplineName, poolUniversities, targetUniversities, universityName } from "@/lib/domain";
-import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Schools · Network Growth" };
 
@@ -22,7 +22,7 @@ export default function UniversitiesPage() {
   return (
     <div className="grid gap-6">
       <h1 className="text-xl font-semibold">Schools</h1>
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading…" />}>
         <UniversityProgress />
       </Suspense>
     </div>
@@ -32,8 +32,7 @@ export default function UniversitiesPage() {
 async function UniversityProgress() {
   let progress;
   try {
-    const supabase = await createClient();
-    progress = await loadProgress(supabase, await currentUserId(supabase));
+    progress = await loadMyProgress();
   } catch (e) {
     unstable_rethrow(e); // let Next.js postpone/redirect signals through
     return <LoadError what="school progress" />;

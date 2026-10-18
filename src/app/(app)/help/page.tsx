@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { RestartGuide } from "@/components/onboarding/restart-guide";
 import { PageHeader } from "@/components/page-header";
@@ -13,7 +14,7 @@ export default function HelpPage() {
   return (
     <div className="grid gap-6">
       <PageHeader title="Help" description="Replay the introduction, or see how the parts of the app fit together." />
-      <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Loading…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading…" />}>
         <Guide />
       </Suspense>
       <Card>

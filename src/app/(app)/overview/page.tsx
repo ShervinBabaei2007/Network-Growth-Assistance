@@ -1,4 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -12,10 +13,10 @@ import { StatTile } from "@/components/stat-tile";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { currentUserId, loadProgress } from "@/lib/data/dashboard";
+import { loadMyProgress } from "@/lib/data/dashboard";
 import { disciplineName } from "@/lib/domain";
 import { nextAction } from "@/lib/progress/next-action";
-import { createClient } from "@/lib/supabase/server";
+import { getSettings } from "@/lib/data/settings";
 
 export const metadata = { title: "Overview · Network Growth" };
 
@@ -23,7 +24,7 @@ export default function OverviewPage() {
   return (
     <div className="grid gap-6">
       <PageHeader title="Overview" description="Your next step first, then where you stand." />
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading your progress…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading your progress…" />}>
         <OverviewContent />
       </Suspense>
     </div>
@@ -31,16 +32,12 @@ export default function OverviewPage() {
 }
 
 async function OverviewContent() {
-  const supabase = await createClient();
   let progress;
   let paused = false;
   try {
-    const [p, { data: settings }] = await Promise.all([
-      loadProgress(supabase, await currentUserId(supabase)),
-      supabase.from("settings").select("paused").single(),
-    ]);
+    const [p, { row }] = await Promise.all([loadMyProgress(), getSettings()]);
     progress = p;
-    paused = settings?.paused ?? false;
+    paused = row?.paused ?? false;
   } catch (e) {
     unstable_rethrow(e); // let Next.js postpone/redirect signals through
     return <LoadError what="your progress" />;

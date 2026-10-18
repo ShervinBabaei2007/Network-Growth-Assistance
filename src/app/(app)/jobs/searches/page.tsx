@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { LoadError } from "@/components/load-error";
 import { PageHeader } from "@/components/page-header";
@@ -19,7 +20,7 @@ export default function SavedSearchesPage() {
         title="Saved searches"
         description="Searches you come back to, with optional alerts when new matching jobs appear. Save one from the Jobs page."
       />
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading saved searches…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading saved searches…" />}>
         <Searches />
       </Suspense>
     </div>

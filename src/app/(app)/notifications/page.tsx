@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { LoadError } from "@/components/load-error";
 import { PageHeader } from "@/components/page-header";
 import { formatDateTime, formatDay } from "@/lib/applications/format";
@@ -18,7 +19,7 @@ export default function NotificationsPage() {
         title="Notifications"
         description="New jobs from your saved searches, due reminders, upcoming interviews and problems with job boards you added. Read notifications are cleared after 90 days."
       />
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading notifications…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading notifications…" />}>
         <Notifications />
       </Suspense>
     </div>

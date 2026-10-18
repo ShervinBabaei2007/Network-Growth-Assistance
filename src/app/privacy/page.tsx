@@ -1,6 +1,11 @@
+import { canonicalFor } from "@/lib/site";
 import { ContactLine, LegalPage, Operator } from "@/components/legal/legal-page";
 
-export const metadata = { title: "Privacy Policy · Network Growth" };
+export const metadata = {
+  title: "Privacy Policy · Network Growth",
+  description: "What Network Growth stores, why, and how to export or delete your data.",
+  ...canonicalFor("/privacy"),
+};
 
 export default function PrivacyPage() {
   return (

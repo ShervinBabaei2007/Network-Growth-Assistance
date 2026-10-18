@@ -19,6 +19,7 @@ export function FitScore({ tier, score, size = "md" }: { tier: TierKey; score: n
   const showScore = score !== null && tier !== "excluded" && tier !== "unchecked";
   return (
     <div
+      role="img"
       className={cn("flex flex-col items-center justify-center rounded-lg text-center", s.soft, s.text, size === "lg" ? "size-24 gap-0.5" : "h-16 w-full gap-0")}
       aria-label={`${s.label}${showScore ? `, ${score} out of 100` : ""}`}
     >
@@ -37,10 +38,9 @@ export function FitChip({ tier, score }: { tier: TierKey; score: number | null }
   const s = TIER_STYLE[tier];
   const showScore = score !== null && tier !== "excluded" && tier !== "unchecked";
   return (
-    <span
-      className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap", s.soft, s.text)}
-      aria-label={`${s.label}${showScore ? `, ${score} out of 100` : ""}`}
-    >
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap", s.soft, s.text)}>
+      {/* A label on a bare span isn't allowed; the spoken text lives here and the visible pill is hidden from readers. */}
+      <span className="sr-only">{`${s.label}${showScore ? `, ${score} out of 100` : ""}`}</span>
       <span aria-hidden className={cn("size-1.5 rounded-full", s.dot)} />
       <span aria-hidden>{s.label}</span>
       {showScore ? (

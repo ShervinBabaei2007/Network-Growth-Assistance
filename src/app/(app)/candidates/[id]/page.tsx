@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
@@ -34,7 +35,7 @@ export default function CandidatePage({ params }: PageProps<"/candidates/[id]">)
       <Link href="/candidates" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" aria-hidden /> Candidates
       </Link>
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+      <Suspense fallback={<PageSkeleton label="Loading…" />}>
         <CandidateDetail params={params} />
       </Suspense>
     </div>
