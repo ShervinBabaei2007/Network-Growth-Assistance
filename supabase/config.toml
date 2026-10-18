@@ -322,6 +322,18 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `x`, `slack`, `spotify`, `workos`, `zoom`.
+# Sign in with Google. Local development needs your own Google OAuth client (see "Google sign-in" in docs/DEPLOYMENT.md);
+# put GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in supabase/.env (git-ignored). Without them Google is simply switched off locally.
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"
+redirect_uri = ""
+url = ""
+# Local Google sign-in cannot satisfy the nonce check.
+skip_nonce_check = true
+email_optional = false
+
 [auth.external.apple]
 enabled = false
 client_id = ""

@@ -333,7 +333,7 @@ The login page has a **Continue with Google** button next to the email link. It 
 3. In Supabase, **Authentication → Sign In / Providers → Google**: turn it on and paste the Client ID and secret.
 4. Make sure **Site URL** and **Redirect URLs** (§2.3) include your production address, and your custom domain if you add one.
 
-A Google sign-in with the same verified email as an existing account signs into that account (Supabase links them), so current users keep their data. It works locally only if you also enable Google in `supabase/config.toml` with your own client, which isn't needed for development.
+A Google sign-in with the same verified email as an existing account signs into that account (Supabase links them), so current users keep their data. **On your own computer.** `supabase/config.toml` already turns Google on locally and reads the client from `supabase/.env`. Until you add one, **Continue with Google** sends you back to the sign-in page with a message ("Google sign-in isn't available right now") instead of Supabase's raw `Unsupported provider` error. To make it really work locally: create an OAuth client of type *Web application* in Google Cloud Console with the authorised redirect URI `http://127.0.0.1:54321/auth/v1/callback`, copy `supabase/.env.example` to `supabase/.env`, fill in `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, and restart Supabase (`npx supabase stop`, then `npm run db:start`). The same error on the hosted app means the provider is off in **Authentication → Sign In / Providers → Google**.
 
 ## Sharing it for user feedback
 

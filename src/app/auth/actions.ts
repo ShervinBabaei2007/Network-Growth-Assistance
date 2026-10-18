@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { newPasswordSchema, resetRequestSchema, signInSchema, signUpSchema } from "@/lib/auth/credentials";
+import { googleUrlHasClient } from "@/lib/auth/google";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 import type { MessageKey } from "@/lib/i18n";
 import { getT } from "@/lib/i18n/server";
@@ -71,8 +72,24 @@ export async function signInWithGoogle(): Promise<void> {
     provider: "google",
     options: { redirectTo: callback.toString() },
   });
-  if (error || !data.url) redirect("/login?error=google");
+  // Supabase answers a provider that isn't set up with a raw JSON error page, so check first and show a friendly message.
+  if (error || !data.url || !(await googleStartsProperly(data.url))) redirect("/login?error=google");
   redirect(data.url);
+}
+
+/**
+ * Asks Supabase where Google sign-in would send the person, without following it. A provider that is switched off
+ * answers 400 with a raw JSON page, and one switched on without a client id sends a placeholder to Google; either
+ * way the visitor would be stranded, so both count as "not set up".
+ */
+async function googleStartsProperly(startUrl: string): Promise<boolean> {
+  try {
+    const res = await fetch(startUrl, { redirect: "manual", cache: "no-store" });
+    const location = res.headers.get("location");
+    return res.status >= 300 && res.status < 400 && Boolean(location) && googleUrlHasClient(location!);
+  } catch {
+    return false;
+  }
 }
 
 export async function signOut() {
