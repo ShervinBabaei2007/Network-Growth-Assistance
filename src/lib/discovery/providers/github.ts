@@ -4,6 +4,17 @@ import { BODY_LIMITS, readCappedJson, readCappedText } from "@/lib/net/read-capp
 type UserSearch = { items?: { login: string }[] };
 type User = { login: string; name: string | null; bio: string | null; company: string | null; location: string | null; blog: string | null; html_url: string; type: string };
 
+/** Profiles already read, shared across searches: without a token GitHub allows only 60 profile lookups an hour. */
+const PROFILE_TTL_MS = 60 * 60_000;
+const profiles = new Map<string, { user: User; at: number }>();
+/** Set when GitHub says to stop; later searches fail at once instead of spending requests that will be refused. */
+let blockedUntil = 0;
+
+export function resetGitHubLimits() {
+  profiles.clear();
+  blockedUntil = 0;
+}
+
 /**
  * GitHub's public REST API: user search, then each user's public profile fields.
  * Those fields (name, bio, company, location, blog) are evidence without any page fetch.
@@ -15,6 +26,7 @@ export class GitHubSearchProvider implements SearchProvider {
   constructor(private readonly token?: string) {}
 
   private async get<T>(path: string, signal?: AbortSignal): Promise<T> {
+    if (Date.now() < blockedUntil) throw new ProviderError(this.name, "GitHub rate limit reached.", true);
     let res: Response;
     try {
       res = await fetch(`https://api.github.com${path}`, {
@@ -30,7 +42,13 @@ export class GitHubSearchProvider implements SearchProvider {
     } catch {
       throw new ProviderError(this.name, "Couldn't reach GitHub.", true);
     }
-    if (res.status === 403 || res.status === 429) throw new ProviderError(this.name, "GitHub rate limit reached.", true);
+    if (res.status === 403 || res.status === 429) {
+      const reset = Number(res.headers.get("x-ratelimit-reset")) * 1000;
+      const retryAfter = Number(res.headers.get("retry-after")) * 1000;
+      const wait = retryAfter > 0 ? retryAfter : reset > Date.now() ? reset - Date.now() : 60_000;
+      blockedUntil = Date.now() + Math.min(wait, 15 * 60_000);
+      throw new ProviderError(this.name, "GitHub rate limit reached.", true);
+    }
     if (!res.ok) throw new ProviderError(this.name, `GitHub returned ${res.status}.`, res.status >= 500);
     return readCappedJson<T>(res, BODY_LIMITS.api).catch(() => {
       throw new ProviderError(this.name, "GitHub sent an answer that couldn't be read.", true);
@@ -40,7 +58,24 @@ export class GitHubSearchProvider implements SearchProvider {
   async search(query: string, { count = 8, signal }: { count?: number; signal?: AbortSignal } = {}): Promise<SearchResult[]> {
     const found = await this.get<UserSearch>(`/search/users?q=${encodeURIComponent(`${query} type:user`)}&per_page=${Math.min(count, 15)}`, signal);
     const logins = (found.items ?? []).map((i) => i.login).slice(0, count);
-    const users = await Promise.all(logins.map((l) => this.get<User>(`/users/${encodeURIComponent(l)}`, signal).catch(() => null)));
+    let limited: ProviderError | null = null;
+    const users = await Promise.all(
+      logins.map(async (l) => {
+        const hit = profiles.get(l);
+        if (hit && Date.now() - hit.at < PROFILE_TTL_MS) return hit.user;
+        try {
+          const user = await this.get<User>(`/users/${encodeURIComponent(l)}`, signal);
+          profiles.set(l, { user, at: Date.now() });
+          if (profiles.size > 2000) profiles.delete(profiles.keys().next().value!);
+          return user;
+        } catch (e) {
+          if (e instanceof ProviderError && /rate limit/.test(e.message)) limited = e;
+          return null;
+        }
+      }),
+    );
+    // Profiles refused for the rate limit are an error, not "no results", so the run says why.
+    if (limited && !users.some(Boolean)) throw limited;
     return users
       .filter((u): u is User => u !== null && u.type === "User")
       .map((u, i) => {
