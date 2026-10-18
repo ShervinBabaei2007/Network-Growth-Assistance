@@ -1,6 +1,6 @@
 # Implementation checklist: Career Command Center
 
-The working record for the improvement plan (the plan itself is kept privately and is not in this repository): what's done, the evidence for it, decisions, and blockers. Update it at every phase boundary so interrupted work can resume accurately. Last updated 2026-10-17.
+The working record for the improvement plan (the plan itself is kept privately and is not in this repository): what's done, the evidence for it, decisions, and blockers. Update it at every phase boundary so interrupted work can resume accurately. Last updated 2026-10-18.
 
 Status words are kept separate on purpose:
 - **implemented**: the code exists.
@@ -24,6 +24,8 @@ Status words are kept separate on purpose:
 | `01e49f2`, `9ed493d`, `490d0f9`, `8abe32a` | shadcn/ui across the app, phone-friendly Jobs filters, on-demand menus and toasts |
 | `8e362b9`, `ba03c8d`, `3c2e639`, `228ff2a` | Test fix, Settings hydration, tables as cards on phones, shared Disclosure, unused code removed |
 | `46fc4b9` | README rewrite with screenshots (`npm run docs:screenshots`) |
+| merges on `main`, 2026-10-18 | One branch per feature, each merged with its own commits: `feat/auth-signup-signin`, `feat/demo-workspace`, `feat/landing-page`, `feat/a11y-axe`, `feat/staging-smoke`, `feat/command-palette`, `feat/follow-up-cadence`, `feat/bulk-actions-saved-views`, `feat/monitoring`, `feat/interview-prep`, `feat/i18n-fr-ca` |
+| after the merges | Google sign-in fixed locally (provider enabled from `supabase/.env`, friendly message when unset), home page simplified to one column, README and docs rewritten |
 
 ## Scope of the first release
 
@@ -55,7 +57,7 @@ Local data note: the local database holds the owner's own data. **Never run `db:
 
 | Area | Status | Evidence |
 |---|---|---|
-| Auth (magic link, session refresh in `src/proxy.ts`) | working | signed-out e2e test; `getClaims()` in `actionContext` / `routeUser` |
+| Auth (Google, email and password, emailed link; session refresh in `src/proxy.ts`) | working | signed-out e2e test; `e2e/password-auth.spec.ts`, `e2e/google-signin.spec.ts`; `getClaims()` in `actionContext` / `routeUser` |
 | RLS on every table, owner policies, composite FKs | working | `supabase/tests/rls_and_constraints.test.sql` and others |
 | Client-supplied user ids | none found | audit of actions and routes |
 | Service-role use | working, documented | `src/lib/supabase/admin.ts` callers listed in the audit |
@@ -249,6 +251,46 @@ Settings 82: its heading paints early, which puts the page's one startup task in
 
 **Not done, by choice:** shadcn Tooltips (they need hover and would add JavaScript; icon-only controls have an aria-label and a native `title` instead), shadcn Progress under `ProgressMeter` (its "pending never counts" two-segment rule isn't supported), Sonner (the lazy custom toast is tested and accessible), and tables as cards on Applications (its sortable column headers are the only way to sort there).
 
+## Since then (2026-10-18): the top ten features, and sign-in
+
+Built in order, each on its own branch with small commits, then merged. Every branch passed lint, types, unit tests and its own end-to-end tests before merging.
+
+| Feature | Status | Evidence |
+|---|---|---|
+| **Sign in and sign up**: tabs, Google, email and password with confirmation, password reset, emailed link kept; generic errors so accounts can't be probed | implemented, unit + e2e | `src/app/login/`, `src/app/auth/`, `src/lib/auth/`, `e2e/password-auth.spec.ts` |
+| **Google sign-in locally**: provider enabled from `supabase/.env`; a friendly message instead of Supabase's raw error when no client is set | implemented, unit + e2e | `supabase/config.toml`, `src/lib/auth/google.ts`, `e2e/google-signin.spec.ts`. A real Google login needs the owner's own OAuth client; a made-up one was used to prove the hand-off to Google |
+| **Demo workspace** (`is_sample` rows, one-click seed and clear, excluded from export) | implemented, pgTAP + e2e | `20261030000000_sample_data.sql`, `supabase/tests/sample_data.test.sql`, `e2e/sample-data.spec.ts` |
+| **Public home page and three guides**, single column, structured data | implemented, e2e | `src/app/page.tsx`, `src/app/guides/`, `e2e/landing.spec.ts` |
+| **Automated accessibility scan** (axe, WCAG A and AA) of public and signed-in pages, light and dark, phone; skip link; 320 px reflow | implemented, e2e | `e2e/a11y.spec.ts`, `docs/ACCESSIBILITY.md`. Found and fixed: toast dismiss button hidden from assistive technology but still tabbable |
+| **Release tooling**: CI workflow, per-route JavaScript budget, smoke script, local restore rehearsal | implemented | `.github/workflows/ci.yml`, `scripts/check-route-budget.mjs`, `scripts/smoke.mjs`, `scripts/restore-rehearsal.sh` |
+| **Command palette** (Ctrl+K, `/`), `g`-letter navigation, `?` shortcut sheet; loaded on demand | implemented, unit + e2e | `src/components/command-palette/`, `src/app/api/search/route.ts`, `src/lib/shortcuts.ts` |
+| **Follow-ups** after an accepted invitation (four suggested touches, drafts, done/snooze/dismiss, Overview count, bell) | implemented, pgTAP + unit + e2e | `20261031000000_follow_ups.sql`, `src/lib/follow-ups/`, `src/app/(app)/follow-ups/`, `e2e/follow-ups.spec.ts` |
+| **Bulk actions and saved views** on Candidates, with Undo; 25/50/100 per page; last filters remembered per device | implemented, pgTAP + unit + e2e | `20261032000000_saved_views.sql`, `src/app/(app)/candidates/bulk-actions.ts`, `e2e/bulk-and-views.spec.ts` |
+| **Monitoring** kept in our own database: page speed and errors with no personal data, operator report, Privacy Policy section | implemented, pgTAP + unit + e2e | `20261033000000_monitoring.sql`, `src/lib/monitoring/`, `src/instrumentation.ts`, `e2e/monitoring.spec.ts` |
+| **Interview prep** per application (rules only, no AI, no company facts), Markdown export, saved copies | implemented, pgTAP + unit + e2e | `20261034000000_interview_prep.sql`, `src/lib/interview-prep/`, `e2e/interview-prep.spec.ts` |
+| **Canadian French and an i18n base** for the shell, sign-in, welcome, banners and palette; account-saved language | implemented, unit + e2e | `20261035000000_locale.sql`, `src/lib/i18n/`, `e2e/i18n.spec.ts` |
+
+**Verification (2026-10-18, local):**
+
+| Check | Result |
+|---|---|
+| `npm run typecheck`, `npm run lint` | pass |
+| `npm test` | pass: 972 tests (84 files) |
+| `npm run test:db` | pass: 264 tests (22 files) |
+| `npm run build`, `npm run check:bundle`, `npm run check:budget` | pass (35 routes within budget) |
+| `npx playwright test` | pass: 83 (desktop and phone) |
+| About 40 of the end-to-end tests against a production build (`next start`) | pass, after tests were made to wait for the page to load before clicking |
+
+**Found and fixed along the way:**
+- The sign-in page grew by about 130 KB because a constant was imported from a file that also imported Zod; split into `password-rules.ts`.
+- The sign-in language swap discarded what a person had already typed; sign-in and reset now switch language in place (`DetectedLocaleProvider`).
+- Both languages were in every page's bundle; the browser now receives only the one in use.
+- The local sign-in rate limit (30 per 5 minutes) failed the end-to-end suite; raised for local development only.
+- A monitoring database test depended on real measurements; it now uses its own route name.
+- Running `npm run build` and then Playwright straight away breaks the dev server (shared `.next`).
+
+**Not built, on purpose or deferred:** bulk actions on People and Applications; `j`/`k` list shortcuts; an AI rewrite of follow-up drafts and prep stories; company facts with sources; a web dashboard and alerting for monitoring; French for every page, the home page, guides, legal pages and emails; Vercel Speed Insights.
+
 ## Fixes outside the roadmap
 
 | Item | Status | Evidence |
@@ -259,16 +301,16 @@ Settings 82: its heading paints early, which puts the page's one startup task in
 
 | Item | Target phase | Status |
 |---|---|---|
-| Command palette; j/k/s/o/d/? shortcuts | 7 (settings and onboarding) | not started |
-| Remember searches/filters per track; 25/50/100 per page; mobile filter summary | 2 (saved searches) and 5 (tracks) | mobile filter button with a count done; the rest not started |
+| Command palette; j/k/s/o/d/? shortcuts | 7 (settings and onboarding) | palette, `g`-letter navigation and `?` done; `j`/`k` and per-row keys not started |
+| Remember searches/filters per track; 25/50/100 per page; mobile filter summary | 2 (saved searches) and 5 (tracks) | done for Candidates (saved views, last filters, page size); mobile filter button with a count on Jobs; other lists not started |
 | Compare 2–3 jobs | 3 (company view) | not started |
 | Hide companies or title patterns, with Undo; duplicate-paste warning | 2 | not started |
 | Copy a job summary; CSV export of saved/applied jobs; preferred external search links | 2 | external search links exist; the rest not started |
 | `.ics` for calendar events | 1 | done |
 | Optional Gemini employer search (after re-checking its terms) | 3 | not started |
-| Bulk tags/status in Candidates and People; weekly goal progress; snooze a person | 3 | not started |
+| Bulk tags/status in Candidates and People; weekly goal progress; snooze a person | 3 | bulk status and delete on Candidates done; People, tags and weekly goal progress not started; follow-ups can be snoozed |
 | Empty states, retryable errors, relative + absolute times, What's New | every phase | empty states and retryable load errors done (shadcn Empty and Alert); What's New not started |
-| Visual regression and automated accessibility checks; retention of old notifications | 2 (retention), later (visual / axe) | retention done; accessibility measured with Lighthouse (100), but no axe in the test run and no visual regression |
+| Visual regression and automated accessibility checks; retention of old notifications | 2 (retention), later (visual / axe) | retention done; axe runs in the end-to-end tests; no visual regression |
 
 ## Decisions
 
@@ -289,14 +331,17 @@ Settings 82: its heading paints early, which puts the page's one startup task in
 - Backup restore has not been exercised (no production or staging access from this environment): **unverified**.
 - Staging deploy and smoke checks (`docs/DEPLOYMENT.md`, "Smoke checks after each deploy"): **unverified**.
 - Performance: **now measured** (Lighthouse above, first-load JavaScript per route). Still missing: the proposed server-time budget for tracker pages with 500 applications, which needs a seeded dataset and a staging deploy.
-- Accessibility: Lighthouse scores 100, contrast is unit-tested and an **axe scan now runs in the end-to-end tests** (`e2e/a11y.spec.ts`, see `docs/ACCESSIBILITY.md`). There is still **no manual screen-reader pass**; the checklist for it is in that file.
+- Accessibility: Lighthouse scored 100 on the pages measured on 2026-10-17 (before the newest pages, not re-measured), contrast is unit-tested and an **axe scan runs in the end-to-end tests** (`e2e/a11y.spec.ts`, see `docs/ACCESSIBILITY.md`). There is still **no manual screen-reader pass**; the checklist for it is in that file.
 - A real SMTP provider (deliverability, SPF/DKIM, limits) is your configuration and is **unverified**.
 - **Release gates, 2026-10-18:** a CI workflow, per-route JavaScript budget (`npm run check:budget`), smoke script (`npm run smoke`) and a local backup-and-restore rehearsal (`scripts/restore-rehearsal.sh`, 46 tables matched, 8 seconds) are in place. **Still open:** a real staging deployment (needs a second Supabase and Vercel project), the smoke checks run against it, and a restore into a hosted scratch project. The CI workflow has not yet run on GitHub.
-- **Release status:** everything built so far is **implemented and verified locally**, and the signed-out and signed-in pages are measured on production. It is **not release-ready for a wide launch** until the restore rehearsal, staging smoke checks, a screen-reader pass and legal review of the Privacy Policy and Terms are done.
+- **Release status:** everything built so far is **implemented and verified locally**, and the signed-out and signed-in pages are measured on production. It is **not release-ready for a wide launch** until a hosted restore rehearsal, staging smoke checks, a screen-reader pass, a fresh Lighthouse run on the newest pages, a first green run of the CI workflow on GitHub and legal review of the Privacy Policy and Terms are done.
 
 ## Next
 
-1. Rehearse a restore in a scratch project and record it in `docs/DEPLOYMENT.md`.
-2. Add a staging deployment and run the smoke checks there.
-3. Add an automated accessibility scan (`@axe-core/playwright`) to the end-to-end run, and a screen-reader pass.
-4. Improvement-plan phases 4 onward, starting with the polish items above (command palette and shortcuts, compare jobs, bulk actions).
+1. Rehearse a restore into a hosted scratch project and record it in `docs/DEPLOYMENT.md`.
+2. Add a staging deployment and run `npm run smoke` and the end-to-end tests against it.
+3. Do the manual screen-reader pass from `docs/ACCESSIBILITY.md`.
+4. Watch the first run of `.github/workflows/ci.yml` on GitHub and fix what it finds.
+5. Re-measure Lighthouse on the newest pages.
+6. Translate the remaining pages into French, and extend bulk actions to People and Applications.
+7. Improvement-plan phases 4 onward, starting with the remaining polish items above (compare jobs, `j`/`k` shortcuts).

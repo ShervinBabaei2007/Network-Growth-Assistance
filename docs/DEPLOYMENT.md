@@ -29,12 +29,14 @@ Or create an empty private repository on github.com and push to it.
    npx supabase db push
    ```
 
-   `db push` creates the tables, row-level security policies, functions and the signup trigger from `supabase/migrations/`. Run it **before or together with** every deploy that adds a migration. The newest one stores the welcome guide and tour progress (`settings.onboarding`); if a new build runs against an older database, the app keeps working, the welcome and tour fall back to a fresh state with nothing saved, and the server logs `Couldn't read onboarding state`.
+   `db push` creates the tables, row-level security policies, functions and the signup trigger from `supabase/migrations/`. Run it **before or together with** every deploy that adds a migration. There are 26, and the newest features need them: example data (`is_sample`), follow-ups, saved views, interview prep, the monitoring tables and the language setting (`settings.locale`). Against an older database those pages fail, and the welcome and tour fall back to a fresh state with nothing saved (the server logs `Couldn't read onboarding state`).
 3. Under **Authentication → URL Configuration**:
    - **Site URL**: `https://<your-app>.vercel.app`
    - **Redirect URLs**: add `https://<your-app>.vercel.app/**`
-4. Under **Authentication → Emails → SMTP Settings**, set up custom SMTP if anyone other than you will sign in. Without it, Supabase's built-in email service only delivers to members of your Supabase team and sends very few emails per hour. Any SMTP provider works; Resend and Brevo have free tiers.
-5. Under **Project Settings → API Keys**, copy the **Publishable key** and a **Secret key** for the next step.
+4. Under **Authentication → Sign In / Providers → Email**, turn on **Confirm email** and set the **minimum password length** to 8. The app's sign-up, password reset and emailed sign-in links all go through Supabase. (`supabase/config.toml` sets these only for your own computer; the hosted project keeps its own settings.)
+5. Under **Authentication → Emails → SMTP Settings**, set up custom SMTP if anyone other than you will sign in or sign up. Without it, Supabase's built-in email service only delivers to members of your Supabase team and sends very few emails per hour. Any SMTP provider works; Resend and Brevo have free tiers.
+6. Optional: turn on Google sign-in (see [Google sign-in](#google-sign-in)).
+7. Under **Project Settings → API Keys**, copy the **Publishable key** and a **Secret key** for the next step.
 
 ## 3. Deploy on Vercel
 
@@ -67,7 +69,7 @@ Or create an empty private repository on github.com and push to it.
 
 3. Deploy.
 
-Vercel reads `vercel.json` and registers the daily job (`/api/cron/daily`, scheduled for 12:00 UTC, which is early morning in Canada). Vercel automatically sends `Authorization: Bearer $CRON_SECRET` with each cron call, and the route rejects calls without it.
+Vercel reads `vercel.json` and registers the daily job (`/api/cron/daily`, scheduled for 12:00 UTC, which is early morning in Canada). Besides the daily queue it cleans up old job postings, rate-limit counters, notifications and monitoring data. Vercel automatically sends `Authorization: Bearer $CRON_SECRET` with each cron call, and the route rejects calls without it.
 
 **Keep the app and the database in the same region.** Every page makes several database calls, and each one pays the distance between them. `vercel.json` pins the functions to `pdx1` (Portland) because the Supabase project is in `us-west-2` (Oregon). If your Supabase project is somewhere else, change `regions` to the nearest Vercel region (for example `iad1` for `us-east-1`, `cle1` for Ohio, `fra1` for Frankfurt) and redeploy. After a deploy, the `x-vercel-id` response header starts with the region the request ran in.
 
@@ -134,7 +136,7 @@ Vercel reads `vercel.json` and registers the daily job (`/api/cron/daily`, sched
 
    Each run:
    - checks saved searches whose time has come, reading stored jobs only;
-   - creates notifications for due reminders, interviews in the next 24 hours, Monday summaries and job boards that stopped working;
+   - creates notifications for due reminders, due follow-ups, interviews in the next 24 hours, Monday summaries and job boards that stopped working;
    - sends queued emails.
 
    It is safe to run twice at once or to retry: each search is leased while it runs, and every notification and email is keyed so it can't repeat. A search whose run fails is retried on the next call; its new jobs aren't lost.
@@ -166,7 +168,7 @@ Vercel reads `vercel.json` and registers the daily job (`/api/cron/daily`, sched
 
 ## 4. Check that it works
 
-1. Open the site and sign in with your email. The link arrives from Supabase. The first time, a short welcome appears: choose a goal (network, jobs or both), and the navigation shows what matches it, with the rest under **More**.
+1. Open the site, choose **Sign up** (or continue with Google), confirm your email and sign in. The email comes from Supabase. The first time, a short welcome appears (with an option to look around with example data): choose a goal (network, jobs or both), and the navigation shows what matches it, with the rest under **More**.
 2. On **Overview**, enter your starting connection count. **Help → Take the tour** walks through every page (18 stops).
 3. In **Settings**:
    - Enter "About you" and your daily invitation target.
@@ -191,7 +193,7 @@ These are from the providers' pricing pages at the time of writing. Check the cu
   - 500 MB database. The app stores a few KB per candidate, so tens of thousands of candidates fit.
   - Projects **pause after a week without activity**. The daily cron touches the database every day, which keeps the project active.
   - No point-in-time backups. Use **Settings → Download all my data** for your own backup.
-  - Built-in email is limited (see step 2.4).
+  - Built-in email is limited (see step 2.5).
 - **Gemini (recommended, free tier)**
   - The Gemini Developer API's free tier covers Flash models at no cost, with per-minute and per-day request limits (see your limits in Google AI Studio). When they're reached, AI calls fail cleanly: Tailor Resume gives Improvement Notes, and the rest of the app works the same.
   - **Privacy:** on the free tier, Google may use the prompts and answers (resume text, postings) to improve its products; on the paid tier it says it doesn't. Tell your users, or use a paid key.
@@ -247,6 +249,7 @@ Both are flat monthly fees, not per-user costs. The crawler, the job table and t
   - exports: 10 per hour
 
   Change them in `src/lib/server/rate-limit.ts`. Old counters are deleted by the daily job.
+- **Monitoring**: browsers report page speed and errors to your own database (`rum_vitals`, `client_errors`), and server errors are recorded by `src/instrumentation.ts`. Nothing identifies a person; see the Privacy Policy. Read it with `CRON_SECRET=<secret> npm run ops:report -- https://<your-app>` (75th percentile per route and device, recent distinct errors). The daily job deletes measurements after 30 days and errors after 90.
 - **Deleting data**: each user can delete individual candidates, or their whole account under **Settings → Your data**. Account deletion cascades to every table.
 
 ## Smoke checks after each deploy
@@ -258,7 +261,8 @@ Both are flat monthly fees, not per-user costs. The crawler, the job table and t
 5. Call the cron routes with the secret, as in step 4 of "Check that it works". Each should answer `{"ok":true,…}`.
 6. Open **Help → Take the tour** and press Next once or twice: a popover should appear on each page. If the page opens with no popover, the latest migration probably wasn't applied (`npx supabase db push`).
 7. On a phone (or a 390 px wide window), open the menu, then **Candidates**: the list should show as cards, not a squeezed table, and nothing should scroll sideways.
-8. Reload `/robots.txt`, `/sitemap.xml` and `/llms.txt`: each should answer 200 without signing in.
+8. Reload `/`, `/guides`, `/robots.txt`, `/sitemap.xml` and `/llms.txt` while signed out: each should answer 200. Signed in, `/` should send you to Overview.
+9. Sign up with a new email: the confirmation email should arrive, and the link should land you in the app.
 
 ### Automated smoke checks
 
@@ -270,14 +274,14 @@ Use a **separate** Supabase project and a separate Vercel project (or a Vercel p
 
 ## Speed and quality checks
 
-The reference deployment was measured with Lighthouse (mobile, on production, signed in) after the interface and speed work:
+The reference deployment was measured with Lighthouse (mobile, on production, signed in) after the interface and speed work. **These scores predate the home page, sign-in tabs, follow-ups, interview prep, search palette and French, and have not been re-measured.**
 
 | Measure | Result |
 |---|---|
 | Accessibility, Best Practices, SEO | 100 on every page measured (12 signed-in pages, plus Login, Privacy and Terms) |
 | Performance | 93–99 on 11 of 12 signed-in pages; Login 100, Privacy and Terms 97 |
 | Settings performance | 82 in the lab only: its heading paints early, which puts the page's one startup task inside the measured window. A throttled real browser runs the same two short tasks as every other page. |
-| First-load JavaScript (uncompressed) | Login 520 KB, Analytics 528 KB, Overview 536 KB, Applications 542 KB, Settings 552 KB, Discover 556 KB, Jobs 560 KB, Candidates 563 KB (`.next/diagnostics/route-bundle-stats.json` after a build) |
+| First-load JavaScript (uncompressed, current) | Home 501 KB, Login 571 KB, Analytics 547 KB, Overview 555 KB, Applications 561 KB, Settings 571 KB, Discover 576 KB, Jobs 579 KB, Candidates 590 KB (`.next/diagnostics/route-bundle-stats.json` after a build; the full list is `scripts/route-budgets.json`) |
 | Unused JavaScript | About 20–28 KB per page, which is Next's own polyfill block |
 
 To repeat it:
@@ -308,7 +312,7 @@ Quality gates that run on every change (see the README and `.github/workflows/ci
 
 ## Recovering from a bad deploy
 
-- **Code**: in Vercel → Deployments, promote the previous deployment. Every migration so far only adds tables and columns, so the older code runs against the newer database.
+- **Code**: in Vercel → Deployments, promote the previous deployment. Almost every migration only adds tables and columns, so the older code runs against the newer database. The exceptions are the migration that made schools and disciplines user-defined (it replaced columns) and one that widened the allowed notification kinds, so check before rolling back across those.
 - **Migrations**: they aren't rolled back automatically. Fix forward with a new migration. Never edit a migration that has already been pushed.
 - **A destructive migration** (dropping or rewriting columns) needs a backup taken just before it, and a note in the migration saying so.
 
@@ -326,23 +330,33 @@ If LinkedIn shows a warning or restriction, press **Pause outreach** in Settings
 
 ## Google sign-in
 
-The login page has a **Continue with Google** button next to the email link. It needs one-time setup:
+The sign-in page has a **Continue with Google** button. It needs one-time setup, once for the hosted site and once for your own computer. The steps are the same; only the redirect address differs.
 
-1. In Google Cloud Console, create a project (or use one), then **APIs & Services → OAuth consent screen**. Set the app name, your support email and `https://<your-app>.vercel.app` as the home page. Publish it ("In production") so anyone can sign in, not just test users.
-2. **Credentials → Create credentials → OAuth client ID → Web application.** Under **Authorized redirect URIs** add `https://<project-ref>.supabase.co/auth/v1/callback`. Copy the Client ID and Client secret.
+**Hosted site**
+
+1. In [Google Cloud Console](https://console.cloud.google.com), create a project (or use one), then **APIs & Services → OAuth consent screen** (shown as **Google Auth Platform** in newer consoles). Set the app name, your support email, audience **External**, and `https://<your-app>.vercel.app` as the home page. Publish it ("In production") so anyone can sign in, not just listed test users.
+2. **Credentials → Create credentials → OAuth client ID → Web application.** Under **Authorized redirect URIs** add `https://<project-ref>.supabase.co/auth/v1/callback`. Copy the Client ID (ends in `.apps.googleusercontent.com`) and Client secret (starts with `GOCSPX-`).
 3. In Supabase, **Authentication → Sign In / Providers → Google**: turn it on and paste the Client ID and secret.
 4. Make sure **Site URL** and **Redirect URLs** (§2.3) include your production address, and your custom domain if you add one.
 
-A Google sign-in with the same verified email as an existing account signs into that account (Supabase links them), so current users keep their data. **On your own computer.** `supabase/config.toml` already turns Google on locally and reads the client from `supabase/.env`. Until you add one, **Continue with Google** sends you back to the sign-in page with a message ("Google sign-in isn't available right now") instead of Supabase's raw `Unsupported provider` error. To make it really work locally: create an OAuth client of type *Web application* in Google Cloud Console with the authorised redirect URI `http://127.0.0.1:54321/auth/v1/callback`, copy `supabase/.env.example` to `supabase/.env`, fill in `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, and restart Supabase (`npx supabase stop`, then `npm run db:start`). The same error on the hosted app means the provider is off in **Authentication → Sign In / Providers → Google**.
+A Google sign-in with the same verified email as an existing account signs into that account (Supabase links them), so current users keep their data.
+
+**Your own computer.** `supabase/config.toml` already turns Google on locally and reads the client from `supabase/.env`.
+
+1. Create a second OAuth client (type *Web application*, name it anything, for example "Network Growth local") with the authorised redirect URI `http://127.0.0.1:54321/auth/v1/callback`. It must be `127.0.0.1` (not `localhost`), `http`, with no trailing slash. While the consent screen is in testing, add your own Google email under **Audience → Test users**.
+2. Copy `supabase/.env.example` to `supabase/.env` and fill in `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (no quotes, no spaces around `=`). The file is git-ignored.
+3. Restart Supabase: `npx supabase stop`, then `npm run db:start`.
+
+**If it isn't set up**, the button sends the person back to the sign-in page with "Google sign-in isn't available right now" (and, locally, a note about `supabase/.env`) instead of Supabase's raw `Unsupported provider` error. Other errors: `redirect_uri_mismatch` means the address in Google differs from the one above; "Access blocked" means your email isn't a listed test user; `invalid_client` means the ID or secret was copied wrongly.
 
 ## Sharing it for user feedback
 
 Before sending the link to testers:
 
 1. **Cap AI spend.** Set `AI_DAILY_QUOTA` (for example `5`). Unset means every tester's AI use runs on your key with no limit.
-2. **Set up SMTP** (step 2.4). Without it, Supabase's built-in email only reaches your own team, so testers can't sign in.
+2. **Set up SMTP** (step 2.5). Without it, Supabase's built-in email only reaches your own team, so testers can't confirm a sign-up, reset a password or use an emailed link. (Google sign-in doesn't need email.)
 3. **Schedule the crawler** (step 3.1, pg_cron). Vercel Hobby crons run only once a day, so job boards and alerts won't refresh without it.
 4. **Check the redirect URLs** in Supabase Auth include your production address.
-5. `/robots.txt` allows crawling and points to `/sitemap.xml`, which lists only `/login`, `/privacy` and `/terms`. `/llms.txt` and `/.well-known/ai-catalog.json` describe the public pages for AI crawlers and agents. That is safe for a private app: anyone not signed in, search bots included, is redirected to `/login`, so nothing behind sign-in is ever served to a crawler. Set `APP_URL` so the sitemap and canonical links use your real address.
+5. `/robots.txt` allows crawling and points to `/sitemap.xml`, which lists the home page, the guides, `/login`, `/privacy` and `/terms`. `/llms.txt` and `/.well-known/ai-catalog.json` describe the public pages for AI crawlers and agents. That is safe for a private app: anyone not signed in, search bots included, is redirected to `/login`, so nothing behind sign-in is ever served to a crawler (the home page and guides are public on purpose). Set `APP_URL` so the sitemap and canonical links use your real address.
 6. **Set `NEXT_PUBLIC_FEEDBACK_URL`** (a `mailto:` link or a form link) to show a "Send feedback" button in the navigation, and redeploy.
 7. Tell testers the AI privacy note: on Gemini's free tier, Google may use what is sent to improve its products.
