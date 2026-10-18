@@ -24,7 +24,7 @@ export function OlderVersions({ versions }: { versions: { id: string; label: str
               <a href={`/api/jobs/documents/${v.id}/download?format=docx`} className={buttonVariants({ size: "xs", variant: "ghost" })}>
                 <Download aria-hidden /> Word
               </a>
-              <Button size="xs" variant="ghost" disabled={pending} aria-label={`Delete ${v.label}`} onClick={() => run(() => deleteDocument(v.id), { undo: () => restoreDocument(v.id) })}>
+              <Button size="xs" variant="ghost" disabled={pending} aria-label={`Delete ${v.label}`} title={`Delete ${v.label}`} onClick={() => run(() => deleteDocument(v.id), { undo: () => restoreDocument(v.id) })}>
                 <Trash2 aria-hidden /> Delete
               </Button>
             </span>

@@ -4,6 +4,7 @@ import { FiltersToggle } from "@/components/jobs/filters-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState as EmptyPanel } from "@/components/empty-state";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Disclosure } from "@/components/disclosure";
 import { Checkbox } from "@/components/ui/checkbox";
 import { headers } from "next/headers";
 import { after } from "next/server";
@@ -196,9 +197,8 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
       <aside className="grid gap-4" aria-label="Filters and preferences">
         <FiltersPanel sp={sp} filters={filters} provinces={inCanada ? provinces : []} provFilter={provFilter} hrefBase={href} explicitRange={explicitRange} showAdzuna={providerNames.includes("adzuna")} showUsajobs={providerNames.includes("usajobs")} showCareerjet={providerNames.includes("careerjet")} currency={currency} />
         <PreferencesCard settings={settings} resumeTitles={feed.resolved.titlesFromResume ? searched : []} />
-        <details className="px-1 text-xs text-muted-foreground">
-          <summary className="w-fit cursor-pointer rounded-md py-1 font-medium hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">About these results</summary>
-          <div className="mt-2 grid gap-1.5">
+        <Disclosure variant="plain" summary="About these results" className="px-1 text-xs">
+          <div className="grid gap-1.5">
             <p>
               Sources: {(employerCount ?? 0).toLocaleString("en-CA")} employers&apos; job boards ({lastRun?.finished_at ? `last read ${timeAgo(lastRun.finished_at)}` : "not read yet"}), remote jobs from Jobicy and Remotive, jobs in Europe and the UK from Arbeitnow
               {providerNames.includes("usajobs") ? ", U.S. federal jobs from USAJOBS" : ""}
@@ -218,7 +218,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
               to check it against your resume.
             </p>
           </div>
-        </details>
+        </Disclosure>
         {services.limitations.map((l) => (
           <p key={l} className="px-1 text-xs text-muted-foreground">
             {l}
@@ -464,11 +464,15 @@ function FiltersPanel({
             ))}
             <p className="text-xs text-muted-foreground">Until you choose, your level from Settings is used.</p>
           </fieldset>
-          <details className="grid gap-3 rounded-lg border p-3 open:pb-3" data-testid="more-filters">
-            <summary className="-m-1 w-fit cursor-pointer rounded-md p-1 text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
-              More filters <span className="font-normal">(type, salary, company, source)</span>
-            </summary>
-            <div className="mt-3 grid gap-3">
+          <Disclosure
+            data-testid="more-filters"
+            summary={
+              <>
+                More filters <span className="font-normal text-muted-foreground">(type, salary, company, source)</span>
+              </>
+            }
+          >
+            <div className="grid gap-3">
           <fieldset className="grid gap-1">
             <legend className="mb-1 text-xs font-medium text-muted-foreground">Employment type</legend>
             {(
@@ -532,7 +536,7 @@ function FiltersPanel({
           </label>
           <p className="text-xs text-muted-foreground">There&apos;s no visa sponsorship filter: no source states it reliably.</p>
             </div>
-          </details>
+          </Disclosure>
           <div className="flex gap-2">
             <Button type="submit" size="sm">
               Apply filters

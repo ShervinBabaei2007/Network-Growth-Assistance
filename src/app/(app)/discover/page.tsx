@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { Disclosure } from "@/components/disclosure";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { ActionForm } from "@/components/action-form";
@@ -86,16 +87,7 @@ async function RequestCard({ searchParams }: Pick<PageProps<"/discover">, "searc
         </CardContent>
       </Card>
 
-      <Card>
-        <details className="group">
-          <summary className="cursor-pointer list-none px-4 [&::-webkit-details-marker]:hidden">
-            <CardTitle className="flex items-center justify-between">
-              Your networking goal
-              <span className="text-sm font-normal text-muted-foreground group-open:hidden">{settings?.networking_goal ? "Edit" : "Add"}</span>
-              <span className="hidden text-sm font-normal text-muted-foreground group-open:inline">Hide</span>
-            </CardTitle>
-          </summary>
-          <CardContent className="pt-4">
+      <Disclosure summary="Your networking goal">
             <ActionForm action={saveNetworkingGoal} submitLabel="Save">
               <div className="grid gap-1.5">
                 <Label htmlFor="goal">What are you looking for?</Label>
@@ -103,9 +95,7 @@ async function RequestCard({ searchParams }: Pick<PageProps<"/discover">, "searc
                 <p className="text-xs text-muted-foreground">Used to rank people by how useful a conversation would be, and to word suggested intros. It isn&apos;t shared.</p>
               </div>
             </ActionForm>
-          </CardContent>
-        </details>
-      </Card>
+      </Disclosure>
     </>
   );
 }
@@ -168,7 +158,7 @@ async function History() {
                 ) : null}
                 <form action={deleteSearch}>
                   <input type="hidden" name="id" value={s.id} />
-                  <Button type="submit" variant="ghost" size="sm" aria-label={`Delete search “${s.original_query}”`}>
+                  <Button type="submit" variant="ghost" size="sm" aria-label={`Delete search “${s.original_query}”`} title={`Delete search “${s.original_query}”`}>
                     Delete
                   </Button>
                 </form>

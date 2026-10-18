@@ -191,6 +191,7 @@ export function MobileNav({ goal }: { goal?: Goal }) {
         size="icon"
         className="size-11"
         aria-label="Open menu"
+        title="Open menu"
         aria-haspopup="dialog"
         aria-expanded={open}
         onPointerEnter={() => void loadSheet()}

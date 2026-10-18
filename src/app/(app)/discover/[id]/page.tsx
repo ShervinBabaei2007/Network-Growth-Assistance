@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import { Disclosure } from "@/components/disclosure";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -99,9 +100,8 @@ function Filters({ sp }: { sp: Record<string, string | string[] | undefined> }) 
     </div>
   );
   return (
-    <details className="rounded-lg border bg-card p-3" open={["institution", "program", "company", "role", "location", "gradYear", "minScore", "connection", "confidence"].some((k) => one(sp[k]))}>
-      <summary className="cursor-pointer text-sm font-medium">Filter results</summary>
-      <form role="search" className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <Disclosure summary="Filter results" open={["institution", "program", "company", "role", "location", "gradYear", "minScore", "connection", "confidence"].some((k) => one(sp[k]))}>
+      <form role="search" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {text("institution", "Institution")}
         {text("program", "Program")}
         {text("company", "Company")}
@@ -140,7 +140,7 @@ function Filters({ sp }: { sp: Record<string, string | string[] | undefined> }) 
           </Link>
         </div>
       </form>
-    </details>
+    </Disclosure>
   );
 }
 
@@ -159,13 +159,10 @@ function CardList({ people, searchId, review }: { people: Card[]; searchId: stri
 function Group({ title, count, children, open = false, hint }: { title: string; count: number; children: ReactNode; open?: boolean; hint?: string }) {
   if (count === 0) return null;
   return (
-    <details className="group grid gap-3 rounded-lg border bg-card p-3" open={open}>
-      <summary className="cursor-pointer text-sm font-medium">
-        {title} ({count})
-      </summary>
-      {hint ? <p className="mt-2 text-xs text-muted-foreground">{hint}</p> : null}
-      <div className="mt-3">{children}</div>
-    </details>
+    <Disclosure summary={`${title} (${count})`} open={open}>
+      {hint ? <p className="mb-3 text-xs text-muted-foreground">{hint}</p> : null}
+      {children}
+    </Disclosure>
   );
 }
 

@@ -443,7 +443,7 @@ function Reminders({ data }: { data: DetailData }) {
                     </span>
                   </span>
                 </label>
-                <Button size="icon-xs" variant="ghost" aria-label={`Remove reminder: ${r.text}`} disabled={pending} onClick={() => run(() => deleteReminder(r.id))}>
+                <Button size="icon-xs" variant="ghost" aria-label={`Remove reminder: ${r.text}`} title={`Remove reminder: ${r.text}`} disabled={pending} onClick={() => run(() => deleteReminder(r.id))}>
                   <Trash2 aria-hidden />
                 </Button>
               </li>
@@ -509,7 +509,7 @@ function Contacts({ data }: { data: DetailData }) {
                   <span className="text-muted-foreground">· {ROLE_LABEL[c.role] ?? c.role}</span>
                   {c.title ? <span className="block text-xs break-words text-muted-foreground">{c.title}</span> : null}
                 </span>
-                <Button size="icon-xs" variant="ghost" aria-label={`Unlink ${c.name}`} disabled={pending} onClick={() => run(() => unlinkContact(data.id, c.personId), { undo: () => linkContact(data.id, c.personId, c.role as typeof role) })}>
+                <Button size="icon-xs" variant="ghost" aria-label={`Unlink ${c.name}`} title={`Unlink ${c.name}`} disabled={pending} onClick={() => run(() => unlinkContact(data.id, c.personId), { undo: () => linkContact(data.id, c.personId, c.role as typeof role) })}>
                   <Trash2 aria-hidden />
                 </Button>
               </li>
@@ -585,7 +585,7 @@ function Documents({ data }: { data: DetailData }) {
                     {d.sourceGone ? " · original deleted, copy kept" : ""}
                   </span>
                 </span>
-                <Button size="icon-xs" variant="ghost" aria-label={`Unlink ${d.label}`} disabled={pending} onClick={() => run(() => unlinkDocument(d.id))}>
+                <Button size="icon-xs" variant="ghost" aria-label={`Unlink ${d.label}`} title={`Unlink ${d.label}`} disabled={pending} onClick={() => run(() => unlinkDocument(d.id))}>
                   <Trash2 aria-hidden />
                 </Button>
               </li>

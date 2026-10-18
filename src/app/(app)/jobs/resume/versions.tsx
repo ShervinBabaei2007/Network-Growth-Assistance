@@ -69,7 +69,7 @@ export function ResumeVersions({ resumeId, versions, canRestore }: { resumeId: s
                 </Button>
               ) : null}
               {v.docId ? (
-                <Button size="sm" variant="ghost" disabled={pending} aria-label={`Delete ${v.label}`} onClick={() => run(() => deleteDocument(v.docId!), { undo: () => restoreDocument(v.docId!) })}>
+                <Button size="sm" variant="ghost" disabled={pending} aria-label={`Delete ${v.label}`} title={`Delete ${v.label}`} onClick={() => run(() => deleteDocument(v.docId!), { undo: () => restoreDocument(v.docId!) })}>
                   <Trash2 aria-hidden /> Delete
                 </Button>
               ) : null}

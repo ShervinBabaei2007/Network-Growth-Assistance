@@ -147,12 +147,19 @@ async function OverviewContent() {
         </Card>
       )}
 
-      <details open={hasActivity} data-tour="breakdown" className="group grid gap-4">
-        <summary className="w-fit cursor-pointer rounded-md py-1 font-medium focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
-          Detailed breakdown
-          <span className="font-normal text-muted-foreground"> · pipeline, activity and disciplines</span>
-        </summary>
-        <div className="grid gap-6 pt-3">
+      <Disclosure
+        variant="plain"
+        open={hasActivity}
+        data-tour="breakdown"
+        className="font-medium"
+        summary={
+          <>
+            Detailed breakdown
+            <span className="font-normal text-muted-foreground"> · pipeline, activity and disciplines</span>
+          </>
+        }
+      >
+        <div className="grid gap-6">
       <section aria-labelledby="pipeline" className="grid gap-2">
         <h2 id="pipeline" className="font-medium">
           Pipeline
@@ -228,7 +235,7 @@ async function OverviewContent() {
         </CardContent>
       </Card>
         </div>
-      </details>
+      </Disclosure>
     </>
   );
 }

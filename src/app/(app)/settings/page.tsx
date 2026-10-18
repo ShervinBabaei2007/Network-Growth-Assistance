@@ -327,6 +327,7 @@ function MoveButton({
         size="icon-sm"
         disabled={disabled}
         aria-label={`Move ${name} ${direction}`}
+        title={`Move ${name} ${direction}`}
       >
         <Icon />
       </Button>

@@ -1,4 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
+import { Disclosure } from "@/components/disclosure";
 import { PageNav } from "@/components/page-nav";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -61,20 +62,9 @@ export default function CandidatesPage({ searchParams }: PageProps<"/candidates"
         </CardContent>
       </Card>
 
-      <Card id="add">
-        <details className="group">
-          <summary className="cursor-pointer list-none px-4 [&::-webkit-details-marker]:hidden">
-            <CardTitle className="flex items-center justify-between">
-              Add one person by hand
-              <span className="text-sm font-normal text-muted-foreground group-open:hidden">Show</span>
-              <span className="hidden text-sm font-normal text-muted-foreground group-open:inline">Hide</span>
-            </CardTitle>
-          </summary>
-          <CardContent className="pt-4">
+      <Disclosure id="add" summary="Add one person by hand">
             <QuickAddForm />
-          </CardContent>
-        </details>
-      </Card>
+      </Disclosure>
 
       <Suspense fallback={<PageSkeleton label="Loading candidates…" />}>
         <CandidateList searchParams={searchParams} />
@@ -209,7 +199,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
                     href={c.profile_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={`Open ${c.full_name} on LinkedIn`}
+                    aria-label={`Open ${c.full_name} on LinkedIn`} title={`Open ${c.full_name} on LinkedIn`}
                     className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
                   >
                     <ExternalLink />

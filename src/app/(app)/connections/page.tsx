@@ -42,22 +42,11 @@ export default function ConnectionsPage({ searchParams }: PageProps<"/connection
         </CardContent>
       </Card>
 
-      <Card>
-        <details className="group">
-          <summary className="cursor-pointer list-none px-4 [&::-webkit-details-marker]:hidden">
-            <CardTitle className="flex items-center justify-between">
-              Add one connection by hand
-              <span className="text-sm font-normal text-muted-foreground group-open:hidden">Show</span>
-              <span className="hidden text-sm font-normal text-muted-foreground group-open:inline">Hide</span>
-            </CardTitle>
-          </summary>
-          <CardContent className="pt-4">
+      <Disclosure summary="Add one connection by hand">
             <ActionForm action={addKnownConnection} submitLabel="Add" resetOnSuccess>
               <ConnectionFields />
             </ActionForm>
-          </CardContent>
-        </details>
-      </Card>
+      </Disclosure>
 
       <Suspense fallback={<PageSkeleton label="Loading connections…" />}>
         <ConnectionList searchParams={searchParams} />
@@ -150,7 +139,7 @@ async function ConnectionList({ searchParams }: Pick<PageProps<"/connections">, 
                 <TableCell className="max-w-48 truncate font-medium">
                   {k.full_name}
                   {k.linkedin_url ? (
-                    <a href={k.linkedin_url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${k.full_name} on LinkedIn`} className="ml-1 inline-flex align-middle text-muted-foreground hover:text-foreground">
+                    <a href={k.linkedin_url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${k.full_name} on LinkedIn`} title={`Open ${k.full_name} on LinkedIn`} className="ml-1 inline-flex align-middle text-muted-foreground hover:text-foreground">
                       <ExternalLink className="size-3.5" />
                     </a>
                   ) : null}

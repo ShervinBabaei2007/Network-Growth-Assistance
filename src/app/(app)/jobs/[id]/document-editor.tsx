@@ -125,7 +125,7 @@ export function ResumeDocEditor({ docId, initial, generated, edited, originals }
                         </p>
                       ) : null}
                     </div>
-                    <Button size="icon-sm" variant="ghost" aria-label="Remove bullet" onClick={() => setBullet(si, ei, bi, null)}>
+                    <Button size="icon-sm" variant="ghost" aria-label="Remove bullet" title="Remove bullet" onClick={() => setBullet(si, ei, bi, null)}>
                       <Trash2 aria-hidden />
                     </Button>
                   </div>
