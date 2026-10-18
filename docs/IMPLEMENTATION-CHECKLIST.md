@@ -25,6 +25,7 @@ Status words are kept separate on purpose:
 | `8e362b9`, `ba03c8d`, `3c2e639`, `228ff2a` | Test fix, Settings hydration, tables as cards on phones, shared Disclosure, unused code removed |
 | `46fc4b9` | README rewrite with screenshots (`npm run docs:screenshots`) |
 | merges on `main`, 2026-10-18 | One branch per feature, each merged with its own commits: `feat/auth-signup-signin`, `feat/demo-workspace`, `feat/landing-page`, `feat/a11y-axe`, `feat/staging-smoke`, `feat/command-palette`, `feat/follow-up-cadence`, `feat/bulk-actions-saved-views`, `feat/monitoring`, `feat/interview-prep`, `feat/i18n-fr-ca` |
+| merges on `main`, second round | `feat/job-compare-hide` (compare jobs, hide companies and titles, private job notes), `feat/resume-tracks` (several base resumes, a track per job, coverage check, PDF and Word download), `perf/hydrate-less` (long-task trace, cheaper job card layout), `perf/large-lists` (grouped progress queries, list-sort indexes, 20,000-row benchmark), `perf/crawl-storage` (shortened old postings, dropped unused vectors, storage report and 70% warning) |
 | after the merges | Google sign-in fixed locally (provider enabled from `supabase/.env`, friendly message when unset), home page simplified to one column, README and docs rewritten |
 
 ## Scope of the first release
