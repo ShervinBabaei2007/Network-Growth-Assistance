@@ -431,6 +431,20 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"job_filters": {
+                  Row: {
+                    "created_at": string,"id": string,"kind": string,"pattern": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"kind": string,"pattern": string,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"kind"?: string,"pattern"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"job_matches": {
                   Row: {
                     "created_at": string,"exclusion_reasons": (string)[],"fit_score": number,"id": string,"job_id": string,"method": string,"requirement_results": NonNullable<Json>,"resume_id": string,"summary": string | null,"tier": Database["public"]['Enums']["job_fit_tier"],"updated_at": string,"user_id": string
@@ -455,6 +469,26 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "resumes"
       referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"job_notes": {
+                  Row: {
+                    "body": string,"id": string,"job_id": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "body": string,"id"?: string,"job_id": string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "body"?: string,"id"?: string,"job_id"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "job_notes_job_id_fkey"
+      columns: ["job_id"]
+isOneToOne: false
+      referencedRelation: "jobs"
+      referencedColumns: ["id"]
     }
                   ]
                 },"job_requirements": {

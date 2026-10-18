@@ -12,6 +12,7 @@ import Link from "next/link";
 import { Bookmark, FileText, Info, Plus, Search, SearchX, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import type { TierKey } from "@/components/jobs/job-visuals";
 import { TIER_STYLE } from "@/components/jobs/job-visuals";
+import { CompareBar } from "@/components/jobs/compare-select";
 import { JobCard } from "@/components/jobs/job-card";
 import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
@@ -66,6 +67,9 @@ export default function JobsPage({ searchParams }: PageProps<"/jobs">) {
         description="Real, recent postings, each checked against your resume. Every listing shows where it came from."
         actions={
           <>
+            <Link href="/jobs/hidden" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+              Hidden
+            </Link>
             <Link href="/jobs/resume" className={buttonVariants({ variant: "outline", size: "sm" })}>
               <FileText aria-hidden /> Resume
             </Link>
@@ -333,6 +337,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
         )}
 
         <PageNav current={current} pages={pages} href={(n) => href({ page: String(n) })} />
+        <CompareBar />
       </section>
     </div>
   );

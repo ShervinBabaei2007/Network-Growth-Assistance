@@ -33,6 +33,7 @@ import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { ComparisonPanel } from "./comparison-panel";
 import { GuardReport, LetterDocEditor, ResumeDocEditor } from "./document-editor";
+import { JobNote } from "./job-note";
 import { NotesView } from "./notes-view";
 import { OlderVersions } from "./older-versions";
 import { CheckFitButton, StatusActions, WorkActions } from "./posting-actions";
@@ -60,12 +61,13 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims.sub;
-  const [{ data: job }, resume, { data: state }, ai, { data: tracked }] = await Promise.all([
+  const [{ data: job }, resume, { data: state }, ai, { data: tracked }, { data: noteRow }] = await Promise.all([
     supabase.from("jobs").select("*").eq("id", id).maybeSingle(),
     loadActiveResume(supabase),
     supabase.from("job_user_states").select("status").eq("job_id", id).maybeSingle(),
     aiAccess(supabase),
     supabase.from("applications").select("id, stage, attempt").eq("job_id", id).order("attempt", { ascending: false }).limit(1),
+    supabase.from("job_notes").select("body").eq("job_id", id).maybeSingle(),
   ]);
   const application = tracked?.[0] ?? null;
   if (!job || !userId) notFound();
@@ -331,6 +333,9 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
                     {application.attempt > 1 ? ` (attempt ${application.attempt})` : ""}
                   </Link>
                 ) : null}
+              </div>
+              <div className="border-t pt-3">
+                <JobNote jobId={job.id} initial={noteRow?.body ?? ""} />
               </div>
             </CardContent>
           </Card>

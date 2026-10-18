@@ -10,6 +10,7 @@ import { LEVEL_LABELS, WORKPLACE_LABELS, type Workplace } from "@/lib/job-postin
 import type { JobSource } from "@/lib/job-postings/source";
 import { cn } from "@/lib/utils";
 import { ApplyLink } from "./apply-link";
+import { CompareToggle } from "./compare-select";
 import { SaveJobButton } from "./save-job-button";
 
 export type CardJob = {
@@ -140,8 +141,9 @@ export function JobCard({
           </div>
         </details>
         <div className="flex flex-wrap items-center gap-1">
+          <CompareToggle id={j.id} title={j.title} />
           <SaveJobButton jobId={j.id} status={status} />
-          <JobMoreMenu jobId={j.id} />
+          <JobMoreMenu jobId={j.id} company={j.company} />
           {apply.enabled ? (
             <ApplyLink jobId={j.id} href={apply.href} status={status} className={buttonVariants({ size: "sm" })}>
               Apply <ArrowUpRight aria-hidden />
