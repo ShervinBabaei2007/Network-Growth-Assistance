@@ -103,7 +103,7 @@ async function Directory({ searchParams }: Pick<PageProps<"/jobs/employers">, "s
           </Button>
         </form>
         <div className="overflow-x-auto rounded-lg border bg-card">
-          <Table>
+          <Table stack>
             <TableHeader>
               <TableRow>
                 <TableHead>Employer</TableHead>
@@ -129,9 +129,9 @@ async function Directory({ searchParams }: Pick<PageProps<"/jobs/employers">, "s
                       </Badge>
                     ) : null}
                   </TableCell>
-                  <TableCell>{ATS_LABELS[e.ats]}</TableCell>
-                  <TableCell className="text-right">{e.matching_jobs}</TableCell>
-                  <TableCell className="text-muted-foreground">{e.last_crawled_at ? timeAgo(e.last_crawled_at) : "Not yet"}</TableCell>
+                  <TableCell label="Board">{ATS_LABELS[e.ats]}</TableCell>
+                  <TableCell label="Jobs kept" className="text-right">{e.matching_jobs}</TableCell>
+                  <TableCell label="Last read" className="text-muted-foreground">{e.last_crawled_at ? timeAgo(e.last_crawled_at) : "Not yet"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

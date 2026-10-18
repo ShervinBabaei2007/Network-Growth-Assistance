@@ -133,7 +133,7 @@ async function ConnectionList({ searchParams }: Pick<PageProps<"/connections">, 
           {q ? "No connections match." : "No known connections yet. Import your Connections.csv so Discover can skip people you already know."}
         </p>
       ) : (
-        <Table>
+        <Table stack>
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -155,10 +155,10 @@ async function ConnectionList({ searchParams }: Pick<PageProps<"/connections">, 
                     </a>
                   ) : null}
                 </TableCell>
-                <TableCell className="hidden max-w-72 truncate whitespace-normal text-muted-foreground sm:table-cell">
+                <TableCell label="Company · position" className="hidden max-w-72 truncate whitespace-normal text-muted-foreground sm:table-cell">
                   {[k.company, k.position].filter(Boolean).join(" · ")}
                 </TableCell>
-                <TableCell className="hidden text-muted-foreground md:table-cell">{k.source === "linkedin_export" ? "LinkedIn export" : k.source === "csv" ? "CSV" : "Added by hand"}</TableCell>
+                <TableCell label="Source" className="hidden text-muted-foreground md:table-cell">{k.source === "linkedin_export" ? "LinkedIn export" : k.source === "csv" ? "CSV" : "Added by hand"}</TableCell>
                 <TableCell className="text-right">
                   <details className="inline-block text-left">
                     <summary className={buttonVariants({ variant: "ghost", size: "sm" })}>Edit</summary>

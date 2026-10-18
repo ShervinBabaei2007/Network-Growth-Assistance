@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signIn, uniqueEmail } from "./helpers";
+import { adminRest, signIn, uniqueEmail, userIdFor } from "./helpers";
 
 test("mobile: menu works and pages fit the screen", async ({ page }) => {
   await signIn(page, uniqueEmail("mobile"));
@@ -56,4 +56,25 @@ test("mobile: nothing is cut off at 360px wide", async ({ page }) => {
     });
     expect(cutOff, `/${path} has content cut off`).toEqual([]);
   }
+});
+
+test("mobile: lists are cards with labelled rows, not a squeezed table", async ({ page }) => {
+  const email = uniqueEmail("cards");
+  await signIn(page, email);
+  const user_id = await userIdFor(email);
+  await adminRest("POST", "known_connections", [
+    { user_id, full_name: "Sam Rivera", normalized_name: "sam rivera", company: "Northwind Labs", position: "Platform Engineer" },
+    { user_id, full_name: "Ana Costa", normalized_name: "ana costa", company: "Contoso", position: "Designer" },
+  ]);
+  await page.goto("/connections");
+  const rows = page.getByRole("main").locator("tbody tr");
+  await expect(rows).toHaveCount(2);
+  // The header row is gone and the column that is hidden on small tables is shown inside the card.
+  await expect(page.locator("thead")).toBeHidden();
+  const source = rows.first().locator('td[data-label="Source"]');
+  await expect(source).toBeVisible();
+  await expect(source).toHaveText("Added by hand");
+  expect(await source.evaluate((el) => getComputedStyle(el, "::before").content)).toBe('"Source"');
+  // Every card has its own border, including the last one.
+  for (const i of [0, 1]) expect(await rows.nth(i).evaluate((el) => getComputedStyle(el).borderTopWidth)).not.toBe("0px");
 });

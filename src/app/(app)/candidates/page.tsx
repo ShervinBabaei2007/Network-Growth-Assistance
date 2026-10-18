@@ -172,7 +172,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
             : "No candidates yet. Add people you find through LinkedIn search, or import a list."}
         </p>
       ) : (
-        <Table>
+        <Table stack>
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -192,7 +192,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
                     {c.full_name}
                   </Link>
                 </TableCell>
-                <TableCell className="whitespace-normal">
+                <TableCell label="School · program" className="whitespace-normal">
                   <CategoryLabel
                     university={c.university}
                     discipline={c.discipline}
@@ -200,8 +200,8 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
                     catalog={catalog}
                   />
                 </TableCell>
-                <TableCell className="hidden max-w-64 truncate text-muted-foreground md:table-cell">{c.role}</TableCell>
-                <TableCell>
+                <TableCell label="Role" className="hidden max-w-64 truncate text-muted-foreground md:table-cell">{c.role}</TableCell>
+                <TableCell label="Status">
                   <StatusBadge status={c.status} />
                 </TableCell>
                 <TableCell>

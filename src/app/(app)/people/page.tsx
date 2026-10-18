@@ -127,7 +127,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
           description={q || status || tag || due ? "Try removing a filter or searching for something else." : "Run a search in Discover and save the people worth meeting."}
         />
       ) : (
-        <Table>
+        <Table stack>
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -154,12 +154,12 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
                     </span>
                   ) : null}
                 </TableCell>
-                <TableCell className="hidden max-w-64 truncate text-muted-foreground md:table-cell">{[p.current_title, p.current_company].filter(Boolean).join(" @ ")}</TableCell>
-                <TableCell>
+                <TableCell label="Role" className="hidden max-w-64 truncate text-muted-foreground md:table-cell">{[p.current_title, p.current_company].filter(Boolean).join(" @ ")}</TableCell>
+                <TableCell label="Status">
                   <Badge variant={p.crm_status === "connected" || p.crm_status === "replied" ? "secondary" : p.crm_status === "ready_to_connect" ? "default" : "outline"}>{CRM_STATUS_LABELS[p.crm_status]}</Badge>
                 </TableCell>
-                <TableCell className="hidden text-muted-foreground lg:table-cell">{PROXIMITY_LABELS[p.proximity]}</TableCell>
-                <TableCell className="hidden tabular-nums sm:table-cell">
+                <TableCell label="Connection" className="hidden text-muted-foreground lg:table-cell">{PROXIMITY_LABELS[p.proximity]}</TableCell>
+                <TableCell label="Reminder" className="hidden tabular-nums sm:table-cell">
                   {p.reminder_at ? <span className={p.reminder_at <= today ? "font-medium text-destructive" : "text-muted-foreground"}>{p.reminder_at}</span> : null}
                 </TableCell>
               </TableRow>
