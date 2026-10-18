@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/page-header";
 import { ActionForm } from "@/components/action-form";
-import { AppSelect } from "@/components/app-select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +11,7 @@ import { aiAccess } from "@/lib/job-postings/ai";
 import { PROVINCE_CODES, PROVINCE_NAMES } from "@/lib/job-postings/types";
 import { createClient } from "@/lib/supabase/server";
 import { addManualPosting } from "../actions";
+import { LocationFields } from "./location-fields";
 import { PastePage } from "./paste-page";
 
 export const metadata = { title: "Paste a posting · Jobs · Network Growth" };
@@ -63,27 +63,11 @@ async function PostingForm() {
             <Label htmlFor="city">City</Label>
             <Input id="city" name="city" maxLength={120} placeholder="Leave blank if remote" />
           </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="country">Country</Label>
-            <AppSelect id="country" name="country" defaultValue={myCountry}>
-              {countryOptions().map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
-            </AppSelect>
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="province">Province (jobs in Canada)</Label>
-            <AppSelect id="province" name="province" defaultValue="">
-              <option value="">None, or remote</option>
-              {PROVINCE_CODES.map((p) => (
-                <option key={p} value={p}>
-                  {PROVINCE_NAMES[p]}
-                </option>
-              ))}
-            </AppSelect>
-          </div>
+          <LocationFields
+            countries={countryOptions().map((c) => ({ code: c.code, name: c.name }))}
+            provinces={PROVINCE_CODES.map((p) => ({ code: p, name: PROVINCE_NAMES[p] }))}
+            defaultCountry={myCountry}
+          />
           <div className="grid gap-1.5 sm:col-span-2">
             <Label htmlFor="url">Link to the posting</Label>
             <Input id="url" name="url" type="url" required placeholder="https://www.linkedin.com/jobs/view/…" />

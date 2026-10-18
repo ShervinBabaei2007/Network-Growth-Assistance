@@ -8,6 +8,7 @@ import { countryName } from "@/lib/geo/countries";
 import { parsePastedPage, type PastedPosting } from "@/lib/job-postings/paste-parse";
 import { PROVINCE_CODES } from "@/lib/job-postings/provinces";
 import { readPastedPostingWithAI } from "../actions";
+import { FILL_LOCATION_EVENT, type FillLocationDetail } from "./location-fields";
 
 /** Sets a field of the posting form below, if it exists and there's a value. */
 function setField(id: string, value: string | null | undefined): boolean {
@@ -23,8 +24,14 @@ function fill(p: Partial<PastedPosting>): string[] {
   if (setField("title", p.title)) filled.push("job title");
   if (setField("company", p.company)) filled.push("company");
   if (setField("city", p.city)) filled.push("city");
-  if (p.country && setField("country", p.country)) filled.push(countryName(p.country) ?? "country");
-  if (p.country === "CA" && p.region && (PROVINCE_CODES as readonly string[]).includes(p.region)) setField("province", p.region);
+  // The two selects are controlled by React, so they are told by event rather than by writing to the element.
+  const location: FillLocationDetail = {};
+  if (p.country) {
+    location.country = p.country;
+    filled.push(countryName(p.country) ?? "country");
+  }
+  if (p.country === "CA" && p.region && (PROVINCE_CODES as readonly string[]).includes(p.region)) location.province = p.region;
+  if (location.country || location.province) window.dispatchEvent(new CustomEvent<FillLocationDetail>(FILL_LOCATION_EVENT, { detail: location }));
   if (setField("description", p.description)) filled.push("posting text");
   return filled;
 }
