@@ -22,7 +22,7 @@ export default function ApplicationsPage({ searchParams }: PageProps<"/applicati
     <div className="grid gap-6">
       <PageHeader
         title="Applications"
-        description="Every job you're pursuing, from saved to offer. Move an application when something happens; each move is kept on its timeline."
+        description="Every job you're pursuing, from saved to offer."
         actions={
           <Link href="/jobs" className={buttonVariants({ variant: "outline", size: "sm" })}>
             Find jobs

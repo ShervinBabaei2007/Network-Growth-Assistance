@@ -41,7 +41,7 @@ export default function ResumePage({ searchParams }: PageProps<"/jobs/resume">) 
       <PageHeader
         back={{ href: "/jobs", label: "Jobs" }}
         title="Your resume"
-        description="Postings are checked against this profile, and tailored resumes, CVs and cover letters can only use what it says. Check what was read: anything uncertain is marked. Your original resume is kept unchanged."
+        description="Postings are checked against this profile. Anything uncertain is marked for review."
       />
       <Suspense fallback={<PageSkeleton label="Loading…" />}>
         <ResumeContent searchParams={searchParams} />

@@ -13,7 +13,7 @@ export default function HiddenJobsPage() {
       <PageHeader
         back={{ href: "/jobs", label: "Jobs" }}
         title="Hidden jobs"
-        description="Companies and title words you don’t want to see. They’re left out of your Jobs list and your saved-search alerts. Jobs you saved stay in Saved & applied."
+        description="Companies and title words left out of your Jobs list and alerts."
       />
       <Suspense fallback={<PageSkeleton label="Loading hidden jobs…" />}>
         <Hidden />
