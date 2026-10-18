@@ -5,12 +5,13 @@ test("visitors see the landing page and can reach sign up", async ({ page }) => 
   await page.goto("/");
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Grow your network on purpose");
-  await expect(page.getByText("Never scrapes LinkedIn", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "How it works" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What it never does" })).toBeVisible();
   const ld = await page.locator('script[type="application/ld+json"]').allTextContents();
   expect(ld.join("")).toContain("FAQPage");
   expect(ld.join("")).toContain("SoftwareApplication");
 
-  await page.getByRole("link", { name: "Create a free account" }).click();
+  await page.getByRole("link", { name: "Create a free account" }).first().click();
   await expect(page).toHaveURL(/\/login\?mode=signup/);
   await expect(page.getByRole("tab", { name: "Sign up", selected: true })).toBeVisible();
 });

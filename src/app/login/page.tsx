@@ -31,5 +31,16 @@ async function LinkError({ searchParams }: Pick<PageProps<"/login">, "searchPara
   const params = await searchParams;
   if (params.error !== "google" && params.error !== "link") return null;
   const t = translator(await getLocale());
-  return <FormError>{params.error === "google" ? t("auth.googleUnavailable") : t("auth.linkInvalid")}</FormError>;
+  if (params.error !== "google") return <FormError>{t("auth.linkInvalid")}</FormError>;
+  return (
+    <FormError>
+      {t("auth.googleUnavailable")}
+      {/* Only on a developer's own computer: say exactly what is missing. */}
+      {process.env.NODE_ENV !== "production" ? (
+        <span className="mt-1 block text-xs">
+          Developer note: add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to supabase/.env, then restart Supabase (see supabase/.env.example).
+        </span>
+      ) : null}
+    </FormError>
+  );
 }
