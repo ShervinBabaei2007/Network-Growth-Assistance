@@ -17,6 +17,7 @@ describe("normalizeRoute", () => {
   it("drops the query, fragment, trailing slash and anything deeper", () => {
     expect(normalizeRoute("/candidates?q=maya%20chen&status=approved#top")).toBe("/candidates");
     expect(normalizeRoute("/people/p1/extra/deeper/")).toBe("/people/[id]");
+    expect(normalizeRoute("/applications/3f2c1a9e-0000-4000-8000-000000000000/prep")).toBe("/applications/[id]/prep");
   });
   it("never records an unknown path, which could hold anything", () => {
     expect(normalizeRoute("/maya.chen@example.com")).toBe("/other");
