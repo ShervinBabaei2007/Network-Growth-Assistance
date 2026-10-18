@@ -65,13 +65,22 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
 
   const c = view.counters;
   const m = view.metrics;
+  // Finished with nobody found: say why, instead of "Research complete" over a row of ticks.
+  const empty = !running && view.status === "completed" && (c.verified ?? 0) + (c.possible ?? 0) === 0;
+  const emptyNote = !empty
+    ? null
+    : !m.queries
+      ? "No searches could be run for this request. Add a school, a city or a company and try again."
+      : m.providerFailures
+        ? "Some sources were busy or unavailable. Try again in a little while."
+        : "Nothing in the public sources matched. Try fewer requirements, or name a school, city or company.";
   const current = VISIBLE_STAGES.indexOf(view.stage as (typeof VISIBLE_STAGES)[number]);
 
   return (
     <section aria-labelledby="progress-heading" className="grid gap-3 rounded-lg border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="progress-heading" className="text-sm font-semibold">
-          {running ? "Researching…" : view.status === "completed" ? "Research complete" : view.status === "cancelled" ? "Search cancelled" : "Search stopped"}
+          {running ? "Researching…" : view.status === "completed" ? (empty ? "No matches found" : "Research complete") : view.status === "cancelled" ? "Search cancelled" : "Search stopped"}
         </h2>
         {running ? (
           <Button variant="outline" size="sm" onClick={cancel} disabled={cancelling}>
@@ -104,20 +113,14 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
         <strong>{c.verified ?? 0}</strong> verified · <strong>{c.possible ?? 0}</strong> possible
         {c.needsReview ? ` · ${c.needsReview} to review` : ""} · asked for {view.targetCount}
       </p>
-      {view.stopReason && !running ? <p className="text-xs text-muted-foreground">Stopped because: {view.stopReason}.</p> : null}
+      {emptyNote ? <p className="text-sm">{emptyNote}</p> : null}
+      {view.stopReason && !running && !empty ? <p className="text-xs text-muted-foreground">Stopped because: {view.stopReason}.</p> : null}
       {view.error ? (
         <FormError>
           {view.error}
         </FormError>
       ) : null}
       {error ? <p className="text-xs text-muted-foreground">{error}</p> : null}
-      {view.limitations.length ? (
-        <ul className="grid gap-0.5 text-xs text-muted-foreground">
-          {view.limitations.map((l) => (
-            <li key={l}>{l}</li>
-          ))}
-        </ul>
-      ) : null}
 
       <Disclosure variant="plain" summary="Research details" className="text-xs">
         <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground sm:grid-cols-4">

@@ -89,8 +89,7 @@ export function planQueries(criteria: NetworkingCriteria, max = 40): PlannedQuer
     if (criteria.includeStartups) for (const r of roles.slice(0, 2)) for (const l of places.length ? places : [null]) gh("startup", q(r), ...(l ? [where(l)] : []));
     if (programs[0] && role0) gh(q(programs[0]), q(role0), "in:bio");
     for (const c of criteria.companies.slice(0, 4)) gh(q(c), ...(role0 ? [q(role0)] : programs[0] ? [q(programs[0])] : []));
-    for (const l of places) gh(...programs.slice(0, 1).map(q), "in:bio", where(l));
-    if (!subjects.length) for (const l of places) gh(where(l), "in:bio", "developer");
+    if (programs[0]) for (const l of places) gh(q(programs[0]), "in:bio", where(l));
   }
 
   // ORCID's public registry: people's own education and employment records (Solr query syntax).
