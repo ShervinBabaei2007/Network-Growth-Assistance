@@ -88,7 +88,8 @@ function ToastList() {
             ) : null}
           </div>
         </Toast.Content>
-        <Toast.Close aria-label="Dismiss notification" className="absolute top-2.5 right-2.5 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+        {/* Base UI hides this button from assistive tech while collapsed but leaves it tabbable; keep it exposed. */}
+        <Toast.Close aria-label="Dismiss notification" aria-hidden={false} className="absolute top-2.5 right-2.5 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
           <X className="size-3.5" aria-hidden />
         </Toast.Close>
       </Toast.Root>
