@@ -1,5 +1,6 @@
 import "server-only";
 import { localDate, weekStart } from "@/lib/dates";
+import { selectAll } from "@/lib/discovery/store";
 import { renderDigest } from "@/lib/email/digest";
 import { emailConfig, getMailer } from "@/lib/email/mailer";
 import { unsubscribeToken } from "@/lib/email/unsubscribe";
@@ -133,9 +134,10 @@ export async function notifyDueReminders(db: Db, now: Date): Promise<number> {
 
 /** One notification a day for people with follow-ups due, using the "Reminders" switch in Settings. */
 export async function notifyDueFollowUps(db: Db, now: Date): Promise<number> {
-  const { data } = await db.from("follow_ups").select("user_id, due_on").eq("state", "suggested").lte("due_on", now.toISOString().slice(0, 10)).limit(5000);
+  // Paged and ordered: the database returns at most 1,000 rows a query, and an unordered read would skip some users once more are due.
+  const data = await selectAll((from, to) => db.from("follow_ups").select("id, user_id").eq("state", "suggested").lte("due_on", now.toISOString().slice(0, 10)).order("id").range(from, to));
   const counts = new Map<string, number>();
-  for (const r of data ?? []) counts.set(r.user_id, (counts.get(r.user_id) ?? 0) + 1);
+  for (const r of data) counts.set(r.user_id, (counts.get(r.user_id) ?? 0) + 1);
   const allowed = await wants(db, "notify_reminders", [...counts.keys()]);
   let made = 0;
   for (const [userId, n] of counts) {
