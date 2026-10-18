@@ -1,7 +1,7 @@
 import { Suspense } from "react";
+import { PageNav } from "@/components/page-nav";
 import { Disclosure } from "@/components/disclosure";
 import { PageSkeleton } from "@/components/page-skeleton";
-import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
@@ -179,20 +179,7 @@ async function ConnectionList({ searchParams }: Pick<PageProps<"/connections">, 
         </Table>
       )}
 
-      {pages > 1 ? (
-        <nav aria-label="Pages" className="flex gap-2">
-          {page > 1 ? (
-            <Link href={href(page - 1)} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              Previous
-            </Link>
-          ) : null}
-          {page < pages ? (
-            <Link href={href(page + 1)} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              Next
-            </Link>
-          ) : null}
-        </nav>
-      ) : null}
+      <PageNav current={page} pages={pages} href={href} />
 
       {total > 0 ? (
         <Disclosure summary="Delete all known connections">

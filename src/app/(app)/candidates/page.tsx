@@ -1,4 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
+import { PageNav } from "@/components/page-nav";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -220,20 +221,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
         </Table>
       )}
 
-      {pages > 1 ? (
-        <nav aria-label="Pages" className="flex gap-2">
-          {page > 1 ? (
-            <Link href={pageHref(page - 1)} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              Previous
-            </Link>
-          ) : null}
-          {page < pages ? (
-            <Link href={pageHref(page + 1)} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              Next
-            </Link>
-          ) : null}
-        </nav>
-      ) : null}
+      <PageNav current={page} pages={pages} href={pageHref} />
     </section>
   );
 }

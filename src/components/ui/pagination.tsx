@@ -1,4 +1,5 @@
 import * as React from "react"
+import Link from "next/link"
 import { cn } from "cn"
 
 import { Button } from "@/components/ui/button"
@@ -51,11 +52,12 @@ function PaginationLink({
       className={cn(className)}
       nativeButton={false}
       render={
-        <a
+        // Next's Link, so moving between pages is a client navigation (prefetched) rather than a full page load.
+        <Link
           aria-current={isActive ? "page" : undefined}
           data-slot="pagination-link"
           data-active={isActive}
-          {...props}
+          {...(props as Omit<typeof props, "href"> & { href: string })}
         />
       }
     />

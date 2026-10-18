@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import { Field as FieldBox, FieldLabel } from "@/components/ui/field";
 import { Disclosure } from "@/components/disclosure";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -11,7 +12,6 @@ import { AppSelect } from "@/components/app-select";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { classifyCandidate } from "@/lib/classify";
 import { localDate } from "@/lib/dates";
@@ -287,12 +287,13 @@ function Section({ title, description, children }: { title: string; description?
   );
 }
 
+/** A labelled form control, on the shadcn Field. */
 function Field({ id, label, children }: { id: string; label: string; children: ReactNode }) {
   return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
+    <FieldBox className="gap-1.5">
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       {children}
-    </div>
+    </FieldBox>
   );
 }
 

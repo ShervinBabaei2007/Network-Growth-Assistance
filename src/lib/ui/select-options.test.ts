@@ -1,6 +1,6 @@
 import { createElement as h, Fragment } from "react";
 import { describe, expect, it } from "vitest";
-import { readOptions, selectChangeEvent } from "./select-options";
+import { readOptions, selectChangeEvent, splitClasses } from "./select-options";
 
 describe("readOptions", () => {
   it("reads values, labels and disabled from option elements", () => {
@@ -33,5 +33,20 @@ describe("selectChangeEvent", () => {
     expect(e.target.value).toBe("screening");
     expect(e.currentTarget.value).toBe("screening");
     expect(e.target.name).toBe("stage");
+  });
+});
+
+describe("splitClasses", () => {
+  it("keeps width and margin with the wrapper and height and text size with the control", () => {
+    expect(splitClasses("h-7 text-xs w-40 mt-1")).toEqual(["w-40 mt-1", "h-7 text-xs"]);
+  });
+
+  it("understands responsive and state prefixes", () => {
+    expect(splitClasses("sm:w-48 md:h-9 max-w-xs")).toEqual(["sm:w-48 max-w-xs", "md:h-9"]);
+  });
+
+  it("copes with nothing", () => {
+    expect(splitClasses(undefined)).toEqual(["", ""]);
+    expect(splitClasses("  ")).toEqual(["", ""]);
   });
 });

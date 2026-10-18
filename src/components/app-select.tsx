@@ -2,6 +2,7 @@
 
 import { lazy, Suspense, useSyncExternalStore, type ComponentProps } from "react";
 import { NativeSelect } from "@/components/ui/native-select";
+import { splitClasses } from "@/lib/ui/select-options";
 import { cn } from "@/lib/utils";
 
 /** A mouse and a hover-capable screen: a desktop. Phones and tablets keep their own picker. */
@@ -33,7 +34,10 @@ export type AppSelectProps = Omit<ComponentProps<"select">, "size">;
  */
 export function AppSelect({ className, ...props }: AppSelectProps) {
   const desktop = useFinePointer();
-  const native = <NativeSelect className={cn("w-full", className)} {...props} />;
+  // Call sites pass classes for the control (height, text size) and for its place in a layout (width, margins).
+  // The shadcn native select has a wrapper for the second kind and the element itself for the first.
+  const [layout, control] = splitClasses(className);
+  const native = <NativeSelect className={cn("w-full", layout)} selectClassName={control} {...props} />;
   if (!desktop) return native;
   return (
     <Suspense fallback={native}>

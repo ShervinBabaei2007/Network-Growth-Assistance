@@ -1,3 +1,4 @@
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 export function StatTile({
@@ -12,13 +13,15 @@ export function StatTile({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-lg border bg-card p-3", className)}>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold">
-        {value === null ? <span className="text-muted-foreground">—</span> : formatValue(value)}
-      </p>
-      {hint ? <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p> : null}
-    </div>
+    <Card size="sm" className={cn("gap-0 py-3", className)}>
+      <CardContent>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className={cn("mt-1 font-semibold tabular-nums", typeof value === "string" ? "text-lg leading-snug" : "text-2xl")}>
+          {value === null ? <span className="text-muted-foreground">—</span> : formatValue(value)}
+        </p>
+        {hint ? <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p> : null}
+      </CardContent>
+    </Card>
   );
 }
 

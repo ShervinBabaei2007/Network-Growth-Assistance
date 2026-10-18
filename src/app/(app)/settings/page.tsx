@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import { Field as FieldBox, FieldLabel } from "@/components/ui/field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
@@ -21,7 +22,6 @@ import { LoadError } from "@/components/load-error";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { loadCatalog } from "@/lib/data/catalog";
 import { targetUniversities } from "@/lib/domain";
@@ -383,10 +383,10 @@ function Field({
   inline?: boolean;
 }) {
   return (
-    <div className={inline ? "flex items-center justify-between gap-2" : "grid gap-1.5"}>
-      <Label htmlFor={id}>{label}</Label>
+    <FieldBox orientation={inline ? "horizontal" : "vertical"} className={inline ? "justify-between" : "gap-1.5"}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       {children}
-    </div>
+    </FieldBox>
   );
 }
 

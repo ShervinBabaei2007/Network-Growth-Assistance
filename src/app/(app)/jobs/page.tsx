@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import { PageNav } from "@/components/page-nav";
+import { FiltersToggle } from "@/components/jobs/filters-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState as EmptyPanel } from "@/components/empty-state";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -156,10 +158,42 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
   ].filter((t): t is NonNullable<typeof t> => t !== null);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start">
+    <div className="grid gap-6 lg:grid-cols-[17rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:items-start lg:[grid-template-areas:'filters_search''filters_results']">
       <ToastOnMount specs={toasts} />
-      {/* On phones the results come first and the filters follow; side by side from lg up. */}
-      <aside className="order-last grid gap-4 lg:sticky lg:top-20 lg:order-none" aria-label="Filters and preferences">
+      <div className="grid gap-4 lg:[grid-area:search]">
+        <form action="/jobs" className="grid gap-2 rounded-xl border bg-card p-3 shadow-xs sm:grid-cols-2 2xl:grid-cols-[minmax(0,1fr)_10rem_9rem_auto]" role="search" aria-label="Search jobs" data-tour="jobs-search">
+          <div className="grid gap-1 sm:col-span-2 2xl:col-span-1">
+            <Label htmlFor="q" className="sr-only">
+              Job title or keywords
+            </Label>
+            <Input id="q" name="q" defaultValue={q} placeholder={settings.job_titles[0] ? `e.g. ${settings.job_titles[0]}` : "A job title, e.g. one you're aiming for"} />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="country" className="sr-only">
+              Country
+            </Label>
+            <CountrySelect id="country" name="country" value={country} />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="where" className="sr-only">
+              City or region
+            </Label>
+            <Input id="where" name="where" defaultValue={where} placeholder={inCanada ? "City or province" : "City or region"} />
+          </div>
+          <Button type="submit" className="sm:col-span-2 2xl:col-span-1">
+            <Search aria-hidden /> Search
+          </Button>
+          {explicitRange ? <input type="hidden" name="range" value={explicitRange.key} /> : null}
+        </form>
+        <div className="grid gap-2">
+        <ExternalSearchRow what={searched[0] ?? ""} where={where || null} country={country} />
+        <SaveSearch params={searchOnly(query).params as Record<string, string>} suggestedName={describeSearch(query, settings)} emailAvailable={emailConfigured()} timeZone={me?.timezone ?? "UTC"} />
+        </div>
+      </div>
+
+      {/* A button under the search box on phones; a sidebar beside the results from lg up. */}
+      <FiltersToggle count={activeFilterCount(filters)} className="lg:sticky lg:top-20 lg:[grid-area:filters]">
+      <aside className="grid gap-4" aria-label="Filters and preferences">
         <FiltersPanel sp={sp} filters={filters} provinces={inCanada ? provinces : []} provFilter={provFilter} hrefBase={href} explicitRange={explicitRange} showAdzuna={providerNames.includes("adzuna")} showUsajobs={providerNames.includes("usajobs")} showCareerjet={providerNames.includes("careerjet")} currency={currency} />
         <PreferencesCard settings={settings} resumeTitles={feed.resolved.titlesFromResume ? searched : []} />
         <details className="px-1 text-xs text-muted-foreground">
@@ -191,36 +225,9 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
           </p>
         ))}
       </aside>
+      </FiltersToggle>
 
-      <section aria-labelledby="results-heading" className="grid min-w-0 gap-4">
-        <form action="/jobs" className="grid gap-2 rounded-xl border bg-card p-3 shadow-xs sm:grid-cols-[minmax(0,1fr)_11rem_10rem_auto]" role="search" aria-label="Search jobs" data-tour="jobs-search">
-          <div className="grid gap-1">
-            <Label htmlFor="q" className="sr-only">
-              Job title or keywords
-            </Label>
-            <Input id="q" name="q" defaultValue={q} placeholder={settings.job_titles[0] ? `e.g. ${settings.job_titles[0]}` : "A job title, e.g. one you're aiming for"} />
-          </div>
-          <div className="grid gap-1">
-            <Label htmlFor="country" className="sr-only">
-              Country
-            </Label>
-            <CountrySelect id="country" name="country" value={country} />
-          </div>
-          <div className="grid gap-1">
-            <Label htmlFor="where" className="sr-only">
-              City or region
-            </Label>
-            <Input id="where" name="where" defaultValue={where} placeholder={inCanada ? "City or province" : "City or region"} />
-          </div>
-          <Button type="submit">
-            <Search aria-hidden /> Search
-          </Button>
-          {explicitRange ? <input type="hidden" name="range" value={explicitRange.key} /> : null}
-        </form>
-        <div className="grid gap-2">
-        <ExternalSearchRow what={searched[0] ?? ""} where={where || null} country={country} />
-        <SaveSearch params={searchOnly(query).params as Record<string, string>} suggestedName={describeSearch(query, settings)} emailAvailable={emailConfigured()} timeZone={me?.timezone ?? "UTC"} />
-        </div>
+      <section aria-labelledby="results-heading" className="grid min-w-0 gap-4 lg:[grid-area:results]">
 
         {!resume ? (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-info-soft p-4">
@@ -325,30 +332,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
           </ul>
         )}
 
-        {pages > 1 ? (
-          <nav aria-label="Pages" className="flex flex-wrap items-center justify-center gap-1 text-sm">
-            {current > 1 ? (
-              <Link href={href({ page: String(current - 1) })} className={buttonVariants({ variant: "outline", size: "sm" })}>
-                ← Previous
-              </Link>
-            ) : null}
-            {Array.from({ length: pages }, (_, i) => i + 1)
-              .filter((n) => n === 1 || n === pages || Math.abs(n - current) <= 2)
-              .map((n, i, arr) => (
-                <span key={n} className="flex items-center gap-1">
-                  {i > 0 && n - arr[i - 1] > 1 ? <span className="px-1 text-muted-foreground">…</span> : null}
-                  <Link href={href({ page: String(n) })} aria-current={n === current ? "page" : undefined} className={buttonVariants({ variant: n === current ? "default" : "ghost", size: "sm" })}>
-                    {n}
-                  </Link>
-                </span>
-              ))}
-            {current < pages ? (
-              <Link href={href({ page: String(current + 1) })} className={buttonVariants({ variant: "outline", size: "sm" })}>
-                Next →
-              </Link>
-            ) : null}
-          </nav>
-        ) : null}
+        <PageNav current={current} pages={pages} href={(n) => href({ page: String(n) })} />
       </section>
     </div>
   );

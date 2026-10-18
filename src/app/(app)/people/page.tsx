@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PageNav } from "@/components/page-nav";
 import { BookUser } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -167,20 +168,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
         </Table>
       )}
 
-      {pages > 1 ? (
-        <nav aria-label="Pages" className="flex gap-2">
-          {page > 1 ? (
-            <Link href={href(page - 1)} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              Previous
-            </Link>
-          ) : null}
-          {page < pages ? (
-            <Link href={href(page + 1)} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              Next
-            </Link>
-          ) : null}
-        </nav>
-      ) : null}
+      <PageNav current={page} pages={pages} href={href} />
     </section>
   );
 }

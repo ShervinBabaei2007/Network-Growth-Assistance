@@ -39,3 +39,14 @@ export function selectChangeEvent(value: string, name?: string): ChangeEvent<HTM
   const target = { value, name: name ?? "" };
   return { target, currentTarget: target } as unknown as ChangeEvent<HTMLSelectElement>;
 }
+
+const LAYOUT_CLASS = /^(?:w|min-w|max-w|flex|grow|shrink|basis|self|col|row|order|m[trblxy]?)-|^(?:grow|shrink)$/;
+
+/** Splits a class list into the part that places the select in a layout and the part that styles the control. */
+export function splitClasses(className?: string): [layout: string, control: string] {
+  const layout: string[] = [];
+  const control: string[] = [];
+  for (const c of (className ?? "").split(/\s+/).filter(Boolean)) (LAYOUT_CLASS.test(c.replace(/^(?:[a-z0-9]+:)+/, "")) ? layout : control).push(c);
+  return [layout.join(" "), control.join(" ")];
+}
+
