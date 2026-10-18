@@ -539,6 +539,26 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"job_track_choices": {
+                  Row: {
+                    "job_id": string,"track": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "job_id": string,"track"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "job_id"?: string,"track"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "job_track_choices_job_id_fkey"
+      columns: ["job_id"]
+isOneToOne: false
+      referencedRelation: "jobs"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"job_user_states": {
                   Row: {
                     "applied_at": string | null,"job_id": string,"status": Database["public"]['Enums']["job_user_status"],"updated_at": string,"user_id": string
@@ -879,14 +899,14 @@ isOneToOne: false
                   ]
                 },"resumes": {
                   Row: {
-                    "created_at": string,"facts": NonNullable<Json>,"field_meta": NonNullable<Json>,"file_name": string | null,"id": string,"is_active": boolean,"label": string,"original_file_path": string | null,"original_profile": Json | null,"parsed_with": string,"previous_profile": Json | null,"profile": NonNullable<Json>,"raw_text": string,"source_kind": string,"updated_at": string,"user_id": string
+                    "created_at": string,"facts": NonNullable<Json>,"field_meta": NonNullable<Json>,"file_name": string | null,"id": string,"is_active": boolean,"label": string,"original_file_path": string | null,"original_profile": Json | null,"parsed_with": string,"previous_profile": Json | null,"profile": NonNullable<Json>,"raw_text": string,"source_kind": string,"track": string | null,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"facts"?: NonNullable<Json>,"field_meta"?: NonNullable<Json>,"file_name"?: string | null,"id"?: string,"is_active"?: boolean,"label": string,"original_file_path"?: string | null,"original_profile"?: Json | null,"parsed_with": string,"previous_profile"?: Json | null,"profile": NonNullable<Json>,"raw_text": string,"source_kind"?: string,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"facts"?: NonNullable<Json>,"field_meta"?: NonNullable<Json>,"file_name"?: string | null,"id"?: string,"is_active"?: boolean,"label": string,"original_file_path"?: string | null,"original_profile"?: Json | null,"parsed_with": string,"previous_profile"?: Json | null,"profile": NonNullable<Json>,"raw_text": string,"source_kind"?: string,"track"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"facts"?: NonNullable<Json>,"field_meta"?: NonNullable<Json>,"file_name"?: string | null,"id"?: string,"is_active"?: boolean,"label"?: string,"original_file_path"?: string | null,"original_profile"?: Json | null,"parsed_with"?: string,"previous_profile"?: Json | null,"profile"?: NonNullable<Json>,"raw_text"?: string,"source_kind"?: string,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"facts"?: NonNullable<Json>,"field_meta"?: NonNullable<Json>,"file_name"?: string | null,"id"?: string,"is_active"?: boolean,"label"?: string,"original_file_path"?: string | null,"original_profile"?: Json | null,"parsed_with"?: string,"previous_profile"?: Json | null,"profile"?: NonNullable<Json>,"raw_text"?: string,"source_kind"?: string,"track"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     

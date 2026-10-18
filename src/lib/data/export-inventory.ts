@@ -49,6 +49,7 @@ export const EXPORTED_TABLES = [
   "saved_views",
   "job_notes",
   "job_filters",
+  "job_track_choices",
 ] as const;
 
 /** Tables whose rows can be flagged as example data (the demo workspace). Those rows are left out of the export. */
