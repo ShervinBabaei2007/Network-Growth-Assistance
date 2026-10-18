@@ -15,12 +15,25 @@ if (!secret) {
   process.exit(1);
 }
 
-const res = await fetch(`${base}/api/ops/monitoring?days=${days}`, { headers: { Authorization: `Bearer ${secret}` } });
+const headers = { Authorization: `Bearer ${secret}` };
+const res = await fetch(`${base}/api/ops/monitoring?days=${days}`, { headers });
 if (!res.ok) {
   console.error(`The server answered ${res.status}.`);
   process.exit(1);
 }
 const { vitals, errors } = await res.json();
+
+// Storage and AI use. A failure here doesn't hide the speed report.
+const usageRes = await fetch(`${base}/api/ops/usage`, { headers }).catch(() => null);
+if (usageRes?.ok) {
+  const u = await usageRes.json();
+  const MB = 1024 * 1024;
+  console.log(`Storage: ${u.status.usedMb} MB of ${u.status.limitMb} MB (${Math.round(u.status.share * 100)}%, ${u.status.level})`);
+  console.log(`Postings: ${u.jobs} (${u.jobs_shortened} shortened); requirements: ${u.requirements} (${u.requirement_vectors} with vectors)`);
+  console.log(`AI calls: ${u.ai_calls_today} today, ${u.ai_calls_30_days} in 30 days${u.ai_daily_quota ? ` (limit ${u.ai_daily_quota} per person per day)` : ""}`);
+  for (const t of u.tables) console.log(`  ${t.name.padEnd(28)}${String(Math.round((t.bytes / MB) * 10) / 10).padStart(8)} MB  ${String(t.rows).padStart(9)} rows`);
+  console.log("");
+} else console.log("(storage report unavailable)\n");
 
 // Google's "good" limits at the 75th percentile.
 const GOOD = { LCP: 2500, INP: 200, CLS: 0.1, FCP: 1800, TTFB: 800 };

@@ -26,6 +26,10 @@ const serverSchema = z.object({
   SMTP_FROM: z.string().min(3).optional(),
   APP_URL: z.url().optional(),
   EMAIL_TOKEN_SECRET: z.string().min(32).optional(),
+  /** The database plan's size in MB, for the storage warning (default 500, the free plan). */
+  DB_LIMIT_MB: z.coerce.number().int().min(50).optional(),
+  /** The account that receives operator alerts (a storage warning) in its notification bell. */
+  OPERATOR_USER_ID: z.uuid().optional(),
 });
 
 /** Server-only secrets. Never import this from a client component. */
@@ -53,6 +57,8 @@ export function serverEnv() {
     SMTP_FROM: process.env.SMTP_FROM || undefined,
     APP_URL: process.env.APP_URL || undefined,
     EMAIL_TOKEN_SECRET: process.env.EMAIL_TOKEN_SECRET || undefined,
+    DB_LIMIT_MB: process.env.DB_LIMIT_MB || undefined,
+    OPERATOR_USER_ID: process.env.OPERATOR_USER_ID || undefined,
   });
 }
 
