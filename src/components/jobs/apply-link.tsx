@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { markApplied } from "@/app/(app)/applications/actions";
 import { setJobStatus } from "@/app/(app)/jobs/actions";
 import { AppSelect } from "@/components/app-select";
@@ -29,6 +29,7 @@ export function ApplyLink({
   children,
   documents = [],
   panelClassName,
+  floating = false,
 }: {
   jobId: string;
   href: string;
@@ -37,12 +38,40 @@ export function ApplyLink({
   children: React.ReactNode;
   documents?: { value: string; label: string }[];
   panelClassName?: string;
+  /** Show the question in the browser's top layer, positioned from the link. For links inside a clipped container (a job card). */
+  floating?: boolean;
 }) {
   const [asking, setAsking] = useState(false);
   const [date, setDate] = useState("");
   const [doc, setDoc] = useState("");
   const { pending, run } = useActionRunner();
   const id = useId();
+  const anchor = useRef<HTMLSpanElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+
+  // A floating panel sits in the top layer (so a card's paint containment can't clip it) and follows the link on scroll and resize.
+  useEffect(() => {
+    const el = panel.current;
+    if (!floating || !asking || !el) return;
+    const place = () => {
+      const a = anchor.current?.getBoundingClientRect();
+      if (!a) return;
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      const below = a.bottom + 8 + h <= window.innerHeight || a.top - 8 - h < 0;
+      el.style.left = `${Math.max(8, Math.min(a.right - w, window.innerWidth - w - 8))}px`;
+      el.style.top = `${below ? a.bottom + 8 : a.top - 8 - h}px`;
+    };
+    el.showPopover();
+    place();
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+      if (el.matches(":popover-open")) el.hidePopover();
+    };
+  }, [floating, asking]);
 
   const confirm = () => {
     const [kind, docId] = doc.split(":");
@@ -58,7 +87,7 @@ export function ApplyLink({
   };
 
   return (
-    <span className="relative inline-flex">
+    <span ref={anchor} className="relative inline-flex">
       <a
         href={href}
         target="_blank"
@@ -73,7 +102,13 @@ export function ApplyLink({
         {children}
       </a>
       {asking ? (
-        <div role="dialog" aria-labelledby={`${id}-title`} className={cn("absolute right-0 top-full z-30 mt-2 grid w-72 gap-3 rounded-lg border bg-popover p-3 text-sm text-popover-foreground shadow-lg", panelClassName)}>
+        <div
+          ref={panel}
+          role="dialog"
+          aria-labelledby={`${id}-title`}
+          {...(floating ? { popover: "manual" as const, style: { inset: "auto" } } : {})}
+          className={cn(floating ? "fixed m-0 overflow-visible" : "absolute right-0 top-full z-30 mt-2", "grid w-72 gap-3 rounded-lg border bg-popover p-3 text-sm text-popover-foreground shadow-lg", panelClassName)}
+        >
           <p id={`${id}-title`} className="font-medium">
             Mark as applied?
           </p>
