@@ -23,7 +23,7 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) 
 export default function DiscoverPage({ searchParams }: PageProps<"/discover">) {
   return (
     <div className="grid gap-6">
-      <PageHeader title="Network discovery" description="Describe the people worth meeting. Every match comes from a public source, with the reason it fits. Nothing touches LinkedIn, and you make the contact yourself." />
+      <PageHeader title="Network discovery" description="Describe who you'd like to meet and get matches from public sources, each with a reason." />
 
       <Suspense fallback={null}>
         <RequestCard searchParams={searchParams} />
@@ -73,6 +73,7 @@ async function RequestCard({ searchParams }: Pick<PageProps<"/discover">, "searc
               </li>
             )}
             <li>A search covers people anywhere unless you ask for a place (for example “in Toronto” or “in the UK”). Change it per search under Modify.</li>
+            <li>Nothing here touches LinkedIn. You decide who to contact, and you do it yourself.</li>
             <li>Sources: {status.providers.join(", ")}. AI: {status.aiEnabled ? "on" : "off"}.</li>
             {status.limitations.map((l) => (
               <li key={l}>{l}</li>

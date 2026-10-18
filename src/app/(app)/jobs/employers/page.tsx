@@ -28,7 +28,7 @@ export default function EmployersPage({ searchParams }: PageProps<"/jobs/employe
       <PageHeader
         back={{ href: "/jobs", label: "Jobs" }}
         title="Employers"
-        description="Jobs are read from these employers' own job boards. The list is shared, so an employer you add is seen by everyone."
+        description="Jobs come from these employers' own job boards. Add one and everyone sees its jobs."
       />
       <Card>
         <CardHeader>

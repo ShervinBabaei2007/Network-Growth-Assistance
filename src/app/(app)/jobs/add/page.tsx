@@ -23,7 +23,7 @@ export default function AddPostingPage() {
       <PageHeader
         back={{ href: "/jobs", label: "Jobs" }}
         title="Paste a posting"
-        description="Found a job elsewhere? Paste the whole page to fill the form, check it, and add the link. Details come only from what you paste."
+        description="Paste a job page to fill the form, then check it and add the link."
       />
       <Card>
         <CardHeader>

@@ -21,7 +21,7 @@ export default function FollowUpsPage() {
     <div className="grid gap-6">
       <PageHeader
         title="Follow-ups"
-        description="Suggested next steps after someone accepts your invitation. Drafts are written for you; you send them."
+        description="Next steps after someone accepts your invitation, with drafts ready to send."
       />
       <Suspense fallback={<PageSkeleton label="Loading your follow-ups…" />}>
         <FollowUps />

@@ -41,7 +41,7 @@ export default function ResumePage({ searchParams }: PageProps<"/jobs/resume">) 
       <PageHeader
         back={{ href: "/jobs", label: "Jobs" }}
         title="Your resume"
-        description="Postings are checked against this profile. Review what was read; anything uncertain is marked."
+        description="Postings are checked against this profile. Anything uncertain is marked for review."
       />
       <Suspense fallback={<PageSkeleton label="Loading…" />}>
         <ResumeContent searchParams={searchParams} />
