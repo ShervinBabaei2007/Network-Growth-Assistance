@@ -78,7 +78,29 @@ export function planQueries(criteria: NetworkingCriteria, max = 40): PlannedQuer
     for (const l of places) out.push({ provider: "github", family: "github", query: `${q(school)} location:${q(l)}` });
   }
 
+  // No school named ("Computer Science alumni working as software engineers"): GitHub's user search still finds people who
+  // wrote the program, role, startup or place in their profile. Short queries, since every term must match.
+  if (!instName && codeField) {
+    const gh = (...terms: string[]) => out.push({ provider: "github", family: "github", query: terms.join(" ") });
+    const places = criteria.locations.length ? criteria.locations.slice(0, 3) : countrySearchTerms(criteria.country);
+    const where = (l: string) => `location:${q(l)}`;
+    const subjects = [...programs.slice(0, 2).map(q), ...roles.slice(0, 2).map(q)];
+    for (const l of places) for (const t of subjects) gh(t, where(l));
+    if (criteria.includeStartups) for (const r of roles.slice(0, 2)) for (const l of places.length ? places : [null]) gh("startup", q(r), ...(l ? [where(l)] : []));
+    if (programs[0] && role0) gh(q(programs[0]), q(role0), "in:bio");
+    for (const c of criteria.companies.slice(0, 4)) gh(q(c), ...(role0 ? [q(role0)] : programs[0] ? [q(programs[0])] : []));
+    for (const l of places) gh(...programs.slice(0, 1).map(q), "in:bio", where(l));
+    if (!subjects.length) for (const l of places) gh(where(l), "in:bio", "developer");
+  }
+
   // ORCID's public registry: people's own education and employment records (Solr query syntax).
+  if (!instName && (programs.length || roles.length)) {
+    const solr = (s: string) => `"${s.replace(/["\\]/g, "")}"`;
+    for (const p of programs.length ? programs : [null]) {
+      const parts = [p && `text:${solr(p)}`, roles[0] && `text:${solr(roles[0])}`].filter(Boolean);
+      if (parts.length) out.push({ provider: "orcid", family: "orcid", query: parts.join(" AND ") });
+    }
+  }
   if (instName) {
     const solr = (s: string) => `"${s.replace(/["\\]/g, "")}"`;
     const base = `affiliation-org-name:${solr(instName)}`;
