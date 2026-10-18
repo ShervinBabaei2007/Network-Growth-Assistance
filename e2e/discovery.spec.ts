@@ -18,8 +18,8 @@ Jamie,Rivera,https://www.linkedin.com/in/jamie-rivera-fixture,,Shopify,Developer
 test("import connections, research people, review evidence and track one", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await signIn(page, uniqueEmail("discovery"), "/discover");
-  const sources = page.getByText(/^Sources: /);
-  await expect(sources).toBeVisible();
+  const sources = page.getByTestId("discovery-sources");
+  await expect(sources).toBeAttached();
   test.skip(!(await sources.textContent())?.includes("Fixture web"), "Dev server isn't running with DISCOVERY_FIXTURES=1");
 
   // 1. Import known connections, with a preview first.

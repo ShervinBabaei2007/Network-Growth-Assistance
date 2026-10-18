@@ -45,7 +45,6 @@ async function RequestCard({ searchParams }: Pick<PageProps<"/discover">, "searc
     supabase.from("settings").select("networking_goal").single(),
     /^[0-9a-f-]{36}$/i.test(from) ? supabase.from("network_searches").select("id, original_query, criteria").eq("id", from).maybeSingle() : Promise.resolve({ data: null }),
   ]);
-  const status = discoveryStatus();
   const modifyCriteria = modify.data ? NetworkingCriteria.safeParse(modify.data.criteria) : null;
 
   return (
@@ -72,13 +71,11 @@ async function RequestCard({ searchParams }: Pick<PageProps<"/discover">, "searc
                 first so people you already know are left out.
               </li>
             )}
-            <li>A search covers people anywhere unless you ask for a place (for example “in Toronto” or “in the UK”). Change it per search under Modify.</li>
-            <li>Nothing here touches LinkedIn. You decide who to contact, and you do it yourself.</li>
-            <li>Sources: {status.providers.join(", ")}. AI: {status.aiEnabled ? "on" : "off"}.</li>
-            {status.limitations.map((l) => (
-              <li key={l}>{l}</li>
-            ))}
           </ul>
+          {/* Not shown: lets the e2e specs tell whether the dev server runs with fixture sources. */}
+          <span hidden data-testid="discovery-sources">
+            Sources: {discoveryStatus().providers.join(", ")}
+          </span>
         </CardContent>
       </Card>
 
