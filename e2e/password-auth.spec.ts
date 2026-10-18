@@ -76,4 +76,31 @@ test("forgot password sends a reset link that lets you choose a new password", a
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: "Send reset link" }).click();
   await expect(page.getByText(/reset link is on its way/i)).toBeVisible();
+
+  // The confirmation email is first in the inbox; the reset email is the newest one.
+  let link = "";
+  await expect
+    .poll(async () => {
+      const list = await (await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`)).json();
+      for (const m of list.messages ?? []) {
+        const msg = await (await fetch(`${MAILPIT}/api/v1/message/${m.ID}`)).json();
+        const found = (msg.HTML || msg.Text).match(/href="([^"]+verify[^"]+type=recovery[^"]*)"/)?.[1];
+        if (found) link = found.replaceAll("&amp;", "&");
+      }
+      return Boolean(link);
+    })
+    .toBe(true);
+  await page.goto(link);
+  await page.waitForURL(/\/auth\/reset/);
+  await page.getByLabel("New password").fill("second password 2");
+  await page.getByLabel("Confirm password").fill("second password 2");
+  await page.getByRole("button", { name: "Save password" }).click();
+  await page.waitForURL((u) => !u.pathname.startsWith("/auth"));
+
+  await page.context().clearCookies();
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill("second password 2");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
 });
