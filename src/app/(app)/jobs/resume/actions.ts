@@ -8,6 +8,7 @@ import { withStableIds } from "@/lib/job-postings/profile-ids";
 import { analyzeResume, confirmFields, importSummary } from "@/lib/job-postings/resume-fields";
 import { saveResumeLines } from "@/lib/job-postings/service";
 import { jobServices } from "@/lib/job-postings/services";
+import { trackPattern } from "@/lib/job-postings/tracks";
 import { FieldMetaMap, ResumeFacts, ResumeProfile, WORK_AUTHORIZATION } from "@/lib/job-postings/types";
 import { actionContext, logActivity } from "@/lib/server/action-context";
 import type { Json } from "@/lib/supabase/database.types";
@@ -123,7 +124,11 @@ export async function undoRestoreProfile(resumeId: string): Promise<ActionResult
 export async function setActiveResume(resumeId: string): Promise<ActionResult> {
   if (!uuid.safeParse(resumeId).success) return err("Unknown resume.");
   const ctx = await actionContext();
-  await ctx.supabase.from("resumes").update({ is_active: false }).eq("is_active", true);
+  const { data: target } = await ctx.supabase.from("resumes").select("track").eq("id", resumeId).maybeSingle();
+  if (!target) return err("Unknown resume.");
+  // Only this resume's track changes hands; the other tracks keep their current resume.
+  const deactivate = ctx.supabase.from("resumes").update({ is_active: false }).eq("is_active", true);
+  await (target.track === null ? deactivate.is("track", null) : deactivate.ilike("track", trackPattern(target.track)));
   const { error } = await ctx.supabase.from("resumes").update({ is_active: true }).eq("id", resumeId);
   if (error) return err("Couldn't switch. Try again.");
   refresh();

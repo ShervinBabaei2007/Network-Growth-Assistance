@@ -9,6 +9,8 @@ import { notify, toast } from "@/components/toast/notify";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { MAX_TRACK_NAME, normalizeTrack } from "@/lib/job-postings/tracks";
 import { plural } from "@/lib/toast";
 
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -24,12 +26,13 @@ const MISSING_TOASTS: Record<string, string> = {
  * Imports a resume from a PDF or Word file, or pasted text. The server keeps the original
  * unchanged and makes a new profile from it; what needs checking is marked on the page.
  */
-export function ResumeUpload({ hasResume, aiNote }: { hasResume: boolean; aiNote: { available: boolean; text: string } }) {
+export function ResumeUpload({ hasResume, aiNote, track }: { hasResume: boolean; aiNote: { available: boolean; text: string }; track: string | null }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<"file" | "paste">("file");
   const [text, setText] = useState("");
   const [useAi, setUseAi] = useState(false);
+  const [trackName, setTrackName] = useState(track ?? "");
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +66,7 @@ export function ResumeUpload({ hasResume, aiNote }: { hasResume: boolean; aiNote
       body.set("text", text);
     }
     if (useAi) body.set("useAi", "on");
+    body.set("track", trackName);
     start(async () => {
       toast.progress("Reading your resume…", "resume-import");
       try {
@@ -77,7 +81,8 @@ export function ResumeUpload({ hasResume, aiNote }: { hasResume: boolean; aiNote
         announce(json as ResumeImportResponse);
         if (input.current) input.current.value = "";
         setText("");
-        router.push(`/jobs/resume?imported=${json.id}#import-summary`);
+        const imported = normalizeTrack(trackName);
+        router.push(`/jobs/resume?${imported ? `track=${encodeURIComponent(imported)}&` : ""}imported=${json.id}#import-summary`);
         router.refresh();
       } catch {
         const message = "Couldn't reach the server. Check your connection and try again. Your resume wasn't changed.";
@@ -129,6 +134,12 @@ export function ResumeUpload({ hasResume, aiNote }: { hasResume: boolean; aiNote
           <p className="text-xs text-muted-foreground">Keep the section headings (Experience, Education, Skills…) so each part is read correctly.</p>
         </div>
       )}
+
+      <div className="grid max-w-sm gap-1.5">
+        <Label htmlFor="resumeTrack">Track (optional)</Label>
+        <Input id="resumeTrack" value={trackName} maxLength={MAX_TRACK_NAME} onChange={(e) => setTrackName(e.target.value)} placeholder="Main resume" />
+        <p className="text-xs text-muted-foreground">Keep a separate base resume for each kind of role, such as Software or Data, and pick one per job. Leave it empty for your main resume.</p>
+      </div>
 
       <label className="flex items-start gap-2 text-sm">
         <Checkbox checked={useAi} disabled={!aiNote.available} onCheckedChange={setUseAi} className="mt-0.5" />
