@@ -43,6 +43,18 @@ export default function PrivacyPage() {
         <li><strong>Cookies</strong>: a sign-in session cookie and a cookie that remembers your display settings (theme, density, text size). We do not use advertising or analytics cookies.</li>
       </ul>
 
+      <h2>Page speed and error reports</h2>
+      <p>
+        To keep the service fast and fix problems, your browser sends us small reports about how pages performed (for
+        example how long the main content took to appear) and about errors that occurred. They are sent to our own
+        database, not to an analytics or error-tracking company. A report holds only the type of page (such as
+        &ldquo;/applications/[id]&rdquo;, never a name or an id), the measurement or a cleaned error message, and
+        whether the device is a phone or a computer. We remove email addresses, keys, links, ids and profile
+        addresses from error messages before saving them. Reports are not linked to your account, your IP address
+        is not stored with them, and they are deleted after 30 days (measurements) or 90 days (errors). If your
+        browser sends &ldquo;Do Not Track&rdquo;, no reports are sent.
+      </p>
+
       <h2>Your consent</h2>
       <p>
         By creating an account and using a feature, you consent to us collecting, using and disclosing your
