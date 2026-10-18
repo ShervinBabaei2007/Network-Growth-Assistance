@@ -18,7 +18,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] }, testIgnore: /mobile.spec.ts/ },
+    { name: "desktop", use: { ...devices["Desktop Chrome"] }, testIgnore: [/mobile\.spec\.ts/, /readme-screenshots\.spec\.ts/] },
     { name: "mobile", use: { ...devices["Pixel 7"] }, testMatch: /(mobile|sticky-nav|onboarding)\.spec\.ts/ },
   ],
   webServer: {

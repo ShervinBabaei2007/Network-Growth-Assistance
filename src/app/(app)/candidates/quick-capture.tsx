@@ -188,7 +188,7 @@ export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoA
 
           <ul className="grid gap-2">
             {rows.map((r) => (
-              <li key={r.key} className={`grid gap-2 rounded-lg border bg-card p-2 sm:grid-cols-[auto_1fr_8rem_12rem] sm:items-center ${r.existing || r.alreadyConnected ? "opacity-50" : ""}`}>
+              <li key={r.key} className={`grid gap-2 rounded-lg border bg-card p-2 sm:grid-cols-[auto_1fr_12rem_12rem] sm:items-center ${r.existing || r.alreadyConnected ? "opacity-50" : ""}`}>
                 <Checkbox
                   aria-label={`Include ${r.name}`}
                   checked={r.include}
