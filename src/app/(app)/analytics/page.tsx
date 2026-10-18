@@ -9,7 +9,8 @@ import { StatTile } from "@/components/stat-tile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { buildAnalytics } from "@/lib/analytics";
-import { currentUserId } from "@/lib/data/dashboard";
+import { currentUserId, loadExportConnections, loadInvitations } from "@/lib/data/dashboard";
+import { getSettings } from "@/lib/data/settings";
 import { disciplineName, poolUniversities, targetUniversities, universityName } from "@/lib/domain";
 import { computeTodaysPlan } from "@/lib/jobs/daily-queue";
 import { createClient } from "@/lib/supabase/server";
@@ -48,21 +49,22 @@ async function loadAll<T>(page: (from: number, to: number) => PromiseLike<{ data
 
 async function load(supabase: Supabase) {
   const userId = await currentUserId(supabase);
-  const [{ data: settings, error }, invitations, exportConnections, snapshots, todays] = await Promise.all([
-    supabase.from("settings").select("timezone").single(),
-    loadAll((a, b) => supabase.from("invitations").select("sent_at, outcome, resolved_at").order("id").range(a, b)),
-    loadAll((a, b) => supabase.from("candidates").select("connected_at").eq("connected_via", "export").order("id").range(a, b)),
+  const { row: settings, error: settingsError } = await getSettings();
+  if (settingsError || !settings) throw new Error(settingsError ?? "Settings not found");
+  const tz = settings.timezone;
+  const [invitations, exportConnections, snapshots, todays] = await Promise.all([
+    loadInvitations(supabase, userId, tz),
+    loadExportConnections(supabase, userId, tz),
     loadAll((a, b) => supabase.from("connection_snapshots").select("recorded_at, total_connections").order("recorded_at").range(a, b)),
     computeTodaysPlan(supabase, userId),
   ]);
-  if (error) throw error;
   const analytics = buildAnalytics({
     now: new Date(),
     timezone: settings.timezone,
     days: DAYS,
     weeks: WEEKS,
-    invitations: invitations.map((i) => ({ sentAt: i.sent_at, outcome: i.outcome, resolvedAt: i.resolved_at })),
-    exportConnections: exportConnections.map((c) => ({ connectedAt: c.connected_at! })),
+    invitations,
+    exportConnections,
     snapshots: snapshots.map((s) => ({ recordedAt: s.recorded_at, total: s.total_connections })),
   });
   return { analytics, plan: todays.plan, progress: todays.progress };
