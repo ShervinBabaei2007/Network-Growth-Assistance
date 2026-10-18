@@ -113,14 +113,17 @@ async function wants(db: Db, column: "notify_reminders" | "notify_interviews", u
 
 /** Reminders that are due, once each. */
 export async function notifyDueReminders(db: Db, now: Date): Promise<number> {
-  const { data } = await db
-    .from("application_reminders")
-    .select("id, user_id, application_id, text, due_at, applications(title, company)")
-    .is("done_at", null)
-    .lte("due_at", now.toISOString())
-    .order("due_at")
-    .limit(500);
-  const rows = data ?? [];
+  // Every due reminder, in ordered pages: a reminder stays due after it is announced, so a fixed first 500 would starve the rest.
+  const rows = await selectAll((from, to) =>
+    db
+      .from("application_reminders")
+      .select("id, user_id, application_id, text, due_at, applications(title, company)")
+      .is("done_at", null)
+      .lte("due_at", now.toISOString())
+      .order("due_at")
+      .order("id")
+      .range(from, to),
+  );
   const allowed = await wants(db, "notify_reminders", rows.map((r) => r.user_id));
   let made = 0;
   for (const r of rows) {
@@ -157,13 +160,16 @@ export async function notifyDueFollowUps(db: Db, now: Date): Promise<number> {
 
 /** Interviews in the next 24 hours; a moved interview is announced again. */
 export async function notifyUpcomingInterviews(db: Db, now: Date): Promise<number> {
-  const { data } = await db
-    .from("application_interviews")
-    .select("id, user_id, application_id, starts_at, kind, ics_sequence, applications(title, company)")
-    .gte("starts_at", now.toISOString())
-    .lte("starts_at", new Date(now.getTime() + 86_400_000).toISOString())
-    .limit(500);
-  const rows = data ?? [];
+  const rows = await selectAll((from, to) =>
+    db
+      .from("application_interviews")
+      .select("id, user_id, application_id, starts_at, kind, ics_sequence, applications(title, company)")
+      .gte("starts_at", now.toISOString())
+      .lte("starts_at", new Date(now.getTime() + 86_400_000).toISOString())
+      .order("starts_at")
+      .order("id")
+      .range(from, to),
+  );
   const allowed = await wants(db, "notify_interviews", rows.map((r) => r.user_id));
   let made = 0;
   for (const r of rows) {
@@ -211,9 +217,9 @@ export async function notifyWeeklySummaries(db: Db, now: Date): Promise<number> 
 
 /** An employer board someone added stops working: tell them once per outage. */
 export async function notifySourceProblems(db: Db): Promise<number> {
-  const { data } = await db.from("employers").select("id, name, added_by, last_crawled_at, last_error").eq("status", "failing").not("added_by", "is", null).limit(500);
+  const data = await selectAll((from, to) => db.from("employers").select("id, name, added_by, last_crawled_at, last_error").eq("status", "failing").not("added_by", "is", null).order("id").range(from, to));
   let made = 0;
-  for (const e of data ?? []) {
+  for (const e of data) {
     // last_crawled_at only moves on success, so it names this outage.
     const { data: id } = await db.rpc("notify_user", {
       p_user: e.added_by!,
