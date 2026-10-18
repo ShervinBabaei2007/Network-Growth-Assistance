@@ -145,7 +145,7 @@ export async function crawlEmployer(
     });
     const { data: existingRows } = await db
       .from("jobs")
-      .select("id, external_id, posted_at, date_source, first_seen_at, description, closed_at, apply_url, city, province, country, countries, location_text, remote")
+      .select("id, external_id, posted_at, date_source, first_seen_at, description, description_trimmed_at, desc_fingerprint, closed_at, apply_url, city, province, country, countries, location_text, remote")
       .eq("employer_id", emp.id);
     const existing = new Map((existingRows ?? []).map((r) => [r.external_id, r]));
     const firstCrawl = emp.last_crawled_at === null;
@@ -170,7 +170,11 @@ export async function crawlEmployer(
       const applyUrl = job.applyUrl ?? detail?.applyUrl ?? old?.apply_url ?? null;
       const company = (job.company ?? emp.name).slice(0, 300);
       const title = job.title.trim().slice(0, 300);
-      const description = (job.description ?? detail?.description ?? old?.description ?? "").slice(0, 60_000);
+      const incoming = job.description ?? detail?.description ?? null;
+      // An old posting that was shortened to save space stays shortened while the board's text is unchanged, so the
+      // daily shortening isn't undone by every read. A changed text replaces it in full.
+      const keepShortened = Boolean(old?.description_trimmed_at && (incoming === null || incoming.slice(0, old.description.length) === old.description));
+      const description = keepShortened ? old!.description : (incoming ?? old?.description ?? "").slice(0, 60_000);
       const level = jobLevel(title, job.level);
       const pay = job.salaryRange;
       return {
@@ -205,7 +209,8 @@ export async function crawlEmployer(
         employment_type: job.employmentType?.slice(0, 100) ?? null,
         department: job.department?.slice(0, 200) ?? null,
         dedupe_key: jobDedupeKey({ company, title, city: place.city, province: place.province, remote: place.remote }),
-        desc_fingerprint: simhash64(description),
+        desc_fingerprint: keepShortened ? old!.desc_fingerprint : simhash64(description),
+        description_trimmed_at: keepShortened ? old!.description_trimmed_at : null,
       };
     });
     const valid = rows.filter((r) => r.title);

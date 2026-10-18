@@ -581,14 +581,14 @@ isOneToOne: false
                   ]
                 },"jobs": {
                   Row: {
-                    "apply_url": string | null,"canonical_url": string | null,"city": string | null,"closed_at": string | null,"company": string | null,"countries": (string)[],"country": string | null,"created_at": string,"date_note": string | null,"date_source": string,"dedupe_key": string | null,"department": string | null,"desc_fingerprint": string | null,"description": string,"description_head": string | null,"description_is_partial": boolean,"employer_id": string | null,"employment_type": string | null,"experience_level": string | null,"external_id": string,"final_url": string | null,"first_seen_at": string,"fts": unknown,"id": string,"last_seen_at": string,"level_source": string | null,"location_text": string | null,"posted_at": string,"provider_key": string | null,"province": string | null,"remote": boolean,"salary": string | null,"salary_currency": string | null,"salary_max": number | null,"salary_min": number | null,"salary_period": string | null,"source": string,"source_url": string | null,"title": string,"updated_at": string,"user_id": string | null,"verification_note": string | null,"verification_status": Database["public"]['Enums']["job_verification_status"],"verified_at": string | null,"workplace_type": string | null
+                    "apply_url": string | null,"canonical_url": string | null,"city": string | null,"closed_at": string | null,"company": string | null,"countries": (string)[],"country": string | null,"created_at": string,"date_note": string | null,"date_source": string,"dedupe_key": string | null,"department": string | null,"desc_fingerprint": string | null,"description": string,"description_head": string | null,"description_is_partial": boolean,"description_trimmed_at": string | null,"employer_id": string | null,"employment_type": string | null,"experience_level": string | null,"external_id": string,"final_url": string | null,"first_seen_at": string,"fts": unknown,"id": string,"last_seen_at": string,"level_source": string | null,"location_text": string | null,"posted_at": string,"provider_key": string | null,"province": string | null,"remote": boolean,"salary": string | null,"salary_currency": string | null,"salary_max": number | null,"salary_min": number | null,"salary_period": string | null,"source": string,"source_url": string | null,"title": string,"updated_at": string,"user_id": string | null,"verification_note": string | null,"verification_status": Database["public"]['Enums']["job_verification_status"],"verified_at": string | null,"workplace_type": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "apply_url"?: string | null,"canonical_url"?: string | null,"city"?: string | null,"closed_at"?: string | null,"company"?: string | null,"countries"?: (string)[],"country"?: string | null,"created_at"?: string,"date_note"?: string | null,"date_source"?: string,"dedupe_key"?: string | null,"department"?: string | null,"desc_fingerprint"?: string | null,"description"?: string,"description_head"?: never,"description_is_partial"?: boolean,"employer_id"?: string | null,"employment_type"?: string | null,"experience_level"?: string | null,"external_id": string,"final_url"?: string | null,"first_seen_at"?: string,"fts"?: never,"id"?: string,"last_seen_at"?: string,"level_source"?: string | null,"location_text"?: string | null,"posted_at": string,"provider_key"?: string | null,"province"?: string | null,"remote"?: boolean,"salary"?: string | null,"salary_currency"?: string | null,"salary_max"?: number | null,"salary_min"?: number | null,"salary_period"?: string | null,"source"?: string,"source_url"?: string | null,"title": string,"updated_at"?: string,"user_id"?: string | null,"verification_note"?: string | null,"verification_status"?: Database["public"]['Enums']["job_verification_status"],"verified_at"?: string | null,"workplace_type"?: string | null
+                    "apply_url"?: string | null,"canonical_url"?: string | null,"city"?: string | null,"closed_at"?: string | null,"company"?: string | null,"countries"?: (string)[],"country"?: string | null,"created_at"?: string,"date_note"?: string | null,"date_source"?: string,"dedupe_key"?: string | null,"department"?: string | null,"desc_fingerprint"?: string | null,"description"?: string,"description_head"?: never,"description_is_partial"?: boolean,"description_trimmed_at"?: string | null,"employer_id"?: string | null,"employment_type"?: string | null,"experience_level"?: string | null,"external_id": string,"final_url"?: string | null,"first_seen_at"?: string,"fts"?: never,"id"?: string,"last_seen_at"?: string,"level_source"?: string | null,"location_text"?: string | null,"posted_at": string,"provider_key"?: string | null,"province"?: string | null,"remote"?: boolean,"salary"?: string | null,"salary_currency"?: string | null,"salary_max"?: number | null,"salary_min"?: number | null,"salary_period"?: string | null,"source"?: string,"source_url"?: string | null,"title": string,"updated_at"?: string,"user_id"?: string | null,"verification_note"?: string | null,"verification_status"?: Database["public"]['Enums']["job_verification_status"],"verified_at"?: string | null,"workplace_type"?: string | null
                   }
                   Update: {
-                    "apply_url"?: string | null,"canonical_url"?: string | null,"city"?: string | null,"closed_at"?: string | null,"company"?: string | null,"countries"?: (string)[],"country"?: string | null,"created_at"?: string,"date_note"?: string | null,"date_source"?: string,"dedupe_key"?: string | null,"department"?: string | null,"desc_fingerprint"?: string | null,"description"?: string,"description_head"?: never,"description_is_partial"?: boolean,"employer_id"?: string | null,"employment_type"?: string | null,"experience_level"?: string | null,"external_id"?: string,"final_url"?: string | null,"first_seen_at"?: string,"fts"?: never,"id"?: string,"last_seen_at"?: string,"level_source"?: string | null,"location_text"?: string | null,"posted_at"?: string,"provider_key"?: string | null,"province"?: string | null,"remote"?: boolean,"salary"?: string | null,"salary_currency"?: string | null,"salary_max"?: number | null,"salary_min"?: number | null,"salary_period"?: string | null,"source"?: string,"source_url"?: string | null,"title"?: string,"updated_at"?: string,"user_id"?: string | null,"verification_note"?: string | null,"verification_status"?: Database["public"]['Enums']["job_verification_status"],"verified_at"?: string | null,"workplace_type"?: string | null
+                    "apply_url"?: string | null,"canonical_url"?: string | null,"city"?: string | null,"closed_at"?: string | null,"company"?: string | null,"countries"?: (string)[],"country"?: string | null,"created_at"?: string,"date_note"?: string | null,"date_source"?: string,"dedupe_key"?: string | null,"department"?: string | null,"desc_fingerprint"?: string | null,"description"?: string,"description_head"?: never,"description_is_partial"?: boolean,"description_trimmed_at"?: string | null,"employer_id"?: string | null,"employment_type"?: string | null,"experience_level"?: string | null,"external_id"?: string,"final_url"?: string | null,"first_seen_at"?: string,"fts"?: never,"id"?: string,"last_seen_at"?: string,"level_source"?: string | null,"location_text"?: string | null,"posted_at"?: string,"provider_key"?: string | null,"province"?: string | null,"remote"?: boolean,"salary"?: string | null,"salary_currency"?: string | null,"salary_max"?: number | null,"salary_min"?: number | null,"salary_period"?: string | null,"source"?: string,"source_url"?: string | null,"title"?: string,"updated_at"?: string,"user_id"?: string | null,"verification_note"?: string | null,"verification_status"?: Database["public"]['Enums']["job_verification_status"],"verified_at"?: string | null,"workplace_type"?: string | null
                   }
                   Relationships: [
                     {
@@ -1161,6 +1161,9 @@ isOneToOne: false
 "hit_rate_limit":
 { Args: { "p_bucket": string,"p_max": number,"p_window_seconds": number }; Returns: boolean
                            },
+"job_in_use":
+{ Args: { "p_first_seen": string,"p_job": string }; Returns: boolean
+                           },
 "job_search_countries":
 { Args: Record<PropertyKey, never>; Returns: string[]
                            },
@@ -1223,11 +1226,19 @@ isOneToOne: false
 "set_application_stage":
 { Args: { "p_detail"?: string,"p_expected_version": number,"p_id": string,"p_occurred_at"?: string,"p_stage": Database["public"]['Enums']["application_stage"] }; Returns: number
                            },
+"storage_usage":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "suggest_follow_ups":
 { Args: { "p_accepted_on": string,"p_candidate": string,"p_sample": boolean,"p_user": string }; Returns: undefined
                            },
 "sync_application_for_job":
 { Args: { "p_job": string,"p_stage": Database["public"]['Enums']["application_stage"] }; Returns: string
+                           },
+"trim_stale_job_data":
+{ Args: { "p_batch"?: number }; Returns: {
+              "descriptions_trimmed": number,"embeddings_dropped": number
+            }[]
                            },
 "undo_referral":
 { Args: { "p_application": string,"p_kind": string,"p_person": string }; Returns: boolean

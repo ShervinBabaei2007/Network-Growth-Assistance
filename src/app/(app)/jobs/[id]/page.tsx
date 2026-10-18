@@ -281,6 +281,7 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
             <CardHeader>
               <CardTitle className="text-lg">The posting</CardTitle>
               {job.description_is_partial ? <CardDescription>This source shows only part of the description. Open the listing for the full text.</CardDescription> : null}
+              {job.description_trimmed_at ? <CardDescription>This is an older posting, so only the start of the description is kept to save space. Open the listing for the full text.</CardDescription> : null}
             </CardHeader>
             <CardContent>
               <div className="max-h-[36rem] max-w-prose overflow-y-auto text-sm leading-relaxed whitespace-pre-line">{job.description || "The source didn't include a description. Open the listing for details."}</div>
