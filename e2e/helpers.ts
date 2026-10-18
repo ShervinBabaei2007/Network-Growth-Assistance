@@ -10,6 +10,8 @@ const MAILPIT = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
  */
 export async function signIn(page: Page, email: string, start = "/overview", options: { welcome?: boolean } = {}) {
   await page.goto(start);
+  // The sign-in form is plain HTML until the page has loaded its JavaScript; a click before then does nothing.
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: /sign-in link instead/i }).click();
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: /sign-in link/i }).click();

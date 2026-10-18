@@ -72,6 +72,7 @@ test("forgot password sends a reset link that lets you choose a new password", a
   await page.context().clearCookies();
 
   await page.goto("/login");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Forgot password?" }).click();
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: "Send reset link" }).click();
