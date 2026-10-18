@@ -435,6 +435,33 @@ export async function saveOnboarding(patch: Partial<OnboardingState>): Promise<A
   return ok("Saved.");
 }
 
+/**
+ * Fills an empty account with clearly labelled example data (see the sample_data migration), marks the
+ * welcome as finished and sends the person to take the tour on it. Refused for an account with its own data.
+ */
+export async function startSampleData(): Promise<ActionResult> {
+  const ctx = await context();
+  const { error } = await ctx.supabase.rpc("seed_sample_data");
+  if (error) {
+    return err(error.code === "P0001" ? "Example data can only be added to an empty account." : "Couldn't add the example data. Try again.");
+  }
+  const state = { ...parseOnboarding(undefined), status: "done" as const, goal: "both" as const, tourDone: false, checklistDismissed: true };
+  const { error: saveError } = await ctx.supabase.from("settings").update({ onboarding: state }).eq("user_id", ctx.userId);
+  if (saveError) return err("Added the example data, but couldn't save your progress. Reload the page.");
+  refresh();
+  return ok("Example data added.");
+}
+
+/** Removes every example row and shows the welcome again so the person can start with their own plan. */
+export async function clearSampleData(): Promise<ActionResult> {
+  const ctx = await context();
+  const { error } = await ctx.supabase.rpc("clear_sample_data");
+  if (error) return err("Couldn't clear the example data. Try again.");
+  await ctx.supabase.from("settings").update({ onboarding: parseOnboarding(undefined) }).eq("user_id", ctx.userId);
+  refresh();
+  return ok("Example data cleared.");
+}
+
 const trackerSchema = z.object({ noResponseDays: formInt("Days", { min: 1, max: 365 }) });
 
 export async function updateTrackerSettings(_: FormState, formData: FormData): Promise<FormState> {
