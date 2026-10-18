@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv } from "@/lib/env.public";
 
 // Files for search engines and agents must be readable without signing in, or they only ever see the sign-in page.
-const PUBLIC_PATHS = ["/login", "/auth", "/privacy", "/terms", "/robots.txt", "/sitemap.xml", "/llms.txt", "/.well-known"];
+const PUBLIC_PATHS = ["/login", "/auth", "/guides", "/privacy", "/terms", "/robots.txt", "/sitemap.xml", "/llms.txt", "/.well-known"];
 
 /** Refreshes the Supabase session cookie and sends signed-out visitors to /login. */
 export async function proxy(request: NextRequest) {
@@ -34,6 +34,18 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const signedIn = Boolean(data?.claims);
   const path = request.nextUrl.pathname;
+
+  // The landing page is for visitors; people who are signed in go straight to the app.
+  if (path === "/") {
+    if (!signedIn) return response;
+    const url = request.nextUrl.clone();
+    url.pathname = "/overview";
+    url.search = "";
+    const redirect = NextResponse.redirect(url);
+    // Keep any session cookie refreshed above.
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    return redirect;
+  }
 
   if (!signedIn && !PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`))) {
     const url = request.nextUrl.clone();
