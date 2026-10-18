@@ -52,8 +52,9 @@ Or create an empty private repository on github.com and push to it.
    | `GEMINI_API_KEY` | Recommended, free. The default AI (Google AI Studio key). Server only: never name it `NEXT_PUBLIC_…`. Leave unset to keep AI off. |
    | `GEMINI_MODEL` | Optional. Default `gemini-3.8-flash`. Any Gemini model with structured output. |
    | `ANTHROPIC_API_KEY` | Optional, not required. Used only when `GEMINI_API_KEY` isn't set. |
-   | `BRAVE_SEARCH_API_KEY` | Optional. Enables Discover's public web search. |
-   | `GITHUB_TOKEN` | Optional. A token with no scopes; raises GitHub's rate limit for Discover. |
+   | `TAVILY_API_KEY` | Optional. Enables Discover's public web search. Free plan: 1,000 searches a month, no card. |
+   | `BRAVE_SEARCH_API_KEY` | Optional alternative web search. Brave's API now needs a card. |
+   | `GITHUB_TOKEN` | Recommended. A token with no scopes (free); raises GitHub's limit for Discover from 60 to 5,000 profile lookups an hour. |
    | `EMBED_SECRET` | Recommended. Any random string of 16+ characters; turns on Jobs' matching by meaning (step 3b). |
    | `APP_ENCRYPTION_KEY` | Optional. 32+ random characters (`openssl rand -hex 32`); lets users store their own AI key (Gemini, or Anthropic). Never change it once keys are stored. |
    | `AI_DAILY_QUOTA` | Optional. AI uses (tailoring, notes, AI resume reading) per user per day on your server key (unset = no limit; `0` = users' own keys only). Without a limit, every user's AI runs on your key: watch your Gemini usage and billing. |
@@ -202,9 +203,9 @@ These are from the providers' pricing pages at the time of writing. Check the cu
   - Pay-as-you-go. Used only if you set `ANTHROPIC_API_KEY` without `GEMINI_API_KEY`, or a user adds their own Anthropic key.
 
 - **Discover**
-  - Works with no keys at all: GitHub and ORCID are free public APIs, and their data is read without AI. Set a free `GITHUB_TOKEN`; without it GitHub allows only about one search an hour.
+  - Works with no keys at all: GitHub and ORCID are free public APIs, and their data is read without AI. Set a free `GITHUB_TOKEN`; without it GitHub allows only 60 profile lookups an hour (10 searches a minute), so a few searches use it up. A request that names no school is still searched, from people's public GitHub and ORCID profiles.
   - Each user can run 20 searches a day, one at a time. A search is capped at 30 queries, 100 pages and 60 AI calls.
-  - Brave Search bills per query; at most 30 per search, fewer when cached (search results are cached for 3 days).
+  - Web search (Tavily's free plan, or Brave if you have a key) counts per query: at most 30 per search, fewer when cached (search results are cached for 3 days). Tavily's free 1,000 a month covers roughly 30 searches.
   - Page reading (one call per relevant page), understanding the request and explaining the top matches use your Gemini model (`GEMINI_MODEL`). On the free tier, a large search can reach the per-minute limit: then the request is understood by the built-in parser, matches are explained by their score breakdown, and pages that couldn't be read add no people.
   - Research runs in steps of up to 60 seconds, driven by the results page while it's open. Closing the tab pauses a search; reopening it continues. A search left for 10 minutes is cancelled when you start a new one.
 
