@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { Columns2 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { MAX_COMPARE } from "@/lib/job-postings/compare-jobs";
 import { createSelectionStore } from "@/lib/selection";
 
@@ -19,10 +18,12 @@ export function CompareToggle({ id, title }: { id: string; title: string }) {
   const on = selected.includes(id);
   return (
     <label className="inline-flex min-h-8 cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
-      <Checkbox
+      <input
+        type="checkbox"
+        className="size-4 cursor-pointer accent-primary disabled:cursor-not-allowed"
         checked={on}
         disabled={!on && selected.length >= MAX_COMPARE}
-        onCheckedChange={(next) => store.toggle(id, next)}
+        onChange={(e) => store.toggle(id, e.target.checked)}
         aria-label={`Compare ${title}`}
       />
       Compare

@@ -66,7 +66,7 @@ export function JobCard({
   const strong = explanation?.strong.slice(0, 3) ?? [];
   const missing = explanation?.missing.slice(0, 2) ?? [];
   return (
-    <li className={cn("grid gap-2 rounded-xl border border-l-4 bg-card p-4 shadow-xs transition-shadow hover:shadow-sm", TIER_STYLE[tier].border)}>
+    <li className={cn("grid gap-2 rounded-xl border border-l-4 bg-card p-4 shadow-xs transition-shadow [contain-intrinsic-size:auto_9rem] [content-visibility:auto] hover:shadow-sm", TIER_STYLE[tier].border)}>
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
         <Link href={`/jobs/${j.id}`} className="min-w-0 text-base leading-snug font-semibold hover:text-primary hover:underline">
           {j.title}
