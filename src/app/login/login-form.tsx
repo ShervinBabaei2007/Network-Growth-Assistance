@@ -1,27 +1,51 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
+import { useActionState, useState } from "react";
+import {
+  requestPasswordReset,
+  sendMagicLink,
+  signInWithGoogle,
+  signInWithPassword,
+  signUpWithPassword,
+  type PasswordState,
+  type SignInState,
+} from "@/app/auth/actions";
 import { FormError } from "@/components/form-error";
-import { useActionState } from "react";
-import { sendMagicLink, signInWithGoogle, type SignInState } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth/credentials";
 
-export function LoginForm() {
-  const [state, action, pending] = useActionState<SignInState, FormData>(sendMagicLink, {
-    status: "idle",
-  });
+type Mode = "signin" | "signup";
+/** Opens on the Sign up tab for /login?mode=signup; read on the client so the page itself stays static. */
+export function LoginFormWithMode() {
+  const mode = useSearchParams().get("mode");
+  return <LoginForm initialMode={mode === "signup" ? "signup" : "signin"} />;
+}
 
-  if (state.status === "sent") {
-    return (
-      <p className="text-sm" role="status">
-        Check your inbox for a sign-in link. You can close this tab.
-      </p>
-    );
-  }
+type Method = "password" | "link" | "forgot";
+
+export function LoginForm({ initialMode = "signin" }: { initialMode?: Mode }) {
+  const [mode, setMode] = useState<Mode>(initialMode);
+  const [method, setMethod] = useState<Method>("password");
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-4">
+      <Tabs
+        value={mode}
+        onValueChange={(value) => {
+          setMode(value as Mode);
+          setMethod("password");
+        }}
+      >
+        <TabsList className="w-full">
+          <TabsTrigger value="signin">Sign in</TabsTrigger>
+          <TabsTrigger value="signup">Sign up</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <form action={signInWithGoogle}>
         <Button type="submit" variant="outline" className="w-full">
           <GoogleIcon />
@@ -33,21 +57,137 @@ export function LoginForm() {
         or
         <span className="h-px flex-1 bg-border" />
       </div>
-      <form action={action} className="grid gap-3">
-        <div className="grid gap-1.5">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" autoComplete="email" required />
-        </div>
-        {state.status === "error" ? (
-          <FormError>
-            {state.message}
-          </FormError>
-        ) : null}
-        <Button type="submit" disabled={pending}>
-          {pending ? "Sending…" : "Email me a sign-in link"}
-        </Button>
-      </form>
+
+      {mode === "signup" ? (
+        <SignUpForm />
+      ) : method === "link" ? (
+        <MagicLinkForm onBack={() => setMethod("password")} />
+      ) : method === "forgot" ? (
+        <ForgotForm onBack={() => setMethod("password")} />
+      ) : (
+        <SignInForm onForgot={() => setMethod("forgot")} onLink={() => setMethod("link")} />
+      )}
     </div>
+  );
+}
+
+function EmailField() {
+  return (
+    <div className="grid gap-1.5">
+      <Label htmlFor="email">Email</Label>
+      <Input id="email" name="email" type="email" autoComplete="email" required />
+    </div>
+  );
+}
+
+function PasswordField({ id = "password", label = "Password", mode }: { id?: string; label?: string; mode: "current" | "new" }) {
+  return (
+    <div className="grid gap-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        name={id}
+        type="password"
+        autoComplete={mode === "new" ? "new-password" : "current-password"}
+        minLength={mode === "new" ? MIN_PASSWORD_LENGTH : undefined}
+        required
+      />
+    </div>
+  );
+}
+
+function SignInForm({ onForgot, onLink }: { onForgot: () => void; onLink: () => void }) {
+  const [state, action, pending] = useActionState<PasswordState, FormData>(signInWithPassword, { status: "idle" });
+  return (
+    <form action={action} className="grid gap-3">
+      <EmailField />
+      <PasswordField mode="current" />
+      {state.status === "error" ? <FormError>{state.message}</FormError> : null}
+      <Button type="submit" disabled={pending}>
+        {pending ? "Signing in…" : "Sign in"}
+      </Button>
+      <div className="flex flex-wrap justify-between gap-2 text-xs">
+        <button type="button" onClick={onForgot} className="text-muted-foreground underline underline-offset-4">
+          Forgot password?
+        </button>
+        <button type="button" onClick={onLink} className="text-muted-foreground underline underline-offset-4">
+          Email me a sign-in link instead
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function SignUpForm() {
+  const [state, action, pending] = useActionState<PasswordState, FormData>(signUpWithPassword, { status: "idle" });
+  if (state.status === "confirm") {
+    return (
+      <p className="text-sm" role="status">
+        Check your inbox to confirm your email and finish creating your account.
+      </p>
+    );
+  }
+  return (
+    <form action={action} className="grid gap-3">
+      <EmailField />
+      <PasswordField mode="new" />
+      <PasswordField id="confirm" label="Confirm password" mode="new" />
+      <p className="text-xs text-muted-foreground">Use at least {MIN_PASSWORD_LENGTH} characters.</p>
+      {state.status === "error" ? <FormError>{state.message}</FormError> : null}
+      <Button type="submit" disabled={pending}>
+        {pending ? "Creating account…" : "Create account"}
+      </Button>
+    </form>
+  );
+}
+
+function ForgotForm({ onBack }: { onBack: () => void }) {
+  const [state, action, pending] = useActionState<PasswordState, FormData>(requestPasswordReset, { status: "idle" });
+  if (state.status === "reset-sent") {
+    return (
+      <p className="text-sm" role="status">
+        If that email has an account, a reset link is on its way. You can close this tab.
+      </p>
+    );
+  }
+  return (
+    <form action={action} className="grid gap-3">
+      <EmailField />
+      {state.status === "error" ? <FormError>{state.message}</FormError> : null}
+      <Button type="submit" disabled={pending}>
+        {pending ? "Sending…" : "Send reset link"}
+      </Button>
+      <BackLink onClick={onBack} />
+    </form>
+  );
+}
+
+function MagicLinkForm({ onBack }: { onBack: () => void }) {
+  const [state, action, pending] = useActionState<SignInState, FormData>(sendMagicLink, { status: "idle" });
+  if (state.status === "sent") {
+    return (
+      <p className="text-sm" role="status">
+        Check your inbox for a sign-in link. You can close this tab.
+      </p>
+    );
+  }
+  return (
+    <form action={action} className="grid gap-3">
+      <EmailField />
+      {state.status === "error" ? <FormError>{state.message}</FormError> : null}
+      <Button type="submit" disabled={pending}>
+        {pending ? "Sending…" : "Email me a sign-in link"}
+      </Button>
+      <BackLink onClick={onBack} />
+    </form>
+  );
+}
+
+function BackLink({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="text-xs text-muted-foreground underline underline-offset-4">
+      Back to password sign-in
+    </button>
   );
 }
 

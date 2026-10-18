@@ -3,10 +3,10 @@ import { canonicalFor } from "@/lib/site";
 import { Suspense } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LoginForm } from "./login-form";
+import { LoginForm, LoginFormWithMode } from "./login-form";
 
 export const metadata = {
-  title: "Sign in · Network Growth",
+  title: "Sign in or sign up · Network Growth",
   description: "Sign in to plan and track your professional networking and job search. We never ask for your LinkedIn password.",
   ...canonicalFor("/login"),
 };
@@ -18,14 +18,16 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         <CardHeader>
           <CardTitle>Network Growth Assistant</CardTitle>
           <CardDescription>
-            Sign in with Google or your email. This app never asks for your LinkedIn password.
+            Sign in or create an account with Google or your email. This app never asks for your LinkedIn password.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
           <Suspense fallback={null}>
             <LinkError searchParams={searchParams} />
           </Suspense>
-          <LoginForm />
+          <Suspense fallback={<LoginForm />}>
+            <LoginFormWithMode />
+          </Suspense>
           <p className="text-center text-xs text-muted-foreground">
             By continuing you agree to the{" "}
             <Link href="/terms" className="underline underline-offset-4">Terms</Link> and{" "}
