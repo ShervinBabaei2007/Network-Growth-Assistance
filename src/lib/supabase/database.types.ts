@@ -177,14 +177,14 @@ isOneToOne: false
                   ]
                 },"applications": {
                   Row: {
-                    "applied_on": string | null,"apply_url": string | null,"attempt": number,"company": string | null,"created_at": string,"id": string,"job_id": string | null,"location": string | null,"notes": string | null,"offered_pay_amount": number | null,"offered_pay_currency": string | null,"offered_pay_period": string | null,"source": string | null,"stage": Database["public"]['Enums']["application_stage"],"stage_changed_at": string,"title": string,"updated_at": string,"user_id": string,"version": number
+                    "applied_on": string | null,"apply_url": string | null,"attempt": number,"company": string | null,"created_at": string,"id": string,"is_sample": boolean,"job_id": string | null,"location": string | null,"notes": string | null,"offered_pay_amount": number | null,"offered_pay_currency": string | null,"offered_pay_period": string | null,"source": string | null,"stage": Database["public"]['Enums']["application_stage"],"stage_changed_at": string,"title": string,"updated_at": string,"user_id": string,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "applied_on"?: string | null,"apply_url"?: string | null,"attempt"?: number,"company"?: string | null,"created_at"?: string,"id"?: string,"job_id"?: string | null,"location"?: string | null,"notes"?: string | null,"offered_pay_amount"?: number | null,"offered_pay_currency"?: string | null,"offered_pay_period"?: string | null,"source"?: string | null,"stage"?: Database["public"]['Enums']["application_stage"],"stage_changed_at"?: string,"title": string,"updated_at"?: string,"user_id"?: string,"version"?: number
+                    "applied_on"?: string | null,"apply_url"?: string | null,"attempt"?: number,"company"?: string | null,"created_at"?: string,"id"?: string,"is_sample"?: boolean,"job_id"?: string | null,"location"?: string | null,"notes"?: string | null,"offered_pay_amount"?: number | null,"offered_pay_currency"?: string | null,"offered_pay_period"?: string | null,"source"?: string | null,"stage"?: Database["public"]['Enums']["application_stage"],"stage_changed_at"?: string,"title": string,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Update: {
-                    "applied_on"?: string | null,"apply_url"?: string | null,"attempt"?: number,"company"?: string | null,"created_at"?: string,"id"?: string,"job_id"?: string | null,"location"?: string | null,"notes"?: string | null,"offered_pay_amount"?: number | null,"offered_pay_currency"?: string | null,"offered_pay_period"?: string | null,"source"?: string | null,"stage"?: Database["public"]['Enums']["application_stage"],"stage_changed_at"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string,"version"?: number
+                    "applied_on"?: string | null,"apply_url"?: string | null,"attempt"?: number,"company"?: string | null,"created_at"?: string,"id"?: string,"is_sample"?: boolean,"job_id"?: string | null,"location"?: string | null,"notes"?: string | null,"offered_pay_amount"?: number | null,"offered_pay_currency"?: string | null,"offered_pay_period"?: string | null,"source"?: string | null,"stage"?: Database["public"]['Enums']["application_stage"],"stage_changed_at"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -197,14 +197,14 @@ isOneToOne: false
                   ]
                 },"candidates": {
                   Row: {
-                    "connected_at": string | null,"connected_via": Database["public"]['Enums']["connection_source"] | null,"created_at": string,"degree_level": Database["public"]['Enums']["degree_level"] | null,"discipline": string | null,"discipline_confidence": Database["public"]['Enums']["classification_confidence"],"discovered_at": string,"full_name": string,"grad_year": number | null,"id": string,"is_preexisting_connection": boolean,"notes": string | null,"profile_key": string,"profile_url": string,"raw_program_text": string | null,"raw_school_text": string | null,"role": string | null,"source": Database["public"]['Enums']["candidate_source"],"status": Database["public"]['Enums']["candidate_status"],"university": string | null,"university_confidence": Database["public"]['Enums']["classification_confidence"],"updated_at": string,"user_id": string
+                    "connected_at": string | null,"connected_via": Database["public"]['Enums']["connection_source"] | null,"created_at": string,"degree_level": Database["public"]['Enums']["degree_level"] | null,"discipline": string | null,"discipline_confidence": Database["public"]['Enums']["classification_confidence"],"discovered_at": string,"full_name": string,"grad_year": number | null,"id": string,"is_preexisting_connection": boolean,"is_sample": boolean,"notes": string | null,"profile_key": string,"profile_url": string,"raw_program_text": string | null,"raw_school_text": string | null,"role": string | null,"source": Database["public"]['Enums']["candidate_source"],"status": Database["public"]['Enums']["candidate_status"],"university": string | null,"university_confidence": Database["public"]['Enums']["classification_confidence"],"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "connected_at"?: string | null,"connected_via"?: Database["public"]['Enums']["connection_source"] | null,"created_at"?: string,"degree_level"?: Database["public"]['Enums']["degree_level"] | null,"discipline"?: string | null,"discipline_confidence"?: Database["public"]['Enums']["classification_confidence"],"discovered_at"?: string,"full_name": string,"grad_year"?: number | null,"id"?: string,"is_preexisting_connection"?: boolean,"notes"?: string | null,"profile_key": string,"profile_url": string,"raw_program_text"?: string | null,"raw_school_text"?: string | null,"role"?: string | null,"source"?: Database["public"]['Enums']["candidate_source"],"status"?: Database["public"]['Enums']["candidate_status"],"university"?: string | null,"university_confidence"?: Database["public"]['Enums']["classification_confidence"],"updated_at"?: string,"user_id"?: string
+                    "connected_at"?: string | null,"connected_via"?: Database["public"]['Enums']["connection_source"] | null,"created_at"?: string,"degree_level"?: Database["public"]['Enums']["degree_level"] | null,"discipline"?: string | null,"discipline_confidence"?: Database["public"]['Enums']["classification_confidence"],"discovered_at"?: string,"full_name": string,"grad_year"?: number | null,"id"?: string,"is_preexisting_connection"?: boolean,"is_sample"?: boolean,"notes"?: string | null,"profile_key": string,"profile_url": string,"raw_program_text"?: string | null,"raw_school_text"?: string | null,"role"?: string | null,"source"?: Database["public"]['Enums']["candidate_source"],"status"?: Database["public"]['Enums']["candidate_status"],"university"?: string | null,"university_confidence"?: Database["public"]['Enums']["classification_confidence"],"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "connected_at"?: string | null,"connected_via"?: Database["public"]['Enums']["connection_source"] | null,"created_at"?: string,"degree_level"?: Database["public"]['Enums']["degree_level"] | null,"discipline"?: string | null,"discipline_confidence"?: Database["public"]['Enums']["classification_confidence"],"discovered_at"?: string,"full_name"?: string,"grad_year"?: number | null,"id"?: string,"is_preexisting_connection"?: boolean,"notes"?: string | null,"profile_key"?: string,"profile_url"?: string,"raw_program_text"?: string | null,"raw_school_text"?: string | null,"role"?: string | null,"source"?: Database["public"]['Enums']["candidate_source"],"status"?: Database["public"]['Enums']["candidate_status"],"university"?: string | null,"university_confidence"?: Database["public"]['Enums']["classification_confidence"],"updated_at"?: string,"user_id"?: string
+                    "connected_at"?: string | null,"connected_via"?: Database["public"]['Enums']["connection_source"] | null,"created_at"?: string,"degree_level"?: Database["public"]['Enums']["degree_level"] | null,"discipline"?: string | null,"discipline_confidence"?: Database["public"]['Enums']["classification_confidence"],"discovered_at"?: string,"full_name"?: string,"grad_year"?: number | null,"id"?: string,"is_preexisting_connection"?: boolean,"is_sample"?: boolean,"notes"?: string | null,"profile_key"?: string,"profile_url"?: string,"raw_program_text"?: string | null,"raw_school_text"?: string | null,"role"?: string | null,"source"?: Database["public"]['Enums']["candidate_source"],"status"?: Database["public"]['Enums']["candidate_status"],"university"?: string | null,"university_confidence"?: Database["public"]['Enums']["classification_confidence"],"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -237,14 +237,14 @@ isOneToOne: false
                   ]
                 },"connection_snapshots": {
                   Row: {
-                    "created_at": string,"id": string,"recorded_at": string,"source": Database["public"]['Enums']["record_source"],"total_connections": number,"user_id": string
+                    "created_at": string,"id": string,"is_sample": boolean,"recorded_at": string,"source": Database["public"]['Enums']["record_source"],"total_connections": number,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"id"?: string,"recorded_at"?: string,"source"?: Database["public"]['Enums']["record_source"],"total_connections": number,"user_id"?: string
+                    "created_at"?: string,"id"?: string,"is_sample"?: boolean,"recorded_at"?: string,"source"?: Database["public"]['Enums']["record_source"],"total_connections": number,"user_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"recorded_at"?: string,"source"?: Database["public"]['Enums']["record_source"],"total_connections"?: number,"user_id"?: string
+                    "created_at"?: string,"id"?: string,"is_sample"?: boolean,"recorded_at"?: string,"source"?: Database["public"]['Enums']["record_source"],"total_connections"?: number,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -271,14 +271,14 @@ isOneToOne: false
                   ]
                 },"disciplines": {
                   Row: {
-                    "aliases": (string)[],"created_at": string,"id": string,"name": string,"position": number,"user_id": string
+                    "aliases": (string)[],"created_at": string,"id": string,"is_sample": boolean,"name": string,"position": number,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "aliases"?: (string)[],"created_at"?: string,"id"?: string,"name": string,"position"?: number,"user_id"?: string
+                    "aliases"?: (string)[],"created_at"?: string,"id"?: string,"is_sample"?: boolean,"name": string,"position"?: number,"user_id"?: string
                   }
                   Update: {
-                    "aliases"?: (string)[],"created_at"?: string,"id"?: string,"name"?: string,"position"?: number,"user_id"?: string
+                    "aliases"?: (string)[],"created_at"?: string,"id"?: string,"is_sample"?: boolean,"name"?: string,"position"?: number,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -345,14 +345,14 @@ isOneToOne: false
                   ]
                 },"invitations": {
                   Row: {
-                    "candidate_id": string,"created_at": string,"had_note": boolean,"id": string,"note_text": string | null,"outcome": Database["public"]['Enums']["invitation_outcome"],"resolved_at": string | null,"sent_at": string,"source": Database["public"]['Enums']["record_source"],"updated_at": string,"user_id": string
+                    "candidate_id": string,"created_at": string,"had_note": boolean,"id": string,"is_sample": boolean,"note_text": string | null,"outcome": Database["public"]['Enums']["invitation_outcome"],"resolved_at": string | null,"sent_at": string,"source": Database["public"]['Enums']["record_source"],"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "candidate_id": string,"created_at"?: string,"had_note"?: boolean,"id"?: string,"note_text"?: string | null,"outcome"?: Database["public"]['Enums']["invitation_outcome"],"resolved_at"?: string | null,"sent_at": string,"source"?: Database["public"]['Enums']["record_source"],"updated_at"?: string,"user_id"?: string
+                    "candidate_id": string,"created_at"?: string,"had_note"?: boolean,"id"?: string,"is_sample"?: boolean,"note_text"?: string | null,"outcome"?: Database["public"]['Enums']["invitation_outcome"],"resolved_at"?: string | null,"sent_at": string,"source"?: Database["public"]['Enums']["record_source"],"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "candidate_id"?: string,"created_at"?: string,"had_note"?: boolean,"id"?: string,"note_text"?: string | null,"outcome"?: Database["public"]['Enums']["invitation_outcome"],"resolved_at"?: string | null,"sent_at"?: string,"source"?: Database["public"]['Enums']["record_source"],"updated_at"?: string,"user_id"?: string
+                    "candidate_id"?: string,"created_at"?: string,"had_note"?: boolean,"id"?: string,"is_sample"?: boolean,"note_text"?: string | null,"outcome"?: Database["public"]['Enums']["invitation_outcome"],"resolved_at"?: string | null,"sent_at"?: string,"source"?: Database["public"]['Enums']["record_source"],"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -851,14 +851,14 @@ isOneToOne: false
                   ]
                 },"settings": {
                   Row: {
-                    "auto_approve": boolean,"baseline_connections": number | null,"created_at": string,"daily_invite_target": number | null,"density": string,"email_notifications": boolean,"onboarding": NonNullable<Json>,"job_country": string,"job_exclude_keywords": (string)[],"job_provinces": (string)[],"job_titles": (string)[],"monthly_note_allowance": number | null,"my_interests": string | null,"my_program_text": string | null,"my_school_text": string | null,"networking_goal": string | null,"no_response_days": number,"note_char_limit": number,"notify_interviews": boolean,"notify_reminders": boolean,"overall_target": number | null,"pause_reason": string | null,"paused": boolean,"paused_at": string | null,"project_start_date": string,"stale_pending_days": number,"text_size": string,"theme": string,"timezone": string,"updated_at": string,"user_id": string,"weekly_invite_cap": number | null,"weekly_summary": boolean
+                    "auto_approve": boolean,"baseline_connections": number | null,"created_at": string,"daily_invite_target": number | null,"density": string,"email_notifications": boolean,"job_country": string,"job_exclude_keywords": (string)[],"job_provinces": (string)[],"job_titles": (string)[],"monthly_note_allowance": number | null,"my_interests": string | null,"my_program_text": string | null,"my_school_text": string | null,"networking_goal": string | null,"no_response_days": number,"note_char_limit": number,"notify_interviews": boolean,"notify_reminders": boolean,"onboarding": NonNullable<Json>,"overall_target": number | null,"pause_reason": string | null,"paused": boolean,"paused_at": string | null,"project_start_date": string,"sample_data": boolean,"stale_pending_days": number,"text_size": string,"theme": string,"timezone": string,"updated_at": string,"user_id": string,"weekly_invite_cap": number | null,"weekly_summary": boolean
                   }
                   ComputedFields: never
                   Insert: {
-                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"created_at"?: string,"daily_invite_target"?: number | null,"density"?: string,"email_notifications"?: boolean,"onboarding"?: NonNullable<Json>,"job_country"?: string,"job_exclude_keywords"?: (string)[],"job_provinces"?: (string)[],"job_titles"?: (string)[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"no_response_days"?: number,"note_char_limit"?: number,"notify_interviews"?: boolean,"notify_reminders"?: boolean,"overall_target"?: number | null,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"text_size"?: string,"theme"?: string,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null,"weekly_summary"?: boolean
+                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"created_at"?: string,"daily_invite_target"?: number | null,"density"?: string,"email_notifications"?: boolean,"job_country"?: string,"job_exclude_keywords"?: (string)[],"job_provinces"?: (string)[],"job_titles"?: (string)[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"no_response_days"?: number,"note_char_limit"?: number,"notify_interviews"?: boolean,"notify_reminders"?: boolean,"onboarding"?: NonNullable<Json>,"overall_target"?: number | null,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"sample_data"?: boolean,"stale_pending_days"?: number,"text_size"?: string,"theme"?: string,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null,"weekly_summary"?: boolean
                   }
                   Update: {
-                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"created_at"?: string,"daily_invite_target"?: number | null,"density"?: string,"email_notifications"?: boolean,"onboarding"?: NonNullable<Json>,"job_country"?: string,"job_exclude_keywords"?: (string)[],"job_provinces"?: (string)[],"job_titles"?: (string)[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"no_response_days"?: number,"note_char_limit"?: number,"notify_interviews"?: boolean,"notify_reminders"?: boolean,"overall_target"?: number | null,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"stale_pending_days"?: number,"text_size"?: string,"theme"?: string,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null,"weekly_summary"?: boolean
+                    "auto_approve"?: boolean,"baseline_connections"?: number | null,"created_at"?: string,"daily_invite_target"?: number | null,"density"?: string,"email_notifications"?: boolean,"job_country"?: string,"job_exclude_keywords"?: (string)[],"job_provinces"?: (string)[],"job_titles"?: (string)[],"monthly_note_allowance"?: number | null,"my_interests"?: string | null,"my_program_text"?: string | null,"my_school_text"?: string | null,"networking_goal"?: string | null,"no_response_days"?: number,"note_char_limit"?: number,"notify_interviews"?: boolean,"notify_reminders"?: boolean,"onboarding"?: NonNullable<Json>,"overall_target"?: number | null,"pause_reason"?: string | null,"paused"?: boolean,"paused_at"?: string | null,"project_start_date"?: string,"sample_data"?: boolean,"stale_pending_days"?: number,"text_size"?: string,"theme"?: string,"timezone"?: string,"updated_at"?: string,"user_id"?: string,"weekly_invite_cap"?: number | null,"weekly_summary"?: boolean
                   }
                   Relationships: [
                     
@@ -891,14 +891,14 @@ isOneToOne: false
                   ]
                 },"targets": {
                   Row: {
-                    "created_at": string,"discipline": string,"id": string,"target_count": number,"university": string | null,"updated_at": string,"user_id": string
+                    "created_at": string,"discipline": string,"id": string,"is_sample": boolean,"target_count": number,"university": string | null,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"discipline": string,"id"?: string,"target_count": number,"university"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"discipline": string,"id"?: string,"is_sample"?: boolean,"target_count": number,"university"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"discipline"?: string,"id"?: string,"target_count"?: number,"university"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"discipline"?: string,"id"?: string,"is_sample"?: boolean,"target_count"?: number,"university"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -917,14 +917,14 @@ isOneToOne: false
                   ]
                 },"universities": {
                   Row: {
-                    "aliases": (string)[],"created_at": string,"has_targets": boolean,"id": string,"name": string,"position": number,"user_id": string
+                    "aliases": (string)[],"created_at": string,"has_targets": boolean,"id": string,"is_sample": boolean,"name": string,"position": number,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "aliases"?: (string)[],"created_at"?: string,"has_targets"?: boolean,"id"?: string,"name": string,"position"?: number,"user_id"?: string
+                    "aliases"?: (string)[],"created_at"?: string,"has_targets"?: boolean,"id"?: string,"is_sample"?: boolean,"name": string,"position"?: number,"user_id"?: string
                   }
                   Update: {
-                    "aliases"?: (string)[],"created_at"?: string,"has_targets"?: boolean,"id"?: string,"name"?: string,"position"?: number,"user_id"?: string
+                    "aliases"?: (string)[],"created_at"?: string,"has_targets"?: boolean,"id"?: string,"is_sample"?: boolean,"name"?: string,"position"?: number,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -1000,6 +1000,9 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"clear_sample_data":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "consume_ai_quota":
 { Args: { "p_limit": number,"p_user": string }; Returns: boolean
                            },
@@ -1053,6 +1056,9 @@ isOneToOne: false
                            },
 "resolve_invitation":
 { Args: { "p_candidate_id": string,"p_outcome": Database["public"]['Enums']["invitation_outcome"],"p_resolved_at"?: string }; Returns: undefined
+                           },
+"seed_sample_data":
+{ Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "set_application_stage":
 { Args: { "p_detail"?: string,"p_expected_version": number,"p_id": string,"p_occurred_at"?: string,"p_stage": Database["public"]['Enums']["application_stage"] }; Returns: number
