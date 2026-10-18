@@ -23,7 +23,7 @@ export function FiltersToggle({ count, className, children }: { count: number; c
         </span>
         <ChevronDown aria-hidden className={cn("transition-transform", open && "rotate-180")} />
       </Button>
-      <div id={panelId} className={cn("lg:block", open ? "block" : "hidden")}>
+      <div id={panelId} className={cn("lg:block lg:-mx-1 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:px-1 lg:pb-1", open ? "block" : "hidden")}>
         {children}
       </div>
     </div>
