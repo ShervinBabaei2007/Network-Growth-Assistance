@@ -12,6 +12,7 @@ import Link from "next/link";
 import { Bookmark, FileText, Info, Plus, Search, SearchX, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import type { TierKey } from "@/components/jobs/job-visuals";
 import { TIER_STYLE } from "@/components/jobs/job-visuals";
+import { CompareBar } from "@/components/jobs/compare-select";
 import { JobCard } from "@/components/jobs/job-card";
 import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
@@ -336,6 +337,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
         )}
 
         <PageNav current={current} pages={pages} href={(n) => href({ page: String(n) })} />
+        <CompareBar />
       </section>
     </div>
   );
