@@ -2,7 +2,42 @@
 
 The details behind each part of Network Growth Assistant. For setup and an overview, start with the [README](../README.md).
 
-Contents: [Network discovery](#network-discovery-discover) · [Jobs](#jobs)
+Contents: [Getting around and first run](#getting-around-and-first-run) · [Your network](#your-network) · [Network discovery](#network-discovery-discover) · [Jobs](#jobs) · [Applications](#applications) · [Alerts and notifications](#alerts-and-notifications) · [Progress and analytics](#progress-and-analytics) · [Look, phones and speed](#look-phones-and-speed)
+
+## Getting around and first run
+
+**A short welcome, a tour and a checklist.** The first time someone signs in, a four-step welcome asks what they want to do (**network**, **jobs** or **both**), offers to set up job titles and places, and ends with one suggested first action for that goal. It can be skipped and reopened from **Help** or **Settings**. **Help → Take the tour** is an 18-stop walkthrough that visits each page in turn and points at what matters on it. Overview shows a **Getting started** checklist built from real records (a plan, a starting count, a search, a candidate, a resume, a saved job), so it can't drift from what has actually been done, and it can be dismissed. Progress is saved per account in `settings.onboarding`. If that can't be read (for example a deploy ahead of its migration), the app falls back to a fresh state, saves nothing and logs the reason; the tour never fails silently.
+
+**A menu that follows the goal.** Every page stays one click away, but only the ones that match the chosen goal are always on show:
+
+| Goal | Always shown | Under **More** |
+|---|---|---|
+| Network | Overview, Discover, Daily Queue, Candidates, People | Connections, Analytics, Disciplines, Schools, Jobs, Applications |
+| Jobs | Overview, Jobs, Applications | Discover, Daily Queue, Candidates, People, Connections, Analytics, Disciplines, Schools |
+| Both (or not chosen) | Overview, Discover, Jobs, Daily Queue, Applications | Candidates, People, Connections, Analytics, Disciplines, Schools |
+
+Settings and Help are always visible. **More** groups what's inside it (My network, Insights and so on) and opens by itself on one of its pages. On a phone the same list is a menu button that opens a side panel; the top bar stays in view while scrolling. The goal can be changed at any time by restarting the welcome.
+
+## Your network
+
+Nothing about your networking plan is built in. In **Settings → Your networking plan** you enter your own **schools** (with the other ways each is written, such as "UBC" or "U of T"), your own **disciplines** in priority order, a **connection goal**, a **starting count** and **start date**, and **targets** per discipline and per school. Schools can have their own targets, or be an extra pool that only counts toward a discipline's total. Candidates are sorted only into what you add.
+
+**Candidates** are people you intend to invite, tracked from review to invitation to acceptance (new, awaiting review, approved, invitation sent or pending, connected; or declined, not a match, do not contact). People are de-duplicated by their profile link. Each has a school and a program, each marked **confirmed** or **needs review**; the app never guesses a school or program it can't read from the text.
+
+**Quick capture** is the fast way in. On a LinkedIn people search, press Ctrl+A then Ctrl+C. In **Candidates → Quick capture**, press Ctrl+V:
+
+1. Only what is on your clipboard is read, in your browser. Nothing is fetched from LinkedIn. Both the page's HTML and plain text are understood; links to profiles become people.
+2. Each person's school and program are matched against **your** lists and their aliases, from the headline text. A program comes from the headline only, because "Past:" lines can mention other fields.
+3. People already in your list, and people marked already connected, are left out. Rows missing a school or program are flagged ("Needs school") rather than guessed; you can set them per row, or fill every blank row at once.
+4. **Add** saves everyone with both fields set. The checkbox "Approve the ones with school and program set" (or the **auto-approve** setting) controls whether they go straight to approved or wait for review. The cursor then returns to the paste box, so the next page is one Ctrl+V away.
+
+The shortcut buttons above the paste box open the matching LinkedIn search for each school and discipline pair you still need people in, with how many are left to reach the target.
+
+**Import** reads a CSV, or the connections file from LinkedIn's own data export, and can also fill your known connections and update everyone's status at once. Email addresses in imported files are never stored and the files are not kept.
+
+**The Daily Queue** is the approved people to invite today, in the order of your discipline priorities and within your daily target. You open each profile, send the invitation yourself, and press **Mark sent**. A daily job (or **Run now**) classifies new candidates, marks older invitations as pending and rebuilds the queue. Suggested connection notes use only what you entered under **Settings → About you** and what is on the candidate's record, and nothing is invented. **Pause outreach** (Settings) stops the queue if LinkedIn shows a warning.
+
+**People** is a small CRM for people worth meeting: status, notes, tags, reminders, referrals, and "people at this company". Discover results you save end up here. **Known connections** keeps the list of people you already know, so Discover leaves them out. On a phone, these lists are cards with a labelled line for each column.
 
 ## Network discovery (Discover)
 
@@ -66,3 +101,39 @@ Without AI (no key, or today's free uses spent), **Tailor Resume doesn't fake it
 **Limitations.** Coverage depends on the employer directory: it started with tech employers, and non-tech and non-Canadian employers are added through `scripts/employer-candidates-worldwide.txt` and **Jobs → Employers**. Large retailers and many big employers use Workday or similar systems that have no public API, so in-store retail jobs stay thin (the app doesn't scrape). Jobicy and Remotive only list remote jobs. Jobicy can't filter by city, so a city search narrows only employer boards. Remotive's jobs arrive a day late. Gemini's free tier has daily request limits; when they're used up, Tailor Resume gives Improvement Notes. Links on job sites that block automated checks stay **Not yet verified**.
 
 Also: Saved / Applied / Not interested (each with Undo), and **Find people at {company}** in Discover. Feedback is announced with toasts (`src/components/toast/`): readable, dismissible, announced to screen readers, longer for errors and warnings, and F6 moves focus to them.
+
+## Applications
+
+**Applications** tracks every job you pursue from **saved** to **offer**, on a board (one column per stage, one column on a phone) or a sortable list. Stages: saved, applied, screening, interviewing, offer, accepted, rejected, withdrawn, no response. Nothing moves on its own.
+
+- **One row per attempt.** It keeps a copy of the posting, so the application survives the job being removed. There is at most one open attempt per job; **Apply again** starts a new one.
+- **Save, I applied and remove** on the Jobs page keep the tracker in step. A job you dismiss never creates an application. After you follow a verified **Apply** link, the app asks **"Mark as applied?"**; it never assumes you did.
+- **Every move is kept on a timeline** (stage changes, notes, responses, interviews, reminders, contacts and documents). A version check stops two open tabs from silently overwriting each other.
+- **Interviews** have a time and zone. A changed time asks you to confirm. Each interview downloads as an **`.ics`** calendar file (UTC, stable id, updated sequence number).
+- **Reminders**, **contacts** (people you know there, with their role, linked to People), **documents** (an unchangeable copy of a resume or cover letter used) and **offered pay** (entered by you, never converted or estimated).
+- **No response** is only ever suggested, after the number of days you set in **Settings → Applications**.
+- **Referrals.** On a company page or a person's record, record "I asked" or "They referred me". An optional draft message is a template, or an AI rewrite that is checked so it doesn't say anyone works there now, invent facts or imply a meeting that wasn't recorded. It is copied, never sent.
+- **Company pages** (`/companies/<name>`) gather the applications, verified open jobs, referrals and the people you know at a company. Matching company names is careful: an exact name (after legal suffixes like "Inc.") counts; regional names, brand groups (Amazon and AWS) and prefixes are only **possible**, and your "same / different company" answers are remembered and can be undone.
+
+## Alerts and notifications
+
+- **Saved searches** (up to 20) re-run on the schedule you choose, **daily or weekly at your local hour**, correct across daylight-saving changes. What a search shows when you save it is the baseline and is never announced; a job counts as new only when no copy of it, from any source, was seen before.
+- Alerts read **stored jobs only**, so they never call an outside source. Overlapping runs can't announce anything twice, and a failed run is retried without losing its matches.
+- **Notifications** (the bell, with an unread count) also cover reminders that are due, interviews in the next 24 hours (announced again if one moves), a Monday summary of your search, and job boards you added that stopped working. Mark one or all as read, with **Undo**. Read notifications are deleted after 90 days.
+- **Email digests** are optional and opt-in twice (in Settings and on each search). They contain job titles, companies and links only, no tracking, and every email has a one-click unsubscribe. They switch on only when the server has SMTP configured (see [Deploying](DEPLOYMENT.md)); otherwise alerts stay in the app.
+
+## Progress and analytics
+
+- **Overview** leads with **one recommended next action** (for example "Send invitations, starting with Computer Science", "Review 3 candidates", or "Set up your networking plan"; a LinkedIn warning always comes first), then your network total against your goal, a job-search summary (reminders and interviews due) and a folded **Detailed breakdown** (pipeline, activity and each discipline against its target).
+- **Only accepted invitations count toward a target**, and only when the person's school and program are confirmed. **Pending invitations are shown apart** (a hatched segment) and never counted. The counting rules live in `src/lib/progress/` and are unit-tested.
+- The **network total** comes from counts you record or import, and says so. It can differ from tracked acceptances because it also includes people who invited you and connections you didn't log here.
+- **Analytics** shows the acceptance rate (accepted divided by accepted plus declined plus withdrawn; pending is left out because its outcome isn't known yet), invitations sent and connections accepted over 30 days, weekly activity, and your recorded network total over time. Charts load as they scroll into view and each has a table version. **Disciplines** and **Schools** show progress for each.
+- Nothing is estimated or invented: every number is built from what you recorded or imported.
+
+## Look, phones and speed
+
+- **Appearance** (Settings): theme **System, Light or Dark**, density, and text size, saved to your account and applied before the first paint, so there's no flash. Both themes keep every text and form-field colour pair at or above WCAG contrast (a unit test checks them), and reduced-motion settings are respected.
+- **Built on shadcn/ui** (Base UI), with a refined neutral and blue look.
+- **Phones.** The menu is a button that opens a side panel. Lists (People, Candidates, Connections, Employers) become **cards** with a labelled line for each column. The Jobs filters sit behind a **Filters (n)** button under the search box. Buttons and inputs are larger on touch screens, text fields use 16 px so iOS doesn't zoom, dropdowns open the phone's own picker (on a desktop they are the shadcn Select), the welcome appears as a bottom sheet, and the layout respects notches and the home indicator. Nothing is cut off at 360 px wide on any page (an end-to-end test checks 19 pages).
+- **Speed.** Each page streams: the outline paints first and the data fills in. The charts library, the desktop dropdown, the job menu, the phone menu panel, the welcome, the tour and the toast interface are downloaded only when first needed, so a first page load is about 520-560 KB of JavaScript. Pages and the database sit in the same region, and each request reads settings once.
+- **Search and agents.** `robots.txt` allows crawling; the public pages (sign-in, privacy, terms) are in the sitemap, with `llms.txt` and `/.well-known/ai-catalog.json` describing them. Everything behind sign-in redirects signed-out visitors, bots included, to the sign-in page.

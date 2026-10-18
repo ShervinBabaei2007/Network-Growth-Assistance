@@ -1,6 +1,6 @@
 # Implementation checklist: Career Command Center
 
-The working record for `docs/IMPROVEMENT-PLAN.md`: what's done, the evidence for it, decisions, and blockers. Update it at every phase boundary so interrupted work can resume accurately.
+The working record for the improvement plan (the plan itself is kept privately and is not in this repository): what's done, the evidence for it, decisions, and blockers. Update it at every phase boundary so interrupted work can resume accurately. Last updated 2026-10-17.
 
 Status words are kept separate on purpose:
 - **implemented**: the code exists.
@@ -14,6 +14,16 @@ Status words are kept separate on purpose:
 | `121de46` | Phases 0–1, as one commit. Several files mixed foundation and tracker changes, so they weren't split. |
 | `eea791b` | Step 0: generic deletion test, AI allowance for intros and notes, checklist corrections |
 | `142486d` | Phase 2: saved searches, alerts, notifications, SMTP digests |
+| `e64822f` | Phase 3: people at a company, referrals, company pages |
+| `4fe7e33` | Workday and Careerjet sources, user-defined networking, kept documents |
+| `8900ba6` … `9e36896` | Google sign-in, feedback button, Privacy Policy and Terms (British Columbia law) |
+| `cb92a98`, `6c5ded1` | Sidebar and top bar stay in view; light and dark themes meet WCAG contrast |
+| `f8473c8`, `4b806e5`, `cd6a6dc`, `e3e6090` | First-run welcome, 18-stop tour, checklist, goal-based menu; tour never fails silently |
+| `79ab071` | End-to-end tests run with one worker |
+| `4e0c398`, `163a197` | Speed (region, duplicate reads), trimmed menu, Lighthouse fixes, SEO and agent files, lazy charts |
+| `01e49f2`, `9ed493d`, `490d0f9`, `8abe32a` | shadcn/ui across the app, phone-friendly Jobs filters, on-demand menus and toasts |
+| `8e362b9`, `ba03c8d`, `3c2e639`, `228ff2a` | Test fix, Settings hydration, tables as cards on phones, shared Disclosure, unused code removed |
+| `46fc4b9` | README rewrite with screenshots (`npm run docs:screenshots`) |
 
 ## Scope of the first release
 
@@ -193,7 +203,51 @@ Local data note: the local database holds the owner's own data. **Never run `db:
 
 **Verification (2026-10-17, local):** typecheck, lint, build and `check:bundle` (49 files) pass; unit tests 787 pass; pgTAP 217 pass (16 files); generated DB types match; e2e 14/14.
 
-Still open: restore rehearsal, staging smoke checks, performance budget, accessibility scan. Improvement-plan phases 4 onward are not started.
+Still open at that date: restore rehearsal, staging smoke checks, performance budget, accessibility scan. Improvement-plan phases 4 onward are not started. Later work is recorded in the next section.
+
+## Since then (2026-10-17): onboarding, speed, search visibility, shadcn/ui, phones
+
+| Item | Status | Evidence |
+|---|---|---|
+| First-run welcome (goal, optional job preferences, first action), **18-stop tour**, derived Getting-started checklist; stored in `settings.onboarding`; reopen from Help or Settings | implemented, unit + e2e | `20261029000000_onboarding.sql`, `src/lib/onboarding/`, `src/components/onboarding/`, `e2e/onboarding.spec.ts` |
+| Tour and welcome never fail silently: an unreadable state (deploy ahead of its migration) falls back to a fresh state, saves nothing and logs why | implemented, tested | `src/lib/onboarding/read.ts`; production hit this once (migration not applied) and was fixed with `supabase db push` |
+| Goal-based menu: what matches the goal is always shown, the rest under **More**; Settings and Help pinned | implemented, e2e | `src/components/app-nav.tsx` (`NAV_ITEMS`, `splitNav`), `e2e/nav.spec.ts` |
+| Speed: functions pinned next to the database (`vercel.json`, `pdx1`), one shared settings read per request, Jobs stale-while-revalidate, single Suspense boundary on Settings (no layout shift) | implemented, measured | Lighthouse, below |
+| Search visibility: crawling allowed everywhere, sitemap of the three public pages, `llms.txt`, `/.well-known/ai-catalog.json`, canonical links, descriptive link names | implemented, measured | `src/app/robots.ts`, `sitemap.ts`, `src/lib/site.ts`, `public/`, `src/proxy.ts` public paths |
+| JavaScript diet: Zod kept out of the browser (client-safe `steps.ts` vs server `state.ts`), Recharts loaded when a chart nears the screen, welcome and tour loaded on demand, then the job menu, phone menu panel, desktop dropdown and toast interface loaded on first use | implemented | `route-bundle-stats.json`: Overview 621 to 536 KB, Jobs 733 to 560 KB, Analytics 614 to 527 KB, Login 559 to 520 KB first load |
+| **shadcn/ui everywhere**: Select (desktop) and Native Select (phones and first paint) behind one `AppSelect`, Checkbox, Alert, Empty, Skeleton, Dropdown Menu, Breadcrumb, Pagination, Field, Card tiles, Sheet and a shared `Disclosure`; nine unused components removed | implemented, unit + e2e | `src/components/app-select.tsx`, `src/components/ui/`, `src/lib/ui/select-options.ts` (+ test) |
+| Phone work: no content cut off at 360 px on 19 pages, bigger touch targets, 16 px inputs, bottom-sheet welcome, safe-area padding, Jobs filters behind **Filters (n)**, **tables become cards** on People, Candidates, Connections and Employers | implemented, e2e | `e2e/mobile.spec.ts` (cut-off check and card layout), `src/components/ui/table.tsx` (`stack`) |
+| README with screenshots generated from the app, and this folder brought up to date | done | `e2e/readme-screenshots.spec.ts`, `playwright.readme.config.ts`, `docs/images/` |
+
+**Measured on production (Lighthouse, mobile, 2026-10-17):**
+
+| Measure | Result |
+|---|---|
+| Accessibility, Best Practices, SEO | 100 on every page measured |
+| Performance, signed in (12 pages) | 93-99 on 11 pages; Settings 82 |
+| Performance, signed out | Login 100, Privacy 97, Terms 97 |
+
+Settings 82: its heading paints early, which puts the page's one startup task inside Lighthouse's measured window. A throttled real browser (4x CPU) shows the same two long tasks, about 57 ms and 134 ms, on Settings, Candidates and Overview. Lazy time-zone suggestions and lazy row-edit forms were added for it and trimmed the lab score a little locally, but did not change the production number; the diagnosis was revised accordingly.
+
+**Verification (2026-10-17, local):**
+
+| Check | Result |
+|---|---|
+| `npm run typecheck`, `npm run lint` | pass |
+| `npm test` | pass: 894 tests |
+| `npm run test:db` | pass: 222 tests (17 files) |
+| `npm run build` | pass |
+| `npm run check:bundle` | pass: 76 client files |
+| `npx playwright test` | pass: 44 (desktop and phone) |
+
+**Found and fixed along the way:**
+- Content cut off on a phone on Settings, Candidates and Resume; the Applications board's stage selects were clipped.
+- A layout shift of 0.34 on Settings when the AI-key card streamed in under a skeleton.
+- Next's dev-only "N" badge covered the bottom-left controls on a phone (turned off with `devIndicators: false`).
+- Checkbox labels: tests now use role queries because the shadcn Checkbox is not a plain input.
+- The analytics chart test could hit the placeholder while it was being swapped for the chart; it now retries.
+
+**Not done, by choice:** shadcn Tooltips (they need hover and would add JavaScript; icon-only controls have an aria-label and a native `title` instead), shadcn Progress under `ProgressMeter` (its "pending never counts" two-segment rule isn't supported), Sonner (the lazy custom toast is tested and accessible), and tables as cards on Applications (its sortable column headers are the only way to sort there).
 
 ## Fixes outside the roadmap
 
@@ -206,15 +260,15 @@ Still open: restore rehearsal, staging smoke checks, performance budget, accessi
 | Item | Target phase | Status |
 |---|---|---|
 | Command palette; j/k/s/o/d/? shortcuts | 7 (settings and onboarding) | not started |
-| Remember searches/filters per track; 25/50/100 per page; mobile filter summary | 2 (saved searches) and 5 (tracks) | not started |
+| Remember searches/filters per track; 25/50/100 per page; mobile filter summary | 2 (saved searches) and 5 (tracks) | mobile filter button with a count done; the rest not started |
 | Compare 2–3 jobs | 3 (company view) | not started |
 | Hide companies or title patterns, with Undo; duplicate-paste warning | 2 | not started |
 | Copy a job summary; CSV export of saved/applied jobs; preferred external search links | 2 | external search links exist; the rest not started |
 | `.ics` for calendar events | 1 | done |
 | Optional Gemini employer search (after re-checking its terms) | 3 | not started |
 | Bulk tags/status in Candidates and People; weekly goal progress; snooze a person | 3 | not started |
-| Empty states, retryable errors, relative + absolute times, What's New | every phase | partial |
-| Visual regression and automated accessibility checks; retention of old notifications | 2 (retention), later (visual / axe) | not started |
+| Empty states, retryable errors, relative + absolute times, What's New | every phase | empty states and retryable load errors done (shadcn Empty and Alert); What's New not started |
+| Visual regression and automated accessibility checks; retention of old notifications | 2 (retention), later (visual / axe) | retention done; accessibility measured with Lighthouse (100), but no axe in the test run and no visual regression |
 
 ## Decisions
 
@@ -232,19 +286,16 @@ Still open: restore rehearsal, staging smoke checks, performance budget, accessi
 
 ## Blockers and unverified gates
 
-- Backup restore has not been exercised (no production/staging access from this environment): **unverified**.
-- Staging deploy and smoke checks: **unverified**.
-- Performance budgets: **not yet measured**.
-  - The proposed budget is tracker pages under 1.5 s server time with 500 applications.
-  - Lists are bounded at 500, and the needed indexes exist.
-  - This needs a seeded dataset and a staging deploy.
-- Automated accessibility scan and a manual screen-reader pass: **not done**.
-- **Release status:**
-  - Phases 0–1 are **implemented and verified locally**.
-  - They are **not release-ready** until the restore rehearsal, staging smoke checks and performance budget are done.
+- Backup restore has not been exercised (no production or staging access from this environment): **unverified**.
+- Staging deploy and smoke checks (`docs/DEPLOYMENT.md`, "Smoke checks after each deploy"): **unverified**.
+- Performance: **now measured** (Lighthouse above, first-load JavaScript per route). Still missing: the proposed server-time budget for tracker pages with 500 applications, which needs a seeded dataset and a staging deploy.
+- Accessibility: Lighthouse scores 100 and contrast is unit-tested, but there is **no axe scan in the test run and no manual screen-reader pass**.
+- A real SMTP provider (deliverability, SPF/DKIM, limits) is your configuration and is **unverified**.
+- **Release status:** everything built so far is **implemented and verified locally**, and the signed-out and signed-in pages are measured on production. It is **not release-ready for a wide launch** until the restore rehearsal, staging smoke checks, a screen-reader pass and legal review of the Privacy Policy and Terms are done.
 
-## Next: Phase 2 (saved searches, alerts, notifications)
+## Next
 
-1. Prerequisite: extract the Jobs feed query into a shared server service (`src/app/(app)/jobs/page.tsx` → `src/lib/job-postings/feed.ts`).
-2. Then add saved queries, timezone-aware alert runs, a durable dedupe table and a notification centre.
-3. Move the Overview reminders into the notification centre.
+1. Rehearse a restore in a scratch project and record it in `docs/DEPLOYMENT.md`.
+2. Add a staging deployment and run the smoke checks there.
+3. Add an automated accessibility scan (`@axe-core/playwright`) to the end-to-end run, and a screen-reader pass.
+4. Improvement-plan phases 4 onward, starting with the polish items above (command palette and shortcuts, compare jobs, bulk actions).

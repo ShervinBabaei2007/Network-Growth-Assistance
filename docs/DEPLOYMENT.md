@@ -1,6 +1,6 @@
 # Deploying the Network Growth Assistant
 
-The app runs on **Vercel** (web app and daily cron) and **Supabase** (Postgres and email sign-in). Both have free tiers that cover one person's use. The whole setup takes about 20 minutes.
+The app runs on **Vercel** (web app and daily cron) and **Supabase** (Postgres and email sign-in). Both have free tiers that cover one person's use. The whole setup takes about 20 minutes. For what the app does, see the [README](../README.md) and the [feature guide](FEATURES.md).
 
 ## What you need
 
@@ -20,7 +20,7 @@ Or create an empty private repository on github.com and push to it.
 
 ## 2. Create the Supabase project
 
-1. In the Supabase dashboard, create a project. Pick the **Canada (Central)** region, which is closest to Vancouver and Toronto.
+1. In the Supabase dashboard, create a project. Pick the region closest to your users, and plan to put the Vercel functions next to it (see "Keep the app and the database in the same region" in step 3). The reference deployment uses `us-west-2` (Oregon) with Vercel's `pdx1`.
 2. Link this repository to it, then apply every migration:
 
    ```sh
@@ -29,7 +29,7 @@ Or create an empty private repository on github.com and push to it.
    npx supabase db push
    ```
 
-   `db push` creates the tables, row-level security policies, functions and the signup trigger from `supabase/migrations/`.
+   `db push` creates the tables, row-level security policies, functions and the signup trigger from `supabase/migrations/`. Run it **before or together with** every deploy that adds a migration. The newest one stores the welcome guide and tour progress (`settings.onboarding`); if a new build runs against an older database, the app keeps working, the welcome and tour fall back to a fresh state with nothing saved, and the server logs `Couldn't read onboarding state`.
 3. Under **Authentication → URL Configuration**:
    - **Site URL**: `https://<your-app>.vercel.app`
    - **Redirect URLs**: add `https://<your-app>.vercel.app/**`
@@ -56,6 +56,12 @@ Or create an empty private repository on github.com and push to it.
    | `APP_ENCRYPTION_KEY` | Optional. 32+ random characters (`openssl rand -hex 32`); lets users store their own AI key (Gemini, or Anthropic). Never change it once keys are stored. |
    | `AI_DAILY_QUOTA` | Optional. AI uses (tailoring, notes, AI resume reading) per user per day on your server key (unset = no limit; `0` = users' own keys only). Without a limit, every user's AI runs on your key: watch your Gemini usage and billing. |
    | `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` | Optional, not required. With both, Jobs also searches Adzuna (whose free allowance is small). |
+   | `CAREERJET_API_KEY` | Optional. A free publisher key; adds Careerjet to job searches (step 3b.6). |
+   | `USAJOBS_API_KEY`, `USAJOBS_EMAIL` | Optional. Adds U.S. federal jobs (step 3b.6). |
+   | `APP_URL` | Your public address, for example `https://<your-app>.vercel.app`. The sitemap and canonical links use it (they default to Vercel's production domain when it is unset), and alert emails need it. Set it if you add a custom domain. |
+   | `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_OPERATOR_NAME` | Set before launch. Shown on the Privacy Policy and Terms pages. |
+   | `NEXT_PUBLIC_FEEDBACK_URL` | Optional. A `mailto:` or form link; shows a **Send feedback** button in the navigation. |
+   | `SMTP_*`, `EMAIL_TOKEN_SECRET` | Optional. Alert emails (step 3c). |
 
    Never set `JOBS_FIXTURES` or `DISCOVERY_FIXTURES` in production. They are ignored in production builds anyway, so fictional data can't appear.
 
@@ -160,8 +166,8 @@ Vercel reads `vercel.json` and registers the daily job (`/api/cron/daily`, sched
 
 ## 4. Check that it works
 
-1. Open the site and sign in with your email. The link arrives from Supabase.
-2. On **Overview**, enter your starting connection count.
+1. Open the site and sign in with your email. The link arrives from Supabase. The first time, a short welcome appears: choose a goal (network, jobs or both), and the navigation shows what matches it, with the rest under **More**.
+2. On **Overview**, enter your starting connection count. **Help → Take the tour** walks through every page (18 stops).
 3. In **Settings**:
    - Enter "About you" and your daily invitation target.
    - Press **Run now** under Daily job. The run history should show `succeeded`.
@@ -250,6 +256,29 @@ Both are flat monthly fees, not per-user costs. The crawler, the job table and t
 3. In **Settings → Appearance**, switch to Dark and reload: the page should come back dark, with no flash of light.
 4. **Settings → Your data → Download** should return a JSON file with `schemaVersion` and an `applications` list.
 5. Call the cron routes with the secret, as in step 4 of "Check that it works". Each should answer `{"ok":true,…}`.
+6. Open **Help → Take the tour** and press Next once or twice: a popover should appear on each page. If the page opens with no popover, the latest migration probably wasn't applied (`npx supabase db push`).
+7. On a phone (or a 390 px wide window), open the menu, then **Candidates**: the list should show as cards, not a squeezed table, and nothing should scroll sideways.
+8. Reload `/robots.txt`, `/sitemap.xml` and `/llms.txt`: each should answer 200 without signing in.
+
+## Speed and quality checks
+
+The reference deployment was measured with Lighthouse (mobile, on production, signed in) after the interface and speed work:
+
+| Measure | Result |
+|---|---|
+| Accessibility, Best Practices, SEO | 100 on every page measured (12 signed-in pages, plus Login, Privacy and Terms) |
+| Performance | 93–99 on 11 of 12 signed-in pages; Login 100, Privacy and Terms 97 |
+| Settings performance | 82 in the lab only: its heading paints early, which puts the page's one startup task inside the measured window. A throttled real browser runs the same two short tasks as every other page. |
+| First-load JavaScript (uncompressed) | Login 520 KB, Analytics 528 KB, Overview 536 KB, Applications 542 KB, Settings 552 KB, Discover 556 KB, Jobs 560 KB, Candidates 563 KB (`.next/diagnostics/route-bundle-stats.json` after a build) |
+| Unused JavaScript | About 20–28 KB per page, which is Next's own polyfill block |
+
+To repeat it:
+
+1. Signed out: `npx lighthouse https://<your-app>.vercel.app/login --form-factor=mobile --only-categories=performance,accessibility,best-practices,seo`.
+2. Signed in: Lighthouse has no login, so send your session cookie. Sign in, copy the cookie whose name starts with `sb-` and ends with `-auth-token` (two cookies, `.0` and `.1`, when it is long) from your browser's developer tools, put them in a JSON file as `{"Cookie":"<name>.0=<value>; <name>.1=<value>"}`, and pass it with `--extra-headers=./headers.json`. Treat that file like a password, delete it afterwards and sign out to revoke the session.
+3. Expect run-to-run differences of a few points. Repeat a page three times before reading anything into a change.
+
+Quality gates that run on every change (see the README): type-check, lint, unit tests, pgTAP, Playwright on desktop and a phone, and `npm run check:bundle`.
 
 ## Backups and restore
 
@@ -303,6 +332,6 @@ Before sending the link to testers:
 2. **Set up SMTP** (step 2.4). Without it, Supabase's built-in email only reaches your own team, so testers can't sign in.
 3. **Schedule the crawler** (step 3.1, pg_cron). Vercel Hobby crons run only once a day, so job boards and alerts won't refresh without it.
 4. **Check the redirect URLs** in Supabase Auth include your production address.
-5. `/robots.txt` allows crawling and points to `/sitemap.xml`, which lists only `/login`, `/privacy` and `/terms`. That is safe for a private app: anyone not signed in, search bots included, is redirected to `/login`, so nothing behind sign-in is ever served to a crawler. Set `APP_URL` so the sitemap and canonical links use your real address.
+5. `/robots.txt` allows crawling and points to `/sitemap.xml`, which lists only `/login`, `/privacy` and `/terms`. `/llms.txt` and `/.well-known/ai-catalog.json` describe the public pages for AI crawlers and agents. That is safe for a private app: anyone not signed in, search bots included, is redirected to `/login`, so nothing behind sign-in is ever served to a crawler. Set `APP_URL` so the sitemap and canonical links use your real address.
 6. **Set `NEXT_PUBLIC_FEEDBACK_URL`** (a `mailto:` link or a form link) to show a "Send feedback" button in the navigation, and redeploy.
 7. Tell testers the AI privacy note: on Gemini's free tier, Google may use what is sent to improve its products.
