@@ -12,7 +12,16 @@ export function siteUrl(): URL | undefined {
 }
 
 /** The pages meant for search engines. Everything behind sign-in stays out. */
-export const PUBLIC_PAGES = ["/login", "/privacy", "/terms"] as const;
+export const PUBLIC_PAGES = [
+  "/",
+  "/login",
+  "/guides",
+  "/guides/export-linkedin-connections",
+  "/guides/build-a-networking-plan",
+  "/guides/track-job-applications",
+  "/privacy",
+  "/terms",
+] as const;
 
 /** A canonical link for a public page, only when the site's address is known (a relative one is invalid). */
 export function canonicalFor(path: (typeof PUBLIC_PAGES)[number]) {
