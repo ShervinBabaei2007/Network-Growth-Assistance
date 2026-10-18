@@ -289,7 +289,7 @@ Settings 82: its heading paints early, which puts the page's one startup task in
 - Backup restore has not been exercised (no production or staging access from this environment): **unverified**.
 - Staging deploy and smoke checks (`docs/DEPLOYMENT.md`, "Smoke checks after each deploy"): **unverified**.
 - Performance: **now measured** (Lighthouse above, first-load JavaScript per route). Still missing: the proposed server-time budget for tracker pages with 500 applications, which needs a seeded dataset and a staging deploy.
-- Accessibility: Lighthouse scores 100 and contrast is unit-tested, but there is **no axe scan in the test run and no manual screen-reader pass**.
+- Accessibility: Lighthouse scores 100, contrast is unit-tested and an **axe scan now runs in the end-to-end tests** (`e2e/a11y.spec.ts`, see `docs/ACCESSIBILITY.md`). There is still **no manual screen-reader pass**; the checklist for it is in that file.
 - A real SMTP provider (deliverability, SPF/DKIM, limits) is your configuration and is **unverified**.
 - **Release status:** everything built so far is **implemented and verified locally**, and the signed-out and signed-in pages are measured on production. It is **not release-ready for a wide launch** until the restore rehearsal, staging smoke checks, a screen-reader pass and legal review of the Privacy Policy and Terms are done.
 
