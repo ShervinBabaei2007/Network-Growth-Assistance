@@ -1105,7 +1105,17 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "application_stage_closed":
+            "activity_export_groups":
+{ Args: { "p_tz": string,"p_user": string }; Returns: {
+              "classified": boolean,"connected_on": string,"discipline": string,"n": number,"preexisting": boolean,"university": string
+            }[]
+                           },
+"activity_invitation_groups":
+{ Args: { "p_tz": string,"p_user": string }; Returns: {
+              "classified": boolean,"discipline": string,"n": number,"outcome": Database["public"]['Enums']["invitation_outcome"],"preexisting": boolean,"resolved_on": string,"sent_on": string,"university": string
+            }[]
+                           },
+"application_stage_closed":
 { Args: { "p_stage": Database["public"]['Enums']["application_stage"] }; Returns: boolean
                            },
 "apply_again":

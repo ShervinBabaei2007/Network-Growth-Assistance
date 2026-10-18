@@ -22,6 +22,9 @@
     "check:bundle": "node scripts/check-client-bundle.mjs",
     "check:budget": "node scripts/check-route-budget.mjs",
     "smoke": "node scripts/smoke.mjs",
+    "bench:seed": "docker exec -i supabase_db_LinkedinNetworkGrowthAssistance psql -U postgres -v ON_ERROR_STOP=1 < scripts/bench/seed.sql",
+    "bench:explain": "docker exec -i supabase_db_LinkedinNetworkGrowthAssistance psql -U postgres < scripts/bench/explain.sql",
+    "bench:clean": "docker exec -i supabase_db_LinkedinNetworkGrowthAssistance psql -U postgres < scripts/bench/clean.sql",
     "ops:report": "node scripts/ops-report.mjs",
     "employers:discover": "node scripts/employers.mjs discover",
     "employers:load": "node scripts/employers.mjs load"

@@ -6,6 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { connection } from "next/server";
 import { localDate, startOfLocalDay, weekStart } from "@/lib/dates";
 import { computeProgress, type ProgressInput } from "@/lib/progress";
+import { expandExportGroups, expandInvitationGroups } from "@/lib/progress/groups";
 import type { Database } from "@/lib/supabase/database.types";
 
 type Client = SupabaseClient<Database>;
@@ -13,7 +14,17 @@ type Client = SupabaseClient<Database>;
 // PostgREST returns at most 1,000 rows per request by default.
 const PAGE_SIZE = 1000;
 
-async function loadInvitations(supabase: Client, userId: string): Promise<ProgressInput["invitations"]> {
+/**
+ * Every invitation, as the progress calculations read them. One request for grouped rows; if the database can't
+ * group them (an unknown time zone, say), they are read a page at a time instead.
+ */
+export async function loadInvitations(supabase: Client, userId: string, timezone: string): Promise<ProgressInput["invitations"]> {
+  const { data, error } = await supabase.rpc("activity_invitation_groups", { p_user: userId, p_tz: timezone });
+  if (!error && data) return expandInvitationGroups(data, timezone);
+  return loadInvitationsByPage(supabase, userId);
+}
+
+async function loadInvitationsByPage(supabase: Client, userId: string): Promise<ProgressInput["invitations"]> {
   const rows: ProgressInput["invitations"] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await supabase
@@ -43,7 +54,13 @@ async function loadInvitations(supabase: Client, userId: string): Promise<Progre
   }
 }
 
-async function loadExportConnections(supabase: Client, userId: string): Promise<NonNullable<ProgressInput["exportConnections"]>> {
+export async function loadExportConnections(supabase: Client, userId: string, timezone: string): Promise<NonNullable<ProgressInput["exportConnections"]>> {
+  const { data, error } = await supabase.rpc("activity_export_groups", { p_user: userId, p_tz: timezone });
+  if (!error && data) return expandExportGroups(data, timezone);
+  return loadExportConnectionsByPage(supabase, userId);
+}
+
+async function loadExportConnectionsByPage(supabase: Client, userId: string): Promise<NonNullable<ProgressInput["exportConnections"]>> {
   const rows: NonNullable<ProgressInput["exportConnections"]> = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await supabase
@@ -115,10 +132,10 @@ export async function loadProgress(supabase: Client, userId: string, at?: Date, 
         .from("candidate_category_counts")
         .select("discipline, university, status, classified, candidate_count")
         .eq("user_id", userId),
-      loadInvitations(supabase, userId),
+      loadInvitations(supabase, userId, settings.timezone),
       countDiscoveredSince(supabase, userId, startOfLocalDay(today, settings.timezone)),
       countDiscoveredSince(supabase, userId, startOfLocalDay(weekStart(today), settings.timezone)),
-      loadExportConnections(supabase, userId),
+      loadExportConnections(supabase, userId, settings.timezone),
       loadCatalog(supabase, userId),
     ]);
   for (const result of [targets, snapshot, counts]) if (result.error) throw result.error;
