@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { WebVitals } from "@/components/web-vitals";
 import { Toaster } from "@/components/toast/toaster";
 import { APPEARANCE_SCRIPT } from "@/lib/appearance";
 import { siteUrl } from "@/lib/site";
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col">
+        <WebVitals />
         <Toaster>{children}</Toaster>
       </body>
     </html>

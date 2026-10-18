@@ -221,6 +221,20 @@ isOneToOne: false
       referencedColumns: ["id","user_id"]
     }
                   ]
+                },"client_errors": {
+                  Row: {
+                    "digest": string | null,"fingerprint": string,"first_seen": string,"last_seen": string,"message": string,"occurrences": number,"route": string,"source": string,"stack": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "digest"?: string | null,"fingerprint": string,"first_seen"?: string,"last_seen"?: string,"message": string,"occurrences"?: number,"route": string,"source": string,"stack"?: string | null
+                  }
+                  Update: {
+                    "digest"?: string | null,"fingerprint"?: string,"first_seen"?: string,"last_seen"?: string,"message"?: string,"occurrences"?: number,"route"?: string,"source"?: string,"stack"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"company_aliases": {
                   Row: {
                     "a_key": string,"b_key": string,"created_at": string,"decision": string,"updated_at": string,"user_id": string
@@ -823,6 +837,20 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"rum_vitals": {
+                  Row: {
+                    "created_at": string,"device": string,"id": number,"metric": string,"rating": string | null,"route": string,"value": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"device": string,"id"?: never,"metric": string,"rating"?: string | null,"route": string,"value": number
+                  }
+                  Update: {
+                    "created_at"?: string,"device"?: string,"id"?: never,"metric"?: string,"rating"?: string | null,"route"?: string,"value"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"saved_search_matches": {
                   Row: {
                     "first_matched_at": string,"job_id": string,"notification_id": string | null,"saved_search_id": string,"status": string,"user_id": string
@@ -1062,6 +1090,11 @@ isOneToOne: false
               "idx": number,"job_id": string,"line_id": string,"similarity": number
             }[]
                            },
+"monitoring_vitals":
+{ Args: { "p_days"?: number }; Returns: {
+              "device": string,"metric": string,"p75": number,"poor_share": number,"route": string,"samples": number
+            }[]
+                           },
 "notify_user":
 { Args: { "p_body": string,"p_data"?: Json,"p_dedupe": string,"p_href": string,"p_kind": string,"p_title": string,"p_user": string }; Returns: string
                            },
@@ -1073,17 +1106,26 @@ isOneToOne: false
 "prune_jobs":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
+"prune_monitoring":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
 "prune_notifications":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
 "prune_rate_limits":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
+"record_client_error":
+{ Args: { "p_digest": string,"p_fingerprint": string,"p_message": string,"p_route": string,"p_source": string,"p_stack": string }; Returns: boolean
+                           },
 "record_invitation_sent":
 { Args: { "p_candidate_id": string,"p_note_text"?: string,"p_sent_at"?: string,"p_source"?: Database["public"]['Enums']["record_source"] }; Returns: string
                            },
 "record_referral":
 { Args: { "p_application": string,"p_kind": string,"p_person": string }; Returns: boolean
+                           },
+"record_vital":
+{ Args: { "p_device": string,"p_metric": string,"p_rating": string,"p_route": string,"p_value": number }; Returns: boolean
                            },
 "release_application_for_job":
 { Args: { "p_job": string }; Returns: boolean

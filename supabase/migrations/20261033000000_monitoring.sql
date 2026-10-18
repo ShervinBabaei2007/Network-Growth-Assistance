@@ -43,7 +43,7 @@ begin
   if (select count(*) from public.rum_vitals where created_at > now() - interval '1 hour') >= 50000 then
     return false;
   end if;
-  insert into public.rum_vitals (route, metric, value, rating, device) values (p_route, p_metric, p_value, p_rating, p_device);
+  insert into public.rum_vitals (route, metric, value, rating, device) values (p_route, p_metric, p_value, nullif(p_rating, ''), p_device);
   return true;
 end;
 $$;
@@ -64,7 +64,7 @@ begin
     return false;
   end if;
   insert into public.client_errors (fingerprint, source, route, message, stack, digest)
-  values (p_fingerprint, p_source, p_route, p_message, p_stack, p_digest)
+  values (p_fingerprint, p_source, p_route, p_message, nullif(p_stack, ''), nullif(p_digest, ''))
   on conflict (fingerprint) do update set occurrences = public.client_errors.occurrences + 1, last_seen = now();
   return true;
 end;
