@@ -209,7 +209,8 @@ test("pasting a whole job page fills the posting form", async ({ page }) => {
   await expect(page.getByLabel("Job title")).toHaveValue("Registered Nurse - Emergency");
   await expect(page.getByLabel("Company")).toHaveValue("Harbourview Health");
   await expect(page.getByLabel("City")).toHaveValue("Vancouver");
-  await expect(page.getByLabel("Country")).toHaveValue("CA");
-  await expect(page.getByLabel("Province (jobs in Canada)")).toHaveValue("BC");
+  // Country and province are select controls (a button on desktop, a native select on phones): check what they show.
+  await expect(page.getByLabel("Country")).toContainText("Canada");
+  await expect(page.getByLabel("Province (jobs in Canada)")).toContainText("British Columbia");
   await expect(page.getByLabel("Posting text")).toHaveValue(/BLS and ACLS certification/);
 });
