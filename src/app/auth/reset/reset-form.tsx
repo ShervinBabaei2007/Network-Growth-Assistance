@@ -6,7 +6,7 @@ import { FormError } from "@/components/form-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MIN_PASSWORD_LENGTH } from "@/lib/auth/credentials";
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password-rules";
 
 export function ResetForm() {
   const [state, action, pending] = useActionState<PasswordState, FormData>(updatePassword, { status: "idle" });

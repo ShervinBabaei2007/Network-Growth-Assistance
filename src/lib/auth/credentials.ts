@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const MIN_PASSWORD_LENGTH = 8;
+import { MIN_PASSWORD_LENGTH } from "./password-rules";
 
 const email = z.email("Enter a valid email address.");
 const password = z

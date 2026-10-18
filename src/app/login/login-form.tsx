@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MIN_PASSWORD_LENGTH } from "@/lib/auth/credentials";
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password-rules";
 
 type Mode = "signin" | "signup";
 /** Opens on the Sign up tab for /login?mode=signup; read on the client so the page itself stays static. */
