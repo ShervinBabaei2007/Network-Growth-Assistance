@@ -5,12 +5,14 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { newPasswordSchema, resetRequestSchema, signInSchema, signUpSchema } from "@/lib/auth/credentials";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
+import type { MessageKey } from "@/lib/i18n";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 export type SignInState = { status: "idle" | "sent" | "error"; message?: string };
 export type PasswordState = { status: "idle" | "confirm" | "reset-sent" | "error"; message?: string };
 
-const magicLinkSchema = z.object({ email: z.email("Enter a valid email address.") });
+const magicLinkSchema = z.object({ email: z.email("errors.invalidEmail") });
 
 /** The `next` parameter of the login page the form was submitted from. */
 function nextFromReferer(referer: string | null, origin: string): string | null {
@@ -24,14 +26,15 @@ function nextFromReferer(referer: string | null, origin: string): string | null 
 }
 
 export async function sendMagicLink(_prev: SignInState, formData: FormData): Promise<SignInState> {
+  const t = await getT();
   const parsed = magicLinkSchema.safeParse({ email: formData.get("email") });
   if (!parsed.success) {
-    return { status: "error", message: parsed.error.issues[0]?.message };
+    return { status: "error", message: t(parsed.error.issues[0]?.message as MessageKey) };
   }
 
   const requestHeaders = await headers();
   const origin = requestHeaders.get("origin");
-  if (!origin) return { status: "error", message: "Could not determine the site address." };
+  if (!origin) return { status: "error", message: t("errors.noSiteAddress") };
 
   const callback = new URL("/auth/callback", origin);
   callback.searchParams.set(
@@ -46,7 +49,7 @@ export async function sendMagicLink(_prev: SignInState, formData: FormData): Pro
   });
 
   if (error) {
-    return { status: "error", message: "We couldn't send the sign-in link. Try again shortly." };
+    return { status: "error", message: t("errors.linkNotSent") };
   }
   return { status: "sent" };
 }
@@ -93,26 +96,28 @@ async function nextFromRequest(): Promise<string> {
 }
 
 export async function signInWithPassword(_prev: PasswordState, formData: FormData): Promise<PasswordState> {
+  const t = await getT();
   const parsed = signInSchema.safeParse({ email: formData.get("email"), password: formData.get("password") });
-  if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message };
+  if (!parsed.success) return { status: "error", message: t(parsed.error.issues[0]?.message as MessageKey) };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   // One message for every failure, so the form can't be used to find out who has an account.
-  if (error) return { status: "error", message: "That email and password don't match. Check them and try again." };
+  if (error) return { status: "error", message: t("errors.wrongCredentials") };
   redirect(await nextFromRequest());
 }
 
 export async function signUpWithPassword(_prev: PasswordState, formData: FormData): Promise<PasswordState> {
+  const t = await getT();
   const parsed = signUpSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
     confirm: formData.get("confirm"),
   });
-  if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message };
+  if (!parsed.success) return { status: "error", message: t(parsed.error.issues[0]?.message as MessageKey) };
 
   const redirectTo = await callbackUrl(await nextFromRequest());
-  if (!redirectTo) return { status: "error", message: "Could not determine the site address." };
+  if (!redirectTo) return { status: "error", message: t("errors.noSiteAddress") };
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -120,18 +125,19 @@ export async function signUpWithPassword(_prev: PasswordState, formData: FormDat
     password: parsed.data.password,
     options: { emailRedirectTo: redirectTo },
   });
-  if (error) return { status: "error", message: "We couldn't create the account. Try again shortly." };
+  if (error) return { status: "error", message: t("errors.accountNotCreated") };
   // With email confirmation on there is no session yet; an already-registered address looks the same.
   if (!data.session) return { status: "confirm" };
   redirect(await nextFromRequest());
 }
 
 export async function requestPasswordReset(_prev: PasswordState, formData: FormData): Promise<PasswordState> {
+  const t = await getT();
   const parsed = resetRequestSchema.safeParse({ email: formData.get("email") });
-  if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message };
+  if (!parsed.success) return { status: "error", message: t(parsed.error.issues[0]?.message as MessageKey) };
 
   const redirectTo = await callbackUrl("/auth/reset");
-  if (!redirectTo) return { status: "error", message: "Could not determine the site address." };
+  if (!redirectTo) return { status: "error", message: t("errors.noSiteAddress") };
 
   const supabase = await createClient();
   await supabase.auth.resetPasswordForEmail(parsed.data.email, { redirectTo });
@@ -140,13 +146,14 @@ export async function requestPasswordReset(_prev: PasswordState, formData: FormD
 }
 
 export async function updatePassword(_prev: PasswordState, formData: FormData): Promise<PasswordState> {
+  const t = await getT();
   const parsed = newPasswordSchema.safeParse({ password: formData.get("password"), confirm: formData.get("confirm") });
-  if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message };
+  if (!parsed.success) return { status: "error", message: t(parsed.error.issues[0]?.message as MessageKey) };
 
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   if (!data.user) redirect("/login?error=link");
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
-  if (error) return { status: "error", message: "We couldn't change the password. Request a new reset link." };
+  if (error) return { status: "error", message: t("errors.passwordNotChanged") };
   redirect("/overview");
 }

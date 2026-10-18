@@ -9,6 +9,10 @@ import { SampleDataBanner } from "@/components/sample-data-banner";
 import { OnboardingLayer } from "@/components/onboarding/layer";
 import { Button } from "@/components/ui/button";
 import { normalizeAppearance } from "@/lib/appearance";
+import { LanguageSwitch } from "@/components/language-switch";
+import { I18nProvider } from "@/lib/i18n/provider";
+import { translator } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 import { getOnboarding } from "@/lib/onboarding/read";
 import { getClaims, getSettings } from "@/lib/data/settings";
 
@@ -17,12 +21,9 @@ import { getClaims, getSettings } from "@/lib/data/settings";
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-full flex-1">
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[80] focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:text-primary-foreground"
-      >
-        Skip to content
-      </a>
+      <Suspense fallback={<SkipLink text="Skip to content" />}>
+        <LocalizedSkipLink />
+      </Suspense>
       {/* Both bars stay in view while the page scrolls: the sidebar fills the screen height and scrolls on its own if it is taller. */}
       <aside aria-label="Sidebar" className="sticky top-0 z-20 hidden h-dvh w-56 shrink-0 self-start overflow-y-auto border-r bg-sidebar p-4 md:block">
         <p className="mb-4 flex items-center gap-2 px-3 font-semibold">
@@ -45,30 +46,25 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
               <AccountEmail />
             </Suspense>
           </div>
-          <div className="flex items-center gap-1">
-            <CommandLauncher />
-            <Suspense fallback={null}>
-              <NotificationBell />
-            </Suspense>
-            <form action={signOut}>
-              <Button type="submit" variant="ghost" size="sm">
-                <LogOut aria-hidden />
-                Sign out
-              </Button>
-            </form>
-          </div>
+          <Suspense fallback={<HeaderActions locale="en" />}>
+            <LocalizedHeaderActions />
+          </Suspense>
         </header>
         <Suspense fallback={null}>
           <PauseBanner />
         </Suspense>
         <Suspense fallback={null}>
-          <SampleBanner />
+          <WithLocale>
+            <SampleBanner />
+          </WithLocale>
         </Suspense>
         <Suspense fallback={null}>
           <SavedAppearance />
         </Suspense>
         <Suspense fallback={null}>
-          <OnboardingLayer />
+          <WithLocale>
+            <OnboardingLayer />
+          </WithLocale>
         </Suspense>
         {/* Content stays a readable width on large monitors instead of spanning the whole screen. */}
         <main id="main" tabIndex={-1} className="flex-1 px-[max(1rem,env(safe-area-inset-left))] py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] outline-none md:px-8 md:py-8">
@@ -81,13 +77,21 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
 
 /** The menu for the user's chosen goal. Until that is known, the default (both) shows, so nothing jumps. */
 async function GoalSidebar() {
-  const read = await getOnboarding();
-  return <SidebarNav goal={read?.state.goal} />;
+  const [read, locale] = await Promise.all([getOnboarding(), getLocale()]);
+  return (
+    <I18nProvider locale={locale}>
+      <SidebarNav goal={read?.state.goal} />
+    </I18nProvider>
+  );
 }
 
 async function GoalMobileNav() {
-  const read = await getOnboarding();
-  return <MobileNav goal={read?.state.goal} />;
+  const [read, locale] = await Promise.all([getOnboarding(), getLocale()]);
+  return (
+    <I18nProvider locale={locale}>
+      <MobileNav goal={read?.state.goal} />
+    </I18nProvider>
+  );
 }
 
 async function AccountEmail() {
@@ -99,14 +103,14 @@ async function AccountEmail() {
 }
 
 async function PauseBanner() {
-  const { row: settings } = await getSettings();
+  const [{ row: settings }, locale] = await Promise.all([getSettings(), getLocale()]);
   if (!settings?.paused) return null;
+  const t = translator(locale);
 
   return (
     <div role="alert" className="border-b bg-destructive/10 px-4 py-3 text-sm">
-      <strong>Outreach is paused.</strong> Review the LinkedIn warning or restriction before
-      sending more invitations.
-      {settings.pause_reason ? ` Reason noted: ${settings.pause_reason}` : null}
+      <strong>{t("banner.pausedTitle")}</strong> {t("banner.pausedText")}
+      {settings.pause_reason ? ` ${t("banner.pausedReason", { reason: settings.pause_reason })}` : null}
     </div>
   );
 }
@@ -121,4 +125,50 @@ async function SavedAppearance() {
   const { row: data } = await getSettings();
   if (!data) return null;
   return <AppearanceSync value={normalizeAppearance({ theme: data.theme, density: data.density, text: data.text_size })} />;
+}
+
+/** Gives client components below it the person's language. */
+async function WithLocale({ children }: { children: React.ReactNode }) {
+  return <I18nProvider locale={await getLocale()}>{children}</I18nProvider>;
+}
+
+function SkipLink({ text }: { text: string }) {
+  return (
+    <a
+      href="#main"
+      className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[80] focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:text-primary-foreground"
+    >
+      {text}
+    </a>
+  );
+}
+
+async function LocalizedSkipLink() {
+  return <SkipLink text={translator(await getLocale())("common.skipToContent")} />;
+}
+
+async function LocalizedHeaderActions() {
+  return <HeaderActions locale={await getLocale()} />;
+}
+
+/** Search, language, notifications and sign out. Shown in English until the language is known. */
+function HeaderActions({ locale }: { locale: "en" | "fr-CA" }) {
+  const t = translator(locale);
+  return (
+    <I18nProvider locale={locale}>
+      <div className="flex items-center gap-1">
+        <LanguageSwitch className="hidden sm:block" />
+        <CommandLauncher />
+        <Suspense fallback={null}>
+          <NotificationBell />
+        </Suspense>
+        <form action={signOut}>
+          <Button type="submit" variant="ghost" size="sm">
+            <LogOut aria-hidden />
+            {t("common.signOut")}
+          </Button>
+        </form>
+      </div>
+    </I18nProvider>
+  );
 }

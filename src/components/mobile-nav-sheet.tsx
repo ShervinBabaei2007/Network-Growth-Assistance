@@ -1,6 +1,7 @@
 "use client";
 
 import { NavLinks } from "@/components/app-nav";
+import { LanguageSwitch } from "@/components/language-switch";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import type { Goal } from "@/lib/onboarding/steps";
 
@@ -11,6 +12,7 @@ export default function MobileNavSheet({ goal, open, onOpenChange }: { goal?: Go
       <SheetContent side="left" className="overflow-y-auto p-4">
         <SheetTitle className="mb-2 px-3">Network Growth</SheetTitle>
         <NavLinks goal={goal} onNavigate={() => onOpenChange(false)} />
+        <LanguageSwitch className="mt-4 block px-3" />
       </SheetContent>
     </Sheet>
   );

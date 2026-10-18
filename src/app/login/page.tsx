@@ -1,9 +1,9 @@
 import { FormError } from "@/components/form-error";
 import { canonicalFor } from "@/lib/site";
 import { Suspense } from "react";
-import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LoginForm, LoginFormWithMode } from "./login-form";
+import { translator } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
+import { LoginCard } from "./login-card";
 
 export const metadata = {
   title: "Sign in or sign up · Network Growth",
@@ -14,46 +14,22 @@ export const metadata = {
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <main className="flex flex-1 items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Network Growth Assistant</CardTitle>
-          <CardDescription>
-            Sign in or create an account with Google or your email. This app never asks for your LinkedIn password.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3">
+      <LoginCard
+        notice={
           <Suspense fallback={null}>
             <LinkError searchParams={searchParams} />
           </Suspense>
-          <Suspense fallback={<LoginForm />}>
-            <LoginFormWithMode />
-          </Suspense>
-          <p className="text-center text-xs text-muted-foreground">
-            By continuing you agree to the{" "}
-            <Link href="/terms" className="underline underline-offset-4">Terms</Link> and{" "}
-            <Link href="/privacy" className="underline underline-offset-4">Privacy Policy</Link>.
-          </p>
-        </CardContent>
-      </Card>
+        }
+      />
     </main>
   );
 }
 
-// Only the error notice depends on the URL, so the form itself is part of the static
+// Only the error notice depends on the URL and the language, so the card itself is part of the static
 // shell and works the moment it appears. The action reads `next` from the Referer.
 async function LinkError({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
   const params = await searchParams;
-  if (params.error === "google") {
-    return (
-      <FormError>
-        Google sign-in isn&apos;t available right now. Use the email link instead.
-      </FormError>
-    );
-  }
-  if (params.error !== "link") return null;
-  return (
-    <FormError>
-      That sign-in link is invalid or has expired. Request a new one.
-    </FormError>
-  );
+  if (params.error !== "google" && params.error !== "link") return null;
+  const t = translator(await getLocale());
+  return <FormError>{params.error === "google" ? t("auth.googleUnavailable") : t("auth.linkInvalid")}</FormError>;
 }

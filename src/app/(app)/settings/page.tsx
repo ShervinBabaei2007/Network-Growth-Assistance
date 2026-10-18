@@ -31,6 +31,7 @@ import { normalizeAppearance } from "@/lib/appearance";
 import { updateNotificationSettings } from "@/app/(app)/jobs/searches/actions";
 import { emailConfigured } from "@/lib/email/mailer";
 import { AiKeySection } from "./ai-key-section";
+import { LanguageSwitchServer } from "@/components/language-switch-server";
 import { AppearanceForm } from "./appearance-form";
 import { DeleteCategoryButton } from "./category-delete";
 import { LazyEdit } from "./lazy-edit";
@@ -153,6 +154,12 @@ async function SettingsContent() {
           Open Help
         </Link>
       </Section>
+      <Section id="language" title="Language" description="The language of the menu, sign-in, welcome and search. Other pages are English for now. It follows you to every device you sign in on.">
+        <Suspense fallback={null}>
+          <LanguageSwitchServer />
+        </Suspense>
+      </Section>
+
       <Section title="Appearance" description="How the app looks on every device you sign in on.">
         <AppearanceForm initial={normalizeAppearance({ theme: s.theme, density: s.density, text: s.text_size })} />
       </Section>
