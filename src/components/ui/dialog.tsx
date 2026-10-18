@@ -20,6 +20,8 @@ function DialogContent({ className, children, ...props }: DialogPrimitive.Popup.
         data-slot="dialog-content"
         className={cn(
           "fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl bg-popover p-5 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/10 transition duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0",
+          // On a phone it is a sheet rising from the bottom edge, in thumb reach and clear of the home indicator.
+          "max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-h-[90dvh] max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] max-sm:data-ending-style:translate-y-6 max-sm:data-starting-style:translate-y-6",
           className
         )}
         {...props}

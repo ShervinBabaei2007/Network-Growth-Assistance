@@ -85,6 +85,12 @@ test("import, review, search verified jobs, improvement notes, AI tailoring and 
   await expect(junior.getByText("Verified", { exact: true })).toBeVisible();
   await expect(junior.getByText("Northwind Labs' job board")).toBeVisible();
   await expect(junior.locator('a[href="https://jobs.example.com/northwind-labs/jr-dev"]')).toBeVisible();
+  // The "More" menu loads on first use, then lists what can be done with the posting.
+  await junior.getByRole("button", { name: "More" }).click();
+  await expect(page.getByRole("menuitem", { name: "Tailor Resume" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "View details" })).toHaveAttribute("href", /\/jobs\/[0-9a-f-]+$/);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menuitem", { name: "Tailor Resume" })).toBeHidden();
   // A Jobicy listing isn't shown until its link is verified…
   await expect(results.getByText("Harbourview Software")).toHaveCount(0);
   await page.getByRole("link", { name: "Include listings not yet verified" }).click();

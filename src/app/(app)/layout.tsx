@@ -32,7 +32,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         </Suspense>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b bg-card px-4 py-2">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b bg-card px-[max(1rem,env(safe-area-inset-left))] py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
           <div className="flex min-w-0 items-center gap-2">
             <div className="md:hidden">
               <Suspense fallback={<MobileNav />}>
@@ -65,7 +65,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           <OnboardingLayer />
         </Suspense>
         {/* Content stays a readable width on large monitors instead of spanning the whole screen. */}
-        <main id="main" tabIndex={-1} className="flex-1 px-4 py-5 outline-none md:px-8 md:py-8">
+        <main id="main" tabIndex={-1} className="flex-1 px-[max(1rem,env(safe-area-inset-left))] py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] outline-none md:px-8 md:py-8">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>

@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  // The dev-only "N" badge floats over bottom-left controls on phones (and our bottom sheets); errors still show their overlay.
+  devIndicators: false,
   poweredByHeader: false,
   async headers() {
     return [

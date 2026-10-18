@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useId, useState } from "react";
+import { lazy, Suspense, useId, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -23,7 +23,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import type { Goal } from "@/lib/onboarding/steps";
 import { cn } from "@/lib/utils";
 
@@ -88,7 +87,7 @@ function FeedbackLink() {
   );
 }
 
-function NavLinks({ goal, onNavigate }: { goal?: Goal; onNavigate?: () => void }) {
+export function NavLinks({ goal, onNavigate }: { goal?: Goal; onNavigate?: () => void }) {
   return <NavList pathname={usePathname()} goal={goal} onNavigate={onNavigate} />;
 }
 
@@ -175,17 +174,39 @@ export function SidebarNav({ goal }: { goal?: Goal }) {
   );
 }
 
+const loadSheet = () => import("@/components/mobile-nav-sheet");
+const MobileNavSheet = lazy(loadSheet);
+
+/**
+ * The phone menu. Until it is used this is only the button; the panel (and the dialog code behind it) is fetched
+ * when a finger or key reaches the button, and opens as soon as it has arrived.
+ */
 export function MobileNav({ goal }: { goal?: Goal }) {
+  const [wanted, setWanted] = useState(false);
   const [open, setOpen] = useState(false);
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger render={<Button variant="ghost" size="icon" className="size-11" aria-label="Open menu" />}>
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-11"
+        aria-label="Open menu"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onPointerEnter={() => void loadSheet()}
+        onFocus={() => void loadSheet()}
+        onClick={() => {
+          setWanted(true);
+          setOpen(true);
+        }}
+      >
         <Menu />
-      </SheetTrigger>
-      <SheetContent side="left" className="overflow-y-auto p-4">
-        <SheetTitle className="mb-2 px-3">Network Growth</SheetTitle>
-        <NavLinks goal={goal} onNavigate={() => setOpen(false)} />
-      </SheetContent>
-    </Sheet>
+      </Button>
+      {wanted ? (
+        <Suspense fallback={null}>
+          <MobileNavSheet goal={goal} open={open} onOpenChange={setOpen} />
+        </Suspense>
+      ) : null}
+    </>
   );
 }

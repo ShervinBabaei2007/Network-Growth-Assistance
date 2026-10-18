@@ -49,10 +49,9 @@ export default function SettingsPage() {
   return (
     <div className="grid gap-6">
       <h1 className="text-xl font-semibold">Settings</h1>
+      {/* One boundary for the whole page, so the AI-key card can't appear under the skeleton and then be pushed down. */}
       <Suspense fallback={<PageSkeleton label="Loading…" />}>
         <SettingsContent />
-      </Suspense>
-      <Suspense fallback={null}>
         <AiKeySection />
       </Suspense>
     </div>
