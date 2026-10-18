@@ -11,7 +11,7 @@ import { signIn, uniqueEmail } from "./helpers";
 
 const PUBLIC = ["/", "/login", "/login?mode=signup", "/guides", "/guides/export-linkedin-connections", "/privacy", "/terms"];
 const APP = [
-  "/overview", "/analytics", "/candidates", "/candidates/import", "/queue", "/connections", "/people", "/discover",
+  "/overview", "/analytics", "/candidates", "/candidates/import", "/queue", "/follow-ups", "/connections", "/people", "/discover",
   "/universities", "/disciplines", "/applications", "/jobs", "/jobs/resume", "/jobs/employers", "/jobs/searches",
   "/notifications", "/settings", "/help",
 ];
