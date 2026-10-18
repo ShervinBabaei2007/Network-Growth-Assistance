@@ -68,8 +68,8 @@ await check("the data export refuses a signed-out request", async () => {
   if (res.status !== 401) return `status ${res.status}`;
 });
 
-await check("cron routes refuse a request without the secret", async () => {
-  for (const route of ["/api/cron/daily", "/api/cron/alerts"]) {
+await check("cron and operator routes refuse a request without the secret", async () => {
+  for (const route of ["/api/cron/daily", "/api/cron/alerts", "/api/ops/monitoring"]) {
     const res = await get(route);
     if (res.status !== 401) return `${route} answered ${res.status}`;
   }

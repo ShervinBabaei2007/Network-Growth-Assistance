@@ -2,11 +2,13 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { reportClientError } from "@/lib/monitoring/client";
 
 /** Shown when a page in the app throws; the shell and navigation stay usable. */
 export default function AppError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     console.error("[app] page error:", error.digest ?? error.message);
+    reportClientError(error, error.digest);
   }, [error]);
 
   return (
