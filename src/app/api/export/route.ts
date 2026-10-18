@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { EXCLUDED_TABLES, EXPORT_SCHEMA_VERSION, EXPORTED_TABLES } from "@/lib/data/export-inventory";
+import { EXCLUDED_TABLES, EXPORT_SCHEMA_VERSION, EXPORTED_TABLES, SAMPLE_FLAGGED_TABLES } from "@/lib/data/export-inventory";
 import { allow, LIMITS } from "@/lib/server/rate-limit";
 import { routeUser, unauthorized } from "@/lib/server/route-auth";
 
@@ -33,8 +33,12 @@ export async function GET() {
     // RLS limits every table to the caller's own rows.
     const rows = await allRows((start, end) => from(table).select("*").range(start, end));
     if (!rows) return failed();
-    out[table] = rows;
+    // Example data from the demo workspace isn't the user's own, so it is never exported.
+    out[table] = SAMPLE_FLAGGED_TABLES.includes(table) ? rows.filter((r) => !(r as { is_sample?: boolean }).is_sample) : rows;
   }
+  // Events of an example application have nowhere to point once it is left out.
+  const keptApplications = new Set((out.applications as { id: string }[]).map((a) => a.id));
+  out.application_events = out.application_events.filter((e) => keptApplications.has((e as { application_id: string }).application_id));
 
   // Postings the user pasted, not the shared listings everyone can read.
   const jobs = await allRows((from, to) => db.from("jobs").select("*").eq("user_id", user.userId).order("id").range(from, to));
