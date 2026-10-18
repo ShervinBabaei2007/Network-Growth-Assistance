@@ -260,6 +260,14 @@ Both are flat monthly fees, not per-user costs. The crawler, the job table and t
 7. On a phone (or a 390 px wide window), open the menu, then **Candidates**: the list should show as cards, not a squeezed table, and nothing should scroll sideways.
 8. Reload `/robots.txt`, `/sitemap.xml` and `/llms.txt`: each should answer 200 without signing in.
 
+### Automated smoke checks
+
+`npm run smoke -- https://<your-app>` runs the checks that need no sign-in (public pages, signed-out redirect, export and cron routes refusing anonymous calls). Add `--cron` with `CRON_SECRET` to also run the cron routes. The signed-in checks are the Playwright tests: `E2E_BASE_URL=https://<staging> npx playwright test` (use a staging project, never production, because the tests create accounts).
+
+## Staging
+
+Use a **separate** Supabase project and a separate Vercel project (or a Vercel preview with its own environment variables) for staging, deployed from a branch other than `main`. Never point staging at production data. Then: deploy, run `npm run smoke -- https://<staging>`, run the Playwright suite against it, and only then promote the same commit to production. `.github/workflows/ci.yml` runs the same checks on every pull request against a local Supabase.
+
 ## Speed and quality checks
 
 The reference deployment was measured with Lighthouse (mobile, on production, signed in) after the interface and speed work:
@@ -278,7 +286,9 @@ To repeat it:
 2. Signed in: Lighthouse has no login, so send your session cookie. Sign in, copy the cookie whose name starts with `sb-` and ends with `-auth-token` (two cookies, `.0` and `.1`, when it is long) from your browser's developer tools, put them in a JSON file as `{"Cookie":"<name>.0=<value>; <name>.1=<value>"}`, and pass it with `--extra-headers=./headers.json`. Treat that file like a password, delete it afterwards and sign out to revoke the session.
 3. Expect run-to-run differences of a few points. Repeat a page three times before reading anything into a change.
 
-Quality gates that run on every change (see the README): type-check, lint, unit tests, pgTAP, Playwright on desktop and a phone, and `npm run check:bundle`.
+Quality gates that run on every change (see the README and `.github/workflows/ci.yml`): type-check, lint, unit tests, pgTAP, Playwright on desktop and a phone (including an axe accessibility scan), `npm run check:bundle`, and `npm run check:budget`.
+
+**Route budget.** `npm run check:budget` (after a build) fails if any route's first-load JavaScript grew more than 5% (and 8 KB) over `scripts/route-budgets.json`. If you add JavaScript on purpose, run `npm run check:budget -- --update` in the same commit and say why. The table above is from the original measurement; the budget file is the current truth.
 
 ## Backups and restore
 
@@ -293,7 +303,8 @@ Quality gates that run on every change (see the README): type-check, lint, unit 
   Keep the files somewhere private: they contain every user's data.
 - **Stored files** (the `resumes` bucket) are **not** in database backups. Copy them separately, for example with the Storage API or the dashboard, if you need them.
 - **Restore**: create a new project, `npx supabase db push`, then load `backup-data.sql` with `psql`, and point Vercel's environment variables at the new project.
-- **Status: restore has not been rehearsed yet.** Until it has been done once in a scratch project, treat it as unverified.
+- **Rehearsal (local).** `bash scripts/restore-rehearsal.sh` dumps the local database, restores it into a scratch database and compares the row count of every public table. On 2026-10-18 it matched on all 46 tables (about 1,500 users, 5,600 jobs) and the whole backup and restore took **8 seconds**. Gotcha it found: a fresh database needs the `extensions` schema (with `vector`, `pgcrypto`, `pg_trgm`, `uuid-ossp`) before restoring, or the tables that use embeddings are silently skipped. The script does that for you.
+- **Status: restore into a hosted scratch project has not been rehearsed yet.** The local rehearsal proves the backup is complete and the procedure works; repeating the steps above once against a scratch Supabase project, and noting the time here, is still open.
 
 ## Recovering from a bad deploy
 

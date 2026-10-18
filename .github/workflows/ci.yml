@@ -1,0 +1,66 @@
+name: CI
+
+# Runs on every pull request and on pushes to main. It is the "Quality gates" list in the README, plus
+# the first-load JavaScript budget and the smoke checks against the production build.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start local Supabase
+        run: supabase start -x imgproxy,edge-runtime,vector,logflare,studio
+      - run: supabase test db
+
+      - name: Write the environment the app and tests need
+        run: |
+          eval "$(supabase status -o env)"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY"
+            echo "SUPABASE_SECRET_KEY=$SECRET_KEY"
+            echo "CRON_SECRET=ci-only-cron-secret-0123456789"
+            echo "APP_ENCRYPTION_KEY=$(openssl rand -hex 32)"
+            echo "EMBED_SECRET=$(openssl rand -hex 32)"
+          } > .env.local
+
+      - run: npm run build
+      - run: npm run check:bundle
+      - name: First-load JavaScript budget
+        run: npm run check:budget
+
+      - name: Smoke checks on the production build
+        run: |
+          npm run start -- -p 3100 &
+          npx --yes wait-on http://localhost:3100/login --timeout 60000
+          SMOKE_URL=http://localhost:3100 npm run smoke
+
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results
+          retention-days: 7
