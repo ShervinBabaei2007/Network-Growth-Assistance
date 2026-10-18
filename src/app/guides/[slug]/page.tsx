@@ -6,6 +6,9 @@ import { buttonVariants } from "@/components/ui/button";
 import { GUIDES, getGuide } from "@/lib/guides";
 import { siteUrl } from "@/lib/site";
 
+// Every guide is prerendered by generateStaticParams, so there is no shell to stream; skip the dev-only check.
+export const instant = false;
+
 export function generateStaticParams() {
   return GUIDES.map((g) => ({ slug: g.slug }));
 }
