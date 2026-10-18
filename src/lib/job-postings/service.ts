@@ -6,6 +6,7 @@ import { scoreFit, type Applicant } from "./fit";
 import { indexResume, matchFree, resumeLinesFrom, type ResumeLine, type SemanticHit } from "./match";
 import { extractRequirements } from "./requirements";
 import { highestDegree, resumeText, yearsOfExperience } from "./resume";
+import { trackPattern } from "./tracks";
 import { ResumeFacts, ResumeProfile, type Requirement, type RequirementResult } from "./types";
 
 export type Db = SupabaseClient<Database>;
@@ -42,12 +43,43 @@ export function toActiveResume(row: { id: string; profile: Json; raw_text: strin
   };
 }
 
-/** The active resume. Pass `userId` when `db` isn't limited by row-level security (cron jobs). */
-export async function loadActiveResume(db: Db, userId?: string): Promise<ActiveResume | null> {
+/**
+ * The current resume of a track (`null` is the main resume, which the Jobs list and alerts use).
+ * Pass `userId` when `db` isn't limited by row-level security (cron jobs).
+ */
+export async function loadActiveResume(db: Db, userId?: string, track: string | null = null): Promise<ActiveResume | null> {
   let query = db.from("resumes").select("id, profile, raw_text, facts, updated_at").eq("is_active", true);
+  query = track === null ? query.is("track", null) : query.ilike("track", trackPattern(track));
   if (userId) query = query.eq("user_id", userId);
   const { data } = await query.maybeSingle();
   return data ? toActiveResume(data) : null;
+}
+
+/** The current resume of every track, main first. */
+export async function loadTrackResumes(db: Db, userId?: string): Promise<{ track: string | null; resume: ActiveResume }[]> {
+  let query = db.from("resumes").select("id, profile, raw_text, facts, updated_at, track").eq("is_active", true);
+  if (userId) query = query.eq("user_id", userId);
+  const { data } = await query;
+  return (data ?? [])
+    .flatMap((row) => {
+      const resume = toActiveResume(row);
+      return resume ? [{ track: row.track, resume }] : [];
+    })
+    .sort((a, b) => Number(a.track !== null) - Number(b.track !== null) || (a.track ?? "").localeCompare(b.track ?? ""));
+}
+
+/** The track the user picked for this job, or null (the main resume). */
+export async function loadJobTrack(db: Db, jobId: string, userId?: string): Promise<string | null> {
+  let query = db.from("job_track_choices").select("track").eq("job_id", jobId);
+  if (userId) query = query.eq("user_id", userId);
+  const { data } = await query.maybeSingle();
+  return data?.track ?? null;
+}
+
+/** The resume to use for a job: the chosen track's current one, else the main resume. */
+export async function loadResumeForJob(db: Db, jobId: string, userId?: string): Promise<ActiveResume | null> {
+  const track = await loadJobTrack(db, jobId, userId);
+  return (track !== null ? await loadActiveResume(db, userId, track) : null) ?? (await loadActiveResume(db, userId));
 }
 
 /** Stores the resume's lines, with embeddings when available, for matching. */

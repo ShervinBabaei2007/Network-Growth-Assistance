@@ -6,6 +6,7 @@ import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
 import { AppSelect } from "@/components/app-select";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,9 @@ import { highestDegree, yearsOfExperience } from "@/lib/job-postings/resume";
 import { completenessChecks, fieldLabel, importSummary } from "@/lib/job-postings/resume-fields";
 import { FieldMetaMap, ResumeFacts, ResumeProfile, WORK_AUTHORIZATION } from "@/lib/job-postings/types";
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { MAIN_TRACK_LABEL, normalizeTrack, sameTrack, trackLabel } from "@/lib/job-postings/tracks";
+import { cn } from "@/lib/utils";
 import { saveResumeFacts } from "./actions";
 import { ImportSummary } from "./import-summary";
 import { ProfileEditor, ResumeListActions } from "./profile-editor";
@@ -51,10 +55,12 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
   const supabase = await createClient();
   const { data: resumes, error } = await supabase
     .from("resumes")
-    .select("id, label, file_name, source_kind, original_file_path, raw_text, profile, original_profile, field_meta, facts, parsed_with, is_active, created_at, updated_at")
+    .select("id, label, track, file_name, source_kind, original_file_path, raw_text, profile, original_profile, field_meta, facts, parsed_with, is_active, created_at, updated_at")
     .order("created_at", { ascending: false });
   if (error) return <LoadError what="your resumes" />;
-  const active = resumes.find((r) => r.is_active);
+  const track = normalizeTrack(typeof params.track === "string" ? params.track : null);
+  const trackNames = [...new Map(resumes.filter((r) => r.is_active).map((r) => [(r.track ?? "").toLowerCase(), r.track])).values()].sort((a, b) => Number(a !== null) - Number(b !== null) || (a ?? "").localeCompare(b ?? ""));
+  const active = resumes.find((r) => r.is_active && sameTrack(r.track, track));
   const profile = active ? ResumeProfile.safeParse(active.profile) : null;
   const facts = ResumeFacts.parse(active?.facts ?? {});
   const access = await aiAccess(supabase);
@@ -64,6 +70,7 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
 
   return (
     <>
+      <TrackNav tracks={trackNames} current={track} />
       {active && profile?.success ? (
         <ActiveResume
           active={active}
@@ -105,11 +112,11 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
 
       <Card>
         <CardHeader>
-          <CardTitle>{active ? "Import a new version" : "Import your resume"}</CardTitle>
+          <CardTitle>{active ? "Import a new version" : track ? `Import your ${track} resume` : "Import your resume"}</CardTitle>
           <CardDescription>Upload a PDF or Word file, or paste the text. We fill in your profile and mark anything we weren&apos;t sure about.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ResumeUpload hasResume={Boolean(active)} aiNote={aiNote} />
+          <ResumeUpload key={track ?? ""} hasResume={Boolean(active)} aiNote={aiNote} track={track} />
         </CardContent>
       </Card>
 
@@ -124,7 +131,7 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
               {resumes.map((r) => (
                 <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-3">
                   <span className="text-sm">
-                    {r.label} <span className="text-muted-foreground">· {SOURCE_LABELS[r.source_kind as keyof typeof SOURCE_LABELS] ?? "PDF"} · {timeAgo(r.created_at)}</span>{" "}
+                    {r.label} <span className="text-muted-foreground">· {trackLabel(r.track)} · {SOURCE_LABELS[r.source_kind as keyof typeof SOURCE_LABELS] ?? "PDF"} · {timeAgo(r.created_at)}</span>{" "}
                     {r.is_active ? <Badge>In use</Badge> : null}
                   </span>
                   <ResumeListActions id={r.id} active={r.is_active} />
@@ -185,6 +192,14 @@ async function ActiveResume({ active, profile, justImported, factsForm }: { acti
             {active.label} · {SOURCE_LABELS[active.source_kind as keyof typeof SOURCE_LABELS] ?? "PDF"} · imported {timeAgo(active.created_at)} · read{" "}
             {active.parsed_with === "ai" ? "with rules and a second AI read" : "with rules, without AI"}
           </CardDescription>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <a href={`/api/jobs/resume/${active.id}/download?format=pdf`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Download PDF
+            </a>
+            <a href={`/api/jobs/resume/${active.id}/download?format=docx`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Download Word
+            </a>
+          </div>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           <Badge variant="secondary">About {yearsOfExperience(profile)} years of work experience</Badge>
@@ -276,4 +291,25 @@ async function loadVersions(active: ResumeRow, profile: ResumeProfile): Promise<
     });
   }
   return versions;
+}
+
+/** The resume tracks you keep, plus a way to start a new one. Each track has its own current resume. */
+function TrackNav({ tracks, current }: { tracks: (string | null)[]; current: string | null }) {
+  if (tracks.length === 0) return null;
+  const href = (t: string | null) => (t ? `/jobs/resume?track=${encodeURIComponent(t)}` : "/jobs/resume");
+  return (
+    <nav aria-label="Resume tracks" className="flex flex-wrap items-center gap-2">
+      {tracks.map((t) => (
+        <Link
+          key={t ?? "main"}
+          href={href(t)}
+          aria-current={sameTrack(t, current) ? "page" : undefined}
+          className={cn("rounded-full border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary/40", sameTrack(t, current) && "border-primary bg-accent font-medium text-accent-foreground")}
+        >
+          {t ?? MAIN_TRACK_LABEL}
+        </Link>
+      ))}
+      <span className="text-xs text-muted-foreground">To add a track, import a resume with a new track name below.</span>
+    </nav>
+  );
 }
