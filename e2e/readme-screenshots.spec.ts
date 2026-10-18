@@ -222,7 +222,7 @@ test("overview, analytics, candidates, applications and a phone", async ({ page,
 test("discover: people with quoted evidence", async ({ page, context }) => {
   await hideToasts(context);
   await signIn(page, `jordan.reyes${tag}@example.test`, "/discover");
-  test.skip(!(await page.getByText(/^Sources: /).textContent())?.includes("Fixture web"), "Run the dev server with DISCOVERY_FIXTURES=1");
+  test.skip(!(await page.getByTestId("discovery-sources").textContent())?.includes("Fixture web"), "Run the dev server with DISCOVERY_FIXTURES=1");
   await setUpPlan(page, {
     schools: [{ name: "University of Toronto", aliases: "UofT, U of T" }],
     disciplines: [{ name: "Computer Engineering", aliases: "CompEng, comp eng" }],
