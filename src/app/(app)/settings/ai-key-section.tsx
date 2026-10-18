@@ -45,7 +45,7 @@ export async function AiKeySection() {
             <div className="grid gap-1.5">
               <Label htmlFor="aiKey">Your Gemini API key</Label>
               <Input id="aiKey" name="key" type="password" autoComplete="off" placeholder="AIza… or AQ.…" required />
-              <p className="text-xs text-muted-foreground">Stored encrypted and only ever used on the server, for your own requests. You can remove it any time. An Anthropic key (sk-ant-…) is accepted too.</p>
+              <p className="text-xs text-muted-foreground">Stored encrypted and used only for your requests. Remove it any time.</p>
             </div>
           </ActionForm>
         ) : (

@@ -575,7 +575,6 @@ function PreferencesCard({ settings, resumeTitles }: { settings: { job_titles: s
             <div className="grid gap-1.5">
               <Label htmlFor="titles">Job titles (one per line, up to 6)</Label>
               <Textarea id="titles" name="titles" rows={3} defaultValue={settings.job_titles.join("\n")} placeholder={"One job title per line"} />
-              <p className="text-xs text-muted-foreground">&ldquo;Developer&rdquo; also finds Engineer and Programmer roles, &ldquo;Designer&rdquo; finds UX and Product Designer, and so on. Level words like &ldquo;Junior&rdquo; aren&apos;t required in titles: the level filter handles them.</p>
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="pref-country">Country</Label>

@@ -25,7 +25,7 @@ export async function PeopleAtCompany({ company, applicationId, city, onCompanyP
     <Card size="sm">
       <CardHeader>
         <CardTitle>People at {company}</CardTitle>
-        <CardDescription>From your imported LinkedIn connections and saved People. Listings can be out of date: people change jobs.</CardDescription>
+        <CardDescription>From your imported connections and saved People.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         {confident.length ? (
@@ -95,7 +95,7 @@ function PersonRow({ p, applicationId, aiAvailable }: { p: PersonAtCompany; appl
       {p.personId ? (
         <ReferralActions personId={p.personId} personName={p.name} applicationId={applicationId} aiAvailable={aiAvailable} />
       ) : (
-        <span className="text-xs text-muted-foreground">An imported connection. Find them in Discover and save them to People to track a referral.</span>
+        <span className="text-xs text-muted-foreground">An imported connection. Save them from Discover to track a referral.</span>
       )}
     </li>
   );

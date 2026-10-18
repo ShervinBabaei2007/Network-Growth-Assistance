@@ -125,20 +125,19 @@ export function ResumeUpload({ hasResume, aiNote, track }: { hasResume: boolean;
             accept="application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx"
             className="text-sm file:mr-3 file:rounded-md file:border file:bg-background file:px-3 file:py-1.5 file:text-sm file:hover:bg-muted"
           />
-          <p className="text-xs text-muted-foreground">PDF or DOCX under 4 MB, with selectable text (not a scan). The original file is kept privately in your account so you can download it again.</p>
+          <p className="text-xs text-muted-foreground">PDF or DOCX under 4 MB, with selectable text.</p>
         </div>
       ) : (
         <div className="grid gap-1.5">
           <Label htmlFor="resumeText">Your resume, as text</Label>
           <Textarea id="resumeText" rows={10} value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste the whole resume, from your name to the last section." />
-          <p className="text-xs text-muted-foreground">Keep the section headings (Experience, Education, Skills…) so each part is read correctly.</p>
         </div>
       )}
 
       <div className="grid max-w-sm gap-1.5">
         <Label htmlFor="resumeTrack">Track (optional)</Label>
         <Input id="resumeTrack" value={trackName} maxLength={MAX_TRACK_NAME} onChange={(e) => setTrackName(e.target.value)} placeholder="Main resume" />
-        <p className="text-xs text-muted-foreground">Keep a separate base resume for each kind of role, such as Software or Data, and pick one per job. Leave it empty for your main resume.</p>
+        <p className="text-xs text-muted-foreground">Optional: one base resume per kind of role, such as Software or Data.</p>
       </div>
 
       <label className="flex items-start gap-2 text-sm">

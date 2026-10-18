@@ -113,7 +113,7 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
       <Card>
         <CardHeader>
           <CardTitle>{active ? "Import a new version" : track ? `Import your ${track} resume` : "Import your resume"}</CardTitle>
-          <CardDescription>Upload a PDF or Word file, or paste the text. We fill in your profile and mark anything we weren&apos;t sure about.</CardDescription>
+          <CardDescription>Upload a PDF or Word file, or paste the text.</CardDescription>
         </CardHeader>
         <CardContent>
           <ResumeUpload key={track ?? ""} hasResume={Boolean(active)} aiNote={aiNote} track={track} />
@@ -214,7 +214,7 @@ async function ActiveResume({ active, profile, justImported, factsForm }: { acti
       <Card>
         <CardHeader>
           <CardTitle>Your situation</CardTitle>
-          <CardDescription>Resumes usually don&apos;t say these, but postings often require them. They&apos;re used only to check fit.</CardDescription>
+          <CardDescription>Used only to check fit.</CardDescription>
         </CardHeader>
         <CardContent>{factsForm}</CardContent>
       </Card>
@@ -222,7 +222,7 @@ async function ActiveResume({ active, profile, justImported, factsForm }: { acti
       <Card>
         <CardHeader>
           <CardTitle>Check your profile</CardTitle>
-          <CardDescription>Fields marked “Needs review” were hard to read; fix them or confirm they&apos;re right. Saving changes your working profile, never the original.</CardDescription>
+          <CardDescription>Fix or confirm anything marked “Needs review”.</CardDescription>
         </CardHeader>
         <CardContent>
           <ProfileEditor key={`${active.id}-${active.updated_at}`} resumeId={active.id} initial={profile} meta={meta} />
@@ -232,7 +232,7 @@ async function ActiveResume({ active, profile, justImported, factsForm }: { acti
       <Card>
         <CardHeader>
           <CardTitle>Versions</CardTitle>
-          <CardDescription>Your original resume, what was read from it, your current profile, and every tailored version. Compare any two.</CardDescription>
+          <CardDescription>Your original, current profile and tailored versions.</CardDescription>
         </CardHeader>
         <CardContent>
           <ResumeVersions resumeId={active.id} versions={versions} canRestore={original.success} />

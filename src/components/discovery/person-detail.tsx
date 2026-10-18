@@ -389,7 +389,7 @@ function IntroAssistant({ personId, initial }: { personId: string; initial: stri
           {text.length}/{INTRO_LIMIT}
         </span>
       </div>
-      <p className="text-xs text-muted-foreground">Uses only verified facts and what you wrote about yourself in Settings. Nothing is ever sent from this app.</p>
+      <p className="text-xs text-muted-foreground">Uses only verified facts and your Settings. Nothing is sent from this app.</p>
     </section>
   );
 }

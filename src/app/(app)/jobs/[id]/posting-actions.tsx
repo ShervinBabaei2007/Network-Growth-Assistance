@@ -117,13 +117,13 @@ export function WorkActions({ jobId, role, excluded, ai }: { jobId: string; role
           <Button disabled={pending} onClick={() => tailor("resume")}>
             <Wand2 aria-hidden /> Tailor Resume
           </Button>
-          <p className="text-xs text-muted-foreground">Do it for me: AI rewrites a new copy for this job, checked line by line against your resume. Your resume isn&apos;t changed.</p>
+          <p className="text-xs text-muted-foreground">Do it for me: AI writes a new copy for this job.</p>
         </div>
         <div className="grid content-start gap-1.5 rounded-lg border p-3">
           <Button variant="outline" disabled={pending} onClick={() => runWork(() => getImprovementNotes(jobId, ai.available), "Analyzing your resume against this job…", "notes")}>
             <ListChecks aria-hidden /> Get Resume Improvement Notes
           </Button>
-          <p className="text-xs text-muted-foreground">Tell me what to change: specific advice for this job, by section and priority. Nothing is changed.</p>
+          <p className="text-xs text-muted-foreground">Tell me what to change: advice by section and priority.</p>
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">

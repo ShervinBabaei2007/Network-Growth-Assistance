@@ -106,7 +106,6 @@ function StageCard({ data }: { data: DetailData }) {
     <Card>
       <CardHeader>
         <CardTitle>Stage</CardTitle>
-        <CardDescription>Move it when something happens. Moves can go back or reopen a closed application; each one is on the timeline.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
         <div className="flex flex-wrap items-end gap-2">
@@ -180,7 +179,6 @@ function Timeline({ data }: { data: DetailData }) {
     <Card>
       <CardHeader>
         <CardTitle>Timeline</CardTitle>
-        <CardDescription>Stage moves are recorded automatically. Add notes, and record responses you received yourself.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <form
@@ -571,7 +569,7 @@ function Documents({ data }: { data: DetailData }) {
     <Card>
       <CardHeader>
         <CardTitle>Documents sent</CardTitle>
-        <CardDescription>Which version you sent. A copy is kept here even if you later edit or delete the original.</CardDescription>
+        <CardDescription>Which version you sent.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
         {data.documents.length ? (

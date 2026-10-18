@@ -44,7 +44,7 @@ export function SaveSearch({ params, suggestedName, emailAvailable, timeZone }: 
           }}
         >
           <AlertFields value={value} onChange={setValue} emailAvailable={emailAvailable} timeZone={timeZone} />
-          <p className="text-xs text-muted-foreground">Jobs this search shows now are counted as seen: only jobs that appear later are announced.</p>
+          <p className="text-xs text-muted-foreground">Only jobs that appear later are announced.</p>
           <div className="flex gap-2">
             <Button type="submit" size="sm" disabled={pending}>
               Save search

@@ -86,7 +86,6 @@ async function SettingsContent() {
                 <Input id="startDateSetting" name="startDate" type="date" defaultValue={s.project_start_date} required />
               </Field>
             </div>
-            <p className="text-xs text-muted-foreground">Growth is measured from your starting count. Only acceptances on or after the start date count toward your targets.</p>
           </ActionForm>
 
           <div className="grid gap-6 lg:grid-cols-2">
@@ -129,7 +128,7 @@ async function SettingsContent() {
             <h2 className="text-sm font-semibold">Targets</h2>
             {catalog.disciplines.length ? (
               <ActionForm action={updateTargets} submitLabel="Save targets">
-                <p className="text-xs text-muted-foreground">New accepted connections per discipline, and the share from each school with its own targets. Leave a field empty for no target there.</p>
+                <p className="text-xs text-muted-foreground">Per discipline, and the share from each school. Leave empty for no target.</p>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {catalog.disciplines.map((d) => (
                     <fieldset key={d.id} className="grid gap-2 rounded-md border p-3">
