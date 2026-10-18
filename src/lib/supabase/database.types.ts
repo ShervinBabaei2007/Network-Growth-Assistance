@@ -377,6 +377,26 @@ isOneToOne: false
       referencedColumns: ["id","user_id"]
     }
                   ]
+                },"interview_preps": {
+                  Row: {
+                    "application_id": string,"content": NonNullable<Json>,"created_at": string,"id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "application_id": string,"content": NonNullable<Json>,"created_at"?: string,"id"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "application_id"?: string,"content"?: NonNullable<Json>,"created_at"?: string,"id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "interview_preps_application_id_user_id_fkey"
+      columns: ["application_id","user_id"]
+isOneToOne: false
+      referencedRelation: "applications"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
                 },"invitations": {
                   Row: {
                     "candidate_id": string,"created_at": string,"had_note": boolean,"id": string,"is_sample": boolean,"note_text": string | null,"outcome": Database["public"]['Enums']["invitation_outcome"],"resolved_at": string | null,"sent_at": string,"source": Database["public"]['Enums']["record_source"],"updated_at": string,"user_id": string

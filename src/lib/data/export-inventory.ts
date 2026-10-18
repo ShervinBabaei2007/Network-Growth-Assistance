@@ -40,6 +40,7 @@ export const EXPORTED_TABLES = [
   "application_contacts",
   "application_reminders",
   "application_documents",
+  "interview_preps",
   "saved_searches",
   "saved_search_matches",
   "notifications",
