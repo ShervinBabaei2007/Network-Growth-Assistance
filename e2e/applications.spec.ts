@@ -34,6 +34,8 @@ test("track an application from save to offer", async ({ page, context }) => {
   await (await popup).close();
   const ask = card.getByRole("dialog", { name: "Mark as applied?" });
   await expect(ask).toBeVisible();
+  // In a job card the question is in the top layer, so the card's containment can't clip it.
+  await expect.poll(() => ask.evaluate((el) => el.matches(":popover-open"))).toBe(true);
   await ask.getByRole("button", { name: "Mark as applied" }).click();
   await expect(toast(page, "Marked as applied.")).toBeVisible();
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { JobMoreMenu } from "@/components/jobs/job-more-menu";
-import { ArrowUpRight, Building2, ChevronDown, Clock, MapPin } from "lucide-react";
+import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { FitChip, SourceTag, TIER_STYLE, VerificationBadge, type TierKey } from "@/components/jobs/job-visuals";
 import { buttonVariants } from "@/components/ui/button";
 import { applyState } from "@/lib/job-postings/apply-state";
@@ -66,7 +66,7 @@ export function JobCard({
   const strong = explanation?.strong.slice(0, 3) ?? [];
   const missing = explanation?.missing.slice(0, 2) ?? [];
   return (
-    <li className={cn("grid gap-2 rounded-xl border border-l-4 bg-card p-4 shadow-xs transition-shadow hover:shadow-sm", TIER_STYLE[tier].border)}>
+    <li className={cn("grid gap-2 rounded-xl border border-l-4 bg-card p-4 shadow-xs transition-shadow [contain-intrinsic-size:auto_9rem] [content-visibility:auto] hover:shadow-sm", TIER_STYLE[tier].border)}>
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
         <Link href={`/jobs/${j.id}`} className="min-w-0 text-base leading-snug font-semibold hover:text-primary hover:underline">
           {j.title}
@@ -78,21 +78,11 @@ export function JobCard({
           <FitChip tier={tier} score={fit?.score ?? null} />
         </div>
       </div>
+      {/* Plain text, no icons: 25 cards of small SVGs added hundreds of nodes to a page that is mostly this list. */}
       <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
-        {j.company ? (
-          <span className="inline-flex items-center gap-1 font-medium text-foreground">
-            <Building2 aria-hidden className="size-3.5 text-muted-foreground" />
-            {j.company}
-          </span>
-        ) : null}
-        <span className="inline-flex items-center gap-1">
-          <MapPin aria-hidden className="size-3.5" />
-          {placeLabel(j)}
-        </span>
-        <span className="inline-flex items-center gap-1" title={new Date(j.posted_at).toLocaleString("en-CA")}>
-          <Clock aria-hidden className="size-3.5" />
-          {postedLabel(j)}
-        </span>
+        {j.company ? <span className="font-medium text-foreground">{j.company}</span> : null}
+        <span>{placeLabel(j)}</span>
+        <span title={new Date(j.posted_at).toLocaleString("en-CA")}>{postedLabel(j)}</span>
         {j.salary ? <span className="font-medium text-foreground">{j.salary}</span> : null}
       </p>
       {strong.length || missing.length ? (
@@ -145,7 +135,7 @@ export function JobCard({
           <SaveJobButton jobId={j.id} status={status} />
           <JobMoreMenu jobId={j.id} company={j.company} />
           {apply.enabled ? (
-            <ApplyLink jobId={j.id} href={apply.href} status={status} className={buttonVariants({ size: "sm" })}>
+            <ApplyLink jobId={j.id} href={apply.href} status={status} floating className={buttonVariants({ size: "sm" })}>
               Apply <ArrowUpRight aria-hidden />
             </ApplyLink>
           ) : (
