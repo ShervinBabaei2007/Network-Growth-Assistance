@@ -141,7 +141,7 @@ export function JobCard({
         </details>
         <div className="flex flex-wrap items-center gap-1">
           <SaveJobButton jobId={j.id} status={status} />
-          <JobMoreMenu jobId={j.id} />
+          <JobMoreMenu jobId={j.id} company={j.company} />
           {apply.enabled ? (
             <ApplyLink jobId={j.id} href={apply.href} status={status} className={buttonVariants({ size: "sm" })}>
               Apply <ArrowUpRight aria-hidden />

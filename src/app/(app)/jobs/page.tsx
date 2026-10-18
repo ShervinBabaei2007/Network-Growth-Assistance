@@ -66,6 +66,9 @@ export default function JobsPage({ searchParams }: PageProps<"/jobs">) {
         description="Real, recent postings, each checked against your resume. Every listing shows where it came from."
         actions={
           <>
+            <Link href="/jobs/hidden" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+              Hidden
+            </Link>
             <Link href="/jobs/resume" className={buttonVariants({ variant: "outline", size: "sm" })}>
               <FileText aria-hidden /> Resume
             </Link>
