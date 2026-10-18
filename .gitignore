@@ -65,3 +65,6 @@ RUNNING.local.md
 *.log
 Thumbs.db
 desktop.ini
+
+# Private planning notes: ideas for later, not part of the repository
+/Future-FeaturesToImplement/
