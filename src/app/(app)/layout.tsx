@@ -3,6 +3,7 @@ import { LogOut } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
 import { NotificationBell } from "@/components/alerts/notification-bell";
 import { MobileNav, SidebarNav } from "@/components/app-nav";
+import { CommandLauncher } from "@/components/command-palette/launcher";
 import { AppearanceSync } from "@/components/appearance-sync";
 import { SampleDataBanner } from "@/components/sample-data-banner";
 import { OnboardingLayer } from "@/components/onboarding/layer";
@@ -45,6 +46,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             </Suspense>
           </div>
           <div className="flex items-center gap-1">
+            <CommandLauncher />
             <Suspense fallback={null}>
               <NotificationBell />
             </Suspense>

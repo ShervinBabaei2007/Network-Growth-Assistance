@@ -28,7 +28,8 @@ async function get(path, options = {}) {
 async function check(name, fn) {
   try {
     const why = await fn();
-    why ? fail(name, why) : pass(name);
+    if (why) fail(name, why);
+    else pass(name);
   } catch (e) {
     fail(name, e instanceof Error ? e.message : String(e));
   }
