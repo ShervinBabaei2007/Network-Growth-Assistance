@@ -177,3 +177,13 @@ describe("mergeNotices", () => {
     ]);
   });
 });
+
+describe("hidden companies and titles", () => {
+  it("are left out of the feed", () => {
+    const a = job({ company: "Acme", title: "Developer" });
+    const b = job({ company: "Beta", title: "Developer Intern" });
+    const c = job({ company: "Gamma", title: "Developer" });
+    const sel = selectFeed([a, b, c], { ...ctx(), hidden: [{ kind: "company", pattern: "acme" }, { kind: "title", pattern: "intern" }] });
+    expect(sel.rows.map((j) => j.id)).toEqual([c.id]);
+  });
+});

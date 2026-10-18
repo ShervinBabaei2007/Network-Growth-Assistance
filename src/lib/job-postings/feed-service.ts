@@ -5,6 +5,7 @@ import { dedupeJobs, type DedupeItem } from "./dedupe";
 import { AUTO_LADDER, chooseRange, inRange, RANGES, rangeSince, titleQuery, type Range } from "./feed";
 import { resolveFeed, titlesFromResume, type FeedQuery, type FeedSettings, type FeedTab, type ResolvedFeed } from "./feed-query";
 import { matchesFilters } from "./filters";
+import { hiddenBy, type HiddenFilter } from "./hidden";
 import { prefilterScore } from "./fit";
 import { searchProviders } from "./providers/registry";
 import { rankScore } from "./rank";
@@ -115,14 +116,14 @@ const employerHosted = (j: FeedJob) => {
 };
 
 /**
- * Filters (dismissed, excluded words, filters), the freshness window (the shortest with
+ * Filters (dismissed, hidden companies and titles, excluded words, filters), the freshness window (the shortest with
  * enough verified results, unless one was chosen) and duplicates merged.
  */
-export function selectFeed(fresh: FeedJob[], ctx: { resolved: ResolvedFeed; settings: FeedSettings; states: Map<string, Status>; isReal: (j: FeedJob) => boolean; now: number }): Selection {
-  const { resolved, settings, states, isReal, now } = ctx;
+export function selectFeed(fresh: FeedJob[], ctx: { resolved: ResolvedFeed; settings: FeedSettings; states: Map<string, Status>; isReal: (j: FeedJob) => boolean; now: number; hidden?: readonly HiddenFilter[] }): Selection {
+  const { resolved, settings, states, isReal, now, hidden = [] } = ctx;
   const excludedWords = settings.job_exclude_keywords.map((k) => k.toLowerCase());
   const filtered = fresh.filter(
-    (j) => isReal(j) && states.get(j.id) !== "dismissed" && !excludedWords.some((k) => j.title.toLowerCase().includes(k)) && matchesFilters(j as Parameters<typeof matchesFilters>[0], resolved.filters, resolved.currency),
+    (j) => isReal(j) && states.get(j.id) !== "dismissed" && !hiddenBy(j, hidden) && !excludedWords.some((k) => j.title.toLowerCase().includes(k)) && matchesFilters(j as Parameters<typeof matchesFilters>[0], resolved.filters, resolved.currency),
   );
   const verifiedWithin = (r: Range) => filtered.filter((j) => j.verification_status === "verified" && inRange(j, r, now)).length;
   const { range, expandedFrom, firstCount } = chooseRange(verifiedWithin, resolved.explicitRange);
@@ -207,11 +208,13 @@ export type LoadFeedOptions = {
 export async function loadFeed(db: Db, userId: string, query: FeedQuery, opts: LoadFeedOptions): Promise<Feed | { error: string }> {
   const now = opts.now ?? Date.now();
   const services = jobServices();
-  const [{ data: settings }, resume, { data: stateRows }] = await Promise.all([
+  const [{ data: settings }, resume, { data: stateRows }, { data: filterRows }] = await Promise.all([
     db.from("settings").select("job_titles, job_country, job_provinces, job_exclude_keywords").eq("user_id", userId).single(),
     loadActiveResume(db, userId),
     db.from("job_user_states").select("job_id, status").eq("user_id", userId),
+    db.from("job_filters").select("kind, pattern").eq("user_id", userId),
   ]);
+  const hidden = (filterRows ?? []) as HiddenFilter[];
   if (!settings) return { error: "settings" };
   // Without saved titles, the roles in the resume are searched, so results fit what the user has done.
   const resolved = resolveFeed(query, settings, titlesFromResume(resume?.profile));
@@ -306,7 +309,7 @@ export async function loadFeed(db: Db, userId: string, query: FeedQuery, opts: L
   const isReal = (j: FeedJob) => services.fixtures || ((!j.employer_id || employers.get(j.employer_id)?.ats !== "fixture") && (Boolean(j.user_id) || !isFixtureLink(j.apply_url)));
 
   // 3–4. Filters, freshness window, one copy of each job.
-  const selection = selectFeed(freshRows, { resolved, settings, states, isReal, now });
+  const selection = selectFeed(freshRows, { resolved, settings, states, isReal, now, hidden });
 
   // 5. Fit: saved checks, and the rest now (rules and database queries; no outside calls).
   const matches = new Map<string, FeedMatch>();
