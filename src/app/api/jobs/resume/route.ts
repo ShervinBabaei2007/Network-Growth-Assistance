@@ -5,6 +5,7 @@ import { DOCX_MIME, fileToText, pastedToText, type TextResult } from "@/lib/job-
 import { parseResume } from "@/lib/job-postings/resume";
 import { fieldLabel, importSummary, parseResumeDetailed, reconcileWithAi } from "@/lib/job-postings/resume-fields";
 import { saveResumeLines } from "@/lib/job-postings/service";
+import { MAX_TRACKS, normalizeTrack, trackLabel, trackPattern } from "@/lib/job-postings/tracks";
 import { jobServices } from "@/lib/job-postings/services";
 import { logActivity } from "@/lib/server/action-context";
 import { allow, LIMITS } from "@/lib/server/rate-limit";
@@ -14,7 +15,7 @@ import type { Json } from "@/lib/supabase/database.types";
 // Reading a file, an optional AI read, and embedding the resume's lines.
 export const maxDuration = 60;
 
-const MAX_RESUMES = 10;
+const MAX_RESUMES = 20;
 const asJson = (v: unknown) => v as NonNullable<Json>;
 
 export type ResumeImportResponse = {
@@ -43,8 +44,11 @@ export async function POST(request: Request) {
   const pasted = form.get("text")?.toString() ?? "";
   if (!(file instanceof File) && !pasted.trim()) return NextResponse.json({ error: "Choose a PDF or DOCX file, or paste your resume." }, { status: 400 });
 
-  const { count } = await user.supabase.from("resumes").select("id", { count: "exact", head: true });
-  if ((count ?? 0) >= MAX_RESUMES) return NextResponse.json({ error: `You can keep ${MAX_RESUMES} resumes. Delete one first.` }, { status: 409 });
+  const track = normalizeTrack(form.get("track")?.toString());
+  const { data: existing } = await user.supabase.from("resumes").select("track");
+  const tracks = new Set((existing ?? []).map((r) => (r.track ?? "").toLowerCase()));
+  if (!tracks.has((track ?? "").toLowerCase()) && tracks.size >= MAX_TRACKS) return NextResponse.json({ error: `You can keep ${MAX_TRACKS} resume tracks. Import into an existing one, or delete a track's resumes first.` }, { status: 409 });
+  if ((existing?.length ?? 0) >= MAX_RESUMES) return NextResponse.json({ error: `You can keep ${MAX_RESUMES} resumes. Delete one first.` }, { status: 409 });
 
   const bytes = file instanceof File ? new Uint8Array(await file.arrayBuffer()) : null;
   // Parse a copy: the PDF reader takes ownership of the buffer it's given, and the original bytes are stored below.
@@ -81,9 +85,13 @@ export async function POST(request: Request) {
     else originalPath = path;
   }
 
-  // Only one resume is active; the new one takes over. Its situation (work authorization…) carries over.
-  const { data: previous } = await user.supabase.from("resumes").select("facts").eq("is_active", true).maybeSingle();
-  await user.supabase.from("resumes").update({ is_active: false }).eq("is_active", true);
+  // One resume is current per track; the new one takes over its track. Its situation (work authorization…) carries over,
+  // and a new track starts from the main resume's situation.
+  const { data: actives } = await user.supabase.from("resumes").select("facts, track").eq("is_active", true);
+  const sameTrack = (t: string | null) => (t ?? "").toLowerCase() === (track ?? "").toLowerCase();
+  const previous = actives?.find((r) => sameTrack(r.track)) ?? actives?.find((r) => r.track === null) ?? null;
+  const toDeactivate = user.supabase.from("resumes").update({ is_active: false }).eq("is_active", true);
+  await (track === null ? toDeactivate.is("track", null) : toDeactivate.ilike("track", trackPattern(track)));
   const { error } = await user.supabase.from("resumes").insert({
     id,
     user_id: user.userId,
@@ -98,13 +106,14 @@ export async function POST(request: Request) {
     facts: previous?.facts ?? {},
     parsed_with: parsedWith,
     is_active: true,
+    track,
   });
   if (error) {
     if (originalPath) await user.supabase.storage.from("resumes").remove([originalPath]);
     return NextResponse.json({ error: "Couldn't save the resume. Try again." }, { status: 500 });
   }
   await saveResumeLines(user.supabase, user.userId, id, parsed.profile, jobServices().embedder);
-  await logActivity(user, "jobs.resume_uploaded", { resume: id, parsed_with: parsedWith, source: text.kind });
+  await logActivity(user, "jobs.resume_uploaded", { resume: id, parsed_with: parsedWith, source: text.kind, track: trackLabel(track) });
 
   const summary = importSummary(parsed.profile, parsed.meta);
   const body: ResumeImportResponse = {

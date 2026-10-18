@@ -9,7 +9,8 @@ import { compareTailoring } from "@/lib/job-postings/compare";
 import { buildImprovementNotes, mergeAiNotes, notesForPrompt, type NotesReport } from "@/lib/job-postings/improvement-notes";
 import { analyzeJob, groundJobAnalysis, type JobAnalysis } from "@/lib/job-postings/job-analysis";
 import { StoredFit } from "@/lib/job-postings/schemas";
-import { loadActiveResume, scoreJobs, type ActiveResume } from "@/lib/job-postings/service";
+import { loadActiveResume, loadResumeForJob, scoreJobs, type ActiveResume } from "@/lib/job-postings/service";
+import { normalizeTrack, trackLabel } from "@/lib/job-postings/tracks";
 import { jobServices } from "@/lib/job-postings/services";
 import { smartCoverLetter } from "@/lib/job-postings/smart-tailor";
 import { isMode, tailorDocument, writeCoverLetter, type TailorMode } from "@/lib/job-postings/tailor";
@@ -43,7 +44,7 @@ type WorkContext = {
 };
 
 async function workContext(ctx: ActionContext, jobId: string): Promise<{ ok: true; c: WorkContext } | { ok: false; error: string }> {
-  const resume = await loadActiveResume(ctx.supabase);
+  const resume = await loadResumeForJob(ctx.supabase, jobId);
   if (!resume) return { ok: false, error: "Import your resume first." };
   const { data: job } = await ctx.supabase.from("jobs").select("id, title, company, description").eq("id", jobId).maybeSingle();
   if (!job) return { ok: false, error: "Unknown job." };
@@ -264,4 +265,18 @@ export async function setNoteDismissed(notesId: string, noteId: string, dismisse
   if (error) return err("Couldn't update. Try again.");
   refresh();
   return ok(dismissed ? "Suggestion dismissed." : "Suggestion restored.");
+}
+
+/** Picks which resume track to use for this job (null is the main resume) and checks the job against it. */
+export async function setJobTrack(jobId: string, rawTrack: string | null): Promise<ActionResult> {
+  if (!uuid.safeParse(jobId).success) return err("Unknown job.");
+  const track = normalizeTrack(rawTrack);
+  const ctx = await actionContext();
+  const resume = await loadActiveResume(ctx.supabase, undefined, track);
+  if (!resume) return err(`There's no ${trackLabel(track)} resume yet. Import one on the Resume page.`);
+  const { error } = await ctx.supabase.from("job_track_choices").upsert({ user_id: ctx.userId, job_id: jobId, track, updated_at: new Date().toISOString() }, { onConflict: "user_id,job_id" });
+  if (error) return err("Couldn't switch the resume. Try again.");
+  await scoreJobs(ctx.supabase, ctx.userId, resume, [jobId], jobServices().embedder);
+  refresh();
+  return ok(`Using your ${trackLabel(track)} resume for this job.`);
 }

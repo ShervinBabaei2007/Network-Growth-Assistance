@@ -18,7 +18,7 @@ import { jobDedupeKey, simhash64 } from "@/lib/job-postings/dedupe";
 import { jobLevel, workplaceFromText } from "@/lib/job-postings/levels";
 import { dedupeKey } from "@/lib/job-postings/normalize";
 import { groundPastedFields, type PastedPosting } from "@/lib/job-postings/paste-parse";
-import { loadActiveResume, saveRequirements, scoreJobs } from "@/lib/job-postings/service";
+import { loadActiveResume, loadResumeForJob, saveRequirements, scoreJobs } from "@/lib/job-postings/service";
 import { jobServices } from "@/lib/job-postings/services";
 import { PROVINCE_CODES } from "@/lib/job-postings/types";
 import { checkUrlLive } from "@/lib/job-postings/verify-job";
@@ -116,7 +116,7 @@ export async function checkFit(jobId: string): Promise<ActionResult> {
   if (!uuid.safeParse(jobId).success) return err("Unknown job.");
   const ctx = await actionContext();
   if (!(await allow(ctx.supabase, LIMITS.checkFit))) return err(LIMITS.checkFit.message);
-  const resume = await loadActiveResume(ctx.supabase);
+  const resume = await loadResumeForJob(ctx.supabase, jobId);
   if (!resume) return err("Import your resume first.");
   await scoreJobs(ctx.supabase, ctx.userId, resume, [jobId], jobServices().embedder);
   refresh();
