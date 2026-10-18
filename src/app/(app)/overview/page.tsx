@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadMyProgress } from "@/lib/data/dashboard";
+import { countDueFollowUps } from "@/lib/data/follow-ups";
 import { disciplineName } from "@/lib/domain";
 import { nextAction } from "@/lib/progress/next-action";
 import { getSettings } from "@/lib/data/settings";
@@ -35,10 +36,12 @@ export default function OverviewPage() {
 async function OverviewContent() {
   let progress;
   let paused = false;
+  let followUpsDue = 0;
   try {
     const [p, { row }] = await Promise.all([loadMyProgress(), getSettings()]);
     progress = p;
     paused = row?.paused ?? false;
+    followUpsDue = await countDueFollowUps(p.today);
   } catch (e) {
     unstable_rethrow(e); // let Next.js postpone/redirect signals through
     return <LoadError what="your progress" />;
@@ -50,6 +53,7 @@ async function OverviewContent() {
   const todayLinks = [
     overall.readyForOutreach > 0 ? { href: "/queue", label: `${overall.readyForOutreach} ready to send` } : null,
     overall.awaitingReview > 0 ? { href: "/candidates?status=awaiting_review", label: `${overall.awaitingReview} awaiting review` } : null,
+    followUpsDue > 0 ? { href: "/follow-ups", label: `${followUpsDue} follow-up${followUpsDue === 1 ? "" : "s"} due` } : null,
   ].filter((t): t is { href: string; label: string } => t !== null);
   // An empty dashboard of zeros is noise: keep the breakdown folded until there is something to show.
   const hasActivity = overall.trackedAccepted + overall.pending + overall.awaitingReview + overall.readyForOutreach + activity.discoveredThisWeek + activity.sentThisWeek > 0;

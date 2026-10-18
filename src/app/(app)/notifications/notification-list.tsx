@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlarmClock, BellRing, Briefcase, CalendarClock, CheckCheck, TriangleAlert } from "lucide-react";
+import { AlarmClock, BellRing, Briefcase, CalendarClock, CheckCheck, MessageCircleHeart, TriangleAlert } from "lucide-react";
 import { markAllRead, markUnread, setNotificationRead } from "@/app/(app)/jobs/searches/actions";
 import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ export type NotificationItem = {
   jobs: { id: string; title: string; company: string | null }[];
 };
 
-const ICON: Record<string, typeof BellRing> = { alert: Briefcase, reminder: AlarmClock, interview: CalendarClock, source_problem: TriangleAlert, weekly_summary: BellRing };
+const ICON: Record<string, typeof BellRing> = { alert: Briefcase, reminder: AlarmClock, interview: CalendarClock, source_problem: TriangleAlert, weekly_summary: BellRing, follow_up: MessageCircleHeart };
 
 export function NotificationList({ items, truncated }: { items: NotificationItem[]; truncated: boolean }) {
   const { pending, run } = useActionRunner();
