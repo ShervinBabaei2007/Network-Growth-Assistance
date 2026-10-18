@@ -1,4 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
+import { Disclosure } from "@/components/disclosure";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
@@ -260,10 +261,9 @@ function ChartCard({
         ) : (
           <>
             {children}
-            <details className="text-sm">
-              <summary className="cursor-pointer text-muted-foreground">Show as table</summary>
-              <div className="pt-2">{table}</div>
-            </details>
+            <Disclosure variant="plain" summary="Show as table">
+              {table}
+            </Disclosure>
           </>
         )}
       </CardContent>

@@ -1,5 +1,6 @@
 "use client";
 
+import { FormError } from "@/components/form-error";
 import { useState } from "react";
 import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
@@ -117,9 +118,9 @@ function SearchRow({ item, emailAvailable, timeZone }: { item: SearchItem; email
             ) : null}
           </dl>
           {item.error ? (
-            <p role="alert" className="text-sm text-destructive">
+            <FormError>
               {item.error}
-            </p>
+            </FormError>
           ) : null}
         </>
       )}

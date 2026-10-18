@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import { Bell } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { LoadError } from "@/components/load-error";
 import { PageHeader } from "@/components/page-header";
@@ -36,12 +38,11 @@ async function Notifications() {
   const tz = settings?.timezone ?? "UTC";
   if (!data.length) {
     return (
-      <div className="grid gap-2 rounded-xl border border-dashed p-6">
-        <h2 className="font-medium">Nothing yet</h2>
-        <p className="max-w-prose text-sm text-muted-foreground">
-          Save a search on the Jobs page with alerts on, and new matching jobs show up here. Reminders and interviews from your applications appear here too.
-        </p>
-      </div>
+      <EmptyState
+        icon={<Bell aria-hidden />}
+        title="Nothing yet"
+        description="Save a search on the Jobs page with alerts on, and new matching jobs show up here. Reminders and interviews from your applications appear here too."
+      />
     );
   }
 

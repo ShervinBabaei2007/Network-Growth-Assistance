@@ -1,5 +1,6 @@
 "use client";
 
+import { Disclosure } from "@/components/disclosure";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useStateToast } from "@/components/toast/use-state-toast";
 import { useActionState } from "react";
@@ -67,9 +68,8 @@ export function CsvImport() {
             </ul>
           ) : null}
           {state.issues && state.issues.length > 0 ? (
-            <details>
-              <summary className="cursor-pointer">Skipped rows</summary>
-              <ul className="mt-2 grid gap-1 text-muted-foreground">
+            <Disclosure variant="plain" summary="Skipped rows">
+              <ul className="grid gap-1 text-muted-foreground">
                 {state.issues.map((i) => (
                   <li key={`${i.line}-${i.reason}`}>
                     {i.line ? `Line ${i.line}: ` : ""}
@@ -77,7 +77,7 @@ export function CsvImport() {
                   </li>
                 ))}
               </ul>
-            </details>
+            </Disclosure>
           ) : null}
         </div>
       ) : null}

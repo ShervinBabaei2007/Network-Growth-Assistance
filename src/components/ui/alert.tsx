@@ -9,7 +9,11 @@ const alertVariants = cva(
       variant: {
         default: "bg-card text-card-foreground",
         destructive:
-          "bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
+          "border-destructive/30 bg-danger-soft text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
+        // Tones for notices; the soft backgrounds and text colours are the contrast-checked tokens.
+        info: "border-info/30 bg-info-soft text-foreground *:[svg]:text-info *:data-[slot=alert-description]:text-foreground/80",
+        warning: "border-warning/40 bg-warning-soft text-foreground *:[svg]:text-warning *:data-[slot=alert-description]:text-foreground/80",
+        success: "border-success/30 bg-success-soft text-foreground *:[svg]:text-success *:data-[slot=alert-description]:text-foreground/80",
       },
     },
     defaultVariants: {

@@ -1,4 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
+import { Disclosure } from "@/components/disclosure";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -190,11 +191,8 @@ async function QueueContent() {
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
             {groupByDiscipline(plan.shortfalls).map(([discipline, list], i) => (
-              <details key={discipline} open={i === 0} className="rounded-md border px-3 py-2">
-                <summary className="cursor-pointer font-medium">
-                  {disciplineName(progress.catalog, discipline)} ({list.length})
-                </summary>
-                <ul className="mt-2 grid gap-2">
+              <Disclosure key={discipline} open={i === 0} summary={<>{disciplineName(progress.catalog, discipline)} ({list.length})</>}>
+                <ul className="grid gap-2">
                   {list.map((s) => (
                     <li key={`${s.discipline}-${s.university}`}>
                       <span className="font-medium">{s.university ? universityName(progress.catalog, s.university) : "All your schools"}</span>:{" "}
@@ -202,7 +200,7 @@ async function QueueContent() {
                     </li>
                   ))}
                 </ul>
-              </details>
+              </Disclosure>
             ))}
           </CardContent>
         </Card>

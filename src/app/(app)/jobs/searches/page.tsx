@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import { BellRing } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { LoadError } from "@/components/load-error";
@@ -37,13 +39,15 @@ async function Searches() {
   const tz = settings?.timezone ?? "UTC";
   if (!data.length) {
     return (
-      <div className="grid justify-items-start gap-3 rounded-xl border border-dashed p-6">
-        <h2 className="font-medium">No saved searches yet</h2>
-        <p className="max-w-prose text-sm text-muted-foreground">Search on the Jobs page, then choose “Save this search”. You can be told daily or weekly when new matching jobs appear.</p>
+      <EmptyState
+        icon={<BellRing aria-hidden />}
+        title="No saved searches yet"
+        description="Search on the Jobs page, then choose “Save this search”. You can be told daily or weekly when new matching jobs appear."
+      >
         <Link href="/jobs" className={buttonVariants({ size: "sm" })}>
-          Go to Jobs
+          Search for jobs
         </Link>
-      </div>
+      </EmptyState>
     );
   }
   const items: SearchItem[] = data.map((s) => {

@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import { Disclosure } from "@/components/disclosure";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
@@ -156,15 +157,14 @@ async function CandidateDetail({ params }: Pick<PageProps<"/candidates/[id]">, "
                   </p>
                 </ActionForm>
               ) : null}
-              <details className="text-sm">
-                <summary className="cursor-pointer text-muted-foreground">Recorded by mistake?</summary>
-                <ActionForm action={deleteInvitation} submitLabel="Remove invitation record" variant="outline" size="sm" className="pt-3">
+              <Disclosure variant="plain" summary="Recorded by mistake?">
+                <ActionForm action={deleteInvitation} submitLabel="Remove invitation record" variant="outline" size="sm">
                   {hidden}
                   <label className="flex items-center gap-2">
                     <Checkbox name="confirm" /> Yes, no invitation was actually sent
                   </label>
                 </ActionForm>
-              </details>
+              </Disclosure>
             </div>
           ) : null}
         </Section>

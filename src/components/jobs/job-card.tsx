@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { JobMoreMenu } from "@/components/jobs/job-more-menu";
 import { ArrowUpRight, Building2, ChevronDown, Clock, MapPin } from "lucide-react";
 import { FitChip, SourceTag, TIER_STYLE, VerificationBadge, type TierKey } from "@/components/jobs/job-visuals";
 import { buttonVariants } from "@/components/ui/button";
@@ -140,26 +141,7 @@ export function JobCard({
         </details>
         <div className="flex flex-wrap items-center gap-1">
           <SaveJobButton jobId={j.id} status={status} />
-          <details className="relative">
-            <summary className={cn(buttonVariants({ size: "sm", variant: "ghost" }), "list-none [&::-webkit-details-marker]:hidden")}>
-              More <ChevronDown aria-hidden />
-            </summary>
-            <ul className="absolute right-0 z-20 mt-1 grid w-60 gap-0.5 rounded-lg border bg-popover p-1 text-sm shadow-lg">
-              {[
-                ["View details", `/jobs/${j.id}`],
-                ["Tailor Resume", `/jobs/${j.id}#work`],
-                ["Get Resume Improvement Notes", `/jobs/${j.id}#work`],
-                ["Tailor CV", `/jobs/${j.id}#work`],
-                ["Generate Cover Letter", `/jobs/${j.id}#work`],
-              ].map(([label, href]) => (
-                <li key={label}>
-                  <Link href={href} className="block rounded-md px-2 py-1.5 hover:bg-muted">
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </details>
+          <JobMoreMenu jobId={j.id} />
           {apply.enabled ? (
             <ApplyLink jobId={j.id} href={apply.href} status={status} className={buttonVariants({ size: "sm" })}>
               Apply <ArrowUpRight aria-hidden />

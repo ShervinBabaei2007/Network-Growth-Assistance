@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/page-header";
 import { ActionForm } from "@/components/action-form";
 import { AppSelect } from "@/components/app-select";
@@ -31,7 +32,7 @@ export default function AddPostingPage() {
         </CardHeader>
         <CardContent>
           {/* One boundary with a plain placeholder, so nothing you type is replaced when the form arrives. */}
-          <Suspense fallback={<div role="status" aria-label="Loading the form" className="h-96 animate-pulse rounded-lg bg-muted/40" />}>
+          <Suspense fallback={<Skeleton role="status" aria-label="Loading the form" className="h-96 rounded-lg" />}>
             <PostingForm />
           </Suspense>
         </CardContent>

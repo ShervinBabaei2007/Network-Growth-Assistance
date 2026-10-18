@@ -186,4 +186,9 @@ html[data-text="large"] {
   html {
     @apply font-sans;
   }
+  /* A grid cell grows to fit its longest unbroken text unless told it may shrink, which pushes forms and
+     cards wider than a phone. Cells shrink and wrap instead; columns that must stay wide set their own width. */
+  .grid > * {
+    min-width: 0;
+  }
 }

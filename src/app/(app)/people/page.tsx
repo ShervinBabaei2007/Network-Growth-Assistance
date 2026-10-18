@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import { BookUser } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
@@ -118,9 +120,11 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
       </p>
 
       {data.length === 0 ? (
-        <p className="rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground">
-          {q || status || tag || due ? "Nobody matches these filters." : "No saved people yet. Run a search in Discover and save the people worth meeting."}
-        </p>
+        <EmptyState
+          icon={<BookUser aria-hidden />}
+          title={q || status || tag || due ? "Nobody matches these filters" : "No saved people yet"}
+          description={q || status || tag || due ? "Try removing a filter or searching for something else." : "Run a search in Discover and save the people worth meeting."}
+        />
       ) : (
         <Table>
           <TableHeader>

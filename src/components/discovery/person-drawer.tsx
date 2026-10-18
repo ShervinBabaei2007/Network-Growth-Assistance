@@ -1,5 +1,6 @@
 "use client";
 
+import { FormError } from "@/components/form-error";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -39,9 +40,9 @@ export function PersonDrawer({ personId, name, searchId }: { personId: string; n
         </SheetHeader>
         <div className="px-4 pb-6">
           {error ? (
-            <p role="alert" className="text-sm text-destructive">
+            <FormError>
               {error}
-            </p>
+            </FormError>
           ) : detail ? (
             <PersonDetailView detail={detail} searchId={searchId} onChange={load} />
           ) : (

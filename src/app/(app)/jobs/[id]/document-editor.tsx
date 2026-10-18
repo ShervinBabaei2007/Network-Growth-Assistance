@@ -1,5 +1,6 @@
 "use client";
 
+import { Disclosure } from "@/components/disclosure";
 import { useState } from "react";
 import { Download, Trash2, Undo2 } from "lucide-react";
 import { useActionRunner } from "@/components/toast/use-action-runner";
@@ -47,11 +48,8 @@ export function GuardReport({ issues }: { issues: GuardIssue[] }) {
   if (!issues.length) return <p className="text-xs text-muted-foreground">Accuracy check: every line traces back to your resume.</p>;
   const verb = { removed: "Removed", replaced_with_original: "Replaced with your original line", kept_original: "Kept your original" } as const;
   return (
-    <details className="rounded-lg border bg-card border-dashed p-3 text-sm">
-      <summary className="cursor-pointer">
-        The accuracy check changed {issues.length} line{issues.length === 1 ? "" : "s"}
-      </summary>
-      <ul className="mt-2 grid gap-1.5">
+    <Disclosure className="border-dashed" summary={<>The accuracy check changed {issues.length} line{issues.length === 1 ? "" : "s"}</>}>
+      <ul className="grid gap-1.5">
         {issues.map((i, n) => (
           <li key={n} className="grid gap-0.5">
             <span className="text-muted-foreground">
@@ -61,7 +59,7 @@ export function GuardReport({ issues }: { issues: GuardIssue[] }) {
           </li>
         ))}
       </ul>
-    </details>
+    </Disclosure>
   );
 }
 

@@ -1,4 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
+import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
@@ -291,7 +292,8 @@ async function SearchShortcuts() {
               href={l.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={buttonVariants({ variant: l.isAlternate ? "ghost" : "outline", size: "sm" })}
+              // Long labels wrap on a phone instead of running off the screen.
+              className={cn(buttonVariants({ variant: l.isAlternate ? "ghost" : "outline", size: "sm" }), "h-auto min-h-8 max-w-full py-1.5 text-left whitespace-normal")}
             >
               {l.label}
               {l.remaining !== null ? <span className="text-muted-foreground">· {l.remaining} to go</span> : <span className="text-muted-foreground">· extra</span>}

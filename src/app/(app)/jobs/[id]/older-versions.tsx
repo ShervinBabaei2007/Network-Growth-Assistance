@@ -1,5 +1,6 @@
 "use client";
 
+import { Disclosure } from "@/components/disclosure";
 import { Download, Trash2 } from "lucide-react";
 import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -9,11 +10,8 @@ import { deleteDocument, restoreDocument } from "../documents/actions";
 export function OlderVersions({ versions }: { versions: { id: string; label: string; detail: string }[] }) {
   const { pending, run } = useActionRunner();
   return (
-    <details className="rounded-lg border bg-card p-3 text-sm">
-      <summary className="cursor-pointer">
-        {versions.length} earlier version{versions.length === 1 ? "" : "s"}
-      </summary>
-      <ul className="mt-2 grid gap-2">
+    <Disclosure summary={<>{versions.length} earlier version{versions.length === 1 ? "" : "s"}</>}>
+      <ul className="grid gap-2">
         {versions.map((v) => (
           <li key={v.id} className="flex flex-wrap items-center justify-between gap-2">
             <span>
@@ -33,6 +31,6 @@ export function OlderVersions({ versions }: { versions: { id: string; label: str
           </li>
         ))}
       </ul>
-    </details>
+    </Disclosure>
   );
 }

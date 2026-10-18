@@ -1,5 +1,6 @@
 "use client";
 
+import { FormError } from "@/components/form-error";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -67,9 +68,9 @@ export function DiscoverForm({ initialQuery = "", error: initialError }: { initi
           <Search aria-hidden /> {pending ? "Starting…" : "Find people"}
         </Button>
         {error ? (
-          <p role="alert" className="text-sm text-destructive">
+          <FormError>
             {error}
-          </p>
+          </FormError>
         ) : null}
       </div>
       <div className="grid gap-1.5">
@@ -188,9 +189,9 @@ export function CriteriaEditor({ query, criteria, parentSearchId }: { query: str
           {pending ? "Starting…" : "Run modified search"}
         </Button>
         {error ? (
-          <p role="alert" className="text-sm text-destructive">
+          <FormError>
             {error}
-          </p>
+          </FormError>
         ) : null}
       </div>
     </form>

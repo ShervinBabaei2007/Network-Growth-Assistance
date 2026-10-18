@@ -1,4 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
+import { Disclosure } from "@/components/disclosure";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -139,12 +140,9 @@ async function OverviewContent() {
               . It can differ from tracked acceptances because it also includes people who invited
               you, connections you didn&apos;t log here, and removals.
             </p>
-            <details className="text-sm">
-              <summary className="cursor-pointer font-medium">Update connection count</summary>
-              <div className="pt-3">
-                <SnapshotForm today={today} />
-              </div>
-            </details>
+            <Disclosure variant="plain" summary="Update connection count" className="font-medium">
+              <SnapshotForm today={today} />
+            </Disclosure>
           </CardContent>
         </Card>
       )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { FormError } from "@/components/form-error";
 import { useActionState } from "react";
 import { sendMagicLink, signInWithGoogle, type SignInState } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
@@ -38,9 +39,9 @@ export function LoginForm() {
           <Input id="email" name="email" type="email" autoComplete="email" required />
         </div>
         {state.status === "error" ? (
-          <p className="text-sm text-destructive" role="alert">
+          <FormError>
             {state.message}
-          </p>
+          </FormError>
         ) : null}
         <Button type="submit" disabled={pending}>
           {pending ? "Sending…" : "Email me a sign-in link"}

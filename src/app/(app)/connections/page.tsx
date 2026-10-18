@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { Disclosure } from "@/components/disclosure";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
@@ -194,16 +195,15 @@ async function ConnectionList({ searchParams }: Pick<PageProps<"/connections">, 
       ) : null}
 
       {total > 0 ? (
-        <details className="rounded-lg border bg-card p-3 text-sm">
-          <summary className="cursor-pointer font-medium">Delete all known connections</summary>
-          <div className="mt-3 grid gap-2">
+        <Disclosure summary="Delete all known connections">
+          <div className="grid gap-2">
             <p className="text-muted-foreground">Removes the whole imported list from this app. People you saved from research are kept.</p>
             <ActionForm action={deleteAllKnownConnections} submitLabel="Delete all" variant="destructive" size="sm">
               <Label htmlFor="confirmDelete">Type DELETE to confirm</Label>
               <Input id="confirmDelete" name="confirm" autoComplete="off" className="max-w-40" />
             </ActionForm>
           </div>
-        </details>
+        </Disclosure>
       ) : null}
     </section>
   );

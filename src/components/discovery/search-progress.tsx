@@ -1,5 +1,7 @@
 "use client";
 
+import { Disclosure } from "@/components/disclosure";
+import { FormError } from "@/components/form-error";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Circle, LoaderCircle } from "lucide-react";
@@ -104,9 +106,9 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
       </p>
       {view.stopReason && !running ? <p className="text-xs text-muted-foreground">Stopped because: {view.stopReason}.</p> : null}
       {view.error ? (
-        <p role="alert" className="text-sm text-destructive">
+        <FormError>
           {view.error}
-        </p>
+        </FormError>
       ) : null}
       {error ? <p className="text-xs text-muted-foreground">{error}</p> : null}
       {view.limitations.length ? (
@@ -117,9 +119,8 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
         </ul>
       ) : null}
 
-      <details className="text-xs text-muted-foreground">
-        <summary className="cursor-pointer">Research details</summary>
-        <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-4">
+      <Disclosure variant="plain" summary="Research details" className="text-xs">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground sm:grid-cols-4">
           {[
             ["Queries run", m.queries],
             ["Results read", m.results],
@@ -141,7 +142,7 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
             </div>
           ))}
         </dl>
-      </details>
+      </Disclosure>
     </section>
   );
 }

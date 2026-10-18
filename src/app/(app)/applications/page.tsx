@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import { ClipboardList } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { LoadError } from "@/components/load-error";
@@ -48,16 +50,15 @@ async function ApplicationsView({ searchParams }: Pick<PageProps<"/applications"
 
   if (!loaded.apps.length) {
     return (
-      <div className="grid justify-items-start gap-3 rounded-xl border border-dashed p-6">
-        <h2 className="font-medium">No applications yet</h2>
-        <p className="max-w-prose text-sm text-muted-foreground">
-          Save a job or mark it as applied from Jobs, and it appears here. You can then move it through screening, interviews and offers, and keep notes,
-          reminders and the documents you sent.
-        </p>
+      <EmptyState
+        icon={<ClipboardList aria-hidden />}
+        title="No applications yet"
+        description="Save a job or mark it as applied from Jobs, and it appears here. You can then move it through screening, interviews and offers, and keep notes, reminders and the documents you sent."
+      >
         <Link href="/jobs" className={buttonVariants({ size: "sm" })}>
           Browse jobs
         </Link>
-      </div>
+      </EmptyState>
     );
   }
 

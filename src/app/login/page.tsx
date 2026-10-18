@@ -1,3 +1,4 @@
+import { FormError } from "@/components/form-error";
 import { canonicalFor } from "@/lib/site";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -42,15 +43,15 @@ async function LinkError({ searchParams }: Pick<PageProps<"/login">, "searchPara
   const params = await searchParams;
   if (params.error === "google") {
     return (
-      <p className="text-sm text-destructive" role="alert">
+      <FormError>
         Google sign-in isn&apos;t available right now. Use the email link instead.
-      </p>
+      </FormError>
     );
   }
   if (params.error !== "link") return null;
   return (
-    <p className="text-sm text-destructive" role="alert">
+    <FormError>
       That sign-in link is invalid or has expired. Request a new one.
-    </p>
+    </FormError>
   );
 }

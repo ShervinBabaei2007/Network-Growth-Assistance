@@ -1,9 +1,12 @@
 import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState as EmptyPanel } from "@/components/empty-state";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { headers } from "next/headers";
 import { after } from "next/server";
 import Link from "next/link";
-import { FileText, Plus, Search, SlidersHorizontal } from "lucide-react";
+import { Bookmark, FileText, Info, Plus, Search, SearchX, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import type { TierKey } from "@/components/jobs/job-visuals";
 import { TIER_STYLE } from "@/components/jobs/job-visuals";
 import { JobCard } from "@/components/jobs/job-card";
@@ -83,7 +86,7 @@ function SearchingState() {
         <Search aria-hidden className="size-4 animate-pulse" /> Searching verified job sources…
       </p>
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-28 animate-pulse rounded-xl border bg-muted/40" />
+        <Skeleton key={i} className="h-28 rounded-xl" />
       ))}
     </div>
   );
@@ -247,12 +250,25 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
 
         {expandedFrom || trouble || excludedCount || !filters.includeUnchecked || newlyFetched ? (
           <div className="grid gap-1 text-sm">
-            {expandedFrom ? <p className="rounded-lg border border-info/30 bg-info-soft px-3 py-2">{expansionNotice(firstCount, expandedFrom, range)}</p> : null}
-            {trouble ? <p className="rounded-lg border border-warning/40 bg-warning-soft px-3 py-2">Some job sources are temporarily unavailable. Results from the others are shown.</p> : null}
+            {expandedFrom ? (
+              <Alert variant="info" role="status">
+                <Info aria-hidden />
+                <AlertDescription>{expansionNotice(firstCount, expandedFrom, range)}</AlertDescription>
+              </Alert>
+            ) : null}
+            {trouble ? (
+              <Alert variant="warning" role="status">
+                <TriangleAlert aria-hidden />
+                <AlertDescription>Some job sources are temporarily unavailable. Results from the others are shown.</AlertDescription>
+              </Alert>
+            ) : null}
             {newlyFetched && !filters.includeUnchecked ? (
-              <p className="rounded-lg border border-info/30 bg-info-soft px-3 py-2" role="status">
+              <Alert variant="info" role="status">
+                <Info aria-hidden />
+                <AlertDescription>
                 {newlyFetched} new listing{newlyFetched === 1 ? " was" : "s were"} found and {newlyFetched === 1 ? "its link is" : "their links are"} being checked now. Reload in a minute to see the ones that check out.
-              </p>
+              </AlertDescription>
+              </Alert>
             ) : null}
             <p className="text-muted-foreground">
               {!filters.includeUnchecked ? "Only verified listings are shown. " : ""}
@@ -355,8 +371,8 @@ function EmptyState({
   filtered: boolean;
   where: string;
 }) {
-  if (tab === "saved") return <p className="rounded-xl border border-dashed bg-card p-8 text-center text-sm text-muted-foreground">Nothing saved yet.</p>;
-  if (tab !== "all" && !hasResume) return <p className="rounded-xl border border-dashed bg-card p-8 text-center text-sm text-muted-foreground">Import your resume to sort jobs by fit.</p>;
+  if (tab === "saved") return <EmptyPanel icon={<Bookmark aria-hidden />} title="Nothing saved yet" description="Save a job from its card and it will be kept here." />;
+  if (tab !== "all" && !hasResume) return <EmptyPanel icon={<FileText aria-hidden />} title="Import your resume to sort jobs by fit" description="Jobs are scored against your resume, so this is the quickest way to see good matches." />;
   const related = searched[0] ? [...relatedTitles(searched[0]).related, ...relatedTitles(searched[0]).broader].slice(0, 2) : [];
   const actions = [
     explicitRange?.key !== "30d" ? { label: "Expand the date range to 30 days", href: href({ range: "30d", page: "" }) } : null,
@@ -365,9 +381,11 @@ function EmptyState({
     ...related.map((t) => ({ label: `Try “${t}”`, href: href({ q: t, page: "" }) })),
   ].filter((a): a is { label: string; href: string } => a !== null);
   return (
-    <div className="grid gap-3 rounded-xl border border-dashed bg-card p-8 text-center">
-      <p className="font-medium">No verified jobs found.</p>
-      <p className="text-sm text-muted-foreground">We only show real postings whose links check out, so there may be fewer results than on other sites. Try one of these:</p>
+    <EmptyPanel
+      icon={<SearchX aria-hidden />}
+      title="No verified jobs found"
+      description="We only show real postings whose links check out, so there may be fewer results than on other sites. Try one of these:"
+    >
       <ul className="flex flex-wrap justify-center gap-2">
         {actions.map((a) => (
           <li key={a.label}>
@@ -377,7 +395,7 @@ function EmptyState({
           </li>
         ))}
       </ul>
-    </div>
+    </EmptyPanel>
   );
 }
 
