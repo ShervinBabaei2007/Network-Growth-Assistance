@@ -33,7 +33,7 @@ test("real page-speed measurements arrive, grouped by route pattern with nothing
     })
     .toBeGreaterThan(0);
   for (const r of rows) {
-    expect(r.route).toMatch(/^\/[a-z-]*(\/(\[id\]|\[slug\]|[a-z-]+))?$/);
+    expect(r.route).toMatch(/^\/[a-z-]*(\/(\[id\]|\[slug\]|[a-z-]+))?(\/prep)?$/);
     expect(["LCP", "INP", "CLS", "FCP", "TTFB"]).toContain(r.metric);
     expect(r.value).toBeGreaterThanOrEqual(0);
   }

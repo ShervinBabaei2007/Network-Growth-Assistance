@@ -2,11 +2,12 @@ import { Suspense } from "react";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ExternalLink } from "lucide-react";
+import { ClipboardList, ExternalLink } from "lucide-react";
 import { PeopleAtCompany } from "@/components/companies/people-at-company";
 import { LoadError } from "@/components/load-error";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { companySlug } from "@/lib/companies/match";
 import { formatDateOnly, formatDateTime, relativeDays, toLocalInput } from "@/lib/applications/format";
 import { describeMove, formatPay, STAGE_LABEL } from "@/lib/applications/stages";
@@ -140,11 +141,18 @@ async function Application({ params }: Pick<PageProps<"/applications/[id]">, "pa
           </span>
         }
         actions={
-          app.job_id ? (
-            <Link href={`/jobs/${app.job_id}`} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
-              View the job <ExternalLink aria-hidden className="size-3.5" />
-            </Link>
-          ) : null
+          <div className="flex flex-wrap items-center gap-3">
+            {["screening", "interviewing", "offer"].includes(app.stage) || data.interviews.length > 0 ? (
+              <Link href={`/applications/${app.id}/prep`} className={buttonVariants({ size: "sm" })}>
+                <ClipboardList aria-hidden /> Interview prep
+              </Link>
+            ) : null}
+            {app.job_id ? (
+              <Link href={`/jobs/${app.job_id}`} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                View the job <ExternalLink aria-hidden className="size-3.5" />
+              </Link>
+            ) : null}
+          </div>
         }
       />
       {jobGone ? (

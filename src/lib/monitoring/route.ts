@@ -11,6 +11,8 @@ const ROOTS = new Set([
 
 /** Fixed sub-pages under a root; any other second segment is a record's id or slug. */
 const STATIC_CHILDREN = new Set(["import", "add", "employers", "resume", "searches", "reset"]);
+// A record's own sub-page (for example an application's interview prep) keeps its name after the id.
+const RECORD_PAGES = new Set(["prep"]);
 
 const GUIDE_SLUGS = new Set(["export-linkedin-connections", "build-a-networking-plan", "track-job-applications"]);
 
@@ -25,7 +27,8 @@ export function normalizeRoute(path: string | null | undefined): string {
     if (STATIC_CHILDREN.has(parts[1]) || (root === "guides" && GUIDE_SLUGS.has(parts[1]))) out.push(parts[1]);
     else out.push(root === "companies" ? "[slug]" : "[id]");
   }
-  // Anything deeper than a page and its record is folded into the record.
+  if (parts[2] !== undefined && out[1] === "[id]" && RECORD_PAGES.has(parts[2])) out.push(parts[2]);
+  // Anything else deeper is folded into the record.
   return `/${out.join("/")}`;
 }
 
