@@ -1,11 +1,12 @@
 import { unstable_rethrow } from "next/navigation";
+import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
 import { ExternalLink, Upload } from "lucide-react";
 import { CategoryLabel, StatusBadge } from "@/components/candidate-badges";
 import { LoadError } from "@/components/load-error";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -148,7 +149,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
         <Filter id="university" label="School" value={university} options={universityOptions} />
         <div className="flex items-end gap-3">
           <label className="flex h-8 items-center gap-2 text-sm">
-            <input type="checkbox" name="review" value="1" defaultChecked={review} className="size-4 accent-primary" />
+            <Checkbox name="review" value="1" defaultChecked={review} />
             Needs review
           </label>
           <Button type="submit" size="sm">
@@ -250,14 +251,14 @@ function Filter({
   return (
     <div className="grid gap-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <NativeSelect id={id} name={id} defaultValue={value}>
+      <AppSelect id={id} name={id} defaultValue={value}>
         <option value="">All</option>
         {Object.entries(options).map(([v, l]) => (
           <option key={v} value={v}>
             {l}
           </option>
         ))}
-      </NativeSelect>
+      </AppSelect>
     </div>
   );
 }

@@ -1,11 +1,12 @@
 import { Suspense, type ReactNode } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { ActionForm } from "@/components/action-form";
 import { CategoryLabel, StatusBadge } from "@/components/candidate-badges";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -140,11 +141,11 @@ async function CandidateDetail({ params }: Pick<PageProps<"/candidates/[id]">, "
                   {hidden}
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field id="outcome" label="Outcome">
-                      <NativeSelect id="outcome" name="outcome" defaultValue="accepted">
+                      <AppSelect id="outcome" name="outcome" defaultValue="accepted">
                         <option value="accepted">Accepted</option>
                         <option value="declined">Declined (if you know)</option>
                         <option value="withdrawn">Withdrawn by you</option>
-                      </NativeSelect>
+                      </AppSelect>
                     </Field>
                     <Field id="outcomeDate" label="On">
                       <Input id="outcomeDate" name="date" type="date" max={today} defaultValue={today} required />
@@ -160,7 +161,7 @@ async function CandidateDetail({ params }: Pick<PageProps<"/candidates/[id]">, "
                 <ActionForm action={deleteInvitation} submitLabel="Remove invitation record" variant="outline" size="sm" className="pt-3">
                   {hidden}
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" name="confirm" className="size-4 accent-primary" /> Yes, no invitation was actually sent
+                    <Checkbox name="confirm" /> Yes, no invitation was actually sent
                   </label>
                 </ActionForm>
               </details>
@@ -173,24 +174,24 @@ async function CandidateDetail({ params }: Pick<PageProps<"/candidates/[id]">, "
             {hidden}
             <div className="grid gap-3 sm:grid-cols-2">
               <Field id="university" label="School">
-                <NativeSelect id="university" name="university" defaultValue={c.university ?? ""}>
+                <AppSelect id="university" name="university" defaultValue={c.university ?? ""}>
                   <option value="">Unknown / not one of my schools</option>
                   {catalog.universities.map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.name}
                     </option>
                   ))}
-                </NativeSelect>
+                </AppSelect>
               </Field>
               <Field id="discipline" label="Discipline">
-                <NativeSelect id="discipline" name="discipline" defaultValue={c.discipline ?? ""}>
+                <AppSelect id="discipline" name="discipline" defaultValue={c.discipline ?? ""}>
                   <option value="">Unknown / not one of my disciplines</option>
                   {catalog.disciplines.map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.name}
                     </option>
                   ))}
-                </NativeSelect>
+                </AppSelect>
               </Field>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -220,14 +221,14 @@ async function CandidateDetail({ params }: Pick<PageProps<"/candidates/[id]">, "
                 <Input id="programText" name="programText" defaultValue={c.raw_program_text ?? ""} maxLength={300} />
               </Field>
               <Field id="degreeLevel" label="Degree level">
-                <NativeSelect id="degreeLevel" name="degreeLevel" defaultValue={c.degree_level ?? ""}>
+                <AppSelect id="degreeLevel" name="degreeLevel" defaultValue={c.degree_level ?? ""}>
                   <option value="">Unknown</option>
                   {Object.entries(DEGREE_LABELS).map(([v, l]) => (
                     <option key={v} value={v}>
                       {l}
                     </option>
                   ))}
-                </NativeSelect>
+                </AppSelect>
               </Field>
               <Field id="gradYear" label="Graduation year">
                 <Input id="gradYear" name="gradYear" type="number" min={1950} max={2100} defaultValue={c.grad_year ?? ""} />
@@ -252,7 +253,7 @@ async function CandidateDetail({ params }: Pick<PageProps<"/candidates/[id]">, "
           <ActionForm action={deleteCandidate} submitLabel="Delete permanently" variant="destructive">
             {hidden}
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="confirm" className="size-4 accent-primary" /> I understand this can&apos;t be undone
+              <Checkbox name="confirm" /> I understand this can&apos;t be undone
             </label>
           </ActionForm>
         </Section>

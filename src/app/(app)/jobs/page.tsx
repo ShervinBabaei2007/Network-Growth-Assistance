@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { headers } from "next/headers";
 import { after } from "next/server";
 import Link from "next/link";
@@ -8,7 +9,7 @@ import { TIER_STYLE } from "@/components/jobs/job-visuals";
 import { JobCard } from "@/components/jobs/job-card";
 import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { PageHeader } from "@/components/page-header";
 import { ToastOnMount } from "@/components/toast/toast-on-mount";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -445,18 +446,18 @@ function FiltersPanel({
             <legend className="mb-1 text-xs font-medium text-muted-foreground">Workplace</legend>
             {(Object.keys(WORKPLACE_LABELS) as (keyof typeof WORKPLACE_LABELS)[]).map((w) => (
               <label key={w} className="flex min-h-7 items-center gap-2">
-                <input type="checkbox" name="wp" value={w} defaultChecked={checked(filters.workplace, w)} className="size-4 accent-primary" /> {WORKPLACE_LABELS[w]}
+                <Checkbox name="wp" value={w} defaultChecked={checked(filters.workplace, w)} /> {WORKPLACE_LABELS[w]}
               </label>
             ))}
             <label className="flex min-h-7 items-center gap-2 text-xs text-muted-foreground">
-              <input type="checkbox" name="wpu" value="1" defaultChecked={filters.includeUnknownWorkplace} className="size-3.5 accent-primary" /> Include jobs that don&apos;t say
+              <Checkbox name="wpu" value="1" defaultChecked={filters.includeUnknownWorkplace} /> Include jobs that don&apos;t say
             </label>
           </fieldset>
           <fieldset className="grid gap-1">
             <legend className="mb-1 text-xs font-medium text-muted-foreground">Level</legend>
             {LEVELS.map((l) => (
               <label key={l} className="flex min-h-7 items-center gap-2">
-                <input type="checkbox" name="level" value={l} defaultChecked={checked(filters.levels, l)} className="size-4 accent-primary" /> {LEVEL_LABELS[l]}
+                <Checkbox name="level" value={l} defaultChecked={checked(filters.levels, l)} /> {LEVEL_LABELS[l]}
               </label>
             ))}
             <p className="text-xs text-muted-foreground">Until you choose, your level from Settings is used.</p>
@@ -477,14 +478,14 @@ function FiltersPanel({
               ] as const
             ).map(([v, l]) => (
               <label key={v} className="flex min-h-7 items-center gap-2">
-                <input type="checkbox" name="type" value={v} defaultChecked={checked(filters.types, v)} className="size-4 accent-primary" /> {l}
+                <Checkbox name="type" value={v} defaultChecked={checked(filters.types, v)} /> {l}
               </label>
             ))}
           </fieldset>
           <fieldset className="grid gap-1.5">
             <legend className="mb-1 text-xs font-medium text-muted-foreground">Salary</legend>
             <label className="flex min-h-7 items-center gap-2">
-              <input type="checkbox" name="pay" value="1" defaultChecked={filters.hasSalary} className="size-4 accent-primary" /> Salary stated
+              <Checkbox name="pay" value="1" defaultChecked={filters.hasSalary} /> Salary stated
             </label>
             {currency ? (
               <>
@@ -517,12 +518,12 @@ function FiltersPanel({
               ] as const
             ).map(([v, l]) => (
               <label key={v} className="flex min-h-7 items-center gap-2">
-                <input type="checkbox" name="src" value={v} defaultChecked={checked(filters.sources, v)} className="size-4 accent-primary" /> {l}
+                <Checkbox name="src" value={v} defaultChecked={checked(filters.sources, v)} /> {l}
               </label>
             ))}
           </fieldset>
           <label className="flex min-h-7 items-start gap-2">
-            <input type="checkbox" name="unchecked" value="1" defaultChecked={filters.includeUnchecked} className="mt-0.5 size-4 accent-primary" />
+            <Checkbox name="unchecked" value="1" defaultChecked={filters.includeUnchecked} className="mt-0.5" />
             <span>
               Include listings not yet verified <span className="block text-xs text-muted-foreground">Apply stays off until their link is confirmed.</span>
             </span>
@@ -575,7 +576,7 @@ function PreferencesCard({ settings, resumeTitles }: { settings: { job_titles: s
               <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                 {PROVINCE_CODES.map((p) => (
                   <label key={p} className="flex min-h-7 items-center gap-1.5 text-sm" title={PROVINCE_NAMES[p]}>
-                    <input type="checkbox" name="provinces" value={p} defaultChecked={settings.job_provinces.includes(p)} className="size-4 accent-primary" />
+                    <Checkbox name="provinces" value={p} defaultChecked={settings.job_provinces.includes(p)} />
                     {PROVINCE_NAMES[p]}
                   </label>
                 ))}
@@ -618,14 +619,14 @@ function ExternalSearchRow({ what, where, country }: { what: string; where: stri
 /** One country at a time, or remote jobs open anywhere. */
 function CountrySelect({ id, name, value }: { id: string; name: string; value: string }) {
   return (
-    <NativeSelect id={id} name={name} defaultValue={value}>
+    <AppSelect id={id} name={name} defaultValue={value}>
       <option value={ANYWHERE}>Anywhere (remote)</option>
       {countryOptions().map((c) => (
         <option key={c.code} value={c.code}>
           {c.name}
         </option>
       ))}
-    </NativeSelect>
+    </AppSelect>
   );
 }
 

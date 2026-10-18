@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Download, GitCompare, RotateCcw, Trash2 } from "lucide-react";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -82,23 +82,23 @@ export function ResumeVersions({ resumeId, versions, canRestore }: { resumeId: s
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
           <div className="grid gap-1">
             <Label htmlFor="compare-left">Compare</Label>
-            <NativeSelect id="compare-left" value={left} onChange={(e) => setLeft(e.target.value)}>
+            <AppSelect id="compare-left" value={left} onChange={(e) => setLeft(e.target.value)}>
               {versions.map((v) => (
                 <option key={v.key} value={v.key}>
                   {v.label}
                 </option>
               ))}
-            </NativeSelect>
+            </AppSelect>
           </div>
           <div className="grid gap-1">
             <Label htmlFor="compare-right">with</Label>
-            <NativeSelect id="compare-right" value={right} onChange={(e) => setRight(e.target.value)}>
+            <AppSelect id="compare-right" value={right} onChange={(e) => setRight(e.target.value)}>
               {versions.map((v) => (
                 <option key={v.key} value={v.key}>
                   {v.label}
                 </option>
               ))}
-            </NativeSelect>
+            </AppSelect>
           </div>
           <Button variant="outline" onClick={() => setComparing(true)} disabled={!a || !b || left === right}>
             <GitCompare aria-hidden /> Compare

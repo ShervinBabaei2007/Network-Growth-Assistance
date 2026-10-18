@@ -1,9 +1,10 @@
 "use client";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { useStateToast } from "@/components/toast/use-state-toast";
 import { useActionState } from "react";
 import Link from "next/link";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,14 +34,14 @@ export function CsvImport() {
           {(Object.keys(CANDIDATE_FIELDS) as CandidateField[]).map((field) => (
             <div key={field} className="grid gap-1.5">
               <Label htmlFor={`map-${field}`}>{CANDIDATE_FIELDS[field]}</Label>
-              <NativeSelect id={`map-${field}`} name={`map.${field}`} defaultValue={state.mapping?.[field]?.toString() ?? ""} key={`${field}-${state.mapping?.[field]}`}>
+              <AppSelect id={`map-${field}`} name={`map.${field}`} defaultValue={state.mapping?.[field]?.toString() ?? ""} key={`${field}-${state.mapping?.[field]}`}>
                 <option value="">Not in file</option>
                 {state.headers!.map((h, i) => (
                   <option key={i} value={i}>
                     {h || `Column ${i + 1}`}
                   </option>
                 ))}
-              </NativeSelect>
+              </AppSelect>
             </div>
           ))}
         </fieldset>
@@ -83,7 +84,7 @@ export function CsvImport() {
 
       {state.status === "preview" && (state.newRows ?? 0) > 0 ? (
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="approveConfirmed" className="size-4 accent-primary" />
+          <Checkbox name="approveConfirmed" />
           Approve rows whose school and program are recognized (others go to review)
         </label>
       ) : null}

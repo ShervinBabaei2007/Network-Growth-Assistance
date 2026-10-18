@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 const MAILPIT = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
 
@@ -142,7 +142,7 @@ export async function setUpPlan(page: Page, plan: PlanSetup) {
   for (const s of plan.schools) {
     await page.locator("#university-new-name").fill(s.name);
     await page.locator("#university-new-aliases").fill(s.aliases ?? "");
-    const own = page.locator("form").filter({ has: page.locator("#university-new-name") }).getByLabel("Give this school its own targets");
+    const own = page.locator("form").filter({ has: page.locator("#university-new-name") }).getByRole("checkbox", { name: "Give this school its own targets" });
     if (s.ownTargets === false) await own.uncheck();
     else await own.check();
     await page.getByRole("button", { name: "Add school" }).click();
@@ -162,5 +162,27 @@ export async function setUpPlan(page: Page, plan: PlanSetup) {
     }
     await page.getByRole("button", { name: "Save targets" }).click();
     await expect(page.getByTestId("toast").filter({ hasText: "Saved." }).first()).toBeVisible();
+  }
+}
+
+/**
+ * Chooses an option in a labelled dropdown by the text people see. The app's dropdown is the native select on
+ * phones and the shadcn Select popover on desktop, and this works with either.
+ */
+export async function chooseOption(control: Locator, optionText: string) {
+  if ((await control.evaluate((el) => el.tagName)) === "SELECT") {
+    await control.selectOption({ label: optionText });
+    return;
+  }
+  await control.click();
+  await control.page().getByRole("option", { name: optionText, exact: true }).click();
+}
+
+/** Checks which option a labelled dropdown shows, for the native select (phones) and the shadcn Select (desktop) alike. */
+export async function expectSelected(control: Locator, optionText: string) {
+  if ((await control.evaluate((el) => el.tagName)) === "SELECT") {
+    await expect(control.locator("option:checked")).toHaveText(optionText);
+  } else {
+    await expect(control).toHaveText(optionText);
   }
 }

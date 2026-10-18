@@ -1,7 +1,8 @@
 "use client";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { useId } from "react";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -23,34 +24,34 @@ export function AlertFields({ value, onChange, emailAvailable, timeZone }: { val
       <div className="grid gap-2 sm:grid-cols-3">
         <div className="grid gap-1">
           <Label htmlFor={`${id}-freq`}>Alert me</Label>
-          <NativeSelect id={`${id}-freq`} value={value.frequency} onChange={(e) => set("frequency", e.target.value as AlertValue["frequency"])}>
+          <AppSelect id={`${id}-freq`} value={value.frequency} onChange={(e) => set("frequency", e.target.value as AlertValue["frequency"])}>
             <option value="off">Never</option>
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
-          </NativeSelect>
+          </AppSelect>
         </div>
         {value.frequency === "weekly" ? (
           <div className="grid gap-1">
             <Label htmlFor={`${id}-day`}>On</Label>
-            <NativeSelect id={`${id}-day`} value={value.weekday} onChange={(e) => set("weekday", Number(e.target.value))}>
+            <AppSelect id={`${id}-day`} value={value.weekday} onChange={(e) => set("weekday", Number(e.target.value))}>
               {WEEKDAYS.map((d, i) => (
                 <option key={d} value={i}>
                   {d}
                 </option>
               ))}
-            </NativeSelect>
+            </AppSelect>
           </div>
         ) : null}
         {value.frequency !== "off" ? (
           <div className="grid gap-1">
             <Label htmlFor={`${id}-hour`}>At</Label>
-            <NativeSelect id={`${id}-hour`} value={value.hour} onChange={(e) => set("hour", Number(e.target.value))}>
+            <AppSelect id={`${id}-hour`} value={value.hour} onChange={(e) => set("hour", Number(e.target.value))}>
               {Array.from({ length: 24 }, (_, h) => (
                 <option key={h} value={h}>
                   {hourLabel(h)}
                 </option>
               ))}
-            </NativeSelect>
+            </AppSelect>
           </div>
         ) : null}
       </div>
@@ -58,7 +59,7 @@ export function AlertFields({ value, onChange, emailAvailable, timeZone }: { val
       {value.frequency !== "off" ? (
         emailAvailable ? (
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" className="size-4 accent-primary" checked={value.emailDigest} onChange={(e) => set("emailDigest", e.target.checked)} />
+            <Checkbox checked={value.emailDigest} onCheckedChange={(on) => set("emailDigest", on)} />
             Also email me (needs email turned on in Settings → Notifications)
           </label>
         ) : (

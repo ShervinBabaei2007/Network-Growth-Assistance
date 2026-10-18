@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { PersonCard } from "@/components/discovery/person-card";
 import { SearchProgress } from "@/components/discovery/search-progress";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -114,22 +114,22 @@ function Filters({ sp }: { sp: Record<string, string | string[] | undefined> }) 
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="f-connection">Connection status</Label>
-          <NativeSelect id="f-connection" name="connection" defaultValue={one(sp.connection)}>
+          <AppSelect id="f-connection" name="connection" defaultValue={one(sp.connection)}>
             <option value="">All</option>
             {Object.entries(PROXIMITY_LABELS).map(([v, l]) => (
               <option key={v} value={v}>
                 {l}
               </option>
             ))}
-          </NativeSelect>
+          </AppSelect>
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="f-confidence">Evidence confidence</Label>
-          <NativeSelect id="f-confidence" name="confidence" defaultValue={one(sp.confidence)}>
+          <AppSelect id="f-confidence" name="confidence" defaultValue={one(sp.confidence)}>
             <option value="">Any</option>
             <option value="high">High</option>
             <option value="medium">Medium or better</option>
-          </NativeSelect>
+          </AppSelect>
         </div>
         <div className="flex items-end gap-2">
           <Button type="submit" size="sm">

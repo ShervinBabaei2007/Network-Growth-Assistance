@@ -1,9 +1,10 @@
 "use client";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -165,20 +166,20 @@ export function CriteriaEditor({ query, criteria, parentSearchId }: { query: str
       </div>
       <div className="grid max-w-xs gap-1.5">
         <Label htmlFor="ce-status">Who</Label>
-        <NativeSelect id="ce-status" name="status" defaultValue={c.education.status}>
+        <AppSelect id="ce-status" name="status" defaultValue={c.education.status}>
           <option value="any">Students and alumni</option>
           <option value="alumni">Alumni only</option>
           <option value="student">Current students only</option>
-        </NativeSelect>
+        </AppSelect>
       </div>
       {field("goal", "Your goal for this search (optional)", c.goal ?? "", "Used to rank people and word explanations, e.g. what you're hoping to learn or find")}
       <div className="flex flex-wrap gap-4 text-sm">
         <label className="flex items-center gap-2">
-          <input type="checkbox" name="startups" defaultChecked={c.includeStartups} className="size-4 accent-primary" />
+          <Checkbox name="startups" defaultChecked={c.includeStartups} />
           Startups are fine
         </label>
         <label className="flex items-center gap-2">
-          <input type="checkbox" name="exclude" defaultChecked={c.excludeExistingConnections} className="size-4 accent-primary" />
+          <Checkbox name="exclude" defaultChecked={c.excludeExistingConnections} />
           Leave out people I&apos;m already connected with
         </label>
       </div>

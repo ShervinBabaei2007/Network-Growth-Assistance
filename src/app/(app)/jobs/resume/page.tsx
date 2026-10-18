@@ -1,9 +1,10 @@
 import { Suspense } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { PageHeader } from "@/components/page-header";
 import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -74,13 +75,13 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="grid gap-1.5">
                   <Label htmlFor="workAuthorization">Work authorization in the country you search</Label>
-                  <NativeSelect id="workAuthorization" name="workAuthorization" defaultValue={facts.workAuthorization}>
+                  <AppSelect id="workAuthorization" name="workAuthorization" defaultValue={facts.workAuthorization}>
                     {WORK_AUTHORIZATION.map((w) => (
                       <option key={w} value={w}>
                         {WORK_AUTH_LABELS[w]}
                       </option>
                     ))}
-                  </NativeSelect>
+                  </AppSelect>
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="yearsOverride">Years of experience (leave blank to count from your dates)</Label>
@@ -88,11 +89,11 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
                 </div>
               </div>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="securityClearance" defaultChecked={facts.securityClearance} className="size-4 accent-primary" />I hold a government
+                <Checkbox name="securityClearance" defaultChecked={facts.securityClearance} />I hold a government
                 security clearance there (e.g. Canadian reliability status or higher)
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="willingToRelocate" defaultChecked={facts.willingToRelocate} className="size-4 accent-primary" />
+                <Checkbox name="willingToRelocate" defaultChecked={facts.willingToRelocate} />
                 I&apos;m willing to relocate
               </label>
             </ActionForm>

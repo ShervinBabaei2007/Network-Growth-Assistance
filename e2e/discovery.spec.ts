@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { setUpPlan, signIn, uniqueEmail } from "./helpers";
+import { expectSelected, setUpPlan, signIn, uniqueEmail } from "./helpers";
 
 /**
  * Discovery end to end against the built-in fictional dataset. The dev server
@@ -93,7 +93,7 @@ test("import connections, research people, review evidence and track one", async
   await drawer.getByRole("button", { name: "Copy message" }).click();
   await expect(page.getByTestId("toast").filter({ hasText: "Intro copied." }).filter({ hasText: "Paste it into LinkedIn yourself" })).toBeVisible();
   await drawer.getByRole("button", { name: "I sent a connection request" }).click();
-  await expect(drawer.getByLabel("Status")).toHaveValue("connection_sent_manually");
+  await expectSelected(drawer.getByLabel("Status"), "Connection request sent");
   await page.keyboard.press("Escape");
 
   // 6. The person is tracked in People.

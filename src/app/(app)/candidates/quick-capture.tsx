@@ -1,7 +1,8 @@
 "use client";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -163,38 +164,36 @@ export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoA
             </p>
             <label className="grid gap-1 text-xs">
               School for rows without one
-              <NativeSelect className="w-40" defaultValue="" onChange={(e) => fillBlank("university", e.target.value)}>
+              <AppSelect className="w-40" defaultValue="" onChange={(e) => fillBlank("university", e.target.value)}>
                 <option value="">—</option>
                 {catalog.universities.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.name}
                   </option>
                 ))}
-              </NativeSelect>
+              </AppSelect>
             </label>
             <label className="grid gap-1 text-xs">
               Discipline for rows without one
-              <NativeSelect className="w-48" defaultValue="" onChange={(e) => fillBlank("discipline", e.target.value)}>
+              <AppSelect className="w-48" defaultValue="" onChange={(e) => fillBlank("discipline", e.target.value)}>
                 <option value="">—</option>
                 {catalog.disciplines.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.name}
                   </option>
                 ))}
-              </NativeSelect>
+              </AppSelect>
             </label>
           </div>
 
           <ul className="grid gap-2">
             {rows.map((r) => (
               <li key={r.key} className={`grid gap-2 rounded-lg border bg-card p-2 sm:grid-cols-[auto_1fr_8rem_12rem] sm:items-center ${r.existing || r.alreadyConnected ? "opacity-50" : ""}`}>
-                <input
-                  type="checkbox"
+                <Checkbox
                   aria-label={`Include ${r.name}`}
                   checked={r.include}
                   disabled={!addable(r)}
-                  onChange={(e) => update(r.key, { include: e.target.checked })}
-                  className="size-4 accent-primary"
+                  onCheckedChange={(include) => update(r.key, { include })}
                 />
                 <div className="grid min-w-0 gap-0.5">
                   <Input aria-label="Name" value={r.name} onChange={(e) => update(r.key, { name: e.target.value })} className="h-7" />
@@ -209,22 +208,22 @@ export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoA
                     {r.headline ?? "No headline"}
                   </p>
                 </div>
-                <NativeSelect aria-label={`School for ${r.name}`} value={r.university ?? ""} onChange={(e) => update(r.key, { university: (e.target.value || null) as University | null })}>
+                <AppSelect aria-label={`School for ${r.name}`} value={r.university ?? ""} onChange={(e) => update(r.key, { university: (e.target.value || null) as University | null })}>
                   <option value="">School?</option>
                   {catalog.universities.map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.name}
                     </option>
                   ))}
-                </NativeSelect>
-                <NativeSelect aria-label={`Program for ${r.name}`} value={r.discipline ?? ""} onChange={(e) => update(r.key, { discipline: (e.target.value || null) as Discipline | null })}>
+                </AppSelect>
+                <AppSelect aria-label={`Program for ${r.name}`} value={r.discipline ?? ""} onChange={(e) => update(r.key, { discipline: (e.target.value || null) as Discipline | null })}>
                   <option value="">Discipline?</option>
                   {catalog.disciplines.map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.name}
                     </option>
                   ))}
-                </NativeSelect>
+                </AppSelect>
               </li>
             ))}
           </ul>
@@ -237,7 +236,7 @@ export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoA
               <p className="text-sm text-muted-foreground">Auto-approve is on: rows with school and program set are approved.</p>
             ) : (
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={approve} onChange={(e) => setApprove(e.target.checked)} className="size-4 accent-primary" />
+                <Checkbox checked={approve} onCheckedChange={setApprove} />
                 Approve the ones with school and program set
               </label>
             )}

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { signIn, uniqueEmail } from "./helpers";
+import { chooseOption, signIn, uniqueEmail } from "./helpers";
 
 /**
  * The application tracker end to end, on the fictional employer boards (JOBS_FIXTURES=1):
@@ -47,7 +47,7 @@ test("track an application from save to offer", async ({ page, context }) => {
   const stage = page.getByLabel("Stage of Junior Software Developer");
   await stage.focus();
   await expect(stage).toBeFocused();
-  await stage.selectOption("screening");
+  await chooseOption(stage, "Screening");
   await expect(toast(page, "Applied → Screening")).toBeVisible();
   await expect(page.getByRole("region", { name: "Screening" }).getByRole("link", { name: "Junior Software Developer" })).toBeVisible();
 
@@ -56,7 +56,7 @@ test("track an application from save to offer", async ({ page, context }) => {
   await moved.hover();
   await moved.getByRole("button", { name: "Undo" }).click();
   await expect(page.getByRole("region", { name: "Applied" }).getByRole("link", { name: "Junior Software Developer" })).toBeVisible();
-  await page.getByLabel("Stage of Junior Software Developer").selectOption("screening");
+  await chooseOption(page.getByLabel("Stage of Junior Software Developer"), "Screening");
   await expect(page.getByRole("region", { name: "Screening" }).getByRole("link", { name: "Junior Software Developer" })).toBeVisible();
 
   // The list view sorts and shows the same application.
@@ -83,12 +83,12 @@ test("track an application from save to offer", async ({ page, context }) => {
     ["offer", "Interviewing → Offer"],
     ["rejected", "Offer → Rejected"],
   ] as const) {
-    await page.getByLabel("Stage", { exact: true }).selectOption(to);
+    await chooseOption(page.getByLabel("Stage", { exact: true }), to[0].toUpperCase() + to.slice(1));
     await page.getByRole("button", { name: "Move", exact: true }).click();
     await expect(toast(page, message)).toBeVisible();
   }
   // Reopening a closed application is allowed, and recorded as such.
-  await page.getByLabel("Stage", { exact: true }).selectOption("interviewing");
+  await chooseOption(page.getByLabel("Stage", { exact: true }), "Interviewing");
   await page.getByRole("button", { name: "Reopen", exact: true }).click();
   await expect(toast(page, "Reopened: Rejected → Interviewing")).toBeVisible();
   await expect(page.getByText("Reopened: Rejected → Interviewing").last()).toBeVisible();
@@ -99,7 +99,7 @@ test("track an application from save to offer", async ({ page, context }) => {
   await expect(toast(page, "Note added.")).toBeVisible();
   await page.getByLabel("Amount", { exact: true }).fill("85000");
   await page.getByLabel("Currency", { exact: true }).fill("CAD");
-  await page.getByLabel("Per", { exact: true }).selectOption("year");
+  await chooseOption(page.getByLabel("Per", { exact: true }), "year");
   await page.getByRole("button", { name: "Save details" }).click();
   await expect(toast(page, "Saved.")).toBeVisible();
   await expect(page.getByText("Offered CAD 85,000 / year")).toBeVisible();

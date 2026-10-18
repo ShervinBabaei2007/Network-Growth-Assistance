@@ -2,7 +2,7 @@
 
 import { useStateToast } from "@/components/toast/use-state-toast";
 import { useActionState, useRef, useState } from "react";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,7 +54,7 @@ export function ConnectionsImport() {
             {CONNECTION_FIELDS.map((f) => (
               <div key={f} className="grid gap-1.5">
                 <Label htmlFor={`map_${f}`}>{FIELD_LABELS[f]}</Label>
-                <NativeSelect
+                <AppSelect
                   id={`map_${f}`}
                   name={`map_${f}`}
                   value={String(effective[f])}
@@ -66,7 +66,7 @@ export function ConnectionsImport() {
                       {h || `Column ${i + 1}`}
                     </option>
                   ))}
-                </NativeSelect>
+                </AppSelect>
               </div>
             ))}
           </div>

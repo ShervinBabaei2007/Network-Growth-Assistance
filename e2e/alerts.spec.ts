@@ -45,7 +45,7 @@ test("a saved search announces only new jobs, once, in the app and by email", as
   try {
     // Turn email on, then save a search with email and daily alerts.
     await page.goto("/settings#notifications");
-    await page.getByLabel(/Allow alert emails/).check();
+    await page.getByRole("checkbox", { name: /Allow alert emails/ }).check();
     await page.locator("#notifications").getByRole("button", { name: "Save" }).click();
     await expect(toast(page, "Notification settings saved.")).toBeVisible();
 
@@ -54,7 +54,7 @@ test("a saved search announces only new jobs, once, in the app and by email", as
     await page.getByRole("button", { name: "Save this search" }).click();
     const form = page.getByRole("form", { name: "Save this search" });
     await form.getByLabel("Name").fill("E2E cartographer alerts");
-    await form.getByLabel(/Also email me/).check();
+    await form.getByRole("checkbox", { name: /Also email me/ }).check();
     await form.getByRole("button", { name: "Save search" }).click();
     await expect(toast(page, /Search saved\./)).toBeVisible({ timeout: 30_000 });
 

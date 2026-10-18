@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { markApplied } from "@/app/(app)/applications/actions";
 import { setJobStatus } from "@/app/(app)/jobs/actions";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,14 +85,14 @@ export function ApplyLink({
           {documents.length ? (
             <div className="grid gap-1">
               <Label htmlFor={`${id}-doc`}>Document you sent (optional)</Label>
-              <NativeSelect id={`${id}-doc`} value={doc} onChange={(e) => setDoc(e.target.value)}>
+              <AppSelect id={`${id}-doc`} value={doc} onChange={(e) => setDoc(e.target.value)}>
                 <option value="">Not recorded</option>
                 {documents.map((d) => (
                   <option key={d.value} value={d.value}>
                     {d.label}
                   </option>
                 ))}
-              </NativeSelect>
+              </AppSelect>
             </div>
           ) : null}
           <div className="flex gap-2">

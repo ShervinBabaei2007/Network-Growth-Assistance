@@ -39,7 +39,7 @@ test("main flow: sign in → add → approve → queue → sent → accepted →
   await page.getByLabel("Name", { exact: true }).fill("Ada E2E");
   await page.getByLabel("School (as shown on the profile)").fill("University of British Columbia");
   await page.getByLabel("Program or major (as shown)").fill("Computer Engineering");
-  await page.getByLabel(/Approve for outreach now/).check();
+  await page.getByRole("checkbox", { name: /Approve for outreach now/ }).check();
   await page.getByRole("button", { name: "Add candidate" }).click();
   await expect(page.getByTestId("form-status").filter({ hasText: "Added." })).toBeVisible();
 

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { PageHeader } from "@/components/page-header";
 import { ActionForm } from "@/components/action-form";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,24 +64,24 @@ async function PostingForm() {
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="country">Country</Label>
-            <NativeSelect id="country" name="country" defaultValue={myCountry}>
+            <AppSelect id="country" name="country" defaultValue={myCountry}>
               {countryOptions().map((c) => (
                 <option key={c.code} value={c.code}>
                   {c.name}
                 </option>
               ))}
-            </NativeSelect>
+            </AppSelect>
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="province">Province (jobs in Canada)</Label>
-            <NativeSelect id="province" name="province" defaultValue="">
+            <AppSelect id="province" name="province" defaultValue="">
               <option value="">None, or remote</option>
               {PROVINCE_CODES.map((p) => (
                 <option key={p} value={p}>
                   {PROVINCE_NAMES[p]}
                 </option>
               ))}
-            </NativeSelect>
+            </AppSelect>
           </div>
           <div className="grid gap-1.5 sm:col-span-2">
             <Label htmlFor="url">Link to the posting</Label>

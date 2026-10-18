@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { ArrowDown, ArrowUp } from "lucide-react";
@@ -174,17 +175,17 @@ async function SettingsContent() {
         <ActionForm action={updateNotificationSettings} submitLabel="Save">
           <div className="grid gap-2 text-sm">
             <label className="flex items-center gap-2">
-              <input type="checkbox" name="notifyReminders" defaultChecked={s.notify_reminders} className="size-4 accent-primary" /> Reminders when they&apos;re due
+              <Checkbox name="notifyReminders" defaultChecked={s.notify_reminders} /> Reminders when they&apos;re due
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" name="notifyInterviews" defaultChecked={s.notify_interviews} className="size-4 accent-primary" /> Interviews in the next 24 hours
+              <Checkbox name="notifyInterviews" defaultChecked={s.notify_interviews} /> Interviews in the next 24 hours
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" name="weeklySummary" defaultChecked={s.weekly_summary} className="size-4 accent-primary" /> A summary of my job search every Monday
+              <Checkbox name="weeklySummary" defaultChecked={s.weekly_summary} /> A summary of my job search every Monday
             </label>
             {emailConfigured() ? (
               <label className="flex items-center gap-2">
-                <input type="checkbox" name="emailNotifications" defaultChecked={s.email_notifications} className="size-4 accent-primary" /> Allow alert emails (each saved search also has its own email switch)
+                <Checkbox name="emailNotifications" defaultChecked={s.email_notifications} /> Allow alert emails (each saved search also has its own email switch)
               </label>
             ) : (
               <p className="text-xs text-muted-foreground">Email isn&apos;t set up on this server, so alerts appear only in the app.</p>
@@ -244,7 +245,7 @@ async function SettingsContent() {
             </Field>
           </div>
           <label className="flex items-start gap-2 text-sm">
-            <input type="checkbox" name="autoApprove" defaultChecked={s.auto_approve} className="mt-0.5 size-4 accent-primary" />
+            <Checkbox name="autoApprove" defaultChecked={s.auto_approve} className="mt-0.5" />
             <span>
               Approve automatically when school and program are recognised
               <span className="block text-xs text-muted-foreground">
@@ -450,7 +451,7 @@ function CategoryForm({ kind, entry, hasTargets = true }: { kind: "university" |
       </Field>
       {kind === "university" ? (
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="hasTargets" defaultChecked={hasTargets} className="size-4 accent-primary" />
+          <Checkbox name="hasTargets" defaultChecked={hasTargets} />
           Give this school its own targets
         </label>
       ) : null}

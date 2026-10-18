@@ -4,7 +4,11 @@ import { signIn, uniqueEmail } from "./helpers";
 test("mobile: menu works and pages fit the screen", async ({ page }) => {
   await signIn(page, uniqueEmail("mobile"));
   for (const [link, path] of [["Daily Queue", "/queue"], ["Candidates", "/candidates"], ["Discover", "/discover"], ["People", "/people"], ["Connections", "/connections"], ["Analytics", "/analytics"], ["Jobs", "/jobs"], ["Applications", "/applications"]] as const) {
-    await page.getByRole("button", { name: "Open menu" }).click();
+    // The page may still be hydrating: keep tapping the menu button until the menu is really open.
+    await expect(async () => {
+      await page.getByRole("button", { name: "Open menu" }).click();
+      await expect(page.getByRole("dialog", { name: "Network Growth" })).toBeVisible({ timeout: 2_000 });
+    }).toPass({ timeout: 20_000 });
     // Links that aren't everyday ones for the user's goal are under "More".
     const item = page.getByRole("link", { name: link });
     if (!(await item.isVisible())) await page.getByRole("button", { name: "More" }).click();

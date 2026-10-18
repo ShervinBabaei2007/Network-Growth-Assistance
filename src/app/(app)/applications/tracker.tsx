@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowDown, ArrowUp, Bell, CalendarClock, Clock } from "lucide-react";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -79,7 +79,7 @@ function ViewLink({ href, active, children }: { href: string; active: boolean; c
 /** A keyboard-friendly way to move a card: a labelled native select. */
 function MoveSelect({ app, pending, move }: { app: TrackerApp | Quiet; pending: boolean; move: ReturnType<typeof useMove>["move"] }) {
   return (
-    <NativeSelect
+    <AppSelect
       aria-label={`Stage of ${app.title}`}
       value={app.stage}
       disabled={pending}
@@ -91,7 +91,7 @@ function MoveSelect({ app, pending, move }: { app: TrackerApp | Quiet; pending: 
           {STAGE_LABEL[s]}
         </option>
       ))}
-    </NativeSelect>
+    </AppSelect>
   );
 }
 
@@ -159,13 +159,13 @@ function Board({ apps, pending, move }: { apps: TrackerApp[]; pending: boolean; 
         <label htmlFor="board-column" className="text-sm font-medium">
           Stage
         </label>
-        <NativeSelect id="board-column" value={shown} onChange={(e) => setShown(e.target.value)}>
+        <AppSelect id="board-column" value={shown} onChange={(e) => setShown(e.target.value)}>
           {columns.map((c) => (
             <option key={c.key} value={c.key}>
               {c.label} ({c.apps.length})
             </option>
           ))}
-        </NativeSelect>
+        </AppSelect>
       </div>
       <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
         {columns.map((c) => (

@@ -1,5 +1,6 @@
 "use client";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { useStateToast } from "@/components/toast/use-state-toast";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
@@ -58,7 +59,7 @@ export function ExportImport({ today }: { today: string }) {
 
       {state.status === "preview" && s && s.newFromTargetSchools > 0 ? (
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="addNew" defaultChecked className="size-4 accent-primary" />
+          <Checkbox name="addNew" defaultChecked />
           Add the {s.newFromTargetSchools} new target-school connection(s) as candidates (their program is checked like any other)
         </label>
       ) : null}

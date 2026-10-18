@@ -1,9 +1,10 @@
 "use client";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
 import Link from "next/link";
 import { CalendarPlus, Check, Pencil, Trash2, Undo2 } from "lucide-react";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -111,13 +112,13 @@ function StageCard({ data }: { data: DetailData }) {
         <div className="flex flex-wrap items-end gap-2">
           <div className="grid min-w-48 flex-1 gap-1">
             <Label htmlFor="stage">Stage</Label>
-            <NativeSelect id="stage" value={to} onChange={(e) => setTo(e.target.value as Stage)} aria-describedby="stage-hint">
+            <AppSelect id="stage" value={to} onChange={(e) => setTo(e.target.value as Stage)} aria-describedby="stage-hint">
               {STAGES.map((s) => (
                 <option key={s} value={s}>
                   {STAGE_LABEL[s]}
                 </option>
               ))}
-            </NativeSelect>
+            </AppSelect>
           </div>
           <Button size="sm" disabled={pending || to === data.stage} onClick={move}>
             {isClosed(data.stage) && !isClosed(to) ? "Reopen" : "Move"}
@@ -192,10 +193,10 @@ function Timeline({ data }: { data: DetailData }) {
           <div className="flex flex-wrap gap-2">
             <div className="grid gap-1">
               <Label htmlFor="note-kind">Type</Label>
-              <NativeSelect id="note-kind" value={kind} onChange={(e) => setKind(e.target.value as "note" | "response")} className="w-40">
+              <AppSelect id="note-kind" value={kind} onChange={(e) => setKind(e.target.value as "note" | "response")} className="w-40">
                 <option value="note">Note</option>
                 <option value="response">Response received</option>
-              </NativeSelect>
+              </AppSelect>
             </div>
           </div>
           <Label htmlFor="note-text" className="sr-only">
@@ -263,13 +264,13 @@ function InterviewForm({ initial, submitLabel, pending, onSubmit, onCancel }: { 
         </div>
         <div className="grid gap-1">
           <Label htmlFor={`${idp}-kind`}>Type</Label>
-          <NativeSelect id={`${idp}-kind`} value={v.kind} onChange={(e) => set("kind", e.target.value as InterviewKind)}>
+          <AppSelect id={`${idp}-kind`} value={v.kind} onChange={(e) => set("kind", e.target.value as InterviewKind)}>
             {Object.entries(KIND_LABEL).map(([k, label]) => (
               <option key={k} value={k}>
                 {label}
               </option>
             ))}
-          </NativeSelect>
+          </AppSelect>
         </div>
       </div>
       <div className="grid gap-1">
@@ -427,13 +428,11 @@ function Reminders({ data }: { data: DetailData }) {
             {data.reminders.map((r) => (
               <li key={r.id} className="flex items-start justify-between gap-2 text-sm">
                 <label className="flex min-w-0 items-start gap-2">
-                  <input
-                    type="checkbox"
-                    className="mt-1 size-4 accent-primary"
+                  <Checkbox
+                    className="mt-1"
                     checked={r.done}
                     disabled={pending}
-                    onChange={(e) => {
-                      const done = e.target.checked;
+                    onCheckedChange={(done) => {
                       run(() => setReminderDone(r.id, done), { undo: () => setReminderDone(r.id, !done) });
                     }}
                   />
@@ -529,24 +528,24 @@ function Contacts({ data }: { data: DetailData }) {
           >
             <div className="grid gap-1">
               <Label htmlFor="contact-person">Person</Label>
-              <NativeSelect id="contact-person" value={person} onChange={(e) => setPerson(e.target.value)} required>
+              <AppSelect id="contact-person" value={person} onChange={(e) => setPerson(e.target.value)} required>
                 <option value="">Choose someone…</option>
                 {available.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.label}
                   </option>
                 ))}
-              </NativeSelect>
+              </AppSelect>
             </div>
             <div className="grid gap-1">
               <Label htmlFor="contact-role">Role</Label>
-              <NativeSelect id="contact-role" value={role} onChange={(e) => setRole(e.target.value as typeof role)}>
+              <AppSelect id="contact-role" value={role} onChange={(e) => setRole(e.target.value as typeof role)}>
                 {Object.entries(ROLE_LABEL).map(([k, label]) => (
                   <option key={k} value={k}>
                     {label}
                   </option>
                 ))}
-              </NativeSelect>
+              </AppSelect>
             </div>
             <Button type="submit" size="sm" variant="outline" className="justify-self-start" disabled={pending || !person}>
               Link contact
@@ -606,14 +605,14 @@ function Documents({ data }: { data: DetailData }) {
           >
             <div className="grid gap-1">
               <Label htmlFor="doc-choice">Version</Label>
-              <NativeSelect id="doc-choice" value={choice} onChange={(e) => setChoice(e.target.value)} required>
+              <AppSelect id="doc-choice" value={choice} onChange={(e) => setChoice(e.target.value)} required>
                 <option value="">Choose a document…</option>
                 {options.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
                 ))}
-              </NativeSelect>
+              </AppSelect>
             </div>
             <Button type="submit" size="sm" variant="outline" className="justify-self-start" disabled={pending || !choice}>
               Link document
@@ -669,14 +668,14 @@ function Details({ data }: { data: DetailData }) {
                 <Label htmlFor="pay-period" className="text-xs text-muted-foreground">
                   Per
                 </Label>
-                <NativeSelect id="pay-period" value={v.payPeriod} onChange={(e) => set("payPeriod", e.target.value as PayPeriod | "")}>
+                <AppSelect id="pay-period" value={v.payPeriod} onChange={(e) => set("payPeriod", e.target.value as PayPeriod | "")}>
                   <option value="">—</option>
                   {PAY_PERIODS.map((p) => (
                     <option key={p} value={p}>
                       {p}
                     </option>
                   ))}
-                </NativeSelect>
+                </AppSelect>
               </div>
             </div>
           </fieldset>

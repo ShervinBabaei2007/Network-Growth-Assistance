@@ -20,7 +20,7 @@ import {
   type ActionResult,
 } from "@/app/(app)/people/actions";
 import { ActionForm } from "@/components/action-form";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,13 +90,13 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
         <div className="flex flex-wrap items-end gap-2">
           <div className="grid gap-1.5">
             <Label htmlFor={`status-${p.id}`}>Status</Label>
-            <NativeSelect id={`status-${p.id}`} value={p.crm_status} disabled={pending} onChange={(e) => run(() => setPersonStatus(p.id, e.target.value))} className="w-56">
+            <AppSelect id={`status-${p.id}`} value={p.crm_status} disabled={pending} onChange={(e) => run(() => setPersonStatus(p.id, e.target.value))} className="w-56">
               {Object.entries(CRM_STATUS_LABELS).map(([v, l]) => (
                 <option key={v} value={v}>
                   {l}
                 </option>
               ))}
-            </NativeSelect>
+            </AppSelect>
           </div>
           {p.crm_status !== "connection_sent_manually" && p.crm_status !== "connected" && p.crm_status !== "replied" ? (
             <Button size="sm" variant="outline" disabled={pending} onClick={() => run(() => setPersonStatus(p.id, "connection_sent_manually"))}>
@@ -308,11 +308,11 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
           <div className="grid gap-3 sm:grid-cols-[10rem_1fr_9rem]">
             <div className="grid gap-1.5">
               <Label htmlFor={`kind-${p.id}`}>Type</Label>
-              <NativeSelect id={`kind-${p.id}`} name="kind" defaultValue="note">
+              <AppSelect id={`kind-${p.id}`} name="kind" defaultValue="note">
                 <option value="note">Note</option>
                 <option value="replied">They replied</option>
                 <option value="follow_up">Follow-up</option>
-              </NativeSelect>
+              </AppSelect>
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor={`body-${p.id}`}>What happened</Label>

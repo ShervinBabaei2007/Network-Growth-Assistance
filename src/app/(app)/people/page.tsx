@@ -1,8 +1,9 @@
 import { Suspense } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { LoadError } from "@/components/load-error";
-import { NativeSelect } from "@/components/native-select";
+import { AppSelect } from "@/components/app-select";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,14 +88,14 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="status">Status</Label>
-          <NativeSelect id="status" name="status" defaultValue={status}>
+          <AppSelect id="status" name="status" defaultValue={status}>
             <option value="">All</option>
             {Object.entries(CRM_STATUS_LABELS).map(([v, l]) => (
               <option key={v} value={v}>
                 {l}
               </option>
             ))}
-          </NativeSelect>
+          </AppSelect>
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="tag">Tag</Label>
@@ -102,7 +103,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
         </div>
         <div className="flex items-end gap-3">
           <label className="flex h-8 items-center gap-2 text-sm">
-            <input type="checkbox" name="due" value="1" defaultChecked={due} className="size-4 accent-primary" />
+            <Checkbox name="due" value="1" defaultChecked={due} />
             Reminder due
           </label>
           <Button type="submit" size="sm">

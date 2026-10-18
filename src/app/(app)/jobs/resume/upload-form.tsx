@@ -1,5 +1,6 @@
 "use client";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ClipboardPaste, Upload } from "lucide-react";
@@ -130,7 +131,7 @@ export function ResumeUpload({ hasResume, aiNote }: { hasResume: boolean; aiNote
       )}
 
       <label className="flex items-start gap-2 text-sm">
-        <input type="checkbox" checked={useAi} disabled={!aiNote.available} onChange={(e) => setUseAi(e.target.checked)} className="mt-0.5 size-4 accent-primary" />
+        <Checkbox checked={useAi} disabled={!aiNote.available} onCheckedChange={setUseAi} className="mt-0.5" />
         <span>
           Also read it with AI for a second opinion <span className="text-muted-foreground">({aiNote.text})</span>
         </span>

@@ -1,5 +1,6 @@
 import { ActionForm } from "@/components/action-form";
-import { NativeSelect } from "@/components/native-select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AppSelect } from "@/components/app-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,14 +33,14 @@ export function QuickAddForm() {
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="degreeLevel">Degree level</Label>
-          <NativeSelect id="degreeLevel" name="degreeLevel" defaultValue="">
+          <AppSelect id="degreeLevel" name="degreeLevel" defaultValue="">
             <option value="">Unknown</option>
             {Object.entries(DEGREE_LABELS).map(([v, l]) => (
               <option key={v} value={v}>
                 {l}
               </option>
             ))}
-          </NativeSelect>
+          </AppSelect>
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="gradYear">Graduation year</Label>
@@ -57,7 +58,7 @@ export function QuickAddForm() {
         </div>
       </div>
       <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="approve" className="size-4 accent-primary" />
+        <Checkbox name="approve" />
         Approve for outreach now (only if the school and program are recognized)
       </label>
       <p className="text-xs text-muted-foreground">
