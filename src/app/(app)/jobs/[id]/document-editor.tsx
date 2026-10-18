@@ -135,7 +135,6 @@ export function ResumeDocEditor({ docId, initial, generated, edited, originals }
           ))}
         </section>
       ))}
-      <p className="text-xs text-muted-foreground">Employers, titles, dates and schools come straight from your resume. Change them on the Resume page.</p>
     </div>
   );
 }

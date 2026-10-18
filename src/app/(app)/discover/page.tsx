@@ -84,7 +84,7 @@ async function RequestCard({ searchParams }: Pick<PageProps<"/discover">, "searc
               <div className="grid gap-1.5">
                 <Label htmlFor="goal">What are you looking for?</Label>
                 <Input id="goal" name="goal" maxLength={300} defaultValue={settings?.networking_goal ?? ""} placeholder="e.g. what you&apos;re hoping to learn, or the kind of role you&apos;re working toward" />
-                <p className="text-xs text-muted-foreground">Used to rank people by how useful a conversation would be, and to word suggested intros. It isn&apos;t shared.</p>
+                <p className="text-xs text-muted-foreground">Used to rank people and word suggested intros.</p>
               </div>
             </ActionForm>
       </Disclosure>
