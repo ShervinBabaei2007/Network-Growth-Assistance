@@ -14,7 +14,8 @@ test("analytics charts load when they are about to be seen, in a box that doesn'
 
   await page.goto("/analytics");
   const trend = page.getByRole("img", { name: "Recorded network total by date" });
-  await trend.scrollIntoViewIfNeeded();
+  // The placeholder is swapped for the chart as it nears the screen, so retry if it detaches mid-scroll.
+  await expect(() => trend.scrollIntoViewIfNeeded()).toPass();
   await expect(trend).toBeVisible();
   // The charts library arrives on demand and draws into the same box.
   await expect(trend.locator(".recharts-wrapper")).toBeVisible({ timeout: 20_000 });
