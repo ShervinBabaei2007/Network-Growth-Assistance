@@ -45,6 +45,7 @@ export const EXPORTED_TABLES = [
   "notifications",
   "email_deliveries",
   "company_aliases",
+  "saved_views",
 ] as const;
 
 /** Tables whose rows can be flagged as example data (the demo workspace). Those rows are left out of the export. */
