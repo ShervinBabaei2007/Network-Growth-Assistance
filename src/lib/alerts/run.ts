@@ -131,6 +131,28 @@ export async function notifyDueReminders(db: Db, now: Date): Promise<number> {
   return made;
 }
 
+/** One notification a day for people with follow-ups due, using the "Reminders" switch in Settings. */
+export async function notifyDueFollowUps(db: Db, now: Date): Promise<number> {
+  const { data } = await db.from("follow_ups").select("user_id, due_on").eq("state", "suggested").lte("due_on", now.toISOString().slice(0, 10)).limit(5000);
+  const counts = new Map<string, number>();
+  for (const r of data ?? []) counts.set(r.user_id, (counts.get(r.user_id) ?? 0) + 1);
+  const allowed = await wants(db, "notify_reminders", [...counts.keys()]);
+  let made = 0;
+  for (const [userId, n] of counts) {
+    if (!allowed.has(userId)) continue;
+    const { data: id } = await db.rpc("notify_user", {
+      p_user: userId,
+      p_kind: "follow_up",
+      p_title: `${n} follow-up${n === 1 ? "" : "s"} due`,
+      p_body: "People who accepted your invitation are waiting for a thank-you, a chat or a check-in. Drafts are ready; you send them.",
+      p_href: "/follow-ups",
+      p_dedupe: `follow-ups:${now.toISOString().slice(0, 10)}`,
+    });
+    if (id) made++;
+  }
+  return made;
+}
+
 /** Interviews in the next 24 hours; a moved interview is announced again. */
 export async function notifyUpcomingInterviews(db: Db, now: Date): Promise<number> {
   const { data } = await db
@@ -278,10 +300,11 @@ export async function sendQueuedEmails(db: Db, now: Date, limit = 20) {
 export async function runAlerts(db: Db, deadline: number, now = new Date()) {
   const searches = await runDueSearches(db, now, deadline);
   const reminders = await notifyDueReminders(db, now);
+  const followUps = await notifyDueFollowUps(db, now);
   const interviews = await notifyUpcomingInterviews(db, now);
   const weekly = await notifyWeeklySummaries(db, now);
   const sources = await notifySourceProblems(db);
   const email = Date.now() < deadline ? await sendQueuedEmails(db, now) : { sent: 0, failed: 0, skipped: 0 };
-  return { ...searches, reminders, interviews, weekly, sources, email };
+  return { ...searches, reminders, followUps, interviews, weekly, sources, email };
 }
 

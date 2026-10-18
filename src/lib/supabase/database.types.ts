@@ -317,6 +317,26 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"follow_ups": {
+                  Row: {
+                    "candidate_id": string,"created_at": string,"done_at": string | null,"due_on": string,"id": string,"is_sample": boolean,"kind": string,"state": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "candidate_id": string,"created_at"?: string,"done_at"?: string | null,"due_on": string,"id"?: string,"is_sample"?: boolean,"kind": string,"state"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "candidate_id"?: string,"created_at"?: string,"done_at"?: string | null,"due_on"?: string,"id"?: string,"is_sample"?: boolean,"kind"?: string,"state"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "follow_ups_candidate_id_user_id_fkey"
+      columns: ["candidate_id","user_id"]
+isOneToOne: false
+      referencedRelation: "candidates"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
                 },"improvement_notes": {
                   Row: {
                     "created_at": string,"dismissed": (string)[],"id": string,"match_id": string,"method": string,"reason": string,"report": NonNullable<Json>,"resume_id": string,"resume_updated_at": string,"user_id": string
@@ -1062,6 +1082,9 @@ isOneToOne: false
                            },
 "set_application_stage":
 { Args: { "p_detail"?: string,"p_expected_version": number,"p_id": string,"p_occurred_at"?: string,"p_stage": Database["public"]['Enums']["application_stage"] }; Returns: number
+                           },
+"suggest_follow_ups":
+{ Args: { "p_accepted_on": string,"p_candidate": string,"p_sample": boolean,"p_user": string }; Returns: undefined
                            },
 "sync_application_for_job":
 { Args: { "p_job": string,"p_stage": Database["public"]['Enums']["application_stage"] }; Returns: string

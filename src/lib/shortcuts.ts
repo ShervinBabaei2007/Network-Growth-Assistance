@@ -9,6 +9,7 @@ export const PAGE_SHORTCUTS = [
   { key: "j", href: "/jobs", label: "Jobs" },
   { key: "q", href: "/queue", label: "Daily Queue" },
   { key: "c", href: "/candidates", label: "Candidates" },
+  { key: "f", href: "/follow-ups", label: "Follow-ups" },
   { key: "p", href: "/people", label: "People" },
   { key: "k", href: "/connections", label: "Connections" },
   { key: "a", href: "/applications", label: "Applications" },

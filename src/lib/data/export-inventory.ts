@@ -12,6 +12,7 @@ export const EXPORTED_TABLES = [
   "targets",
   "candidates",
   "invitations",
+  "follow_ups",
   "connection_snapshots",
   "daily_queue",
   "job_runs",
@@ -53,6 +54,7 @@ export const SAMPLE_FLAGGED_TABLES: readonly string[] = [
   "targets",
   "candidates",
   "invitations",
+  "follow_ups",
   "connection_snapshots",
   "applications",
 ];
