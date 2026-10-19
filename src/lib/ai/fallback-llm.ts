@@ -8,6 +8,12 @@ export type ChainEntry = { name: string; llm: LLMProvider & { usage?: LlmUsage }
 const DAY_MS = 24 * 3_600_000;
 const BUSY_COOLDOWN_MS = 20_000;
 
+/**
+ * Which services are resting and until when. Shared by every chain in this server process: each request builds its own chain,
+ * and a service that ran out of quota for one request must stay skipped for the next.
+ */
+const SHARED_COOLDOWNS = new Map<string, number>();
+
 /** Milliseconds until the next 00:00 UTC, when most free quotas reset. */
 export const untilUtcMidnight = (now: number) => DAY_MS - (now % DAY_MS);
 
@@ -19,11 +25,10 @@ export const untilUtcMidnight = (now: number) => DAY_MS - (now % DAY_MS);
  */
 export class FallbackLLM implements LLMProvider {
   readonly enabled: boolean;
-  private readonly coolUntil = new Map<string, number>();
-
   constructor(
     private readonly entries: ChainEntry[],
     private readonly now: () => number = Date.now,
+    private readonly coolUntil: Map<string, number> = SHARED_COOLDOWNS,
   ) {
     this.enabled = entries.some((e) => e.llm.enabled);
   }

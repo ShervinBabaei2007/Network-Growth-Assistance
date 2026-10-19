@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { advanceSearch } from "@/lib/discovery/agent";
+import { discoveryAi } from "@/lib/discovery/ai-access";
 import { discoveryServices } from "@/lib/discovery/providers/registry";
 import { loadSearchView } from "@/lib/discovery/service";
 import { isUuid, notFound, routeUser, unauthorized } from "@/lib/server/route-auth";
@@ -22,7 +23,8 @@ export async function GET(_req: NextRequest, ctx: RouteContext<"/api/network/sea
   if (!view) return notFound();
   if (view.status === "queued" || view.status === "running") {
     // A failed step is recorded on the search itself; the poll still reports the current state.
-    await advanceSearch(user.supabase, user.userId, id, discoveryServices()).catch(() => undefined);
+    const ai = await discoveryAi(user.supabase, id);
+    await advanceSearch(user.supabase, user.userId, id, discoveryServices(ai.llm)).catch(() => undefined);
     view = (await loadSearchView(user.supabase, id)) ?? view;
   }
   return NextResponse.json(view, { headers: { "Cache-Control": "no-store" } });

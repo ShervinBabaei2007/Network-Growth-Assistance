@@ -140,7 +140,7 @@ export async function advanceSearch(db: Db, userId: string, searchId: string, se
         criteria = outcome.criteria;
         state.usedAi = outcome.usedAi;
         state.parseNote = outcome.note;
-        if (outcome.usedAi) metrics.llmCalls++;
+        if (outcome.usedAi && !outcome.cached) metrics.llmCalls++;
       }
       targetCount = criteria.targetCount;
       state.limitations = services.limitations;

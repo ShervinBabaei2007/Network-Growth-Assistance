@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { NURSING_CATALOG, TEST_CATALOG } from "@/test/catalog";
 import { companyAliases, institutionMatcher, matchCompany, matchInstitution, matchProgram, programMatchers, roleAliases, type NetworkingCriteria } from "./criteria";
 import { disabledLLM, type LLMProvider } from "./llm";
-import { parseRequest, parseRequestDeterministic, toCriteria, withUserLists } from "./parse-request";
+import { clearReadCache, parseRequest, parseRequestDeterministic, toCriteria, withUserLists } from "./parse-request";
 
 const base = (over: Partial<NetworkingCriteria["education"]> = {}): NetworkingCriteria => ({
   targetCount: 50,
@@ -119,6 +119,7 @@ describe("toCriteria", () => {
 });
 
 describe("parseRequest", () => {
+  beforeEach(() => clearReadCache());
   it("falls back to the deterministic parser without AI", async () => {
     const r = await parseRequest(disabledLLM, "Find 20 UBC Computer Science students", TEST_CATALOG);
     expect(r.usedAi).toBe(false);
@@ -244,5 +245,23 @@ describe("a school is not another school with a longer name", () => {
     expect(matchInstitution("Education: York University — Psychology — PhD (2020–present)", york)).toBe("strong");
     expect(matchInstitution("I studied at the York University campus in Toronto", york)).toBe("strong");
     expect(matchInstitution("BA, New York University; PhD, York University", york)).toBe("strong");
+  });
+});
+
+describe("roles in a request the AI did not read", () => {
+  it("takes the role from 'Find N <role> at/in…'", () => {
+    const c = parseRequestDeterministic("Find 10 software engineers at startups in Vancouver");
+    expect(c.roles).toEqual(["software engineers"]);
+    expect(c.includeStartups).toBe(true);
+    expect(c.locations).toEqual(["Vancouver"]);
+  });
+  it("does not mistake people, alumni or a school for a role", () => {
+    expect(parseRequestDeterministic("Find 10 alumni at Shopify").roles).toEqual([]);
+    expect(parseRequestDeterministic("Find 20 people in Toronto").roles).toEqual([]);
+  });
+  it("matches a plural request to the singular a person writes", () => {
+    const aliases = roleAliases(["software engineers", "secretaries"]);
+    expect(aliases).toContain("software engineer");
+    expect(aliases).toContain("secretary");
   });
 });

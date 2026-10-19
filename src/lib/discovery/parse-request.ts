@@ -101,6 +101,10 @@ const AS = /\b(?:working as|work as|who are|as an?|as)\s+(?:an?\s+)?([A-Za-z][A-
 const FIELD_WORDS =
   "Computer|Computing|Science|Sciences|Engineering|Law|Nursing|Commerce|Business|Psychology|Medicine|Arts|Mechanical|Electrical|Civil|Chemical|Health|Education|Social|Political|Economics|Mathematics|Math|Physics|Chemistry|Biology|Kinesiology|Design|Music|Architecture|Pharmacy|Dentistry|Alumni|Graduates|Grads|Students";
 
+/** "Find 10 software engineers at startups in Vancouver": the role is the plural noun phrase right after the count, when no school or field comes first. */
+const LEADING_ROLE = /^\s*(?:find|show|get|list|give me)\s+(?:me\s+)?\d{1,3}\s+([A-Za-z][A-Za-z /&-]{2,50}?)\s+(?:at|in|from|who|working|with|based)\b/i;
+const NOT_A_ROLE = /\b(people|persons?|alumni|alumnus|alumna|graduates?|grads?|students?|undergrads?|professionals?|contacts?|connections?|university|college|institute)\b/i;
+
 const tidy = (s: string) => s.trim().replace(/\s+(?:who|working|and|in|at|from)$/i, "").trim();
 
 /**
@@ -137,7 +141,8 @@ export function parseRequestDeterministic(query: string, catalog?: Catalog): Net
   const programs = fields.length ? fields.map((d) => d.name) : inline && inline.split(" ").length <= 4 ? [inline] : [];
   const programAliases = fields.flatMap((d) => d.aliases);
 
-  const role = query.match(AS)?.[1];
+  const leading = query.match(LEADING_ROLE)?.[1];
+  const role = query.match(AS)?.[1] ?? (leading && !NOT_A_ROLE.test(leading) ? leading : undefined);
   const roles = role ? [tidy(role)] : [];
   const names = (re: RegExp) => [...query.matchAll(re)].map((m) => tidy(m[1])).filter((n) => n && n !== institution && !/^(Find|Show|Get|List|The)$/.test(n));
   const companies = names(AT).filter((c) => !/\b(University|College|Institute|Polytechnic)\b/.test(c));
@@ -199,7 +204,7 @@ export function withUserLists(criteria: NetworkingCriteria, catalog?: Catalog): 
   };
 }
 
-export type ParseOutcome = { criteria: NetworkingCriteria; usedAi: boolean; note?: string };
+export type ParseOutcome = { criteria: NetworkingCriteria; usedAi: boolean; note?: string; /** Read earlier; no AI call was made now. */ cached?: boolean };
 
 /** The model's reading of the request, checked against the deterministic one so it can't drop the school. */
 /**
@@ -219,7 +224,29 @@ async function withNamedSchool(criteria: NetworkingCriteria, query: string): Pro
   return criteria;
 }
 
+/**
+ * Requests the AI has already read, so asking again (Run again, Modify, two people typing the same thing) costs no AI call.
+ * Held in memory for a few hours; only answers the AI actually gave are kept, never the basic reader's.
+ */
+const READ_CACHE = new Map<string, { at: number; criteria: NetworkingCriteria }>();
+const READ_CACHE_MS = 6 * 3_600_000;
+/** For tests. */
+export const clearReadCache = () => READ_CACHE.clear();
+const readKey = (query: string, catalog?: Catalog) => `${clean(query).trim()}|${(catalog?.universities ?? []).map((u) => u.name).join(",")}|${(catalog?.disciplines ?? []).map((d) => d.name).join(",")}`;
+
 export async function parseRequest(llm: LLMProvider, query: string, catalog?: Catalog): Promise<ParseOutcome> {
+  const key = readKey(query, catalog);
+  const hit = READ_CACHE.get(key);
+  if (hit && Date.now() - hit.at < READ_CACHE_MS) return { criteria: structuredClone(hit.criteria), usedAi: true, cached: true };
+  const outcome = await parseRequestUncached(llm, query, catalog);
+  if (outcome.usedAi) {
+    if (READ_CACHE.size >= 200) READ_CACHE.delete(READ_CACHE.keys().next().value!);
+    READ_CACHE.set(key, { at: Date.now(), criteria: structuredClone(outcome.criteria) });
+  }
+  return outcome;
+}
+
+async function parseRequestUncached(llm: LLMProvider, query: string, catalog?: Catalog): Promise<ParseOutcome> {
   const fallback = parseRequestDeterministic(query, catalog);
   if (!llm.enabled) return { criteria: await withNamedSchool(fallback, query), usedAi: false };
 

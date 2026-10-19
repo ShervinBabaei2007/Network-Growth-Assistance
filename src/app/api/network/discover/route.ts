@@ -1,6 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { z } from "zod";
 import { advanceSearch } from "@/lib/discovery/agent";
+import { discoveryAi } from "@/lib/discovery/ai-access";
 import { NetworkingCriteria } from "@/lib/discovery/criteria";
 import { discoveryServices } from "@/lib/discovery/providers/registry";
 import { startSearch } from "@/lib/discovery/service";
@@ -25,6 +26,9 @@ export async function POST(request: Request) {
   const started = await startSearch(user.supabase, user.userId, parsed.data);
   if (!started.ok) return NextResponse.json({ error: started.error }, { status: started.status });
 
-  after(() => advanceSearch(user.supabase, user.userId, started.id, discoveryServices()).catch(() => undefined));
+  after(async () => {
+    const ai = await discoveryAi(user.supabase, started.id);
+    await advanceSearch(user.supabase, user.userId, started.id, discoveryServices(ai.llm)).catch(() => undefined);
+  });
   return NextResponse.json({ id: started.id }, { status: 201 });
 }

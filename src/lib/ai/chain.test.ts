@@ -27,11 +27,18 @@ function fake(...answers: LlmResult<{ hello: string }>[]) {
 const ok = (hello = "hi"): LlmResult<{ hello: string }> => ({ ok: true, data: { hello } });
 const quota = (retryAfterMs?: number): LlmResult<{ hello: string }> => ({ ok: false, reason: "limit", kind: "quota", retryAfterMs });
 
+/** A chain with its own list of resting services, so tests don't affect each other. */
+const FreshChain = class extends FallbackLLM {
+  constructor(entries: ConstructorParameters<typeof FallbackLLM>[0], now?: () => number) {
+    super(entries, now, new Map());
+  }
+};
+
 describe("FallbackLLM", () => {
   it("uses the first service and does not touch the others while it answers", async () => {
     const a = fake(ok("a"));
     const b = fake(ok("b"));
-    const chain = new FallbackLLM([{ name: "a", llm: a }, { name: "b", llm: b }]);
+    const chain = new FreshChain([{ name: "a", llm: a }, { name: "b", llm: b }]);
     expect(await call(chain)).toEqual({ ok: true, data: { hello: "a" } });
     expect(b.calls).toBe(0);
   });
@@ -40,7 +47,7 @@ describe("FallbackLLM", () => {
     let now = 1_000;
     const a = fake(quota(60_000));
     const b = fake(ok("b"));
-    const chain = new FallbackLLM([{ name: "a", llm: a }, { name: "b", llm: b }], () => now);
+    const chain = new FreshChain([{ name: "a", llm: a }, { name: "b", llm: b }], () => now);
     expect(await call(chain)).toEqual({ ok: true, data: { hello: "b" } });
     await call(chain);
     expect(a.calls).toBe(1);
@@ -55,7 +62,7 @@ describe("FallbackLLM", () => {
     expect(untilUtcMidnight(midnight - 3_600_000)).toBe(3_600_000);
     let now = midnight - 3_600_000;
     const a = fake(quota());
-    const chain = new FallbackLLM([{ name: "a", llm: a }, { name: "b", llm: fake(ok()) }], () => now);
+    const chain = new FreshChain([{ name: "a", llm: a }, { name: "b", llm: fake(ok()) }], () => now);
     await call(chain);
     now += 3_599_000;
     expect(chain.available()).toEqual(["b"]);
@@ -67,7 +74,7 @@ describe("FallbackLLM", () => {
     let now = 0;
     const a = fake({ ok: false, reason: "busy", kind: "busy" });
     const b = fake(ok("b"));
-    const chain = new FallbackLLM([{ name: "a", llm: a }, { name: "b", llm: b }], () => now);
+    const chain = new FreshChain([{ name: "a", llm: a }, { name: "b", llm: b }], () => now);
     expect(await call(chain)).toEqual({ ok: true, data: { hello: "b" } });
     now += 25_000;
     expect(chain.available()).toEqual(["a", "b"]);
@@ -75,7 +82,7 @@ describe("FallbackLLM", () => {
 
   it("does not rest a service because of a bad answer, only moves on for that request", async () => {
     const a = fake({ ok: false, reason: "failed validation", kind: "other" }, ok("a2"));
-    const chain = new FallbackLLM([{ name: "a", llm: a }, { name: "b", llm: fake(ok("b")) }]);
+    const chain = new FreshChain([{ name: "a", llm: a }, { name: "b", llm: fake(ok("b")) }]);
     expect(await call(chain)).toEqual({ ok: true, data: { hello: "b" } });
     expect(chain.available()).toEqual(["a", "b"]);
   });
@@ -83,13 +90,13 @@ describe("FallbackLLM", () => {
   it("puts services that prefer the kind of work first", async () => {
     const lite = fake(ok("lite"));
     const full = fake(ok("full"));
-    const chain = new FallbackLLM([{ name: "full", llm: full, prefer: ["smart"] }, { name: "lite", llm: lite, prefer: ["fast"] }]);
+    const chain = new FreshChain([{ name: "full", llm: full, prefer: ["smart"] }, { name: "lite", llm: lite, prefer: ["fast"] }]);
     expect(await call(chain, "fast")).toEqual({ ok: true, data: { hello: "lite" } });
     expect(await call(chain, "smart")).toEqual({ ok: true, data: { hello: "full" } });
   });
 
   it("returns the last failure when every service fails, so the caller uses its non-AI path", async () => {
-    const chain = new FallbackLLM([{ name: "a", llm: fake(quota()) }, { name: "b", llm: fake(quota()) }]);
+    const chain = new FreshChain([{ name: "a", llm: fake(quota()) }, { name: "b", llm: fake(quota()) }]);
     expect(await call(chain)).toMatchObject({ ok: false, kind: "quota" });
     expect(chain.available()).toEqual([]);
     expect(await call(chain)).toMatchObject({ ok: false });
@@ -98,7 +105,7 @@ describe("FallbackLLM", () => {
   it("adds up the usage of its services", () => {
     const a = Object.assign(fake(ok()), { usage: { calls: 2, inputTokens: 10, outputTokens: 5 } });
     const b = Object.assign(fake(ok()), { usage: { calls: 1, inputTokens: 4, outputTokens: 1 } });
-    expect(new FallbackLLM([{ name: "a", llm: a }, { name: "b", llm: b }]).usage).toEqual({ calls: 3, inputTokens: 14, outputTokens: 6 });
+    expect(new FreshChain([{ name: "a", llm: a }, { name: "b", llm: b }]).usage).toEqual({ calls: 3, inputTokens: 14, outputTokens: 6 });
   });
 });
 
@@ -177,5 +184,15 @@ describe("which services the server chains", () => {
 
   it("uses a single service directly", () => {
     expect(defaultLLM({ GROQ_API_KEY: "gsk_x" })).toBeInstanceOf(OpenAICompatLLM);
+  });
+});
+
+describe("a service that ran out of quota stays skipped on the next request", () => {
+  it("shares what is resting between chains", async () => {
+    const spent = fake(quota(60_000));
+    const entries = [{ name: "shared-a", llm: spent }, { name: "shared-b", llm: fake(ok("b")) }];
+    await call(new FallbackLLM(entries));
+    await call(new FallbackLLM(entries));
+    expect(spent.calls).toBe(1);
   });
 });

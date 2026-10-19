@@ -27,7 +27,7 @@ export const DEFAULT_BUDGET: Budget = {
   queriesPerStep: 3,
   pagesPerStep: 8,
   maxEmptyBatches: 2,
-  maxReranked: 45,
+  maxReranked: 15,
   maxVerified: 30,
   verifyPerStep: 6,
 };

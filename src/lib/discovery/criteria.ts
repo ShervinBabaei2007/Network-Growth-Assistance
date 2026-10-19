@@ -154,6 +154,11 @@ export function roleAliases(roles: string[]): string[] {
   for (const r of roles) {
     const t = clean(r);
     if (t.trim()) out.add(t.trim());
+    // Requests say "software engineers"; people write "Software Engineer".
+    const words = t.trim().split(" ");
+    const last = words[words.length - 1] ?? "";
+    if (last.length > 3 && /ies$/.test(last)) out.add([...words.slice(0, -1), last.replace(/ies$/, "y")].join(" "));
+    else if (last.length > 3 && /s$/.test(last) && !/ss$/.test(last)) out.add([...words.slice(0, -1), last.slice(0, -1)].join(" "));
     for (const fam of ROLE_FAMILIES) if (hasAny(t, fam.triggers)) fam.aliases.forEach((a) => out.add(a));
   }
   return [...out];

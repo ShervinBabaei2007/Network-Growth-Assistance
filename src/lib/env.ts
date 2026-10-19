@@ -85,3 +85,9 @@ export function aiDailyQuota(): number | null {
   }
   return parsed.data ?? null;
 }
+
+/** How many AI-assisted Discover searches one person gets per day on the server's free AI. Their own key has no limit. Default 6; 0 turns the server's AI off for Discover. */
+export function discoveryAiSearchesPerDay(env: Record<string, string | undefined> = process.env): number {
+  const n = Number(env.DISCOVERY_AI_SEARCHES);
+  return env.DISCOVERY_AI_SEARCHES !== undefined && env.DISCOVERY_AI_SEARCHES !== "" && Number.isInteger(n) && n >= 0 ? n : 6;
+}
