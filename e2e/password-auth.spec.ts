@@ -30,6 +30,9 @@ test("sign up with a password, confirm by email, then sign in", async ({ page })
   await page.getByLabel("Confirm password").fill("correct horse 1");
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page.getByText(/check your inbox to confirm/i)).toBeVisible();
+  await expect(page.getByText(email)).toBeVisible();
+  // The resend button waits out a cooldown, since the first email was just sent.
+  await expect(page.getByRole("button", { name: /resend email \(\d+s\)/i })).toBeDisabled();
 
   await page.goto(await linkFor(email, /href="([^"]+verify[^"]+)"/));
   await page.waitForURL((u) => !u.pathname.startsWith("/auth") && !u.pathname.startsWith("/login"));
