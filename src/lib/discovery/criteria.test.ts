@@ -198,3 +198,23 @@ describe("matchCompany", () => {
     expect(matchCompany("Amazon Lab126", companyAliases(["Amazon"]))).toBe("amazon");
   });
 });
+
+describe("a school named only by its short name", () => {
+  const rorAnswer = { items: [{ names: [{ value: "Simon Fraser University", types: ["ror_display", "label"] }, { value: "SFU", types: ["acronym"] }], links: [{ type: "website", value: "https://www.sfu.ca/" }] }] };
+
+  it("is looked up when the AI is unavailable, so the school is not lost", async () => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async () => new Response(JSON.stringify(rorAnswer))) as typeof fetch;
+    try {
+      const down: LLMProvider = { enabled: true, structured: async () => ({ ok: false, reason: "The AI service returned an error (503)." }) };
+      const r = await parseRequest(down, "Find 20 SFU alumni in Vancouver working at Microsoft");
+      expect(r.usedAi).toBe(false);
+      expect(r.criteria.education.institution).toBe("Simon Fraser University");
+      expect(r.criteria.education.institutionAliases).toContain("SFU");
+      expect(r.criteria.education.institutionDomains).toEqual(["sfu.ca"]);
+      expect(r.criteria.companies).toContain("Microsoft");
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});

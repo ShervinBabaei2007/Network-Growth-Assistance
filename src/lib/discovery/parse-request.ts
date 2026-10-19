@@ -2,9 +2,11 @@ import { z } from "zod";
 import { phrasesFor } from "@/lib/classify";
 import type { Catalog } from "@/lib/domain";
 import { countryCode, countryName } from "@/lib/geo/countries";
+import { discoveryFixturesEnabled } from "@/lib/runtime-mode";
 import { clean, has, hasAny } from "@/lib/text/match";
 import { DEFAULT_TARGET, NetworkingCriteria } from "./criteria";
 import type { LLMProvider } from "./llm";
+import { findSchoolByAcronym, schoolAcronymCandidates } from "./ror";
 
 /** What the model may return. Kept flat and permissive; `toCriteria` validates and clamps. */
 const ParsedRequest = z.object({
@@ -189,21 +191,38 @@ export function withUserLists(criteria: NetworkingCriteria, catalog?: Catalog): 
 export type ParseOutcome = { criteria: NetworkingCriteria; usedAi: boolean; note?: string };
 
 /** The model's reading of the request, checked against the deterministic one so it can't drop the school. */
+/**
+ * A school named only by its short name ("SFU alumni") that nothing else recognized: the Research Organization Registry
+ * says which school that is, but only when it is the only one in the country with that short name.
+ */
+async function withNamedSchool(criteria: NetworkingCriteria, query: string): Promise<NetworkingCriteria> {
+  if (criteria.education.institution || discoveryFixturesEnabled()) return criteria;
+  const country = (criteria.country && countryCode(criteria.country)) || "CA";
+  for (const term of schoolAcronymCandidates(query)) {
+    const school = await findSchoolByAcronym(term, country);
+    if (school) {
+      const aliases = [...new Set([term, ...school.aliases])].slice(0, 12);
+      return { ...criteria, education: { ...criteria.education, institution: school.name, institutionAliases: aliases, institutionDomains: school.domain ? [school.domain] : criteria.education.institutionDomains } };
+    }
+  }
+  return criteria;
+}
+
 export async function parseRequest(llm: LLMProvider, query: string, catalog?: Catalog): Promise<ParseOutcome> {
   const fallback = parseRequestDeterministic(query, catalog);
-  if (!llm.enabled) return { criteria: fallback, usedAi: false };
+  if (!llm.enabled) return { criteria: await withNamedSchool(fallback, query), usedAi: false };
 
   const res = await llm.structured({ tier: "smart", system: SYSTEM, user: `Request:\n${query}`, schema: ParsedRequest, maxTokens: 4000 });
-  if (!res.ok) return { criteria: fallback, usedAi: false, note: res.reason };
+  if (!res.ok) return { criteria: await withNamedSchool(fallback, query), usedAi: false, note: res.reason };
 
   let criteria: NetworkingCriteria;
   try {
     criteria = toCriteria(res.data, query);
   } catch {
-    return { criteria: fallback, usedAi: false, note: "The AI reading didn't validate; used the built-in parser." };
+    return { criteria: await withNamedSchool(fallback, query), usedAi: false, note: "The AI reading didn't validate; used the built-in parser." };
   }
   // Keep explicit facts the deterministic parser is sure about.
   if (!criteria.education.institution && fallback.education.institution) criteria.education.institution = fallback.education.institution;
   if (!criteria.education.programs.length) criteria.education.programs = fallback.education.programs;
-  return { criteria: withUserLists(criteria, catalog), usedAi: true };
+  return { criteria: await withNamedSchool(withUserLists(criteria, catalog), query), usedAi: true };
 }
