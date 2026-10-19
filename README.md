@@ -14,9 +14,9 @@ Know who to contact next. Find real, recent jobs from employers' own career page
 
 <br />
 
-<a href="docs/media/demo.mp4"><img src="docs/images/demo.webp" alt="A 50-second tour in six chapters: honest progress on Overview, Quick capture from a pasted LinkedIn search, Discover finding verified people with their sources, Jobs with fit explained and compare, Applications and Follow-ups, and the same app on a phone." width="86%" /></a>
+<a href="docs/media/demo.mp4"><img src="docs/images/demo.webp" alt="A 100-second tour in six chapters: honest progress on Overview, Quick capture from a pasted LinkedIn search, Discover finding verified people with their sources, Jobs with fit explained and compare, Applications and Follow-ups, and the same app on a phone." width="86%" /></a>
 
-<sub>A 50-second tour on fictional example data (720p preview). <a href="docs/media/demo.mp4"><b>Watch it in 1080p (MP4)</b></a>. Regenerate it with <code>npm run docs:video</code>.</sub>
+<sub>A 100-second tour on fictional example data (60fps preview). <a href="docs/media/demo.mp4"><b>Watch it in 1080p at 60fps (MP4)</b></a>. Regenerate it with <code>npm run docs:video</code>.</sub>
 
 </div>
 
@@ -222,7 +222,7 @@ Then:
 | `npm run db:start` / `db:reset` / `db:types` | Local Supabase, and regenerate the database types. |
 | `npm run employers:discover` / `employers:load` | Employer directory tools for the job crawler. |
 | `npm run docs:screenshots` | Regenerates the pictures in this README from the app and frames them (a browser window for desktop pages, a phone for phone pages) (needs `db:start`). |
-| `npm run docs:video` | Records the tour from the app, edits it (chapter titles, zooms, a framed window) and encodes `docs/media/demo.mp4` (1080p) and `docs/images/demo.webp` (a looping 720p preview) (needs `db:start`). |
+| `npm run docs:video` | Records the tour from the app, edits it (chapter titles, zooms, a framed window) and encodes `docs/media/demo.mp4` (1080p, 60fps) and `docs/images/demo.webp` (a looping 60fps preview) (needs `db:start`). |
 | `npm run docs:banner` | Rebuilds the banner at the top of this README from the framed pictures (run after `docs:screenshots`). |
 | `npm run docs:check` | Fails on a broken link, anchor or image, an `npm run` script or environment variable that doesn't exist, or a wrong migration or test count in the docs. |
 | `npm run bench:seed` / `bench:explain` / `bench:clean` | Fills a separate local user with 20,000 rows, prints query plans and times, and removes it. Local database only. |

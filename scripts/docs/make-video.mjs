@@ -6,7 +6,7 @@
  *   npm run docs:video              record the app (Playwright), edit it, write the files
  *   npm run docs:video -- --edit    re-edit the footage already recorded, without recording again
  *
- * Writes docs/media/demo.mp4 (1920x1080, the full-quality video) and docs/images/demo.webp (a silent, looping 1280x720
+ * Writes docs/media/demo.mp4 (1920x1080 at 60fps, the full-quality video) and docs/images/demo.webp (a silent, looping 60fps
  * preview that plays inside the README; GitHub cannot play a video from the repository, but it shows animated WebP).
  *
  * The footage is the app with fictional data, captured frame by frame by e2e/readme-video.spec.ts. Every frame of the
@@ -35,8 +35,8 @@ const ffmpeg = (() => {
 const RAW = "test-results/readme-video";
 const W = 1920;
 const H = 1080;
-const FPS = 30;
-const FADE = 12; // crossfade between chapters, in frames
+const FPS = 60;
+const FADE = Math.round(1 * FPS); // crossfade between chapters, in frames
 const mb = (p) => (statSync(p).size / 1024 / 1024).toFixed(1);
 
 // ------------------------------------------------------------------ record
@@ -70,8 +70,8 @@ const CHAPTERS = {
   applications: ["Applications and follow-ups", "Every application from saved to offer, and a follow-up after each acceptance."],
   phone: ["On your phone too", "Lists become cards and the menu tucks away. Same account, same data."],
 };
-/** Playback speed of each chapter (the waiting for research results is fast-forwarded separately). */
-const SPEED = { overview: 1.2, capture: 1.2, discover: 1.3, jobs: 1.2, applications: 1.2, phone: 1.1 };
+/** Playback speed of each chapter: real time, so it is easy to follow (the waiting for research results is fast-forwarded separately). */
+const SPEED = { overview: 1, capture: 1, discover: 1, jobs: 1, applications: 1, phone: 1 };
 const ORDER = [...scenes.map((s) => s.id), "phone"];
 
 const BG = `<defs>
@@ -139,7 +139,7 @@ function decode(dir, i) {
 
 // ------------------------------------------------------------------- zooms
 const ease = (k) => (k <= 0 ? 0 : k >= 1 ? 1 : k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2);
-const RAMP = 0.6;
+const RAMP = 1; // seconds to zoom in or out
 const MAX_ZOOM = 1.55;
 /** The camera at a moment of the desktop footage: how far in, and where. */
 function camera(t) {
@@ -249,13 +249,13 @@ const outro = await sharp(
 const black = Buffer.alloc(W * H * 3);
 /** Each part of the video: how many frames, and how to draw frame i. */
 const parts = [
-  { name: "title", count: Math.round(3.2 * FPS), draw: async () => intro },
+  { name: "title", count: Math.round(4 * FPS), draw: async () => intro },
   ...scenes.map((scene) => {
     const times = sceneTimes(scene);
     return { name: scene.id, count: times.length, draw: (i) => desktopFrame(scene.id, times[i]) };
   }),
   { name: "phone", count: Math.round((phone.seconds / SPEED.phone) * FPS), draw: (i) => phoneFrame((i / FPS) * SPEED.phone) },
-  { name: "end", count: Math.round(3.4 * FPS), draw: async () => outro },
+  { name: "end", count: Math.round(4.5 * FPS), draw: async () => outro },
 ];
 
 function blend(a, b, k) {
@@ -274,12 +274,14 @@ parts.forEach((p, n) => {
 const total = start;
 for (let f = 0; f < total; f++) plan.push(parts.filter((p) => f >= p.start && f < p.start + p.count));
 
+const FADE_IN = Math.round(0.7 * FPS);
+const FADE_OUT = Math.round(1 * FPS);
 async function render(f) {
   const here = plan[f];
   let img = await here[0].draw(f - here[0].start);
   if (here.length > 1) img = blend(img, await here[1].draw(f - here[1].start), ease((f - here[1].start + 1) / (FADE + 1)));
-  if (f < 10) img = blend(black, img, ease(f / 10));
-  if (f >= total - 14) img = blend(img, black, ease((f - (total - 14)) / 14));
+  if (f < FADE_IN) img = blend(black, img, ease(f / FADE_IN));
+  if (f >= total - FADE_OUT) img = blend(img, black, ease((f - (total - FADE_OUT)) / FADE_OUT));
   return img;
 }
 
@@ -305,22 +307,25 @@ for (let f = 0; f < total; f++) {
   while (queue.length < AHEAD && f + queue.length < total) queue.push(render(f + queue.length));
   const img = await queue.shift();
   if (!enc.stdin.write(img)) await new Promise((r) => enc.stdin.once("drain", r));
-  if (f % 150 === 0) process.stdout.write(`  ${Math.round((f / total) * 100)}%\r`);
+  if (f % (5 * FPS) === 0) process.stdout.write(`  ${Math.round((f / total) * 100)}%\r`);
 }
 enc.stdin.end();
 await done;
 console.log(`docs/media/demo.mp4  ${W}x${H}  ${mb("docs/media/demo.mp4")} MB, ${(total / FPS).toFixed(1)} s`);
 
 // --------------------------------------------------------------- preview
-// A looping animated WebP the README can show inline, at 720p. Try gentler settings until it is small enough to load quickly.
+// A looping animated WebP the README can show inline. It plays at the video's 60fps so it is as smooth as the MP4; to stay
+// small enough to load quickly it gives up quality, then size, before giving up frames.
 const LIMIT_MB = 9;
 const run = (args) => {
   const r = spawnSync(ffmpeg, ["-y", "-hide_banner", "-loglevel", "error", ...args], { encoding: "utf8" });
   if (r.status !== 0) throw new Error(r.stderr);
 };
 rmSync("docs/images/demo.gif", { force: true });
-for (const [fps, quality] of [[20, 82], [15, 78], [15, 70], [12, 66], [10, 60], [10, 50]]) {
-  run(["-i", "docs/media/demo.mp4", "-vf", `fps=${fps},scale=1280:-2:flags=lanczos`, "-c:v", "libwebp_anim", "-quality", String(quality), "-compression_level", "6", "-loop", "0", "-an", "docs/images/demo.webp"]);
-  console.log(`docs/images/demo.webp 1280px ${fps}fps quality ${quality}: ${mb("docs/images/demo.webp")} MB`);
+// At 60fps a 100-second tour needs about 854px and quality 50 to fit (1280px is 23–31 MB); each try takes minutes.
+const ladder = [[60, 50, 854], [60, 42, 854], [60, 40, 768], [30, 55, 960]];
+for (const [fps, quality, width] of ladder) {
+  run(["-i", "docs/media/demo.mp4", "-vf", `fps=${fps},scale=${width}:-2:flags=lanczos`, "-c:v", "libwebp_anim", "-quality", String(quality), "-compression_level", "4", "-loop", "0", "-an", "docs/images/demo.webp"]);
+  console.log(`docs/images/demo.webp ${width}px ${fps}fps quality ${quality}: ${mb("docs/images/demo.webp")} MB`);
   if (statSync("docs/images/demo.webp").size / 1024 / 1024 <= LIMIT_MB) break;
 }
