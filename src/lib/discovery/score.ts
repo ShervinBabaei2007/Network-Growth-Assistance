@@ -116,7 +116,15 @@ export function decideTier(e: CriteriaEvaluation): { tier: Tier; reason: string 
 
   const missing = (["institution", "program", "role", "company", "location", "gradYear"] as CriterionKey[])
     .filter((k) => e[k].requested && e[k].confidence !== "high")
-    .map((k) => (k === "gradYear" ? "graduation year" : (k === "location" || k === "company") && e[k].note ? `${k} (${e[k].note!.toLowerCase()})` : k));
+    .map((k) =>
+      k === "gradYear"
+        ? "graduation year"
+        : k === "company" && !e.company.named
+          ? "employer being a startup (public records don't say)"
+          : (k === "location" || k === "company") && e[k].note
+            ? `${k} (${e[k].note!.toLowerCase()})`
+            : k,
+    );
   return { tier: "possible", reason: `Weaker evidence for ${missing.join(", ")}` };
 }
 

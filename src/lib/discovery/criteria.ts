@@ -74,11 +74,29 @@ export function institutionMatcher(criteria: NetworkingCriteria): InstitutionMat
   return { name, strong, acronyms, domains };
 }
 
+/**
+ * Words that, written right before a school's name, make it another school: "New York University" is not "York University",
+ * "Northern Arizona University" is not "Arizona University".
+ */
+const NAME_QUALIFIERS = new Set(
+  "new north south east west northern southern eastern western central royal city state national saint st san santa los great greater old upper lower free open".split(" "),
+);
+
+/** Whether `phrase` occurs in the cleaned text on its own, not as the tail of a longer school name. */
+function standsAlone(t: string, phrase: string): boolean {
+  const needle = ` ${phrase} `;
+  for (let at = t.indexOf(needle); at >= 0; at = t.indexOf(needle, at + 1)) {
+    const before = t.slice(0, at).trimEnd().split(" ").pop() ?? "";
+    if (!NAME_QUALIFIERS.has(before)) return true;
+  }
+  return false;
+}
+
 /** Which kind of mention of the institution `text` contains, if any. */
 export function matchInstitution(text: string, m: InstitutionMatcher): "strong" | "acronym" | null {
   const t = clean(text);
-  if (hasAny(t, m.strong)) return "strong";
-  if (hasAny(t, m.acronyms)) return "acronym";
+  if (m.strong.some((p) => standsAlone(t, p))) return "strong";
+  if (m.acronyms.some((p) => standsAlone(t, p))) return "acronym";
   return null;
 }
 
@@ -136,6 +154,11 @@ export function roleAliases(roles: string[]): string[] {
   for (const r of roles) {
     const t = clean(r);
     if (t.trim()) out.add(t.trim());
+    // Requests say "software engineers"; people write "Software Engineer".
+    const words = t.trim().split(" ");
+    const last = words[words.length - 1] ?? "";
+    if (last.length > 3 && /ies$/.test(last)) out.add([...words.slice(0, -1), last.replace(/ies$/, "y")].join(" "));
+    else if (last.length > 3 && /s$/.test(last) && !/ss$/.test(last)) out.add([...words.slice(0, -1), last.slice(0, -1)].join(" "));
     for (const fam of ROLE_FAMILIES) if (hasAny(t, fam.triggers)) fam.aliases.forEach((a) => out.add(a));
   }
   return [...out];

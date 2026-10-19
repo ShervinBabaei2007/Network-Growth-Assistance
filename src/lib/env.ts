@@ -10,6 +10,10 @@ const serverSchema = z.object({
   GEMINI_MODEL: z.string().min(1).optional(),
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
   BRAVE_SEARCH_API_KEY: z.string().min(1).optional(),
+  GEMINI_MODELS: z.string().min(1).optional(),
+  GROQ_API_KEY: z.string().min(1).optional(),
+  MISTRAL_API_KEY: z.string().min(1).optional(),
+  OPENROUTER_API_KEY: z.string().min(1).optional(),
   TAVILY_API_KEY: z.string().min(1).optional(),
   GITHUB_TOKEN: z.string().min(1).optional(),
   EMBED_SECRET: z.string().min(16).optional(),
@@ -42,6 +46,10 @@ export function serverEnv() {
     GEMINI_MODEL: process.env.GEMINI_MODEL || undefined,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || undefined,
     BRAVE_SEARCH_API_KEY: process.env.BRAVE_SEARCH_API_KEY || undefined,
+    GEMINI_MODELS: process.env.GEMINI_MODELS || undefined,
+    GROQ_API_KEY: process.env.GROQ_API_KEY || undefined,
+    MISTRAL_API_KEY: process.env.MISTRAL_API_KEY || undefined,
+    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || undefined,
     TAVILY_API_KEY: process.env.TAVILY_API_KEY || undefined,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN || undefined,
     EMBED_SECRET: process.env.EMBED_SECRET || undefined,
@@ -76,4 +84,10 @@ export function aiDailyQuota(): number | null {
     return null;
   }
   return parsed.data ?? null;
+}
+
+/** How many AI-assisted Discover searches one person gets per day on the server's free AI. Their own key has no limit. Default 6; 0 turns the server's AI off for Discover. */
+export function discoveryAiSearchesPerDay(env: Record<string, string | undefined> = process.env): number {
+  const n = Number(env.DISCOVERY_AI_SEARCHES);
+  return env.DISCOVERY_AI_SEARCHES !== undefined && env.DISCOVERY_AI_SEARCHES !== "" && Number.isInteger(n) && n >= 0 ? n : 6;
 }

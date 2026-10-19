@@ -325,12 +325,12 @@ export function draftFromOrcid(profile: OrcidProfile, criteria: NetworkingCriter
   }
   const bio = profile.biography ?? "";
   if (inst && !schooling.length && bio) {
-    for (const q of sentencesWith(bio, (x) => matchInstitution(x, inst) !== null).slice(0, 1)) facts.push({ ...source, field: "institution", value: inst.name, extractedText: q });
+    for (const q of sentencesWith(bio, (x) => matchInstitution(x, inst) !== null).slice(0, 1)) facts.push({ ...source, confidence: "medium", field: "institution", value: inst.name, extractedText: q });
   }
   if (bio && !facts.some((f) => f.field === "program")) {
     for (const q of sentencesWith(bio, (x) => matchProgram(x, programs, criteria.education.broadenEce) !== null).slice(0, 1)) {
       const m = matchProgram(q, programs, criteria.education.broadenEce)!;
-      facts.push({ ...source, field: "program", value: m.kind === "ece" ? "Electrical and Computer Engineering" : m.program, extractedText: q });
+      facts.push({ ...source, confidence: "medium", field: "program", value: m.kind === "ece" ? "Electrical and Computer Engineering" : m.program, extractedText: q });
     }
   }
   if (inst && !facts.some((f) => f.field === "institution")) return null;
@@ -350,7 +350,8 @@ export function draftFromOrcid(profile: OrcidProfile, criteria: NetworkingCriter
     if (place) facts.push({ ...source, field: "location", value: place.slice(0, 200), extractedText: text, confidence: "medium" });
   } else if (bio) {
     const role = sentencesWith(bio, (x) => matchRole(x, roleAliases(criteria.roles)) !== null)[0];
-    if (role) facts.push({ ...source, field: "role", value: matchRole(role, roleAliases(criteria.roles))!, extractedText: role });
+    // A sentence in the free-text biography is not a job title: it only makes the person possible.
+    if (role) facts.push({ ...source, confidence: "low", field: "role", value: matchRole(role, roleAliases(criteria.roles))!, extractedText: role });
   }
 
   // The country they list on their own record.

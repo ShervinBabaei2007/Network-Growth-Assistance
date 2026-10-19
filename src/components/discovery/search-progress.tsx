@@ -3,6 +3,7 @@
 import { Disclosure } from "@/components/disclosure";
 import { FormError } from "@/components/form-error";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Circle, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -120,6 +121,15 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
       </p>
       {emptyNote ? <p className="text-sm">{emptyNote}</p> : null}
       {coverageNote ? <p className="text-xs text-muted-foreground">{coverageNote}</p> : null}
+      {!running && !empty && view.status === "completed" && !m.llmCalls ? (
+        <p className="text-xs text-muted-foreground">
+          AI wasn&apos;t used for this search, so matches are scored from the evidence alone.{" "}
+          <Link href="/settings" className="underline underline-offset-4">
+            Add your own free AI key
+          </Link>{" "}
+          for written reasons.
+        </p>
+      ) : null}
       {view.stopReason && !running && !empty ? <p className="text-xs text-muted-foreground">Stopped because: {view.stopReason}.</p> : null}
       {view.error ? (
         <FormError>

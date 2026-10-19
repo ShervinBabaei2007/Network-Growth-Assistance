@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { NURSING_CATALOG, TEST_CATALOG } from "@/test/catalog";
 import { companyAliases, institutionMatcher, matchCompany, matchInstitution, matchProgram, programMatchers, roleAliases, type NetworkingCriteria } from "./criteria";
 import { disabledLLM, type LLMProvider } from "./llm";
-import { parseRequest, parseRequestDeterministic, toCriteria, withUserLists } from "./parse-request";
+import { clearReadCache, parseRequest, parseRequestDeterministic, toCriteria, withUserLists } from "./parse-request";
 
 const base = (over: Partial<NetworkingCriteria["education"]> = {}): NetworkingCriteria => ({
   targetCount: 50,
@@ -119,6 +119,7 @@ describe("toCriteria", () => {
 });
 
 describe("parseRequest", () => {
+  beforeEach(() => clearReadCache());
   it("falls back to the deterministic parser without AI", async () => {
     const r = await parseRequest(disabledLLM, "Find 20 UBC Computer Science students", TEST_CATALOG);
     expect(r.usedAi).toBe(false);
@@ -231,5 +232,66 @@ describe("a school written in full, with its program right after", () => {
   it("leaves a plain school name alone", () => {
     expect(parseRequestDeterministic("Find 10 Queen's University Commerce alumni working at RBC in Toronto").education.institution).toBe("Queen's University");
     expect(parseRequestDeterministic("Find 5 McGill University alumni").education.institution).toBe("McGill University");
+  });
+});
+
+describe("a school is not another school with a longer name", () => {
+  const york = institutionMatcher({ ...base(), education: { ...base().education, institution: "York University", institutionAliases: [] } })!;
+  it("rejects New York University for York University", () => {
+    expect(matchInstitution("Education: New York University — Applied Psychology — PhD", york)).toBeNull();
+    expect(matchInstitution("Institute of Human Development & Social Change, New York University", york)).toBeNull();
+  });
+  it("still accepts York University in any ordinary sentence", () => {
+    expect(matchInstitution("Education: York University — Psychology — PhD (2020–present)", york)).toBe("strong");
+    expect(matchInstitution("I studied at the York University campus in Toronto", york)).toBe("strong");
+    expect(matchInstitution("BA, New York University; PhD, York University", york)).toBe("strong");
+  });
+});
+
+describe("roles in a request the AI did not read", () => {
+  it("takes the role from 'Find N <role> at/in…'", () => {
+    const c = parseRequestDeterministic("Find 10 software engineers at startups in Vancouver");
+    expect(c.roles).toEqual(["software engineers"]);
+    expect(c.includeStartups).toBe(true);
+    expect(c.locations).toEqual(["Vancouver"]);
+  });
+  it("does not mistake people, alumni or a school for a role", () => {
+    expect(parseRequestDeterministic("Find 10 alumni at Shopify").roles).toEqual([]);
+    expect(parseRequestDeterministic("Find 20 people in Toronto").roles).toEqual([]);
+  });
+  it("matches a plural request to the singular a person writes", () => {
+    const aliases = roleAliases(["software engineers", "secretaries"]);
+    expect(aliases).toContain("software engineer");
+    expect(aliases).toContain("secretary");
+  });
+});
+
+describe("startups", () => {
+  const ai = (over: object): LLMProvider => ({
+    enabled: true,
+    structured: (async () => ({
+      ok: true,
+      data: { targetCount: 10, institution: "University of Toronto", institutionAliases: [], institutionDomains: [], programs: [], programAliases: [], graduationYearMin: null, graduationYearMax: null, studentStatus: "alumni", roles: ["Data Scientist"], locations: ["Toronto"], country: null, companies: [], includeStartups: false, excludeExistingConnections: true, goal: null, ...over },
+    })) as LLMProvider["structured"],
+  });
+
+  it("is only believed when the request mentions startups", async () => {
+    clearReadCache();
+    const invented = await parseRequest(ai({ includeStartups: true }), "Find 10 University of Toronto alumni working as data scientists in Toronto");
+    expect(invented.criteria.includeStartups).toBe(false);
+    clearReadCache();
+    const asked = await parseRequest(ai({ includeStartups: true }), "Find 10 University of Toronto alumni working at startups");
+    expect(asked.criteria.includeStartups).toBe(true);
+  });
+});
+
+describe("a field written after 'X University'", () => {
+  it("is kept as the program", () => {
+    const a = parseRequestDeterministic("Find 10 York University Psychology alumni working as researchers");
+    expect(a.education.institution).toBe("York University");
+    expect(a.education.programs).toEqual(["Psychology"]);
+    const b = parseRequestDeterministic("Find 10 Queen's University Commerce alumni working at RBC in Toronto");
+    expect(b.education.programs).toEqual(["Commerce"]);
+    expect(parseRequestDeterministic("Find 10 McGill University alumni working at Shopify").education.programs).toEqual([]);
   });
 });

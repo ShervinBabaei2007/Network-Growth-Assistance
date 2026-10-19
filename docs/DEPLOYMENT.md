@@ -50,7 +50,11 @@ Or create an empty private repository on github.com and push to it.
    | `SUPABASE_SECRET_KEY` | The secret key. Server only, never expose it. |
    | `CRON_SECRET` | A long random string, e.g. from `openssl rand -hex 32` |
    | `GEMINI_API_KEY` | Recommended, free. The default AI (Google AI Studio key). Server only: never name it `NEXT_PUBLIC_…`. Leave unset to keep AI off. |
-   | `GEMINI_MODEL` | Optional. Default `gemini-3.8-flash`. Any Gemini model with structured output. |
+   | `GEMINI_MODELS` | Optional. Comma list of Gemini models to chain, each with its own free daily quota. Default `gemini-flash-lite-latest,gemini-3.8-flash` (the full Flash model allows only about 20 requests a day on the free tier; the lite one far more). `GEMINI_MODEL` (one model) still works. |
+   | `GROQ_API_KEY` | Optional, free, no card (console.groq.com). Adds about 1,000 more requests a day. `GROQ_MODEL` overrides the model. |
+   | `MISTRAL_API_KEY` | Optional, free, no card (console.mistral.ai). Free-plan prompts may be used for training: Discover sends only public web text. `MISTRAL_MODEL` overrides the model. |
+   | `OPENROUTER_API_KEY` | Optional. Free models allow only 50 requests a day; a last resort. |
+   | `DISCOVERY_AI_SEARCHES` | Optional. AI-assisted Discover searches per person per day on the server's free AI (default 6; 0 turns it off). A person's own key in Settings has no limit. |
    | `ANTHROPIC_API_KEY` | Optional, not required. Used only when `GEMINI_API_KEY` isn't set. |
    | `TAVILY_API_KEY` | Optional. Enables Discover's public web search. Free plan: 1,000 searches a month, no card. |
    | `BRAVE_SEARCH_API_KEY` | Optional alternative web search. Brave's API now needs a card. |
@@ -206,7 +210,7 @@ These are from the providers' pricing pages at the time of writing. Check the cu
   - Works with no keys at all: GitHub and ORCID are free public APIs, and their data is read without AI. Set a free `GITHUB_TOKEN`; without it GitHub allows only 60 profile lookups an hour (10 searches a minute), so a few searches use it up. A request that names no school is still searched, from people's public GitHub and ORCID profiles.
   - Each user can run 20 searches a day, one at a time. A search is capped at 30 queries, 100 pages and 60 AI calls.
   - Web search (Tavily's free plan, or Brave if you have a key) counts per query: at most 30 per search, fewer when cached (search results are cached for 3 days). Tavily's free 1,000 a month covers roughly 30 searches.
-  - Page reading (one call per relevant page), understanding the request and explaining the top matches use your Gemini model (`GEMINI_MODEL`). On the free tier, a large search can reach the per-minute limit: then the request is understood by the built-in parser, matches are explained by their score breakdown, and pages that couldn't be read add no people.
+  - Page reading (one call per relevant page), understanding the request and explaining the top 15 matches go to the first free service with quota left: the Gemini models in `GEMINI_MODELS`, then Groq, Mistral and OpenRouter if their keys are set. A service that runs out is skipped until its quota resets (00:00 UTC unless it says otherwise). A request already read is cached for 6 hours. When every service is used up, the request is understood by the built-in parser, matches are explained by their score breakdown, and pages that couldn't be read add no people.
   - Research runs in steps of up to 60 seconds, driven by the results page while it's open. Closing the tab pauses a search; reopening it continues. A search left for 10 minutes is cancelled when you start a new one.
 
 - **Jobs**

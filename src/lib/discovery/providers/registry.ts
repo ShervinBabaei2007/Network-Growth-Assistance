@@ -19,7 +19,8 @@ export type DiscoveryServices = {
 };
 
 /** Picks providers from the server environment. Keys never reach the browser. */
-export function discoveryServices(): DiscoveryServices {
+/** `ai` overrides the server's own model services (a person's key, or none once their daily share is used). */
+export function discoveryServices(ai?: LLMProvider): DiscoveryServices {
   if (discoveryFixturesEnabled()) {
     return { providers: [new FixtureWebProvider(), new FixtureGitHubProvider(), new FixtureOrcidProvider()], fetcher: new FixturePageFetcher(), llm: new FixtureLLM(), limitations: [], fixtures: true };
   }
@@ -33,7 +34,7 @@ export function discoveryServices(): DiscoveryServices {
   providers.push(new GitHubSearchProvider(process.env.GITHUB_TOKEN || undefined));
   providers.push(new OrcidSearchProvider());
   if (!process.env.GITHUB_TOKEN) limitations.push("GitHub allows only 60 profile lookups an hour without a token. A free GitHub token (no permissions needed) in GITHUB_TOKEN raises that to 5,000.");
-  const llm = defaultLLM();
+  const llm = ai ?? defaultLLM();
   if (!llm.enabled) limitations.push("AI is off: requests are understood with the built-in parser and matches are explained by their score breakdown. Set GEMINI_API_KEY (free from Google AI Studio) to also read web pages and get written explanations.");
   return { providers, fetcher: new HttpPageFetcher(), llm, limitations, fixtures: false };
 }
