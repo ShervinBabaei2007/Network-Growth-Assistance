@@ -113,8 +113,12 @@ function startShots(page: Page, dir: string) {
   };
 }
 
-/** Moves the cursor like a hand would: eased, about half a second. */
-async function glide(page: Page, target: Locator | { x: number; y: number }, ms = 520) {
+/** How much longer than written every pause in the tour lasts, so a viewer can follow each step. */
+const PACE = 1.8;
+const hold = (page: Page, ms: number) => page.waitForTimeout(ms * PACE);
+
+/** Moves the cursor like a hand would: eased, a little under a second. */
+async function glide(page: Page, target: Locator | { x: number; y: number }, ms = 900) {
   let to: { x: number; y: number };
   if ("x" in target) to = target;
   else {
@@ -130,7 +134,7 @@ async function glide(page: Page, target: Locator | { x: number; y: number }, ms 
     await page.mouse.move(from[0] + (to.x - from[0]) * e, from[1] + (to.y - from[1]) * e);
     await page.waitForTimeout(8);
   }
-  await page.waitForTimeout(160);
+  await hold(page, 160);
 }
 const scrollToShow = (locator: Locator, offset: number) =>
   locator.evaluate((el, o) => window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - o, behavior: "smooth" }), offset);
@@ -161,7 +165,7 @@ test("record the tour", async ({ browser }) => {
   const page = await rec.newPage();
   await page.goto("/overview");
   await expect(page.getByRole("heading", { name: /overview/i }).first()).toBeVisible();
-  await page.waitForTimeout(800);
+  await hold(page, 800);
   const capture = await startCapture(rec, page, `${RAW}/desktop`, { width: 1920, height: 1080 });
   const now = capture.now;
 
@@ -187,18 +191,18 @@ test("record the tour", async ({ browser }) => {
 
   // 1. Overview: honest progress.
   begin("overview");
-  await page.waitForTimeout(1300);
+  await hold(page, 1300);
   await page.locator("[data-tour=breakdown]").evaluate((el) => ((el as HTMLDetailsElement).open = true));
   await scrollToShow(page.getByText("Network total").first(), 110);
-  await page.waitForTimeout(1300);
+  await hold(page, 1300);
   await scrollToShow(page.getByText("New accepted connections, in priority order."), 260);
-  await page.waitForTimeout(900);
+  await hold(page, 900);
   const bars = page.getByText("New accepted connections, in priority order.").locator("xpath=../..");
   const unzoomBars = await zoomOn(bars);
   await glide(page, page.getByText(/3 pending/).first());
-  await page.waitForTimeout(2200);
+  await hold(page, 2200);
   unzoomBars();
-  await page.waitForTimeout(500);
+  await hold(page, 500);
   end();
 
   // 2. Quick capture: a pasted LinkedIn search page becomes a list, schools and programs matched.
@@ -207,38 +211,38 @@ test("record the tour", async ({ browser }) => {
   const box = page.getByLabel("Paste a LinkedIn search results page here");
   await expect(box).toBeVisible();
   await box.evaluate((el) => window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 330, behavior: "instant" }));
-  await page.waitForTimeout(400);
+  await hold(page, 400);
   begin("capture");
-  await page.waitForTimeout(500);
+  await hold(page, 500);
   await glide(page, box);
   await box.click();
-  await page.waitForTimeout(250);
+  await hold(page, 250);
   await page.keyboard.press("Control+V");
   await expect(page.getByLabel("School for Tara Singh")).toBeVisible();
-  await page.waitForTimeout(500);
+  await hold(page, 500);
   await scrollToShow(page.getByText(/^5 found/).first(), 130);
-  await page.waitForTimeout(800);
+  await hold(page, 800);
   const unzoomRows = await zoomOn(page.locator("li").filter({ has: page.getByLabel("School for Tara Singh") }).locator("xpath=.."));
-  await page.waitForTimeout(1900);
+  await hold(page, 1900);
   unzoomRows();
   const add = page.getByRole("button", { name: /^Add \d+ people$/ });
   await add.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(400);
+  await hold(page, 400);
   await glide(page, add);
   await add.click();
-  await page.waitForTimeout(1300);
+  await hold(page, 1300);
   end();
 
   // 3. Discover: plain language in, verified people with the receipts out.
   await page.goto("/discover");
   const ask = page.getByLabel("Who would you like to meet?");
   await expect(ask).toBeVisible();
-  await page.waitForTimeout(300);
+  await hold(page, 300);
   begin("discover");
   await glide(page, ask);
   await ask.click();
-  await ask.pressSequentially("Find 5 University of Toronto Computer Engineering alumni working as software engineers", { delay: 22 });
-  await page.waitForTimeout(350);
+  await ask.pressSequentially("Find 5 University of Toronto Computer Engineering alumni working as software engineers", { delay: 50 });
+  await hold(page, 350);
   const find = page.getByRole("button", { name: "Find people" });
   await glide(page, find);
   await find.click();
@@ -248,29 +252,29 @@ test("record the tour", async ({ browser }) => {
   const alex = page.getByRole("article", { name: "Alex Chen" });
   await expect(alex).toBeVisible({ timeout: 30_000 });
   await dropFixtureNotes(page);
-  await page.waitForTimeout(300);
+  await hold(page, 300);
   scene!.fast.push([waitFrom, now(), 6]);
   await scrollToShow(page.getByRole("heading", { name: /verified match/ }), 100);
-  await page.waitForTimeout(900);
+  await hold(page, 900);
   const unzoomAlex = await zoomOn(alex);
   await glide(page, alex.getByText("WHY THIS MATCHES", { exact: false }).first());
-  await page.waitForTimeout(1700);
+  await hold(page, 1700);
   unzoomAlex();
   const evidence = alex.getByRole("button", { name: "View evidence" });
   await glide(page, evidence);
   await evidence.click();
   const drawer = page.getByRole("dialog");
   await expect(drawer).toBeVisible();
-  await page.waitForTimeout(500);
+  await hold(page, 500);
   const why = drawer.getByText(/Why they match/i).first();
   if (await why.isVisible().catch(() => false)) await why.evaluate((el) => el.scrollIntoView({ block: "center", behavior: "smooth" }));
-  await page.waitForTimeout(700);
+  await hold(page, 700);
   const unzoomDrawer = await zoomOn(drawer);
-  await page.waitForTimeout(2300);
+  await hold(page, 2300);
   unzoomDrawer();
-  await page.waitForTimeout(300);
+  await hold(page, 300);
   await page.keyboard.press("Escape");
-  await page.waitForTimeout(300);
+  await hold(page, 300);
   end();
 
   // 4. Jobs: verified postings, fit explained, compare.
@@ -279,46 +283,46 @@ test("record the tour", async ({ browser }) => {
   await expect(list.first()).toBeVisible();
   await dropFixtureNotes(page);
   await page.getByRole("heading", { name: /jobs from/i }).evaluate((el) => window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 110, behavior: "instant" }));
-  await page.waitForTimeout(500);
+  await hold(page, 500);
   begin("jobs");
-  await page.waitForTimeout(600);
+  await hold(page, 600);
   const unzoomJob = await zoomOn(list.nth(0));
   await glide(page, list.nth(0).getByText(/^Matches:/).first());
-  await page.waitForTimeout(1900);
+  await hold(page, 1900);
   unzoomJob();
   const first = list.nth(0).getByLabel(/^Compare /);
   const second = list.nth(1).getByLabel(/^Compare /);
   await glide(page, first);
   await first.check();
-  await page.waitForTimeout(150);
+  await hold(page, 150);
   await glide(page, second);
   await second.check();
-  await page.waitForTimeout(300);
+  await hold(page, 300);
   const bar = page.getByTestId("compare-bar").getByRole("link", { name: "Compare" });
   await glide(page, bar);
   await bar.click();
   await expect(page.getByRole("table", { name: "Jobs compared side by side" })).toBeVisible();
-  await page.waitForTimeout(2200);
+  await hold(page, 2200);
   end();
 
   // 5. Applications and follow-ups.
   await page.goto("/applications");
   await expect(page.getByText("Northwind Labs").first()).toBeVisible();
-  await page.waitForTimeout(300);
+  await hold(page, 300);
   begin("applications");
   await glide(page, page.getByText("Pacific Data").first());
-  await page.waitForTimeout(1600);
+  await hold(page, 1600);
   const loadFrom = now();
   await page.goto("/follow-ups");
   await expect(page.getByTestId("follow-up").first()).toBeVisible();
-  await page.waitForTimeout(200);
+  await hold(page, 200);
   scene!.fast.push([loadFrom, now(), 5]); // the page loading, run quickly
-  await page.waitForTimeout(300);
+  await hold(page, 300);
   const unzoomFollow = await zoomOn(page.getByTestId("follow-up").first());
   await glide(page, page.getByTestId("follow-up").first().getByRole("button", { name: /copy/i }).first());
-  await page.waitForTimeout(2200);
+  await hold(page, 2200);
   unzoomFollow();
-  await page.waitForTimeout(500);
+  await hold(page, 500);
   end();
 
   const desktopFrames = await capture.stop();
@@ -330,23 +334,23 @@ test("record the tour", async ({ browser }) => {
   const m = await phone.newPage();
   await m.goto("/overview");
   await expect(m.getByRole("heading", { name: /overview/i }).first()).toBeVisible();
-  await m.waitForTimeout(800);
+  await hold(m, 800);
   const shots = startShots(m, `${RAW}/phone`);
-  await m.waitForTimeout(900);
+  await hold(m, 900);
   await m.evaluate(() => window.scrollBy({ top: 520, behavior: "smooth" }));
-  await m.waitForTimeout(1300);
+  await hold(m, 1300);
   await m.getByRole("button", { name: "Open menu" }).tap();
   await expect(m.getByRole("dialog", { name: "Network Growth" })).toBeVisible();
-  await m.waitForTimeout(1100);
+  await hold(m, 1100);
   await m.getByRole("dialog", { name: "Network Growth" }).getByRole("link", { name: "Jobs" }).tap();
   await m.waitForURL(/\/jobs/);
   await expect(m.getByRole("heading", { name: /jobs? from/i }).first()).toBeVisible();
   await expect(m.getByRole("region", { name: /jobs from/i }).getByRole("listitem").first()).toBeVisible();
   await dropFixtureNotes(m);
   await m.getByRole("heading", { name: /jobs? from/i }).first().evaluate((el) => window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: "smooth" }));
-  await m.waitForTimeout(1600);
+  await hold(m, 1600);
   await m.evaluate(() => window.scrollBy({ top: 360, behavior: "smooth" }));
-  await m.waitForTimeout(1300);
+  await hold(m, 1300);
   const phoneSeconds = shots.now();
   const phoneFrames = await shots.stop();
   await phone.close();
