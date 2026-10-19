@@ -109,7 +109,7 @@ Set your own goal, schools, disciplines and targets. The Overview shows where yo
 | ⌨️ | **Search and shortcuts** | **Ctrl+K** (or **/**) searches your candidates, people, applications and jobs and jumps to any page. **g** then a letter goes to a page; **?** lists them. Never fires while you type. |
 | 📊 | **Overview and Analytics** | Progress toward your goal, by discipline and school. Nothing is estimated or invented. |
 | 🌐 | **English and Canadian French** | Menu, top bar, sign-in, welcome, banners and search are available in French. Other pages are still English (see [Limits](#limits)). |
-| 👤 | **Your account** | Export or delete all your data from Settings. Light and dark themes, adjustable density and text size. |
+| 👤 | **Your account** | Export or delete all your data from Settings. Add your own free AI key (stored encrypted) for unlimited AI use. Light and dark themes, adjustable density and text size. |
 | 📱 | **Phone friendly** | Lists become cards, filters tuck behind a button, touch targets are bigger and dropdowns use your phone's own picker. |
 | 🩺 | **Monitoring and cost control** | Page-speed and error reports kept in your own database, with no personal data and nothing sent to a third party. An operator script also prints database size against the plan, AI use and the largest tables, and the daily job shortens old postings to stay within the free tier. |
 | 🆓 | **Free to run** | No paid API is needed. Jobs use employers' public boards; Discover uses GitHub and ORCID; AI uses free tiers and degrades to plain rules when they run out. |
