@@ -12,9 +12,10 @@ Know who to contact next. Find real, recent jobs from employers' own career page
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-06b6d4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Base%20UI-18181b?style=flat-square&logo=shadcnui&logoColor=white)](https://ui.shadcn.com)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ecf8e?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
-![Unit tests](https://img.shields.io/badge/unit%20tests-972%20passing-2da44e?style=flat-square)
-![Database tests](https://img.shields.io/badge/pgTAP-264%20passing-2da44e?style=flat-square)
-![End to end](https://img.shields.io/badge/e2e-83%20passing-2da44e?style=flat-square)
+[![CI](https://img.shields.io/github/actions/workflow/status/ShervinBabaei2007/Network-Growth-Assistance/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/ShervinBabaei2007/Network-Growth-Assistance/actions/workflows/ci.yml)
+![Unit tests](https://img.shields.io/badge/unit%20tests-1051%20passing-2da44e?style=flat-square)
+![Database tests](https://img.shields.io/badge/pgTAP-297%20passing-2da44e?style=flat-square)
+![End to end](https://img.shields.io/badge/e2e-89%20passing-2da44e?style=flat-square)
 
 <br />
 
@@ -55,13 +56,15 @@ On a LinkedIn people search, press **Ctrl+A, Ctrl+C**. Back in the app, press **
 
 ### 2. 🔎 Discover: people worth meeting, with the receipts
 
-Ask in plain language: *"Find 5 UofT Computer Engineering alumni working as software engineers in Canada."* A research assistant searches public sources (GitHub, ORCID and optional web search), then **verifies the best matches on their own pages**. It never visits LinkedIn.
+Ask in plain language: *"Find 10 UBC alumni who work at Amazon."* A research assistant searches public sources (GitHub, ORCID and optional web search), then **verifies the best matches on their own pages**. It never visits LinkedIn, and it works even when you name no school ("software engineers at startups in Vancouver").
 
 <img src="docs/images/discover.png" alt="Discover results: verified matches with a transparent score and the reasons they match" width="100%" />
 
 - 📎 **Every fact quotes its source.** The server checks each quote against the page and drops anything it can't find.
 - 🧮 **Scores are rules, not vibes.** Education, program, career, company, location and evidence each add a visible number you can inspect.
-- 🧭 **It returns fewer people rather than lowering the bar.** Lookalike schools, people outside your country and people you already know are set aside, with the reason shown.
+- 🧭 **It returns fewer people rather than lowering the bar.** Lookalike schools ("New York University" is not "York University"), people with no sign of the company you named, people outside a country you asked for and people you already know are set aside, with the reason shown.
+- 📊 **It says how much the public sources know.** "ORCID lists 10 people matching Simon Fraser University + Microsoft" explains a short list. A job on a profile nobody has edited for two years is only a *possible* match, and a city taken from an employer is labelled "Employer's office".
+- 🆓 **Free to run.** AI goes through a chain of free services (two Gemini models, then Groq and Mistral if you add their free keys) and falls back to plain evidence rules when they are used up.
 
 <details>
 <summary><b>See the evidence drawer</b> (quotes, links, score breakdown, intro message)</summary>
@@ -79,6 +82,8 @@ Search recent jobs in any country and any field. Postings come from **employers'
 - 📐 **Fit is explained.** Each requirement is matched against your resume and the card says why: strong matches, what's missing, what's preferred.
 - 📄 **Tailor your resume honestly.** AI rewrites a copy only if an accuracy check can back every line; otherwise you get specific improvement notes. Nothing is faked.
 - 🔔 Save a search to get alerts in the app (and by email, if you turn that on).
+- ⚖️ **Compare, hide, note.** Tick two or three jobs to compare them side by side, hide a company or a title word (with Undo), and keep a private note on each job.
+- 🗂️ **A resume per kind of role.** Keep separate base resumes (Software, Data, Product…); each job shows which one fits best and why.
 
 ### 4. 📈 Honest progress: pending never counts
 
@@ -103,9 +108,9 @@ Set your own goal, schools, disciplines and targets. The Overview shows where yo
 | 👥 | **Network** | Candidates with search, de-duplication and status. Quick capture from a page you copy yourself. CSV and LinkedIn data-export import. A daily queue ordered by your priorities, with suggested connection notes. |
 | ☑️ | **Bulk actions and saved views** | On Candidates: tick people to approve, mark not a match, do not contact or delete, with Undo and a count of anyone skipped. Save named filter views; the last filters are remembered; 25, 50 or 100 per page. |
 | 💬 | **Follow-ups** | When someone accepts, four suggested touches (thank-you, a short chat, 30- and 90-day check-ins) with editable drafts you copy and send yourself. Done, snooze or dismiss, with Undo. Due ones show on Overview and in the bell. |
-| 🔭 | **Discover** | A research assistant that finds people worth meeting from public sources. Every fact quotes its source. It never visits LinkedIn. |
+| 🔭 | **Discover** | A research assistant that finds people worth meeting from public sources (GitHub, ORCID, optional web search). Every fact quotes its source; fewer people beat weaker evidence. Works with or without a named school. Never visits LinkedIn. |
 | 📇 | **People** | A small CRM: status, notes, tags, reminders, referrals and "people at this company". |
-| 💼 | **Jobs** | Recent postings from employers' own boards plus free remote feeds. Verified links, fit checks against your resume, tailored resumes and cover letters, and saved-search alerts. |
+| 💼 | **Jobs** | Recent postings from employers' own boards plus free remote feeds. Verified links, fit checks against your resume, tailored resumes and cover letters, saved-search alerts, side-by-side compare, hidden companies and private notes, and a resume track per kind of role. |
 | 🗂️ | **Applications** | A board and a list from saved to offer, with timeline, interviews, reminders, contacts, documents and calendar (`.ics`) export. |
 | 🎤 | **Interview prep** | For applications in Screening, Interviewing or Offer: likely topics from the posting, your own resume lines matched to common questions, questions to ask them and a checklist for the day. Built only from your records, so it cannot invent experience or company facts. Copy or download as Markdown, or save a copy to the timeline. |
 | ⌨️ | **Search and shortcuts** | **Ctrl+K** (or **/**) searches your candidates, people, applications and jobs and jumps to any page. **g** then a letter goes to a page; **?** lists them. Never fires while you type. |
@@ -113,7 +118,8 @@ Set your own goal, schools, disciplines and targets. The Overview shows where yo
 | 🌐 | **English and Canadian French** | Menu, top bar, sign-in, welcome, banners and search are available in French. Other pages are still English (see [Limits](#limits)). |
 | 👤 | **Your account** | Export or delete all your data from Settings. Light and dark themes, adjustable density and text size. |
 | 📱 | **Phone friendly** | Lists become cards, filters tuck behind a button, touch targets are bigger and dropdowns use your phone's own picker. |
-| 🩺 | **Monitoring** | Page-speed and error reports kept in your own database, with no personal data and nothing sent to a third party. An operator script prints the results. |
+| 🩺 | **Monitoring and cost control** | Page-speed and error reports kept in your own database, with no personal data and nothing sent to a third party. An operator script also prints database size against the plan, AI use and the largest tables, and the daily job shortens old postings to stay within the free tier. |
+| 🆓 | **Free to run** | No paid API is needed. Jobs use employers' public boards; Discover uses GitHub and ORCID; AI uses free tiers and degrades to plain rules when they run out. |
 
 For the detail behind each feature and what is not built, see the [feature guide](docs/FEATURES.md).
 
@@ -207,7 +213,11 @@ Then:
 | `npm run ops:report -- <url>` | Prints real-user page speed and recent errors (needs `CRON_SECRET`). |
 | `npm run db:start` / `db:reset` / `db:types` | Local Supabase, and regenerate the database types. |
 | `npm run employers:discover` / `employers:load` | Employer directory tools for the job crawler. |
-| `npm run docs:screenshots` | Regenerates the pictures in this README from the app. |
+| `npm run docs:screenshots` | Regenerates the pictures in this README from the app (needs `db:start`). |
+| `npm run docs:video` | Records the 30-second tour from the app and encodes `docs/media/demo.mp4` and `docs/images/demo.gif` (needs `db:start`). |
+| `npm run docs:banner` | Rebuilds the banner at the top of this README. |
+| `npm run docs:check` | Fails on a broken link, anchor or image, an `npm run` script or environment variable that doesn't exist, or a wrong migration or test count in the docs. |
+| `npm run bench:seed` / `bench:explain` / `bench:clean` | Fills a separate local user with 20,000 rows, prints query plans and times, and removes it. Local database only. |
 | `bash scripts/restore-rehearsal.sh` | Backs up the local database, restores it into a scratch database and compares every table. |
 
 </details>
@@ -250,11 +260,13 @@ Copy `.env.example` to `.env.local` for local work. On Vercel, add the same name
 
 | Name | Purpose |
 |---|---|
-| `GEMINI_API_KEY` | Free key from [Google AI Studio](https://aistudio.google.com/apikey). Turns on AI features. Without it, every feature uses its non-AI path. |
-| `AI_DAILY_QUOTA` | AI uses per user per day on your key. Unset means no limit, so set it on a public site. `0` means users' own keys only. |
+| `GEMINI_API_KEY` | Free key from [Google AI Studio](https://aistudio.google.com/apikey). Turns on AI features. Without any AI key, every feature uses its non-AI path. |
+| `GROQ_API_KEY`, `MISTRAL_API_KEY` | Free keys, no card ([Groq](https://console.groq.com), [Mistral](https://console.mistral.ai)). Each adds its own daily AI allowance, used when the Gemini models run out. Mistral's free plan may train on prompts: Discover sends only public web text. |
+| `AI_DAILY_QUOTA` | Jobs AI uses (tailoring, notes, AI resume reading) per user per day on your key. Unset means no limit, so set it on a public site. `0` means users' own keys only. |
+| `DISCOVERY_AI_SEARCHES` | AI-assisted Discover searches per person per day on your free AI (default 6; `0` turns it off for Discover). A person's own key in Settings has no limit. |
 | `APP_ENCRYPTION_KEY` | 32+ random characters. Lets users store their own AI key. Never change it once keys are stored. |
 | `EMBED_SECRET` | 16+ random characters. Turns on matching by meaning (see [Deploying](#deploying)). |
-| `GITHUB_TOKEN` | Free token with no scopes. Raises GitHub's limit for Discover. |
+| `GITHUB_TOKEN` | Free token with no scopes. Raises GitHub's limit for Discover from 60 to 5,000 profile lookups an hour. |
 | `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_OPERATOR_NAME` | Shown on the Privacy Policy and Terms pages. Set them before launch. |
 | `NEXT_PUBLIC_FEEDBACK_URL` | A `mailto:` or form link. Shows a **Send feedback** button in the navigation. |
 | `APP_URL` | Your public address. Also used for the sitemap and canonical links. |
@@ -263,8 +275,10 @@ Copy `.env.example` to `.env.local` for local work. On Vercel, add the same name
 
 | Name | Purpose |
 |---|---|
-| `GEMINI_MODEL` | Gemini model to use. Default `gemini-3.8-flash`. |
-| `ANTHROPIC_API_KEY` | Use Anthropic Claude when `GEMINI_API_KEY` is not set. |
+| `GEMINI_MODELS` | Comma list of Gemini models to chain, each with its own free daily quota. Default `gemini-flash-lite-latest,gemini-3.8-flash`. `GEMINI_MODEL` (one model) still works. |
+| `OPENROUTER_API_KEY` | A last-resort free AI service (50 requests a day). |
+| `ANTHROPIC_API_KEY` | Anthropic Claude, last in the chain. Pay as you go: leave it unset to stay free. |
+| `DB_LIMIT_MB`, `OPERATOR_USER_ID` | Your database plan size in MB (default 500) and your own user id. At 70% full the daily job logs a warning and sends you one bell notification a month. |
 | `TAVILY_API_KEY` | Adds public web search to Discover (free plan, no card). `BRAVE_SEARCH_API_KEY` also works. |
 | `CAREERJET_API_KEY` | Adds Careerjet to job searches (free publisher key). |
 | `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` | Adds Adzuna to job searches. |
@@ -293,7 +307,7 @@ npm run check:bundle  # confirms no AI key reaches the browser (run after build)
 npm run check:budget  # first-load JavaScript per route stays within budget (run after build)
 ```
 
-The last full run passed **972 unit tests, 264 database tests and 83 end-to-end tests** (desktop and phone), plus the build, the bundle check and the route budget. `.github/workflows/ci.yml` runs the same checks on every pull request and push to `main`; it has not run on GitHub yet, so expect to adjust it the first time.
+The last full run passed **1,051 unit tests, 297 database tests and 89 end-to-end tests** (desktop and phone), plus the build, the bundle check and the route budget. `.github/workflows/ci.yml` runs the same checks on every pull request and push to `main`; it has run on GitHub and the badge above shows its latest result. `npm run docs:check` keeps these numbers, the links and the environment variables in this README and `docs/` honest.
 
 - **Run the end-to-end tests with a fresh build folder.** Running `npm run build` and then Playwright straight away can break the dev server, because both use `.next`. Run the tests first, or delete `.next` in between.
 - **Wait for hydration in new sign-in tests.** The sign-in page is plain HTML until its JavaScript loads, and a click before then does nothing, so tests wait for the page to settle.
@@ -314,7 +328,7 @@ After you change a migration, run it locally, then `npm run db:types` to regener
 
 The app runs on **Vercel** (web app and one daily job) and **Supabase** (database, sign-in, file storage and an optional embedding function). The full, step-by-step guide is in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). In short:
 
-1. Create a Supabase project, then link it and apply the migrations (there are 26, and the newest features need them):
+1. Create a Supabase project, then link it and apply the migrations (there are 31, and the newest features need them):
    ```sh
    npx supabase login
    npx supabase link --project-ref <your-project-ref>
@@ -334,7 +348,7 @@ The app serves `robots.txt` (crawling allowed), a sitemap and `llms.txt` for its
 
 ## 🏗️ How it is built
 
-**Stack.** Next.js 16 (App Router, streaming, partial prerendering), TypeScript, Tailwind v4, shadcn/ui on Base UI, cmdk (for the search palette, loaded on demand), Recharts (loaded on demand), Supabase (Postgres, Auth, Storage, RLS), Zod, Vitest, pgTAP and Playwright with axe-core. AI is Google's Gemini over REST, with optional Anthropic.
+**Stack.** Next.js 16 (App Router, streaming, partial prerendering) on React 19, TypeScript, Tailwind v4, shadcn/ui on Base UI, cmdk (search palette) and Recharts (both loaded on demand), Supabase (Postgres, Auth, Storage, row-level security, pg_cron), Zod, `@react-pdf/renderer`, `docx`, `mammoth` and `unpdf` for resumes, Nodemailer for alert email, and Vitest, pgTAP and Playwright with axe-core for tests. AI is a chain of free services over plain REST (Gemini models, then Groq and Mistral), with optional Anthropic; ORCID and GitHub supply the people.
 
 ```mermaid
 flowchart TB
@@ -355,7 +369,7 @@ flowchart TB
     subgraph "Outside, read only"
         BOARDS["Employer job boards"]
         PUBLIC["GitHub, ORCID, web search"]
-        AI["Gemini or Claude"]
+        AI["Gemini, Groq, Mistral or Claude"]
     end
     UI --> PROXY --> APP
     UI -. "speed and error reports" .-> API
@@ -377,18 +391,19 @@ src/app/api/       cron jobs (daily, crawl, alerts), export, search, vitals and 
                    reports, operator monitoring, email unsubscribe, JSON endpoints
 src/app/login/     sign-in and sign-up; src/app/auth/ callbacks and password reset;
                    privacy and terms pages are public
-src/lib/           the logic: job-postings, discovery, ai, alerts, applications, follow-ups,
-                   interview-prep, progress, classify, i18n, monitoring, net (safe fetching),
-                   server, email
+src/lib/           the logic: job-postings, discovery, ai (the free-service chain), alerts,
+                   applications, follow-ups, interview-prep, progress, classify, i18n, monitoring,
+                   ops (storage and cost), net (safe fetching), server, email
 src/components/    shared interface pieces (components/ui is shadcn)
 src/proxy.ts       refreshes the session, sends signed-out visitors to /login, and sends
                    signed-in visitors from the home page to Overview
 src/instrumentation.ts   records server errors (scrubbed) next to the logs
 supabase/          migrations, pgTAP tests, seed employers, the embed function, local config
-e2e/               Playwright tests, fixtures and the README screenshot script
+e2e/               Playwright tests, fixtures and the README screenshot and video scripts
 scripts/           employer tools, bundle and route-budget checks, smoke checks, operator
-                   report, restore rehearsal
-docs/              deployment guide, feature guide, accessibility, implementation checklist, images
+                   report, restore rehearsal, benchmark data, docs tools (scripts/docs)
+docs/              deployment guide, feature guide, accessibility, implementation checklist,
+                   images and the demo video (docs/images, docs/media)
 ```
 
 **Design rules worth knowing**
@@ -409,7 +424,7 @@ docs/              deployment guide, feature guide, accessibility, implementatio
 - Everything is stored only for your account. Your LinkedIn password and cookies are never stored. Email addresses in imported files are not stored, and the files are not kept.
 - Settings can export everything in your account and delete it for good.
 - Page-speed and error reports go to your own database, not to an analytics company. They hold only the page type, a measurement or a cleaned error message and phone-or-computer, with no account, IP address or page content, and are deleted after 30 or 90 days. Nothing is sent if the browser says Do Not Track.
-- When you use an AI feature, the text it needs (for example your resume and a job posting) goes to the AI provider. **On Gemini's free tier, Google may use it to improve its products.** Use a paid key, or skip AI features, if that matters to you.
+- When you use an AI feature, the text it needs (for example your resume and a job posting) goes to the AI provider. **On free tiers (Gemini, Mistral), the provider may use it to improve its products.** Use a paid key, or skip AI features, if that matters to you. Discover sends only public web text, never your records.
 - The site has a [Privacy Policy](src/app/privacy/page.tsx) and [Terms of Service](src/app/terms/page.tsx), written to follow British Columbia law. They are a starting point, not legal advice. Have them reviewed before a wide launch.
 
 <a id="troubleshooting"></a>
@@ -432,6 +447,8 @@ docs/              deployment guide, feature guide, accessibility, implementatio
 | Local end-to-end tests fail all at once | The dev server broke after a build. Delete `.next` and run again. |
 | Local sign-in fails with a rate-limit error | Too many sign-ins in five minutes. `supabase/config.toml` raises the limit; restart Supabase after changing it. |
 | A new variable has no effect | Variables apply only to new deployments. Redeploy, and for `NEXT_PUBLIC_` ones, rebuild. |
+| Discover says "AI wasn't used for this search" | The free AI is used up for today, or the person has used their share of `DISCOVERY_AI_SEARCHES`. Add `GROQ_API_KEY` or `MISTRAL_API_KEY`, or ask the person to add their own free key in Settings. Results are still scored from the evidence. |
+| Discover finds few or no people | Public sources only hold what people published. The page says how many people ORCID lists for your request. Name a school or a place, and set a free `GITHUB_TOKEN` (GitHub allows only 60 profile lookups an hour without one). |
 
 <a id="limits"></a>
 
@@ -441,17 +458,18 @@ docs/              deployment guide, feature guide, accessibility, implementatio
 - **Bulk actions and saved views are on Candidates only,** not People or Applications. There are no `j`/`k` list shortcuts.
 - **Interview prep and follow-up drafts use fixed templates and word matching.** There is no AI rewrite, and no company facts are added.
 - **Monitoring has no web dashboard.** The report is a script and a protected JSON route, and nothing alerts you when a new error appears.
+- **Discover is limited by what is public.** ORCID mostly lists researchers, so ordinary engineers appear mainly through GitHub or optional web search. "Verified" means every part of the request is stated in a public source the app quotes, not that anyone else checked it. Whether an employer is a startup is not stated in public records, so such requests return *possible* matches. A narrow request (a school plus one employer plus a city) may honestly return only a few people.
 - Job coverage follows the employer directory. Large retailers and many big employers use systems with no public API, so in-store retail jobs stay thin. The app does not scrape.
 - Jobicy and Remotive list only remote jobs, and Remotive's arrive a day late.
-- Gemini's free tier has daily request limits. When they run out, Tailor Resume gives improvement notes instead.
+- Free AI tiers have daily request limits (the full Gemini Flash model allows about 20 requests a day). The app chains several free services and each person gets a few AI-assisted Discover searches a day; when all are used up, Tailor Resume gives improvement notes and Discover scores from evidence alone.
 - Links on sites that block automated checks stay **Not yet verified**.
-- **Still open before a wide launch:** a screen-reader review, a staging deployment with the smoke checks run against it, restoring a backup into a hosted project (only a local rehearsal is done), re-measuring Lighthouse, and a legal review of the Privacy Policy and Terms. The CI workflow has not yet run on GitHub.
+- **Still open before a wide launch:** a screen-reader review, a staging deployment with the smoke checks run against it, restoring a backup into a hosted project (only a local rehearsal is done), re-measuring Lighthouse on the newest pages, and a legal review of the Privacy Policy and Terms.
 
 <a id="contributing"></a>
 
 ## 🤲 Contributing and licence
 
-Questions, bug reports and ideas are welcome. Please open an issue, or use the **Send feedback** button in the app. If you plan to send a change, run the checks above first and keep the change small and focused. To refresh the pictures in this README after a visual change, run `npm run db:start` and then `npm run docs:screenshots`.
+Questions, bug reports and ideas are welcome. Please open an issue, or use the **Send feedback** button in the app. If you plan to send a change, run the checks above first and keep the change small and focused. To refresh the pictures and the demo video in this README after a visual change, run `npm run db:start`, then `npm run docs:screenshots` and `npm run docs:video`; run `npm run docs:check` after editing any document.
 
 No licence has been chosen yet, so all rights are reserved. Please ask before reusing the code.
 

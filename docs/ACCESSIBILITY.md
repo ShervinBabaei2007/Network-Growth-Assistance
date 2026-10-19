@@ -7,7 +7,7 @@ axe-core (WCAG 2.0, 2.1 and 2.2 levels A and AA) runs through Playwright. **Seri
 `e2e/a11y.spec.ts`:
 
 - the public pages (home, sign in, sign up, guides, a guide, privacy, terms) in light and dark, and at 390 px wide;
-- every main signed-in page, filled with the example data, in light and dark: Overview, Analytics, Candidates, Candidates import, Daily Queue, Follow-ups, Connections, People, Discover, Schools, Disciplines, Applications, Jobs, Resume, Employers, Saved searches, Notifications, Settings and Help;
+- every main signed-in page, filled with the example data, in light and dark: Overview, Analytics, Candidates, Candidates import, Daily Queue, Follow-ups, Connections, People, Discover, Schools, Disciplines, Applications, Jobs, Resume, Employers, Saved searches, Hidden jobs, Notifications, Settings and Help;
 - the skip link moves focus to the main content;
 - pages fit a 320 px window (about 400% zoom) without sideways scrolling (home, sign in, guides, Overview, Applications, Candidates, Settings).
 
@@ -20,7 +20,7 @@ Found and fixed by these scans so far:
 - the toast dismiss button was hidden from assistive technology while still tabbable;
 - the header **Search** button's visible text did not match its accessible name (axe `label-content-name-mismatch`).
 
-**Not scanned automatically:** the signed-in app in French, the welcome dialog and tour popovers while open, the search palette while open, toasts, and pages reached only through a specific record state (for example a person's detail page).
+**Not scanned automatically:** the signed-in app in French, the welcome dialog and tour popovers while open, the search palette while open, toasts, and pages reached only through a specific record state (for example a person's detail page, a job's detail page with its resume-track card, the compare-jobs page, and a finished Discover result with its evidence drawer).
 
 ## Language
 

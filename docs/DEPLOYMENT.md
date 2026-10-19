@@ -29,7 +29,7 @@ Or create an empty private repository on github.com and push to it.
    npx supabase db push
    ```
 
-   `db push` creates the tables, row-level security policies, functions and the signup trigger from `supabase/migrations/`. Run it **before or together with** every deploy that adds a migration. There are 26, and the newest features need them: example data (`is_sample`), follow-ups, saved views, interview prep, the monitoring tables and the language setting (`settings.locale`). Against an older database those pages fail, and the welcome and tour fall back to a fresh state with nothing saved (the server logs `Couldn't read onboarding state`).
+   `db push` creates the tables, row-level security policies, functions and the signup trigger from `supabase/migrations/`. Run it **before or together with** every deploy that adds a migration. There are 31 migrations, and the newest features need them: example data (`is_sample`), follow-ups, saved views, interview prep, the monitoring tables, the language setting (`settings.locale`), job notes and hidden-job filters, resume tracks, the grouped progress functions and list indexes, and the posting-shortening functions. Against an older database those pages fail, and the welcome and tour fall back to a fresh state with nothing saved (the server logs `Couldn't read onboarding state`).
 3. Under **Authentication → URL Configuration**:
    - **Site URL**: `https://<your-app>.vercel.app`
    - **Redirect URLs**: add `https://<your-app>.vercel.app/**`
@@ -55,7 +55,7 @@ Or create an empty private repository on github.com and push to it.
    | `MISTRAL_API_KEY` | Optional, free, no card (console.mistral.ai). Free-plan prompts may be used for training: Discover sends only public web text. `MISTRAL_MODEL` overrides the model. |
    | `OPENROUTER_API_KEY` | Optional. Free models allow only 50 requests a day; a last resort. |
    | `DISCOVERY_AI_SEARCHES` | Optional. AI-assisted Discover searches per person per day on the server's free AI (default 6; 0 turns it off). A person's own key in Settings has no limit. |
-   | `ANTHROPIC_API_KEY` | Optional, not required. Used only when `GEMINI_API_KEY` isn't set. |
+   | `ANTHROPIC_API_KEY` | Optional, not required. Last in the AI chain, used only after the free services; it is pay-as-you-go, so leave it unset to stay free. |
    | `TAVILY_API_KEY` | Optional. Enables Discover's public web search. Free plan: 1,000 searches a month, no card. |
    | `BRAVE_SEARCH_API_KEY` | Optional alternative web search. Brave's API now needs a card. |
    | `GITHUB_TOKEN` | Recommended. A token with no scopes (free); raises GitHub's limit for Discover from 60 to 5,000 profile lookups an hour. |
@@ -67,6 +67,7 @@ Or create an empty private repository on github.com and push to it.
    | `USAJOBS_API_KEY`, `USAJOBS_EMAIL` | Optional. Adds U.S. federal jobs (step 3b.6). |
    | `APP_URL` | Your public address, for example `https://<your-app>.vercel.app`. The sitemap and canonical links use it (they default to Vercel's production domain when it is unset), and alert emails need it. Set it if you add a custom domain. |
    | `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_OPERATOR_NAME` | Set before launch. Shown on the Privacy Policy and Terms pages. |
+   | `DB_LIMIT_MB`, `OPERATOR_USER_ID` | Optional. Your database plan size in MB (default 500) and your own user id. At 70% full the daily job logs a warning and adds one bell notification a month for that user. |
    | `NEXT_PUBLIC_FEEDBACK_URL` | Optional. A `mailto:` or form link; shows a **Send feedback** button in the navigation. |
    | `SMTP_*`, `EMAIL_TOKEN_SECRET` | Optional. Alert emails (step 3c). |
 
@@ -202,7 +203,7 @@ These are from the providers' pricing pages at the time of writing. Check the cu
 - **Gemini (recommended, free tier)**
   - The Gemini Developer API's free tier covers Flash models at no cost, with per-minute and per-day request limits (see your limits in Google AI Studio). When they're reached, AI calls fail cleanly: Tailor Resume gives Improvement Notes, and the rest of the app works the same.
   - **Privacy:** on the free tier, Google may use the prompts and answers (resume text, postings) to improve its products; on the paid tier it says it doesn't. Tell your users, or use a paid key.
-  - AI on your key isn't limited per user unless you set `AI_DAILY_QUOTA`.
+  - Each Gemini model has its own free quota. The app chains `GEMINI_MODELS` (default a lite model, then the full Flash model, which allows only about 20 requests a day) and moves on when one runs out; adding free Groq and Mistral keys adds more. Jobs AI on your key isn't limited per user unless you set `AI_DAILY_QUOTA`; Discover caps AI-assisted searches per person with `DISCOVERY_AI_SEARCHES`.
 - **Anthropic (optional, not required)**
   - Pay-as-you-go. Used only if you set `ANTHROPIC_API_KEY` without `GEMINI_API_KEY`, or a user adds their own Anthropic key.
 
@@ -222,7 +223,7 @@ These are from the providers' pricing pages at the time of writing. Check the cu
   - Optional AI rewording uses your Gemini model: one call per rewrite, plus up to one retry. It runs on the user's own key, or on yours (limited per user only if you set `AI_DAILY_QUOTA`).
   - Jobs no longer on their board are closed after 3 days. Closed jobs are deleted after 30 days unless someone saved or applied to them. The resume PDF is never stored, only its text.
 
-Running costs are $0: Gemini's free tier, free job APIs and free hosting tiers. Only optional extras (a paid Gemini tier, Anthropic, Brave) cost money.
+Running costs are $0: Gemini, Groq and Mistral free tiers, free job APIs and free hosting tiers. Only optional extras (a paid Gemini tier, Anthropic, Brave) cost money.
 
 ### At tens of thousands of users
 
@@ -252,6 +253,8 @@ Both are flat monthly fees, not per-user costs. The crawler, the job table and t
   - fit checks: 60 per hour
   - resume uploads: 20 per day
   - exports: 10 per hour
+  - saving or changing searches: 30 per day
+  - Discover searches: 20 per day (`MAX_SEARCHES_PER_DAY` in `src/lib/discovery/service.ts`), and `DISCOVERY_AI_SEARCHES` AI-assisted ones on your free AI
 
   Change them in `src/lib/server/rate-limit.ts`. Old counters are deleted by the daily job.
 - **Monitoring**: browsers report page speed and errors to your own database (`rum_vitals`, `client_errors`), and server errors are recorded by `src/instrumentation.ts`. Nothing identifies a person; see the Privacy Policy. Read it with `CRON_SECRET=<secret> npm run ops:report -- https://<your-app>` (75th percentile per route and device, recent distinct errors). The daily job deletes measurements after 30 days and errors after 90.
@@ -358,10 +361,10 @@ A Google sign-in with the same verified email as an existing account signs into 
 
 Before sending the link to testers:
 
-1. **Cap AI spend.** Set `AI_DAILY_QUOTA` (for example `5`). Unset means every tester's AI use runs on your key with no limit.
+1. **Cap AI use.** Set `AI_DAILY_QUOTA` (for example `5`) for Jobs; Discover is already capped per person by `DISCOVERY_AI_SEARCHES` (default 6). Unset `AI_DAILY_QUOTA` means every tester's Jobs AI runs on your key with no limit. Add free `GROQ_API_KEY` and `MISTRAL_API_KEY` so the free allowance lasts, and a free `GITHUB_TOKEN` so Discover's GitHub searches don't run dry.
 2. **Set up SMTP** (step 2.5). Without it, Supabase's built-in email only reaches your own team, so testers can't confirm a sign-up, reset a password or use an emailed link. (Google sign-in doesn't need email.)
 3. **Schedule the crawler** (step 3.1, pg_cron). Vercel Hobby crons run only once a day, so job boards and alerts won't refresh without it.
 4. **Check the redirect URLs** in Supabase Auth include your production address.
 5. `/robots.txt` allows crawling and points to `/sitemap.xml`, which lists the home page, the guides, `/login`, `/privacy` and `/terms`. `/llms.txt` and `/.well-known/ai-catalog.json` describe the public pages for AI crawlers and agents. That is safe for a private app: anyone not signed in, search bots included, is redirected to `/login`, so nothing behind sign-in is ever served to a crawler (the home page and guides are public on purpose). Set `APP_URL` so the sitemap and canonical links use your real address.
 6. **Set `NEXT_PUBLIC_FEEDBACK_URL`** (a `mailto:` link or a form link) to show a "Send feedback" button in the navigation, and redeploy.
-7. Tell testers the AI privacy note: on Gemini's free tier, Google may use what is sent to improve its products.
+7. Tell testers the AI privacy note: on the free tiers of Gemini and Mistral, the provider may use what is sent to improve its products.
