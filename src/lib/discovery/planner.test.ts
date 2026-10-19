@@ -54,3 +54,27 @@ describe("provider rotation", () => {
     expect(plan.slice(3, 6).map((p) => p.provider).sort()).toEqual(["github", "orcid", "web"]);
   });
 });
+
+describe("a request that names no school", () => {
+  const base = testCriteria("Find 20 Computer Science alumni working as software engineers at startups in Vancouver");
+  const criteria = { ...base, education: { ...base.education, institution: null, institutionAliases: [] }, includeStartups: true, locations: ["Vancouver"] };
+  const plan = planQueries(criteria);
+
+  it("still plans GitHub and ORCID searches from the program, role, startups and place", () => {
+    const github = plan.filter((p) => p.provider === "github").map((p) => p.query);
+    expect(github.length).toBeGreaterThan(2);
+    expect(github.some((g) => g.includes('"Computer Science"') && g.includes('location:"Vancouver"'))).toBe(true);
+    expect(github.some((g) => g.startsWith("startup ") && g.includes("Software Engineer"))).toBe(true);
+    expect(plan.some((p) => p.provider === "orcid")).toBe(true);
+  });
+
+  it("never plans the same query twice", () => {
+    const keys = plan.map((p) => `${p.provider}:${normalizeQuery(p.query)}`);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it("plans nothing from GitHub for a field without public code", () => {
+    const nursing = { ...criteria, roles: ["Registered Nurse"], education: { ...criteria.education, programs: ["Nursing"], programAliases: [] } };
+    expect(planQueries(nursing).some((p) => p.provider === "github")).toBe(false);
+  });
+});

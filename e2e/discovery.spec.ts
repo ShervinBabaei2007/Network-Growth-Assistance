@@ -114,3 +114,15 @@ test("discovery API requires sign-in and returns 404 for searches you don't own"
   const person = await page.request.get("/api/network/people/00000000-0000-0000-0000-000000000000");
   expect(person.status()).toBe(404);
 });
+
+test("a request that names no school still searches and shows people", async ({ page }) => {
+  await signIn(page, uniqueEmail("discovery-noschool"), "/discover");
+  test.skip(!(await page.getByTestId("discovery-sources").textContent())?.includes("Fixture web"), "Dev server isn't running with DISCOVERY_FIXTURES=1");
+  await page.getByLabel("Who would you like to meet?").fill("Find 5 Computer Engineering alumni working as software engineers at startups");
+  await page.getByRole("button", { name: "Find people" }).click();
+  await page.waitForURL(/\/discover\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole("heading", { name: /Research complete|Search stopped/ })).toBeVisible({ timeout: 60_000 });
+  // Searches ran and someone was found, so this is not the empty "No matches found" result.
+  await expect(page.getByRole("heading", { name: "No matches found" })).toHaveCount(0);
+  await expect(page.getByRole("article").first()).toBeVisible();
+});

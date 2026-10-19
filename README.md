@@ -265,7 +265,7 @@ Copy `.env.example` to `.env.local` for local work. On Vercel, add the same name
 |---|---|
 | `GEMINI_MODEL` | Gemini model to use. Default `gemini-3.8-flash`. |
 | `ANTHROPIC_API_KEY` | Use Anthropic Claude when `GEMINI_API_KEY` is not set. |
-| `BRAVE_SEARCH_API_KEY` | Adds public web search to Discover. |
+| `TAVILY_API_KEY` | Adds public web search to Discover (free plan, no card). `BRAVE_SEARCH_API_KEY` also works. |
 | `CAREERJET_API_KEY` | Adds Careerjet to job searches (free publisher key). |
 | `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` | Adds Adzuna to job searches. |
 | `USAJOBS_API_KEY`, `USAJOBS_EMAIL` | Adds U.S. federal jobs. |
