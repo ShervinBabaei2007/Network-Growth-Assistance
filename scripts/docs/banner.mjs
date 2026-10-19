@@ -1,113 +1,100 @@
 #!/usr/bin/env node
 /**
  * Builds the banner at the top of README.md: docs/images/banner.svg (what GitHub shows) and banner.png (a copy for
- * social previews). Logos come from the `simple-icons` package, so nothing is fetched and the SVG is self-contained.
+ * social previews). Everything is drawn here, so nothing is fetched and the SVG is self-contained.
  *
  *   npm run docs:banner
  *
- * To change the technologies shown, edit TECH below. Keep it to what the repository really uses.
+ * The mark shows what the app does: a person (your network) connected through a verified check (every fact is backed by a
+ * source) to a briefcase (jobs). To change the technologies shown, edit STACK below. It should list what the repository
+ * really uses; `package.json`, `supabase/` and `.github/` are the places to check.
  */
 import { writeFileSync } from "node:fs";
-import * as icons from "simple-icons";
 import sharp from "sharp";
 
 const W = 1280;
-const H = 440;
 
-/** [label, simple-icons export or null when that brand has no icon in the package, fallback colour] */
-const TECH = [
-  ["Next.js 16", "siNextdotjs", "#ffffff"],
-  ["React 19", "siReact", null],
-  ["TypeScript", "siTypescript", null],
-  ["Tailwind CSS 4", "siTailwindcss", null],
-  ["shadcn/ui", "siShadcnui", "#ffffff"],
-  ["Supabase", "siSupabase", null],
-  ["PostgreSQL", "siPostgresql", null],
-  ["Vercel", "siVercel", "#ffffff"],
-  ["Zod", "siZod", null],
-  ["Vitest", "siVitest", null],
-  ["Playwright", null, "#2ead33"],
-  ["GitHub Actions", "siGithubactions", null],
-  ["Gemini", "siGooglegemini", null],
-  ["Groq", null, "#f55036"],
-  ["Mistral AI", "siMistralai", null],
+/** Group, colour, and what is used in it. */
+const STACK = [
+  ["Frontend", "#60a5fa", ["Next.js 16", "React 19", "TypeScript", "Tailwind CSS 4", "shadcn/ui", "Base UI", "Recharts", "cmdk", "Lucide"]],
+  ["Backend", "#34d399", ["Supabase", "PostgreSQL", "Row-level security", "pgvector", "pg_cron", "Edge Functions", "Zod", "Nodemailer"]],
+  ["Documents", "#fbbf24", ["React-PDF", "docx", "mammoth", "unpdf"]],
+  ["AI and data", "#c084fc", ["Gemini", "Groq", "Mistral", "Claude", "GitHub API", "ORCID", "ROR", "Employer job boards"]],
+  ["Quality and CI", "#fb923c", ["Vitest", "pgTAP", "Playwright", "axe-core", "ESLint", "Docker", "GitHub Actions", "Vercel", "Node.js 24"]],
 ];
 
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-/** Brand colours that vanish on a dark background are drawn white. */
-function readable(hex) {
-  const n = parseInt(hex.replace("#", ""), 16);
-  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  return 0.299 * r + 0.587 * g + 0.114 * b < 70 ? "#ffffff" : hex;
-}
 
-// Chips, wrapped into centred rows.
-const CHIP_H = 44;
-const GAP = 12;
-const MAX_ROW = 1120;
-const chips = TECH.map(([label, key, fallback]) => {
-  const icon = key ? icons[key] : null;
-  if (key && !icon) throw new Error(`simple-icons has no ${key}`);
-  return { label, path: icon?.path ?? null, color: readable(icon ? `#${icon.hex}` : fallback), width: 18 + 24 + 9 + Math.round(label.length * 8.6) + 18 };
-});
-const rows = [[]];
-let used = 0;
-for (const chip of chips) {
-  if (used + chip.width > MAX_ROW && rows.at(-1).length) {
-    rows.push([]);
-    used = 0;
+// ------------------------------------------------------------ the stack rows
+const LABEL_W = 176;
+const ROW_X = 90;
+const CHIP_H = 34;
+const GAP = 9;
+const MAX_X = W - 90;
+let y = 300;
+let stack = "";
+for (const [group, color, items] of STACK) {
+  const widths = items.map((t) => 26 + Math.round(t.length * 7.5));
+  // Wrap the chips into lines that fit beside the group label.
+  const lines = [[]];
+  let x = ROW_X + LABEL_W;
+  items.forEach((t, i) => {
+    if (x + widths[i] > MAX_X && lines.at(-1).length) {
+      lines.push([]);
+      x = ROW_X + LABEL_W;
+    }
+    lines.at(-1).push([t, widths[i], x]);
+    x += widths[i] + GAP;
+  });
+  stack += `<circle cx="${ROW_X + 5}" cy="${y + CHIP_H / 2}" r="5" fill="${color}"/><text x="${ROW_X + 20}" y="${y + CHIP_H / 2 + 5}" font-size="14" font-weight="700" fill="#c7d7f0" letter-spacing="0.6">${esc(group.toUpperCase())}</text>`;
+  for (const line of lines) {
+    for (const [t, w, cx] of line) stack += `<rect x="${cx}" y="${y}" width="${w}" height="${CHIP_H}" rx="17" fill="#ffffff" fill-opacity="0.07" stroke="#ffffff" stroke-opacity="0.16"/><text x="${cx + w / 2}" y="${y + 22}" text-anchor="middle" font-size="14.5" font-weight="600" fill="#e6edf7">${esc(t)}</text>`;
+    y += CHIP_H + GAP;
   }
-  rows.at(-1).push(chip);
-  used += chip.width + GAP;
+  y += 6;
 }
-const top = 262;
-const chipSvg = rows
-  .map((row, r) => {
-    const total = row.reduce((s, c) => s + c.width, 0) + GAP * (row.length - 1);
-    let x = (W - total) / 2;
-    const y = top + r * (CHIP_H + GAP);
-    return row
-      .map((c) => {
-        const mark = c.path
-          ? `<g transform="translate(${x + 18} ${y + 10}) scale(1)"><svg width="24" height="24" viewBox="0 0 24 24"><path d="${c.path}" fill="${c.color}"/></svg></g>`
-          : `<g transform="translate(${x + 18} ${y + 10})"><rect width="24" height="24" rx="7" fill="${c.color}"/><text x="12" y="17.5" text-anchor="middle" font-size="15" font-weight="700" fill="#0b1220">${esc(c.label[0])}</text></g>`;
-        const out = `<rect x="${x}" y="${y}" width="${c.width}" height="${CHIP_H}" rx="22" fill="#ffffff" fill-opacity="0.07" stroke="#ffffff" stroke-opacity="0.16"/>${mark}<text x="${x + 18 + 24 + 9}" y="${y + 28}" font-size="15" font-weight="600" fill="#e6edf7">${esc(c.label)}</text>`;
-        x += c.width + GAP;
-        return out;
-      })
-      .join("");
-  })
-  .join("");
+const H = y + 22;
 
-// A small network graph as the mark.
-const nodes = [
-  [64, 70, 9], [108, 40, 6], [112, 96, 7], [30, 34, 5], [28, 104, 6], [150, 66, 5],
-];
-const links = [[0, 1], [0, 2], [0, 3], [0, 4], [1, 5], [2, 5], [1, 3], [2, 4]];
-const graph = `<g transform="translate(86 44)" stroke="#60a5fa" stroke-opacity="0.55" stroke-width="2">${links.map(([a, b]) => `<line x1="${nodes[a][0]}" y1="${nodes[a][1]}" x2="${nodes[b][0]}" y2="${nodes[b][1]}"/>`).join("")}</g>` +
-  `<g transform="translate(86 44)">${nodes.map(([x, y, r], i) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${i === 0 ? "#3b82f6" : "#93c5fd"}"${i === 0 ? ' stroke="#bfdbfe" stroke-width="3"' : ""}/>`).join("")}</g>`;
+// ------------------------------------------------------------------ the mark
+// person -- verified check -- briefcase, on one connected line.
+const mark = `<g transform="translate(70 62)">
+  <line x1="64" y1="60" x2="97" y2="60" stroke="#60a5fa" stroke-opacity="0.7" stroke-width="3" stroke-linecap="round"/>
+  <line x1="161" y1="60" x2="196" y2="60" stroke="#60a5fa" stroke-opacity="0.7" stroke-width="3" stroke-linecap="round"/>
+  <!-- person: your network -->
+  <circle cx="30" cy="60" r="34" fill="#ffffff" fill-opacity="0.08" stroke="#93c5fd" stroke-width="2.5"/>
+  <circle cx="30" cy="51" r="9" fill="none" stroke="#e6edf7" stroke-width="3"/>
+  <path d="M14 78c1-10 8-15 16-15s15 5 16 15" fill="none" stroke="#e6edf7" stroke-width="3" stroke-linecap="round"/>
+  <!-- shield with a check: verified, every fact backed by a source -->
+  <path d="M130 22l32 11v24c0 20-13 33-32 41-19-8-32-21-32-41V33z" fill="#2563eb" stroke="#bfdbfe" stroke-width="3" stroke-linejoin="round" transform="translate(-2 -2)"/>
+  <path d="M114 58l11 11 20-22" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" transform="translate(-2 -2)"/>
+  <!-- briefcase: jobs -->
+  <circle cx="230" cy="60" r="34" fill="#ffffff" fill-opacity="0.08" stroke="#93c5fd" stroke-width="2.5"/>
+  <rect x="211" y="52" width="38" height="25" rx="5" fill="none" stroke="#e6edf7" stroke-width="3"/>
+  <path d="M222 52v-5a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v5" fill="none" stroke="#e6edf7" stroke-width="3"/>
+  <path d="M211 62h38" stroke="#e6edf7" stroke-width="3"/>
+</g>`;
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="t d" font-family="'Segoe UI', -apple-system, 'Helvetica Neue', Arial, sans-serif">
 <title id="t">Network Growth Assistant</title>
-<desc id="d">Grow your professional network and run your job search from one calm, honest workspace. Built with Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, Supabase, PostgreSQL, Vercel, Zod, Vitest, Playwright, GitHub Actions and free AI services.</desc>
+<desc id="d">Grow your professional network and run your job search from one calm, honest workspace. Built with ${STACK.map(([, , items]) => items.join(", ")).join("; ")}.</desc>
 <defs>
 <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1220"/><stop offset="0.55" stop-color="#112347"/><stop offset="1" stop-color="#17407a"/></linearGradient>
-<radialGradient id="glow" cx="0.18" cy="0.2" r="0.6"><stop offset="0" stop-color="#3b82f6" stop-opacity="0.35"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/></radialGradient>
+<radialGradient id="glow" cx="0.18" cy="0.14" r="0.6"><stop offset="0" stop-color="#3b82f6" stop-opacity="0.35"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/></radialGradient>
 <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="#ffffff" fill-opacity="0.07"/></pattern>
 </defs>
 <rect width="${W}" height="${H}" rx="22" fill="url(#bg)"/>
 <rect width="${W}" height="${H}" rx="22" fill="url(#dots)"/>
 <rect width="${W}" height="${H}" rx="22" fill="url(#glow)"/>
-${graph}
-<text x="270" y="102" font-size="58" font-weight="800" fill="#ffffff" letter-spacing="-1">Network Growth Assistant</text>
-<text x="272" y="146" font-size="23" fill="#c7d7f0">Grow your network and run your job search from one calm, honest workspace.</text>
-<text x="272" y="186" font-size="17" fill="#8fb0e0" letter-spacing="0.3">Evidence-backed people search  ·  Verified jobs  ·  Application tracker  ·  Free to run</text>
-<line x1="86" y1="222" x2="${W - 86}" y2="222" stroke="#ffffff" stroke-opacity="0.12"/>
-<text x="${W / 2}" y="250" text-anchor="middle" font-size="13" font-weight="700" fill="#8fb0e0" letter-spacing="3">BUILT WITH</text>
-${chipSvg}
+${mark}
+<text x="396" y="104" font-size="58" font-weight="800" fill="#ffffff" letter-spacing="-1">Network Growth Assistant</text>
+<text x="398" y="148" font-size="23" fill="#c7d7f0">Grow your network and run your job search from one calm, honest workspace.</text>
+<text x="398" y="186" font-size="17" fill="#8fb0e0" letter-spacing="0.3">Evidence-backed people search  ·  Verified jobs  ·  Application tracker  ·  Free to run</text>
+<line x1="90" y1="238" x2="${W - 90}" y2="238" stroke="#ffffff" stroke-opacity="0.12"/>
+<text x="${ROW_X}" y="276" font-size="13" font-weight="700" fill="#8fb0e0" letter-spacing="3">BUILT WITH</text>
+${stack}
 </svg>
 `;
 
 writeFileSync("docs/images/banner.svg", svg);
-await sharp(Buffer.from(svg)).png().toFile("docs/images/banner.png");
-console.log(`docs/images/banner.svg (${(svg.length / 1024).toFixed(0)} KB) and banner.png written, ${chips.length} technologies in ${rows.length} rows`);
+await sharp(Buffer.from(svg), { density: 144 }).png().toFile("docs/images/banner.png");
+console.log(`docs/images/banner.svg (${(svg.length / 1024).toFixed(0)} KB, ${W}x${H}) and banner.png written, ${STACK.reduce((n, g) => n + g[2].length, 0)} technologies in ${STACK.length} groups`);
