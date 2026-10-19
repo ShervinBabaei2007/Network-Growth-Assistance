@@ -12,7 +12,9 @@ import type { z } from "zod";
  *   and for the final reranking and explanations.
  */
 export type LlmTier = "fast" | "smart";
-export type LlmResult<T> = { ok: true; data: T } | { ok: false; reason: string };
+/** Why a call failed, so a chain of services knows whether the next one can help: out of free quota, busy, or too slow. */
+export type LlmFailKind = "quota" | "busy" | "timeout" | "other";
+export type LlmResult<T> = { ok: true; data: T } | { ok: false; reason: string; kind?: LlmFailKind; retryAfterMs?: number };
 
 export interface LLMProvider {
   readonly enabled: boolean;
@@ -74,7 +76,7 @@ export class AnthropicLLM implements LLMProvider {
       if (!checked.success) return { ok: false, reason: "The model's answer failed validation." };
       return { ok: true, data: checked.data };
     } catch (e) {
-      if (e instanceof Anthropic.RateLimitError) return { ok: false, reason: "The AI service is busy right now." };
+      if (e instanceof Anthropic.RateLimitError) return { ok: false, reason: "The AI service is busy right now.", kind: "quota" };
       if (e instanceof Anthropic.AuthenticationError) return { ok: false, reason: "The server's Anthropic API key was rejected." };
       if (e instanceof Anthropic.APIError) return { ok: false, reason: `The AI service returned an error (${e.status ?? "network"}).` };
       return { ok: false, reason: "Couldn't reach the AI service." };

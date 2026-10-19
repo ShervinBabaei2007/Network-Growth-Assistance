@@ -22,6 +22,27 @@ export const GEMINI_DEFAULT_MODEL = "gemini-3.8-flash";
 const API = "https://generativelanguage.googleapis.com/v1beta";
 const TIMEOUT_MS = 40_000;
 
+/** How long Google says to wait, from a 429 body: a RetryInfo "retryDelay":"84400s", or "retry in 23h27m32s". Null if it doesn't say. */
+export function retryAfterFrom(body: string): number | undefined {
+  const sec = body.match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/);
+  if (sec) return Math.round(Number(sec[1]) * 1000);
+  const words = body.match(/retry in\s+(?:(\d+)h)?(?:(\d+)m)?(?:(\d+(?:\.\d+)?)s)?/i);
+  if (words && (words[1] || words[2] || words[3])) return Math.round(((Number(words[1] ?? 0) * 60 + Number(words[2] ?? 0)) * 60 + Number(words[3] ?? 0)) * 1000);
+  return undefined;
+}
+
+/** Models tried in this order. Each Gemini model has its own free quota, so a lite model first (bulk reading) and the full Flash after. */
+export const GEMINI_DEFAULT_MODELS = ["gemini-flash-lite-latest", GEMINI_DEFAULT_MODEL];
+const MODEL_NAME = /^[a-z0-9][a-z0-9.\-]{1,80}$/i;
+
+/** The models to chain: GEMINI_MODELS (comma list), else GEMINI_MODEL alone, else the defaults. Invalid names are dropped. */
+export function geminiModels(env: Record<string, string | undefined> = process.env): string[] {
+  const list = (env.GEMINI_MODELS ?? "").split(",").map((m) => m.trim().replace(/^models\//, "")).filter((m) => MODEL_NAME.test(m));
+  if (list.length) return [...new Set(list)];
+  if (env.GEMINI_MODEL?.trim()) return [geminiModel(env)];
+  return GEMINI_DEFAULT_MODELS;
+}
+
 /** The model to use: GEMINI_MODEL, or the default. The only place a Gemini model name is chosen. */
 export function geminiModel(env: Record<string, string | undefined> = process.env): string {
   const m = env.GEMINI_MODEL?.trim().replace(/^models\//, "");
@@ -107,10 +128,13 @@ export class GeminiLLM implements LLMProvider {
         res = await send();
       }
     } catch (e) {
-      if (e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError")) return { ok: false, reason: "The AI service took too long to answer." };
-      return { ok: false, reason: "Couldn't reach the AI service." };
+      if (e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError")) return { ok: false, reason: "The AI service took too long to answer.", kind: "timeout" };
+      return { ok: false, reason: "Couldn't reach the AI service.", kind: "busy" };
     }
-    if (res.status === 429) return { ok: false, reason: "The AI service's free limit is used up or it's busy right now. Try again later." };
+    if (res.status === 429) {
+      const text = await readCappedText(res, BODY_LIMITS.ai).catch(() => "");
+      return { ok: false, reason: "The AI service's free limit is used up or it's busy right now. Try again later.", kind: "quota", retryAfterMs: retryAfterFrom(text) };
+    }
     if (res.status === 401 || res.status === 403) return { ok: false, reason: "The Gemini API key was rejected." };
     if (res.status === 400) {
       // Google reports an invalid key as 400 INVALID_ARGUMENT with API_KEY_INVALID.
@@ -118,7 +142,7 @@ export class GeminiLLM implements LLMProvider {
       if (/API_KEY_INVALID|API key not valid/i.test(text)) return { ok: false, reason: "The Gemini API key was rejected." };
       return { ok: false, reason: "The AI service couldn't handle this request (400)." };
     }
-    if (!res.ok) return { ok: false, reason: `The AI service returned an error (${res.status}).` };
+    if (!res.ok) return { ok: false, reason: `The AI service returned an error (${res.status}).`, kind: res.status >= 500 ? "busy" : "other" };
 
     const body = (await readCappedJson<GeminiResponse>(res, BODY_LIMITS.ai).catch(() => null));
     if (!body) return { ok: false, reason: "The model's answer didn't match the expected format." };
