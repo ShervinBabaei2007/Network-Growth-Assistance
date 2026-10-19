@@ -1,5 +1,6 @@
-import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { adminRest, signIn, userIdFor } from "./helpers";
+import { day, dropFixtureNotes, freshAccount, shot, tidy, toTop } from "./readme-kit";
 
 /**
  * More README pictures, for the pages added after the first set: the home page, the sign-in tabs, Follow-ups, Interview prep,
@@ -7,25 +8,13 @@ import { adminRest, signIn, userIdFor } from "./helpers";
  * not a test of behaviour.
  */
 
-const OUT = "docs/images";
-const shot = (page: Page, name: string) => page.screenshot({ path: `${OUT}/${name}.png` });
 const tag = Date.now() % 10_000;
-const day = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
-const toTop = async (locator: Locator, offset = 96) => {
-  await locator.evaluate((el) => el.scrollIntoView({ block: "start" }));
-  await locator.page().evaluate((o) => window.scrollBy(0, -o), offset);
-};
-const hideToasts = (context: BrowserContext) =>
-  context.addInitScript(() => {
-    const style = document.createElement("style");
-    style.textContent = '[data-testid="toast"], [data-slot="toast-region"] { opacity: 0 !important; pointer-events: none !important; }';
-    document.addEventListener("DOMContentLoaded", () => document.head.append(style));
-  });
 
 test.describe.configure({ mode: "serial" });
 
 test("home page and sign-in tabs", async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 960 }, deviceScaleFactor: 1.5, baseURL: test.info().project.use.baseURL });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 2, baseURL: test.info().project.use.baseURL });
+  await tidy(context);
   const page = await context.newPage();
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
@@ -40,8 +29,8 @@ test("home page and sign-in tabs", async ({ browser }) => {
 });
 
 test("follow-ups and interview prep", async ({ page }) => {
-  await hideToasts(page.context());
-  const email = `casey.lin${tag}@example.test`;
+  await tidy(page.context());
+  const email = await freshAccount("casey.lin");
   await signIn(page, email);
   const user_id = await userIdFor(email);
 
@@ -87,7 +76,7 @@ test("follow-ups and interview prep", async ({ page }) => {
 });
 
 const MAIN = `Jamie Rivera
-Vancouver, BC | jamie@example.test | 604-555-0123
+Vancouver, BC | jamie@example.com | 604-555-0123
 SUMMARY
 Developer who builds web apps.
 EXPERIENCE
@@ -100,7 +89,7 @@ SKILLS
 React, TypeScript, SQL`;
 
 const DATA = `Jamie Rivera
-Vancouver, BC | jamie@example.test | 604-555-0123
+Vancouver, BC | jamie@example.com | 604-555-0123
 SUMMARY
 Analyst who turns data into decisions.
 EXPERIENCE
@@ -114,8 +103,8 @@ Python, SQL, Pandas, Statistics`;
 
 test("jobs: compare two jobs and keep a resume per kind of role", async ({ page }) => {
   test.setTimeout(240_000);
-  await hideToasts(page.context());
-  await signIn(page, `riley.stone${tag}@example.test`, "/jobs");
+  await tidy(page.context());
+  await signIn(page, await freshAccount("riley.stone"), "/jobs");
   await expect(page.getByRole("heading", { name: /jobs? from (the last|any date)/i })).toBeVisible();
   test.skip(!(await page.getByText("Showing fictional sample employers").isVisible()), "Run the dev server with JOBS_FIXTURES=1");
   await page.goto("/jobs/employers");
@@ -126,7 +115,7 @@ test("jobs: compare two jobs and keep a resume per kind of role", async ({ page 
   await page.goto("/jobs?q=Developer&range=any");
   const items = page.getByRole("region", { name: /jobs from/i }).getByRole("listitem");
   await expect(items.first()).toBeVisible();
-  await page.evaluate(() => document.querySelectorAll("p").forEach((p) => p.textContent?.includes("JOBS_FIXTURES") && p.remove()));
+  await dropFixtureNotes(page);
   await items.nth(0).getByLabel(/^Compare /).check();
   await items.nth(1).getByLabel(/^Compare /).check();
   await page.getByTestId("compare-bar").getByRole("link", { name: "Compare" }).click();

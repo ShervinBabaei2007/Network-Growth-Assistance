@@ -8,6 +8,6 @@ import base from "./playwright.config";
 export default defineConfig({
   ...base,
   testMatch: /readme-video\.spec\.ts/,
-  timeout: 420_000,
+  timeout: 480_000,
   projects: [{ name: "video", use: { ...devices["Desktop Chrome"], actionTimeout: 25_000, viewport: { width: 1280, height: 720 } } }],
 });

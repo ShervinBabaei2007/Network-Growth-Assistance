@@ -18,7 +18,7 @@
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
     "test:e2e": "playwright test",
-    "docs:screenshots": "playwright test -c playwright.readme.config.ts",
+    "docs:screenshots": "playwright test -c playwright.readme.config.ts && node scripts/docs/frame-screenshots.mjs",
     "check:bundle": "node scripts/check-client-bundle.mjs",
     "check:budget": "node scripts/check-route-budget.mjs",
     "smoke": "node scripts/smoke.mjs",

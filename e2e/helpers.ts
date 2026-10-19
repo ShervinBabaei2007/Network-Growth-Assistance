@@ -95,6 +95,15 @@ export async function adminRest(method: "GET" | "POST" | "PATCH" | "DELETE", pat
   return text ? JSON.parse(text) : null;
 }
 
+/** A call to the local Supabase auth admin API with the server key (e.g. DELETE users/<id>), for test setup. */
+export async function adminAuth(method: "GET" | "DELETE", path: string): Promise<void> {
+  const url = localEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const key = localEnv("SUPABASE_SECRET_KEY");
+  if (!url || !key) throw new Error("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY for test setup.");
+  const res = await fetch(`${url}/auth/v1/admin/${path}`, { method, headers: { apikey: key, Authorization: `Bearer ${key}` } });
+  if (!res.ok) throw new Error(`${method} auth ${path}: ${res.status} ${await res.text()}`);
+}
+
 /** Calls a cron route the way pg_cron does, with CRON_SECRET from .env.local. */
 export async function runCron(route: "alerts" | "crawl" | "daily", base = "http://localhost:3000") {
   const secret = localEnv("CRON_SECRET");

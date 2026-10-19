@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/images/banner.svg" alt="Network Growth Assistant. Built with Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, Supabase, PostgreSQL, Vercel, Zod, Vitest, Playwright, GitHub Actions and free AI services." width="100%" />
+<img src="docs/images/banner.png" alt="Network Growth Assistant: Discover and Jobs shown in a browser and on a phone. Built with Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, Supabase, PostgreSQL, pgvector, Zod, Gemini, Groq, Mistral, Claude, Vitest, Playwright, pgTAP, GitHub Actions, Docker and Vercel." width="100%" />
 
 **Grow your professional network and run your job search from one calm, honest workspace.**
 
@@ -14,15 +14,16 @@ Know who to contact next. Find real, recent jobs from employers' own career page
 
 <br />
 
-<a href="docs/media/demo.mp4"><img src="docs/images/demo.webp" alt="A 30-second tour: Overview, Discover finding verified people with their sources, Jobs with fit explained and compare, Applications, Follow-ups, and the same app on a phone." width="86%" /></a>
+<a href="docs/media/demo.mp4"><img src="docs/images/demo.webp" alt="A 50-second tour in six chapters: honest progress on Overview, Quick capture from a pasted LinkedIn search, Discover finding verified people with their sources, Jobs with fit explained and compare, Applications and Follow-ups, and the same app on a phone." width="86%" /></a>
 
-<sub>A 30-second tour on fictional example data (720p preview). <a href="docs/media/demo.mp4"><b>Watch it in 1080p (MP4)</b></a>. Regenerate it with <code>npm run docs:video</code>.</sub>
+<sub>A 50-second tour on fictional example data (720p preview). <a href="docs/media/demo.mp4"><b>Watch it in 1080p (MP4)</b></a>. Regenerate it with <code>npm run docs:video</code>.</sub>
 
 </div>
 
 ---
 
 > ### You stay in control
+>
 > The app **never scrapes LinkedIn**, **never sends invitations or messages for you** and **never asks for your LinkedIn password**. You open every profile and send every message yourself. It only reads what you paste, import or search for in public sources, and it tells you where every fact came from.
 
 ## Contents
@@ -94,7 +95,7 @@ Set your own goal, schools, disciplines and targets. The Overview shows where yo
 ## What it does
 
 | Area | What you get |
-|---|---|
+| --- | --- |
 | **Home page and guides** | A short public home page, plus three how-to guides (export your LinkedIn connections, build a networking plan, track job applications). Signed-in people go straight to Overview. |
 | **Sign-in** | Sign in or sign up with Google, with email and password (email confirmed, password reset included), or with an emailed sign-in link. |
 | **Welcome and example data** | A four-step welcome, an 18-stop tour and a checklist. **Look around with example data** fills an empty account with clearly labelled made-up people, a plan and applications, and one click removes them. Examples are never exported. |
@@ -198,8 +199,8 @@ npm run dev                 # http://localhost:3000
 Then:
 
 1. Set `CRON_SECRET` in `.env.local` to any random string of 16 or more characters.
-2. Open http://localhost:3000 and choose **Sign up** (or **Sign in**).
-3. Local emails never leave your machine. Open **Mailpit** at http://127.0.0.1:54324 to read the confirmation or sign-in link and click it.
+2. Open <http://localhost:3000> and choose **Sign up** (or **Sign in**).
+3. Local emails never leave your machine. Open **Mailpit** at <http://127.0.0.1:54324> to read the confirmation or sign-in link and click it.
 
 > [!CAUTION]
 > **Careful with `npm run db:reset`.** It erases your local database. If it holds data you want, apply new migrations with `npx supabase migration up --local` instead.
@@ -208,7 +209,7 @@ Then:
 <summary><b>npm scripts</b></summary>
 
 | Script | What it does |
-|---|---|
+| --- | --- |
 | `npm run dev` / `build` / `start` | Run, build and serve the app. |
 | `npm run typecheck` / `lint` | Type-check and lint. |
 | `npm test` | Vitest unit tests. |
@@ -220,9 +221,9 @@ Then:
 | `npm run ops:report -- <url>` | Prints real-user page speed and recent errors (needs `CRON_SECRET`). |
 | `npm run db:start` / `db:reset` / `db:types` | Local Supabase, and regenerate the database types. |
 | `npm run employers:discover` / `employers:load` | Employer directory tools for the job crawler. |
-| `npm run docs:screenshots` | Regenerates the pictures in this README from the app (needs `db:start`). |
-| `npm run docs:video` | Records the 30-second tour from the app and encodes `docs/media/demo.mp4` (1080p) and `docs/images/demo.webp` (a looping 720p preview) (needs `db:start`). |
-| `npm run docs:banner` | Rebuilds the banner at the top of this README. |
+| `npm run docs:screenshots` | Regenerates the pictures in this README from the app and frames them (a browser window for desktop pages, a phone for phone pages) (needs `db:start`). |
+| `npm run docs:video` | Records the tour from the app, edits it (chapter titles, zooms, a framed window) and encodes `docs/media/demo.mp4` (1080p) and `docs/images/demo.webp` (a looping 720p preview) (needs `db:start`). |
+| `npm run docs:banner` | Rebuilds the banner at the top of this README from the framed pictures (run after `docs:screenshots`). |
 | `npm run docs:check` | Fails on a broken link, anchor or image, an `npm run` script or environment variable that doesn't exist, or a wrong migration or test count in the docs. |
 | `npm run bench:seed` / `bench:explain` / `bench:clean` | Fills a separate local user with 20,000 rows, prints query plans and times, and removes it. Local database only. |
 | `bash scripts/restore-rehearsal.sh` | Backs up the local database, restores it into a scratch database and compares every table. |
@@ -235,7 +236,7 @@ Then:
 
 The sign-in page has **Sign in** and **Sign up** tabs, a **Continue with Google** button, and a link to use an emailed sign-in link instead of a password.
 
-**Email.** Locally, emails go to Mailpit (http://127.0.0.1:54324). On a deployed site Supabase's built-in email sends very little and is meant for testing, so add your own SMTP provider (Supabase **Project Settings → Authentication → SMTP Settings**). Also set, in the dashboard under Authentication: **Confirm email** on, minimum password length 8, and **Site URL** and **Redirect URLs** to your site. The local `supabase/config.toml` sets these only for your own computer.
+**Email.** Locally, emails go to Mailpit (<http://127.0.0.1:54324>). On a deployed site Supabase's built-in email sends very little and is meant for testing, so add your own SMTP provider (Supabase **Project Settings → Authentication → SMTP Settings**). Also set, in the dashboard under Authentication: **Confirm email** on, minimum password length 8, and **Site URL** and **Redirect URLs** to your site. The local `supabase/config.toml` sets these only for your own computer.
 
 **Google, locally.** Google is already switched on in `supabase/config.toml`, but it needs your own Google client:
 
@@ -257,7 +258,7 @@ Copy `.env.example` to `.env.local` for local work. On Vercel, add the same name
 **Required**
 
 | Name | Purpose |
-|---|---|
+| --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Your project address, such as `https://<ref>.supabase.co`. Not the dashboard address. |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Browser key. Access is enforced by row-level security. |
 | `SUPABASE_SECRET_KEY` | Server only. Bypasses row-level security. Used by scheduled jobs, monitoring and account deletion. |
@@ -266,7 +267,7 @@ Copy `.env.example` to `.env.local` for local work. On Vercel, add the same name
 **Recommended**
 
 | Name | Purpose |
-|---|---|
+| --- | --- |
 | `GEMINI_API_KEY` | Free key from [Google AI Studio](https://aistudio.google.com/apikey). Turns on AI features. Without any AI key, every feature uses its non-AI path. |
 | `GROQ_API_KEY`, `MISTRAL_API_KEY` | Free keys, no card ([Groq](https://console.groq.com), [Mistral](https://console.mistral.ai)). Each adds its own daily AI allowance, used when the Gemini models run out. Mistral's free plan may train on prompts: Discover sends only public web text. |
 | `AI_DAILY_QUOTA` | Jobs AI uses (tailoring, notes, AI resume reading) per user per day on your key. Unset means no limit, so set it on a public site. `0` means users' own keys only. |
@@ -281,7 +282,7 @@ Copy `.env.example` to `.env.local` for local work. On Vercel, add the same name
 **Optional**
 
 | Name | Purpose |
-|---|---|
+| --- | --- |
 | `GEMINI_MODELS` | Comma list of Gemini models to chain, each with its own free daily quota. Default `gemini-flash-lite-latest,gemini-3.8-flash`. `GEMINI_MODEL` (one model) still works. |
 | `OPENROUTER_API_KEY` | A last-resort free AI service (50 requests a day). |
 | `ANTHROPIC_API_KEY` | Anthropic Claude, last in the chain. Pay as you go: leave it unset to stay free. |
@@ -321,7 +322,7 @@ The last full run passed **1,051 unit tests, 297 database tests and 89 end-to-en
 - **Local sign-in limits.** `supabase/config.toml` raises the local sign-in rate limit so the suite can create many users. Restart Supabase after changing it.
 
 | Quality | Result |
-|---|---|
+| --- | --- |
 | Automated accessibility | An axe-core scan (WCAG A and AA) of the public pages and every main signed-in page runs in the end-to-end tests, in light and dark, desktop and phone. Serious and critical findings fail the run. |
 | Screen reader | **Not done.** The checklist is in [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md). |
 | Colour contrast | Every text and form-field pair is unit-tested in both themes (`src/lib/contrast.test.ts`) |
@@ -336,11 +337,13 @@ After you change a migration, run it locally, then `npm run db:types` to regener
 The app runs on **Vercel** (web app and one daily job) and **Supabase** (database, sign-in, file storage and an optional embedding function). The full, step-by-step guide is in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). In short:
 
 1. Create a Supabase project, then link it and apply the migrations (there are 31, and the newest features need them):
+
    ```sh
    npx supabase login
    npx supabase link --project-ref <your-project-ref>
    npx supabase db push
    ```
+
 2. Import the repository in Vercel and add the environment variables above. The function region is set to `pdx1` in `vercel.json`: keep it next to your Supabase region.
 3. In Supabase **Authentication → URL Configuration**, set **Site URL** to your Vercel address and add it, with `/**`, to **Redirect URLs**. Turn on **Confirm email** and set the minimum password length to 8.
 4. Set up custom SMTP, and Google sign-in if you want it (see [Sign-in](#sign-in)).
@@ -355,7 +358,14 @@ The app serves `robots.txt` (crawling allowed), a sitemap and `llms.txt` for its
 
 ## How it is built
 
-**Stack.** Next.js 16 (App Router, streaming, partial prerendering) on React 19, TypeScript, Tailwind v4, shadcn/ui on Base UI, cmdk (search palette) and Recharts (both loaded on demand), Supabase (Postgres, Auth, Storage, row-level security, pg_cron), Zod, `@react-pdf/renderer`, `docx`, `mammoth` and `unpdf` for resumes, Nodemailer for alert email, and Vitest, pgTAP and Playwright with axe-core for tests. AI is a chain of free services over plain REST (Gemini models, then Groq and Mistral), with optional Anthropic; ORCID and GitHub supply the people.
+**Stack**
+
+| Layer | Technologies |
+| --- | --- |
+| Frontend | Next.js 16 (App Router, streaming, partial prerendering), React 19, TypeScript, Tailwind CSS 4, shadcn/ui |
+| Backend | Supabase (PostgreSQL with row-level security, Auth, Storage, pg_cron, an Edge Function), pgvector for matching by meaning, Zod for validation |
+| AI | A chain of free services (Gemini, then Groq and Mistral), with Claude as an optional last step |
+| Testing and DevOps | Vitest, Playwright with axe-core, pgTAP, GitHub Actions, Docker (local Supabase), Vercel |
 
 ```mermaid
 flowchart TB
@@ -439,13 +449,13 @@ docs/              deployment guide, feature guide, accessibility, implementatio
 ## Troubleshooting
 
 | Symptom | Likely cause and fix |
-|---|---|
+| --- | --- |
 | "Google sign-in isn't available right now" | Google has no client set up. Locally, follow [Sign-in](#sign-in) and restart Supabase. Deployed, turn Google on in Supabase **Authentication → Sign In / Providers**. |
 | Google says `redirect_uri_mismatch` | The redirect URI in Google Cloud differs from `http://127.0.0.1:54321/auth/v1/callback` (local) or `https://<ref>.supabase.co/auth/v1/callback` (deployed). It must match exactly. |
 | Google says "Access blocked" | Your email isn't listed under **Audience → Test users**, or the app is still in testing. |
 | Google button shows a Supabase page, or a "not found" page | `NEXT_PUBLIC_SUPABASE_URL` holds the dashboard address. It must be `https://<ref>.supabase.co`. Fix it and redeploy. |
 | Sign-in sends people to a Vercel "request access" page | **Site URL** in Supabase is wrong. Use your public Vercel address, with no path. |
-| Sign-up or reset emails never arrive (deployed) | Supabase needs custom SMTP for anyone outside your team. Check spam, too. Locally, read them in Mailpit at http://127.0.0.1:54324. |
+| Sign-up or reset emails never arrive (deployed) | Supabase needs custom SMTP for anyone outside your team. Check spam, too. Locally, read them in Mailpit at <http://127.0.0.1:54324>. |
 | Confirmation or reset link is refused | The site address is missing from **Redirect URLs** (add `https://<your-site>/**`). |
 | Scheduled crawl returns `401` | `CRON_SECRET` in Vercel differs from the one stored in Supabase. They must match exactly. Redeploy after changing it. |
 | Jobs page is empty | Run `npm run employers:load`, then schedule the crawler. First results take about 10 minutes. |
@@ -483,5 +493,5 @@ No licence has been chosen yet, so all rights are reserved. Please ask before re
 This project is not affiliated with LinkedIn, Google or any employer.
 
 <div align="center">
-<sub>Built with Next.js, Supabase and shadcn/ui · Your network, your rules.</sub>
+<sub>Built with Next.js, Supabase and TypeScript · Your network, your rules.</sub>
 </div>
