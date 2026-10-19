@@ -30,7 +30,9 @@ describe("ORCID current employment", () => {
     const r = evaluate(person({ educations: [msc], employments: [aff("Microsoft Corp", "Redmond", "US", 2013, null)], lastModified: "2022-06-01T00:00:00Z" }));
     expect(r?.ev.company.confidence).toBe("low");
     expect(r?.d.facts.find((f) => f.field === "company")?.extractedText).toContain("record last updated 2022");
-    expect(scorePerson(r!.ev, r!.d.facts).tier).toBe("possible");
+    const scored = scorePerson(r!.ev, r!.d.facts);
+    expect(scored.tier).toBe("possible");
+    expect(scored.tierReason).toContain("company (profile last updated 2022)");
   });
 
   it("counts a job that ends this year as current, and one that ended earlier as past", () => {

@@ -63,27 +63,29 @@ export class GeminiLLM implements LLMProvider {
   readonly usage: LlmUsage = { calls: 0, inputTokens: 0, outputTokens: 0 };
   readonly model: string;
   private readonly fetchImpl: typeof fetch;
+  private readonly retryDelaysMs: number[];
 
   /** Uses the server's GEMINI_API_KEY, or a user's own key when given. */
   constructor(
     private readonly apiKey: string | undefined = process.env.GEMINI_API_KEY || undefined,
-    opts: { model?: string; fetchImpl?: typeof fetch } = {},
+    opts: { model?: string; fetchImpl?: typeof fetch; retryDelaysMs?: number[] } = {},
   ) {
     this.enabled = Boolean(apiKey);
     this.model = opts.model ?? geminiModel();
     this.fetchImpl = opts.fetchImpl ?? fetch;
+    // The free tier answers 503 ("overloaded") now and then; it usually clears within a few seconds.
+    this.retryDelaysMs = opts.retryDelaysMs ?? [800, 2500];
   }
 
   async structured<S extends z.ZodType>({ system, user, schema, maxTokens = 8000 }: { tier: LlmTier; system: string; user: string; schema: S; maxTokens?: number }): Promise<LlmResult<z.infer<S>>> {
     if (!this.enabled || !this.apiKey) return { ok: false, reason: "AI isn't configured on this server." };
     this.usage.calls++;
-    let res: Response;
-    try {
-      res = await this.fetchImpl(`${API}/models/${encodeURIComponent(this.model)}:generateContent`, {
+    const send = () =>
+      this.fetchImpl(`${API}/models/${encodeURIComponent(this.model)}:generateContent`, {
         method: "POST",
         signal: AbortSignal.timeout(TIMEOUT_MS),
         cache: "no-store",
-        headers: { "content-type": "application/json", "x-goog-api-key": this.apiKey },
+        headers: { "content-type": "application/json", "x-goog-api-key": this.apiKey! },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: system }] },
           contents: [{ role: "user", parts: [{ text: user }] }],
@@ -96,6 +98,14 @@ export class GeminiLLM implements LLMProvider {
           },
         }),
       });
+    let res: Response;
+    try {
+      res = await send();
+      for (const delay of this.retryDelaysMs) {
+        if (![500, 502, 503, 504].includes(res.status)) break;
+        await new Promise((r) => setTimeout(r, delay));
+        res = await send();
+      }
     } catch (e) {
       if (e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError")) return { ok: false, reason: "The AI service took too long to answer." };
       return { ok: false, reason: "Couldn't reach the AI service." };

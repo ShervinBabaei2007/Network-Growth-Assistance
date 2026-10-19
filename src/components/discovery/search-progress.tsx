@@ -70,7 +70,9 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
   const emptyNote = !empty
     ? null
     : !m.queries
-      ? "No searches could be run for this request. Add a school, a city or a company and try again."
+      ? view.parseNote
+        ? "The service that reads your request was unavailable, so details such as your school may have been missed. Try again in a minute."
+        : "No searches could be run for this request. Add a school, a city or a company and try again."
       : m.providerFailures
         ? "Some sources were busy or unavailable. Try again in a little while."
         : "Nothing in the public sources matched. Try fewer requirements, or name a school, city or company.";
