@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OrcidSearchProvider } from "./orcid";
 
-const id = (n: number) => `0000-0000-0000-${String(n).padStart(4, "0")}`.replace(/(\d{4})$/, (m) => m); // 0000-0000-0000-0001
+const id = (n: number) => `0000-0000-0000-${String(n).padStart(4, "0")}`;
 const record = (n: number) => ({
   person: { name: { "given-names": { value: "Person" }, "family-name": { value: `Number${n}` } } },
   history: { "last-modified-date": { value: Date.UTC(2026, 0, 1) } },
