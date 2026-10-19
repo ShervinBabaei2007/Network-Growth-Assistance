@@ -18,6 +18,7 @@ type Summary = {
 };
 type Group = { summaries?: Record<string, Summary>[] };
 type OrcidRecord = {
+  history?: { "last-modified-date"?: { value?: number } | null } | null;
   person?: {
     name?: { "given-names"?: { value?: string } | null; "family-name"?: { value?: string } | null; "credit-name"?: { value?: string } | null } | null;
     biography?: { content?: string | null } | null;
@@ -67,6 +68,7 @@ export function orcidProfileFromRecord(id: string, r: OrcidRecord): OrcidProfile
     educations: [...affiliations(a?.educations?.["affiliation-group"]), ...affiliations(a?.qualifications?.["affiliation-group"])],
     employments: affiliations(a?.employments?.["affiliation-group"]),
     htmlUrl: `https://orcid.org/${id}`,
+    lastModified: typeof r.history?.["last-modified-date"]?.value === "number" ? new Date(r.history["last-modified-date"].value).toISOString() : null,
   };
 }
 

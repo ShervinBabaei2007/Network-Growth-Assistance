@@ -31,6 +31,8 @@ export type OrcidProfile = {
   educations: OrcidAffiliation[];
   employments: OrcidAffiliation[];
   htmlUrl: string;
+  /** When the person last edited their record (ISO date). Old records may list jobs they have since left. */
+  lastModified?: string | null;
 };
 
 export type GitHubProfile = {

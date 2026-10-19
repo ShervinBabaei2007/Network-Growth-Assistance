@@ -48,6 +48,7 @@ describe("orcidProfileFromRecord", () => {
       educations: [{ organization: "University of Toronto", city: "Toronto", country: null, department: "Electrical & Computer Engineering", role: "BASc, Computer Engineering", startYear: 2018, endYear: 2022 }],
       employments: [],
       htmlUrl: "https://orcid.org/0009-0000-0000-0001",
+      lastModified: null,
     });
   });
 });
