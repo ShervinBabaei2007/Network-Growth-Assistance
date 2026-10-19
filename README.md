@@ -23,7 +23,7 @@ Know who to contact next. Find real, recent jobs from employers' own career page
 &nbsp;
 <img src="docs/images/mobile-overview.png" alt="The same app on a phone" width="17%" />
 
-<sub>Fictional data. These pictures are generated from the app with <code>npm run docs:screenshots</code>. They were taken before the newest pages (Follow-ups, Interview prep, the sign-in tabs and the new home page), which are not pictured.</sub>
+<sub>Fictional data. Every picture here is generated from the app with <code>npm run docs:screenshots</code>.</sub>
 
 </div>
 
@@ -135,6 +135,18 @@ For the detail behind each feature and what is not built, see the [feature guide
   <tr>
     <td width="50%"><a href="docs/images/resume.png"><img src="docs/images/resume.png" alt="Resume import with a confidence marker on each field" /></a><br /><sub><b>📄 Resume</b>: read without AI; uncertain fields are marked <i>Needs review</i> with the reason.</sub></td>
     <td width="50%"><a href="docs/images/overview-dark.png"><img src="docs/images/overview-dark.png" alt="Overview in the dark theme" /></a><br /><sub><b>🌙 Dark theme</b>: light, dark or follow your system, with density and text size controls.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/images/follow-ups.png"><img src="docs/images/follow-ups.png" alt="Follow-ups: due and upcoming touches with editable drafts" /></a><br /><sub><b>💬 Follow-ups</b>: a thank-you, a short chat and check-ins after someone accepts, with drafts you copy and send yourself.</sub></td>
+    <td width="50%"><a href="docs/images/interview-prep.png"><img src="docs/images/interview-prep.png" alt="Interview prep: likely topics and your own resume lines matched to questions" /></a><br /><sub><b>🎤 Interview prep</b>: built only from your posting and your own resume lines, so it cannot invent experience.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/images/jobs-compare.png"><img src="docs/images/jobs-compare.png" alt="Compare jobs side by side" /></a><br /><sub><b>⚖️ Compare jobs</b>: two or three postings side by side; a missing detail reads "Not stated".</sub></td>
+    <td width="50%"><a href="docs/images/resume-tracks.png"><img src="docs/images/resume-tracks.png" alt="Which resume to use: fit of each resume track for one job" /></a><br /><sub><b>🗂️ Resume tracks</b>: a base resume per kind of role, with the fit of each and what it does not show.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/images/home.png"><img src="docs/images/home.png" alt="The public home page" /></a><br /><sub><b>🏠 Home page</b>: what the app is, in one column, with the questions people ask.</sub></td>
+    <td width="50%"><a href="docs/images/login.png"><img src="docs/images/login.png" alt="Sign in and sign up tabs with Google, password and emailed link" /></a><br /><sub><b>🔑 Sign in</b>: Google, email and password, or an emailed link.</sub></td>
   </tr>
 </table>
 

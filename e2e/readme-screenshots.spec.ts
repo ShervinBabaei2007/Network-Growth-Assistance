@@ -247,6 +247,7 @@ test("discover: people with quoted evidence", async ({ page, context }) => {
 test("jobs: verified postings with fit explained", async ({ page, browser }) => {
   await hideToasts(page.context());
   await signIn(page, `riley.park${tag}@example.test`, "/jobs");
+  await expect(page.getByRole("heading", { name: /jobs? from (the last|any date)/i })).toBeVisible();
   test.skip(!(await page.getByText("Showing fictional sample employers").isVisible()), "Run the dev server with JOBS_FIXTURES=1");
   await page.goto("/jobs/employers");
   await page.getByRole("button", { name: "Read due boards now" }).click();
