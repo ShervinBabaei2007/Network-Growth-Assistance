@@ -313,13 +313,14 @@ console.log(`docs/media/demo.mp4  ${W}x${H}  ${mb("docs/media/demo.mp4")} MB, ${
 
 // --------------------------------------------------------------- preview
 // A looping animated WebP the README can show inline, at 720p. Try gentler settings until it is small enough to load quickly.
+// The frame rate always divides the video's 30fps evenly: 20fps would drop every third frame, so motion stutters.
 const LIMIT_MB = 9;
 const run = (args) => {
   const r = spawnSync(ffmpeg, ["-y", "-hide_banner", "-loglevel", "error", ...args], { encoding: "utf8" });
   if (r.status !== 0) throw new Error(r.stderr);
 };
 rmSync("docs/images/demo.gif", { force: true });
-for (const [fps, quality] of [[20, 82], [15, 78], [15, 70], [12, 66], [10, 60], [10, 50]]) {
+for (const [fps, quality] of [[30, 80], [30, 72], [30, 64], [15, 78], [15, 66], [10, 60]]) {
   run(["-i", "docs/media/demo.mp4", "-vf", `fps=${fps},scale=1280:-2:flags=lanczos`, "-c:v", "libwebp_anim", "-quality", String(quality), "-compression_level", "6", "-loop", "0", "-an", "docs/images/demo.webp"]);
   console.log(`docs/images/demo.webp 1280px ${fps}fps quality ${quality}: ${mb("docs/images/demo.webp")} MB`);
   if (statSync("docs/images/demo.webp").size / 1024 / 1024 <= LIMIT_MB) break;
