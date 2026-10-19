@@ -97,6 +97,10 @@ const IN = new RegExp(`\\bin\\s+(?:the\\s+)?(${NAME})`, "gu");
 /** "working as a Registered Nurse", "who are Paralegals". */
 const AS = /\b(?:working as|work as|who are|as an?|as)\s+(?:an?\s+)?([A-Za-z][A-Za-z /&-]{2,60}?)(?=\s+(?:at|in|from|who|with|and)\b|[,.;]|$)/i;
 
+/** Words that start a field of study, so a school's name can be told from the program written after it. */
+const FIELD_WORDS =
+  "Computer|Computing|Science|Sciences|Engineering|Law|Nursing|Commerce|Business|Psychology|Medicine|Arts|Mechanical|Electrical|Civil|Chemical|Health|Education|Social|Political|Economics|Mathematics|Math|Physics|Chemistry|Biology|Kinesiology|Design|Music|Architecture|Pharmacy|Dentistry|Alumni|Graduates|Grads|Students";
+
 const tidy = (s: string) => s.trim().replace(/\s+(?:who|working|and|in|at|from)$/i, "").trim();
 
 /**
@@ -109,6 +113,7 @@ export function parseRequestDeterministic(query: string, catalog?: Catalog): Net
   const t = clean(query);
   let institution: string | null = null;
   let aliases: string[] = [];
+  let writtenField: string | null = null;
   const school = catalog?.universities.find((u) => hasAny(t, phrasesFor(u)));
   if (school) {
     institution = school.name;
@@ -118,12 +123,18 @@ export function parseRequestDeterministic(query: string, catalog?: Catalog): Net
     const m =
       query.match(new RegExp(`\\b(?:University|Université) of (?:${WORD}\\s?)+`, "u")) ??
       query.match(new RegExp(`\\b(?:${WORD}\\s)+(?:University|Institute of Technology|Polytechnic(?: University)?|College)\\b`, "u"));
-    const name = m ? tidy(m[0]) : "";
+    // "University of Waterloo Computer Science": the school ends where the field begins.
+    const written = m ? tidy(m[0]) : "";
+    const cut = written.search(new RegExp(`\\s(?:${FIELD_WORDS})\\b`, "i"));
+    const name = cut > 0 ? written.slice(0, cut).trim() : written;
+    if (cut > 0) writtenField = written.slice(cut).trim();
     if (name && !/^(Find|Show|Get|List)\b/.test(name)) institution = name;
   }
 
   const fields = catalog?.disciplines.filter((d) => hasAny(t, phrasesFor(d))) ?? [];
-  const programs = fields.map((d) => d.name);
+  // Without the user's own list, a field written right after the school's name still counts: "University of Alberta Law".
+  const inline = writtenField && institution ? writtenField.replace(/\s+(?:alumni|alumnus|alumna|graduates?|grads?|students?)$/i, "") : "";
+  const programs = fields.length ? fields.map((d) => d.name) : inline && inline.split(" ").length <= 4 ? [inline] : [];
   const programAliases = fields.flatMap((d) => d.aliases);
 
   const role = query.match(AS)?.[1];

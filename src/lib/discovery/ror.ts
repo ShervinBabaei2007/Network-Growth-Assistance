@@ -51,5 +51,7 @@ export function schoolAcronymCandidates(query: string): string[] {
   };
   for (const m of query.matchAll(/\b([A-Za-z]{2,7})\s+(?:alumni|alumnus|alumna|alums?|graduates?|grads?|students?|undergrads?)\b/g)) add(m[1]);
   for (const m of query.matchAll(/\b(?:from|at|of|attended|studied at)\s+(?:the\s+)?([A-Z]{2,6})\b/g)) add(m[1]);
+  // Any other all-capitals word ("UBC Mechanical Engineering alumni"); the registry decides whether it is a school.
+  for (const m of query.matchAll(/\b([A-Z]{2,7})\b/g)) add(m[1]);
   return out.slice(0, 3);
 }

@@ -9,6 +9,7 @@ describe("school short names", () => {
     expect(schoolAcronymCandidates("Find 20 SFU alumni in Vancouver working at Microsoft")).toEqual(["SFU"]);
     expect(schoolAcronymCandidates("people who graduated from UBC and now work at AWS")).toEqual(["UBC", "AWS"]);
     expect(schoolAcronymCandidates("Find 20 Computer Science alumni working as software engineers at startups")).toEqual([]);
+    expect(schoolAcronymCandidates("Find 10 UBC Mechanical Engineering alumni working at Tesla")).toEqual(["UBC"]);
   });
 
   it("resolves an acronym only when exactly one school in the country has it", async () => {

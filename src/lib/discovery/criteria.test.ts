@@ -218,3 +218,18 @@ describe("a school named only by its short name", () => {
     }
   });
 });
+
+describe("a school written in full, with its program right after", () => {
+  it("keeps the school and the program apart", () => {
+    const a = parseRequestDeterministic("Find 10 University of Waterloo Computer Science alumni working at Google");
+    expect(a.education.institution).toBe("University of Waterloo");
+    expect(a.education.programs).toEqual(["Computer Science"]);
+    const b = parseRequestDeterministic("Find 10 University of Alberta Law alumni working as lawyers in Calgary");
+    expect(b.education.institution).toBe("University of Alberta");
+    expect(b.education.programs).toEqual(["Law"]);
+  });
+  it("leaves a plain school name alone", () => {
+    expect(parseRequestDeterministic("Find 10 Queen's University Commerce alumni working at RBC in Toronto").education.institution).toBe("Queen's University");
+    expect(parseRequestDeterministic("Find 5 McGill University alumni").education.institution).toBe("McGill University");
+  });
+});
