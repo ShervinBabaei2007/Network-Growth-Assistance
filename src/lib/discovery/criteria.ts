@@ -170,6 +170,29 @@ export function companyAliases(companies: string[]): string[] {
 
 export const matchAlias = (text: string, aliases: string[]) => aliases.find((a) => has(clean(text), a)) ?? null;
 
+/** Company names that are also ordinary words or other organizations' names ("Apple Valley Hospital", "Meta-analysis Lab"). */
+const AMBIGUOUS_COMPANIES = new Set(["apple", "meta", "alphabet", "oracle", "target", "square", "block", "slack", "zoom", "stripe", "uber", "intel", "amd"]);
+/** Words a company's registered or regional name adds to its brand: "Apple Inc.", "Microsoft Research (Canada)", "Meta Platforms". */
+const COMPANY_SUFFIX = new Set(
+  "inc incorporated corp corporation co company ltd limited llc plc lp group holdings global international technologies technology software platforms research labs lab cloud canada canadian usa us uk america american europe asia india china japan germany ireland australia".split(" "),
+);
+
+/**
+ * Whether an employer name (as a person or record wrote it) is one of the requested companies. Most names match when they
+ * contain the company as whole words. A name that is also an ordinary word must be the company itself, optionally with a
+ * corporate or regional suffix, so "Apple Inc." matches Apple and "Apple Valley Hospital" does not.
+ */
+export function matchCompany(value: string, aliases: string[]): string | null {
+  const hit = matchAlias(value, aliases);
+  if (!hit || !AMBIGUOUS_COMPANIES.has(hit)) return hit;
+  const words = clean(value.replace(/\([^)]*\)/g, " ")).trim().split(" ").filter(Boolean);
+  const brand = hit.split(" ");
+  const at = words.findIndex((_, i) => brand.every((b, j) => words[i + j] === b));
+  if (at < 0) return null;
+  const rest = [...words.slice(0, at), ...words.slice(at + brand.length)];
+  return rest.every((w) => COMPANY_SUFFIX.has(w)) ? hit : null;
+}
+
 const LOCATION_ALIASES: Record<string, readonly string[]> = {
   toronto: ["toronto", "gta", "greater toronto area"],
   vancouver: ["vancouver", "greater vancouver", "burnaby"],

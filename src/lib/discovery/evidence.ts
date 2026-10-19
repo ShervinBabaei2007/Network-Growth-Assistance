@@ -5,6 +5,7 @@ import {
   institutionMatcher,
   locationAliases,
   matchAlias,
+  matchCompany,
   matchInstitution,
   matchProgram,
   matchRole,
@@ -123,7 +124,7 @@ export function evaluateCriteria(facts: Fact[], criteria: NetworkingCriteria, to
 
   const companyFacts = of("company");
   const company = companies.length
-    ? pick(companyFacts.flatMap((f) => (matchAlias(f.value, companies) ? [{ c: f.confidence, v: f.value, src: f.sourceUrl }] : [])))
+    ? pick(companyFacts.flatMap((f) => (matchCompany(f.value, companies) ? [{ c: f.confidence, v: f.value, src: f.sourceUrl }] : [])))
     : { confidence: null, value: null };
   // Known to work somewhere not on the list (with good evidence): a mismatch, not an unknown.
   const companyConflict =

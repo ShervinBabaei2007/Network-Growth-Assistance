@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { NURSING_CATALOG, TEST_CATALOG } from "@/test/catalog";
-import { institutionMatcher, matchInstitution, matchProgram, programMatchers, roleAliases, type NetworkingCriteria } from "./criteria";
+import { companyAliases, institutionMatcher, matchCompany, matchInstitution, matchProgram, programMatchers, roleAliases, type NetworkingCriteria } from "./criteria";
 import { disabledLLM, type LLMProvider } from "./llm";
 import { parseRequest, parseRequestDeterministic, toCriteria, withUserLists } from "./parse-request";
 
@@ -181,5 +181,20 @@ describe("matching", () => {
     expect(roleAliases(["Software Engineer"])).toEqual(expect.arrayContaining(["software developer", "backend engineer", "sde"]));
     expect(roleAliases(["Nurse"])).toEqual(expect.arrayContaining(["registered nurse", "rn"]));
     expect(roleAliases(["Lawyer"])).toEqual(expect.arrayContaining(["associate", "barrister"]));
+  });
+});
+
+describe("matchCompany", () => {
+  const apple = companyAliases(["Apple"]);
+  it("accepts the company with a corporate or regional suffix", () => {
+    for (const v of ["Apple", "Apple Inc.", "Apple Canada", "Apple (United States)"]) expect(matchCompany(v, apple), v).toBe("apple");
+  });
+  it("rejects other organizations that contain a common word", () => {
+    for (const v of ["Apple Valley Hospital", "Big Apple Bagels", "Pineapple Labs"]) expect(matchCompany(v, apple), v).toBeNull();
+  });
+  it("still finds units of an unambiguous company", () => {
+    const ms = companyAliases(["Microsoft"]);
+    for (const v of ["Microsoft Research (United Kingdom)", "Microsoft Corp", "Microsoft (India)"]) expect(matchCompany(v, ms), v).toBe("microsoft");
+    expect(matchCompany("Amazon Lab126", companyAliases(["Amazon"]))).toBe("amazon");
   });
 });
