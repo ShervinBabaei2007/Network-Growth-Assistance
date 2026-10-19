@@ -55,3 +55,18 @@ describe("ORCID school", () => {
     expect(r).toBeNull();
   });
 });
+
+describe("people from the right school with no sign of the company", () => {
+  it("are not matches when specific companies were named", () => {
+    const r = evaluate(person({ educations: [msc], lastModified: "2026-03-01T00:00:00Z" }));
+    const scored = scorePerson(r!.ev, r!.d.facts);
+    expect(scored.tier).toBe("rejected");
+    expect(scored.tierReason).toBe("No evidence they work at a company you named");
+  });
+
+  it("stay possible when the request only asked for startups", () => {
+    const startups = { ...criteria, companies: [], includeStartups: true };
+    const d = draftFromOrcid(person({ educations: [msc], lastModified: "2026-03-01T00:00:00Z" }), startups, NOW)!;
+    expect(scorePerson(evaluateCriteria(d.facts, startups, NOW), d.facts).tier).toBe("possible");
+  });
+});

@@ -73,7 +73,7 @@ const staleNote = (text: string) => {
 };
 
 export type CriterionKey = "institution" | "program" | "role" | "company" | "location" | "gradYear" | "standing";
-export type CriterionStatus = { requested: boolean; confidence: Confidence | null; value: string | null; note?: string; conflict?: boolean };
+export type CriterionStatus = { requested: boolean; confidence: Confidence | null; value: string | null; note?: string; conflict?: boolean; /** The request names specific companies (not just "startups"). */ named?: boolean };
 export type CriteriaEvaluation = Record<CriterionKey, CriterionStatus>;
 
 /**
@@ -189,7 +189,7 @@ export function evaluateCriteria(facts: Fact[], criteria: NetworkingCriteria, to
     institution: { requested: Boolean(inst), ...institution },
     program: { requested: programs.length > 0, ...program },
     role: { requested: roles.length > 0, ...role },
-    company: { requested: companies.length > 0 || criteria.includeStartups, ...company, conflict: companyConflict },
+    company: { requested: companies.length > 0 || criteria.includeStartups, ...company, conflict: companyConflict, named: companies.length > 0 },
     location: { requested: locations.length > 0 || Boolean(country), ...location },
     gradYear: { requested: gradRequested, ...gradYear },
     standing,
