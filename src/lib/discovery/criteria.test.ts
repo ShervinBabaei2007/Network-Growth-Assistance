@@ -265,3 +265,22 @@ describe("roles in a request the AI did not read", () => {
     expect(aliases).toContain("secretary");
   });
 });
+
+describe("startups", () => {
+  const ai = (over: object): LLMProvider => ({
+    enabled: true,
+    structured: (async () => ({
+      ok: true,
+      data: { targetCount: 10, institution: "University of Toronto", institutionAliases: [], institutionDomains: [], programs: [], programAliases: [], graduationYearMin: null, graduationYearMax: null, studentStatus: "alumni", roles: ["Data Scientist"], locations: ["Toronto"], country: null, companies: [], includeStartups: false, excludeExistingConnections: true, goal: null, ...over },
+    })) as LLMProvider["structured"],
+  });
+
+  it("is only believed when the request mentions startups", async () => {
+    clearReadCache();
+    const invented = await parseRequest(ai({ includeStartups: true }), "Find 10 University of Toronto alumni working as data scientists in Toronto");
+    expect(invented.criteria.includeStartups).toBe(false);
+    clearReadCache();
+    const asked = await parseRequest(ai({ includeStartups: true }), "Find 10 University of Toronto alumni working at startups");
+    expect(asked.criteria.includeStartups).toBe(true);
+  });
+});

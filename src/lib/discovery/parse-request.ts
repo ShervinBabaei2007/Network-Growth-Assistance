@@ -77,7 +77,8 @@ export function toCriteria(p: ParsedRequest, query: string): NetworkingCriteria 
     locations: trimList(p.locations, 10, 80),
     country: p.country?.trim() ? p.country.trim().slice(0, 60) : null,
     companies: trimList(p.companies, 15, 80),
-    includeStartups: p.includeStartups,
+    // A smaller model sometimes adds "startups" on its own: only believe it when the request says so.
+    includeStartups: p.includeStartups && /start[- ]?ups?/i.test(query),
     excludeExistingConnections: p.excludeExistingConnections,
     goal: p.goal?.trim() ? p.goal.trim().slice(0, 300) : null,
   });
