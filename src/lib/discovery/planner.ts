@@ -20,7 +20,7 @@ export type QueryFamily =
   | "research_lab"
   | "orcid";
 
-export type PlannedQuery = { provider: "web" | "github" | "orcid"; query: string; family: QueryFamily };
+export type PlannedQuery = { provider: "web" | "github" | "orcid"; query: string; family: QueryFamily; /** What the search is about in words, for the coverage line (ORCID). */ label?: string };
 
 export const LINKEDIN_EXCLUSION = "-site:linkedin.com";
 
@@ -104,9 +104,13 @@ export function planQueries(criteria: NetworkingCriteria, max = 40): PlannedQuer
     const solr = (s: string) => `"${s.replace(/["\\]/g, "")}"`;
     const base = `affiliation-org-name:${solr(instName)}`;
     for (const p of programs.length ? programs : [null]) {
-      out.push({ provider: "orcid", family: "orcid", query: p ? `${base} AND text:${solr(p)}` : base });
-      for (const r of roles.slice(0, 2)) out.push({ provider: "orcid", family: "orcid", query: `${base} AND text:${solr(r)}${p ? ` AND text:${solr(p)}` : ""}` });
-      for (const c of criteria.companies.slice(0, 6)) out.push({ provider: "orcid", family: "orcid", query: `${base} AND affiliation-org-name:${solr(c)}${p ? ` AND text:${solr(p)}` : ""}` });
+      out.push({ provider: "orcid", family: "orcid", query: p ? `${base} AND text:${solr(p)}` : base, label: [instName, p].filter(Boolean).join(" + ") });
+      for (const r of roles.slice(0, 2)) out.push({ provider: "orcid", family: "orcid", query: `${base} AND text:${solr(r)}${p ? ` AND text:${solr(p)}` : ""}`, label: [instName, p, r].filter(Boolean).join(" + ") });
+      for (const c of criteria.companies.slice(0, 6)) {
+        out.push({ provider: "orcid", family: "orcid", query: `${base} AND affiliation-org-name:${solr(c)}${p ? ` AND text:${solr(p)}` : ""}`, label: [instName, p, c].filter(Boolean).join(" + ") });
+        // People abbreviate the school on their record ("SFU"): the same search under its short form.
+        if (shortName) out.push({ provider: "orcid", family: "orcid", query: `affiliation-org-name:${solr(shortName)} AND affiliation-org-name:${solr(c)}${p ? ` AND text:${solr(p)}` : ""}`, label: [instName, p, c].filter(Boolean).join(" + ") });
+      }
     }
   }
 

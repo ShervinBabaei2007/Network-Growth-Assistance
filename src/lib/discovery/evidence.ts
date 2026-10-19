@@ -5,6 +5,7 @@ import {
   institutionMatcher,
   locationAliases,
   matchAlias,
+  matchCompany,
   matchInstitution,
   matchProgram,
   matchRole,
@@ -65,8 +66,14 @@ export function sourceConfidence(opts: { nameInQuote: boolean; personalPage: boo
   return opts.peopleOnPage <= 3 ? "medium" : "low";
 }
 
+/** "profile last updated 2022" when the quoted record says it is old (the job may have ended). */
+const staleNote = (text: string) => {
+  const y = text.match(/record last updated (\d{4})/)?.[1];
+  return y ? `Profile last updated ${y}` : undefined;
+};
+
 export type CriterionKey = "institution" | "program" | "role" | "company" | "location" | "gradYear" | "standing";
-export type CriterionStatus = { requested: boolean; confidence: Confidence | null; value: string | null; note?: string; conflict?: boolean };
+export type CriterionStatus = { requested: boolean; confidence: Confidence | null; value: string | null; note?: string; conflict?: boolean; /** The request names specific companies (not just "startups"). */ named?: boolean };
 export type CriteriaEvaluation = Record<CriterionKey, CriterionStatus>;
 
 /**
@@ -123,7 +130,7 @@ export function evaluateCriteria(facts: Fact[], criteria: NetworkingCriteria, to
 
   const companyFacts = of("company");
   const company = companies.length
-    ? pick(companyFacts.flatMap((f) => (matchAlias(f.value, companies) ? [{ c: f.confidence, v: f.value, src: f.sourceUrl }] : [])))
+    ? pick(companyFacts.flatMap((f) => (matchCompany(f.value, companies) ? [{ c: f.confidence, v: f.value, src: f.sourceUrl, note: staleNote(f.extractedText) }] : [])))
     : { confidence: null, value: null };
   // Known to work somewhere not on the list (with good evidence): a mismatch, not an unknown.
   const companyConflict =
@@ -182,7 +189,7 @@ export function evaluateCriteria(facts: Fact[], criteria: NetworkingCriteria, to
     institution: { requested: Boolean(inst), ...institution },
     program: { requested: programs.length > 0, ...program },
     role: { requested: roles.length > 0, ...role },
-    company: { requested: companies.length > 0 || criteria.includeStartups, ...company, conflict: companyConflict },
+    company: { requested: companies.length > 0 || criteria.includeStartups, ...company, conflict: companyConflict, named: companies.length > 0 },
     location: { requested: locations.length > 0 || Boolean(country), ...location },
     gradYear: { requested: gradRequested, ...gradYear },
     standing,

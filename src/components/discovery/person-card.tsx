@@ -17,7 +17,7 @@ export function PersonCard({ person: p, searchId, review = false }: { person: Ca
           </h3>
           {role ? <p className="text-sm">{role}</p> : null}
           {education ? <p className="text-sm text-muted-foreground">{education}</p> : null}
-          {p.location ? <p className="text-xs text-muted-foreground">{p.location}</p> : null}
+          {p.location ? <p className="text-xs text-muted-foreground">{p.locationFrom === "employer" ? `Employer's office: ${p.location}` : p.location}</p> : null}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
           <p className={cn("rounded-md px-2 py-1 text-sm font-semibold tabular-nums", p.relevance >= 80 ? "bg-primary text-primary-foreground" : "bg-muted")}>
@@ -50,7 +50,7 @@ export function PersonCard({ person: p, searchId, review = false }: { person: Ca
       ) : null}
 
       <p className="text-xs text-muted-foreground">
-        {p.sourceCount} public source{p.sourceCount === 1 ? "" : "s"} · {p.confidence}% evidence confidence
+        {p.sourceCount} public source{p.sourceCount === 1 ? "" : "s"}{p.sourceNames.length ? ` (${p.sourceNames.join(", ")})` : ""} · {p.confidence}% evidence confidence
         {p.tier === "possible" && p.tierReason ? ` · ${p.tierReason}` : ""}
       </p>
 

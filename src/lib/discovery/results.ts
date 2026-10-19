@@ -19,6 +19,8 @@ export type PersonCard = {
   currentTitle: string | null;
   currentCompany: string | null;
   location: string | null;
+  /** Where `location` came from: the person's employer's office (not necessarily where they live), or what they wrote. */
+  locationFrom: "employer" | "person" | null;
   githubUrl: string | null;
   personalWebsite: string | null;
   linkedinUrl: string | null;
@@ -41,6 +43,8 @@ export type PersonCard = {
   crmStatus: CrmStatus;
   saved: boolean;
   sourceCount: number;
+  /** Who published the facts, e.g. "ORCID", "GitHub" or a website name. */
+  sourceNames: string[];
   networkingValue: number | null;
   reasonForConnecting: string | null;
   conversationAngle: string | null;
@@ -62,6 +66,25 @@ export type ResultFilters = {
 const CONF_ORDER: Record<Confidence, number> = { high: 3, medium: 2, low: 1 };
 const bestFact = (facts: StoredFact[], field: StoredFact["field"]) =>
   facts.filter((f) => f.field === field).sort((a, b) => CONF_ORDER[b.confidence] - CONF_ORDER[a.confidence])[0]?.value ?? null;
+
+/** "ORCID · Ada Lovelace" → "ORCID"; a page title or address → its site. */
+export function sourceName(f: Pick<StoredFact, "sourceTitle" | "sourceUrl">): string {
+  const head = f.sourceTitle?.split(" · ")[0]?.trim();
+  if (head && /^(ORCID|GitHub)$/i.test(head)) return head;
+  try {
+    return new URL(f.sourceUrl).hostname.replace(/^www\./, "");
+  } catch {
+    return head || "a public page";
+  }
+}
+
+/** The location fact shown on the card, and whether it only says where the person's employer is. */
+export function locationOrigin(facts: Pick<StoredFact, "field" | "value" | "extractedText" | "confidence">[], location: string | null): "employer" | "person" | null {
+  if (!location) return null;
+  const matching = facts.filter((f) => f.field === "location" && f.value === location);
+  if (!matching.length) return "person";
+  return matching.every((f) => /^Employment:/.test(f.extractedText)) ? "employer" : "person";
+}
 
 const contains = (hay: (string | null)[], needle?: string) => !needle || hay.some((h) => h && clean(h).includes(clean(needle).trim()));
 
@@ -91,6 +114,7 @@ export async function loadSearchResults(db: Db, searchId: string, filters: Resul
         currentTitle: p.current_title,
         currentCompany: p.current_company,
         location: p.location,
+        locationFrom: locationOrigin(f, p.location),
         githubUrl: p.github_url,
         personalWebsite: p.personal_website,
         linkedinUrl: p.linkedin_url,
@@ -112,6 +136,7 @@ export async function loadSearchResults(db: Db, searchId: string, filters: Resul
         crmStatus: p.crm_status,
         saved: p.saved,
         sourceCount: new Set(f.map((x) => x.sourceUrl)).size,
+        sourceNames: [...new Set(f.map(sourceName))].slice(0, 3),
         networkingValue: p.networking_value_score,
         reasonForConnecting: p.reason_for_connecting,
         conversationAngle: p.conversation_angle,

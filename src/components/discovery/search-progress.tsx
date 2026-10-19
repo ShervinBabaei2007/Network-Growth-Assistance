@@ -70,10 +70,15 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
   const emptyNote = !empty
     ? null
     : !m.queries
-      ? "No searches could be run for this request. Add a school, a city or a company and try again."
+      ? view.parseNote
+        ? "The service that reads your request was unavailable, so details such as your school may have been missed. Try again in a minute."
+        : "No searches could be run for this request. Add a school, a city or a company and try again."
       : m.providerFailures
         ? "Some sources were busy or unavailable. Try again in a little while."
         : "Nothing in the public sources matched. Try fewer requirements, or name a school, city or company.";
+  // The narrowest ORCID search says how many people the public registry holds for this request.
+  const narrowest = [...(m.coverage ?? [])].sort((a, b) => a.total - b.total || b.label.length - a.label.length)[0];
+  const coverageNote = !running && narrowest ? `ORCID lists ${narrowest.total.toLocaleString("en-CA")} ${narrowest.total === 1 ? "person" : "people"} matching ${narrowest.label}.` : null;
   const current = VISIBLE_STAGES.indexOf(view.stage as (typeof VISIBLE_STAGES)[number]);
 
   return (
@@ -114,6 +119,7 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
         {c.needsReview ? ` · ${c.needsReview} to review` : ""} · asked for {view.targetCount}
       </p>
       {emptyNote ? <p className="text-sm">{emptyNote}</p> : null}
+      {coverageNote ? <p className="text-xs text-muted-foreground">{coverageNote}</p> : null}
       {view.stopReason && !running && !empty ? <p className="text-xs text-muted-foreground">Stopped because: {view.stopReason}.</p> : null}
       {view.error ? (
         <FormError>

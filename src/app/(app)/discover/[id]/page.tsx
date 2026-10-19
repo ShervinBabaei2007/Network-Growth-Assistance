@@ -178,7 +178,7 @@ function Results({ view, results, filtering }: { view: SearchView; results: Sear
         {possible.length ? ` · ${possible.length} possible` : ""}
         {finished && verified.length < view.targetCount && verified.length > 0 ? (
           <span className="block text-sm font-normal text-muted-foreground">
-            You asked for {view.targetCount}. Only people with strong evidence are shown as verified; the research doesn&apos;t lower its standards to fill the count.
+            You asked for {view.targetCount}. Verified means every part of your request is stated in a public source we quote. Check before you contact.
           </span>
         ) : null}
       </h2>

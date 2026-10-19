@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { NURSING_CATALOG, TEST_CATALOG } from "@/test/catalog";
-import { institutionMatcher, matchInstitution, matchProgram, programMatchers, roleAliases, type NetworkingCriteria } from "./criteria";
+import { companyAliases, institutionMatcher, matchCompany, matchInstitution, matchProgram, programMatchers, roleAliases, type NetworkingCriteria } from "./criteria";
 import { disabledLLM, type LLMProvider } from "./llm";
 import { parseRequest, parseRequestDeterministic, toCriteria, withUserLists } from "./parse-request";
 
@@ -181,5 +181,55 @@ describe("matching", () => {
     expect(roleAliases(["Software Engineer"])).toEqual(expect.arrayContaining(["software developer", "backend engineer", "sde"]));
     expect(roleAliases(["Nurse"])).toEqual(expect.arrayContaining(["registered nurse", "rn"]));
     expect(roleAliases(["Lawyer"])).toEqual(expect.arrayContaining(["associate", "barrister"]));
+  });
+});
+
+describe("matchCompany", () => {
+  const apple = companyAliases(["Apple"]);
+  it("accepts the company with a corporate or regional suffix", () => {
+    for (const v of ["Apple", "Apple Inc.", "Apple Canada", "Apple (United States)"]) expect(matchCompany(v, apple), v).toBe("apple");
+  });
+  it("rejects other organizations that contain a common word", () => {
+    for (const v of ["Apple Valley Hospital", "Big Apple Bagels", "Pineapple Labs"]) expect(matchCompany(v, apple), v).toBeNull();
+  });
+  it("still finds units of an unambiguous company", () => {
+    const ms = companyAliases(["Microsoft"]);
+    for (const v of ["Microsoft Research (United Kingdom)", "Microsoft Corp", "Microsoft (India)"]) expect(matchCompany(v, ms), v).toBe("microsoft");
+    expect(matchCompany("Amazon Lab126", companyAliases(["Amazon"]))).toBe("amazon");
+  });
+});
+
+describe("a school named only by its short name", () => {
+  const rorAnswer = { items: [{ names: [{ value: "Simon Fraser University", types: ["ror_display", "label"] }, { value: "SFU", types: ["acronym"] }], links: [{ type: "website", value: "https://www.sfu.ca/" }] }] };
+
+  it("is looked up when the AI is unavailable, so the school is not lost", async () => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async () => new Response(JSON.stringify(rorAnswer))) as typeof fetch;
+    try {
+      const down: LLMProvider = { enabled: true, structured: async () => ({ ok: false, reason: "The AI service returned an error (503)." }) };
+      const r = await parseRequest(down, "Find 20 SFU alumni in Vancouver working at Microsoft");
+      expect(r.usedAi).toBe(false);
+      expect(r.criteria.education.institution).toBe("Simon Fraser University");
+      expect(r.criteria.education.institutionAliases).toContain("SFU");
+      expect(r.criteria.education.institutionDomains).toEqual(["sfu.ca"]);
+      expect(r.criteria.companies).toContain("Microsoft");
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});
+
+describe("a school written in full, with its program right after", () => {
+  it("keeps the school and the program apart", () => {
+    const a = parseRequestDeterministic("Find 10 University of Waterloo Computer Science alumni working at Google");
+    expect(a.education.institution).toBe("University of Waterloo");
+    expect(a.education.programs).toEqual(["Computer Science"]);
+    const b = parseRequestDeterministic("Find 10 University of Alberta Law alumni working as lawyers in Calgary");
+    expect(b.education.institution).toBe("University of Alberta");
+    expect(b.education.programs).toEqual(["Law"]);
+  });
+  it("leaves a plain school name alone", () => {
+    expect(parseRequestDeterministic("Find 10 Queen's University Commerce alumni working at RBC in Toronto").education.institution).toBe("Queen's University");
+    expect(parseRequestDeterministic("Find 5 McGill University alumni").education.institution).toBe("McGill University");
   });
 });

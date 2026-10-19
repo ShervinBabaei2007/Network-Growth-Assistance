@@ -100,6 +100,8 @@ export function decideTier(e: CriteriaEvaluation): { tier: Tier; reason: string 
   if (e.institution.requested && !atLeast(e.institution.confidence, "medium")) return { tier: "rejected", reason: "School not verified" };
   if (e.program.requested && !e.program.confidence) return { tier: "rejected", reason: "Program not verified" };
   if (e.company.conflict) return { tier: "rejected", reason: "Works at a company not on your list" };
+  // Asked for people at named companies: someone with no sign of working at any of them is not a match, only a person from the same school.
+  if (e.company.named && !e.company.confidence) return { tier: "rejected", reason: "No evidence they work at a company you named" };
   if (e.location.conflict) return { tier: "rejected", reason: e.location.note ?? "Located outside the requested country" };
   if (e.standing.conflict) return { tier: "possible", reason: e.standing.note ?? "Student status doesn't match" };
 
@@ -114,7 +116,7 @@ export function decideTier(e: CriteriaEvaluation): { tier: Tier; reason: string 
 
   const missing = (["institution", "program", "role", "company", "location", "gradYear"] as CriterionKey[])
     .filter((k) => e[k].requested && e[k].confidence !== "high")
-    .map((k) => (k === "gradYear" ? "graduation year" : k === "location" && e.location.note ? `location (${e.location.note.toLowerCase()})` : k));
+    .map((k) => (k === "gradYear" ? "graduation year" : (k === "location" || k === "company") && e[k].note ? `${k} (${e[k].note!.toLowerCase()})` : k));
   return { tier: "possible", reason: `Weaker evidence for ${missing.join(", ")}` };
 }
 

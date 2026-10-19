@@ -292,13 +292,20 @@ const sentencesWith = (bio: string, test: (s: string) => boolean) =>
     .filter((x) => x && test(x))
     .map((x) => x.slice(0, 500));
 
+/** The year of the last edit when it is more than two years ago, else null (including when it is unknown). */
+export function staleRecord(lastModified: string | null | undefined, now: Date): number | null {
+  const t = lastModified ? Date.parse(lastModified) : NaN;
+  if (Number.isNaN(t)) return null;
+  return now.getTime() - t > 2 * 365 * 86_400_000 ? new Date(t).getUTCFullYear() : null;
+}
+
 /**
  * An ORCID record is the person's own structured statement of their education and
  * employment, so each entry is high-confidence evidence for exactly what it says.
  * Working at a school is not studying there: only education entries (and the
  * person's own biography) count for the school and program.
  */
-export function draftFromOrcid(profile: OrcidProfile, criteria: NetworkingCriteria): PersonDraft | null {
+export function draftFromOrcid(profile: OrcidProfile, criteria: NetworkingCriteria, now: Date = new Date()): PersonDraft | null {
   const name = profile.name?.trim();
   if (!name || !normalizeName(name).includes(" ")) return null;
   const inst = institutionMatcher(criteria);
@@ -328,13 +335,17 @@ export function draftFromOrcid(profile: OrcidProfile, criteria: NetworkingCriter
   }
   if (inst && !facts.some((f) => f.field === "institution")) return null;
 
-  // The current job: an employment with no end date, most recent first.
-  const current = [...profile.employments].filter((e) => !e.endYear).sort((a, b) => (b.startYear ?? 0) - (a.startYear ?? 0))[0] ?? null;
+  // The current job: an employment with no end date (or one ending this year or later), most recent first.
+  const current = [...profile.employments].filter((e) => !e.endYear || e.endYear >= now.getFullYear()).sort((a, b) => (b.startYear ?? 0) - (a.startYear ?? 0))[0] ?? null;
   if (current) {
     const place = [current.city, countryName(current.country)].filter(Boolean).join(", ");
-    const text = `${describe("Employment", current)}${place ? ` · ${place}` : ""}`;
-    facts.push({ ...source, field: "company", value: current.organization.slice(0, 200), extractedText: text });
-    if (current.role) facts.push({ ...source, field: "role", value: current.role.slice(0, 200), extractedText: text });
+    // A job with no end date on a record nobody has edited for years may have ended: it counts, but only at medium
+    // low confidence, so the person is "possible" unless another source says the same.
+    const stale = staleRecord(profile.lastModified, now);
+    const text = `${describe("Employment", current)}${place ? ` · ${place}` : ""}${stale ? ` · record last updated ${stale}` : ""}`;
+    const employment = stale ? { ...source, confidence: "low" as const } : source;
+    facts.push({ ...employment, field: "company", value: current.organization.slice(0, 200), extractedText: text });
+    if (current.role) facts.push({ ...employment, field: "role", value: current.role.slice(0, 200), extractedText: text });
     // Where their current employer is: good, not certain, evidence of where they are.
     if (place) facts.push({ ...source, field: "location", value: place.slice(0, 200), extractedText: text, confidence: "medium" });
   } else if (bio) {

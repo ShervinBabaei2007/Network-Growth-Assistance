@@ -31,13 +31,27 @@ function gemini(...answers: Answer[]) {
     if (a.throws) throw a.throws;
     return new Response(a.raw ?? JSON.stringify(a.body ?? {}), { status: a.status ?? 200, headers: { "content-type": "application/json" } });
   }) as unknown as typeof fetch;
-  const llm = new GeminiLLM(KEY, { model: "gemini-test-flash", fetchImpl });
+  const llm = new GeminiLLM(KEY, { model: "gemini-test-flash", fetchImpl, retryDelaysMs: [0, 0] });
   return { llm, requests, fetchImpl, ai: new LlmAIProvider(llm, "Google Gemini") };
 }
 
 const NoteOut = AiCoverLetterSchema;
 const letter = { greeting: "Dear Hiring Manager,", paragraphs: ["I'm applying for the Full Stack Developer role."], closing: "Sincerely," };
 const ask = (llm: InstanceType<typeof GeminiLLM>) => llm.structured({ tier: "smart", system: "sys", user: "hello", schema: NoteOut });
+
+describe("GeminiLLM: a busy service", () => {
+  it("tries again after a 503 and uses the answer that follows", async () => {
+    const { llm, fetchImpl } = gemini({ status: 503 }, ok(letter));
+    expect(await ask(llm)).toEqual({ ok: true, data: letter });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up after the retries with the error it was given", async () => {
+    const { llm, fetchImpl } = gemini({ status: 503 });
+    expect(await ask(llm)).toMatchObject({ ok: false, reason: expect.stringMatching(/\(503\)/) });
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
+});
 
 describe("GeminiLLM: the official REST API, structured output", () => {
   it("sends the key only in a header, asks for JSON in the schema's shape, and validates the answer", async () => {
