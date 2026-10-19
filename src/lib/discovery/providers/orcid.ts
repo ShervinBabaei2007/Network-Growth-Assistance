@@ -31,7 +31,7 @@ type OrcidRecord = {
     employments?: { "affiliation-group"?: Group[] } | null;
   };
 };
-type ExpandedSearch = { "expanded-result"?: { "orcid-id": string }[] | null };
+type ExpandedSearch = { "expanded-result"?: { "orcid-id": string }[] | null; "num-found"?: number };
 
 const year = (d: Year) => {
   const y = Number(d?.year?.value);
@@ -94,9 +94,17 @@ export class OrcidSearchProvider implements SearchProvider {
     });
   }
 
-  async search(query: string, { count = 20, signal }: { count?: number; signal?: AbortSignal } = {}): Promise<SearchResult[]> {
-    const found = await this.get<ExpandedSearch>(`/expanded-search/?q=${encodeURIComponent(query)}&rows=${Math.min(count, 20)}`, signal);
-    const ids = (found["expanded-result"] ?? []).map((r) => r["orcid-id"]).filter((id) => /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/.test(id));
+  async search(query: string, { count = 40, signal }: { count?: number; signal?: AbortSignal } = {}): Promise<SearchResult[]> {
+    // ORCID returns 20 people a page; read as many pages as asked for, or as exist.
+    const ids: string[] = [];
+    let total = 0;
+    for (let start = 0; start < count; start += 20) {
+      const found = await this.get<ExpandedSearch>(`/expanded-search/?q=${encodeURIComponent(query)}&rows=${Math.min(20, count - start)}&start=${start}`, signal);
+      total = found["num-found"] ?? total;
+      const page = (found["expanded-result"] ?? []).map((r) => r["orcid-id"]).filter((id) => /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/.test(id));
+      ids.push(...page);
+      if (page.length < 20 || ids.length >= total) break;
+    }
     // A few records at a time, to stay polite to a free public API.
     const records: (OrcidProfile | null)[] = [];
     for (let i = 0; i < ids.length; i += 5) {
@@ -113,6 +121,7 @@ export class OrcidSearchProvider implements SearchProvider {
         snippet: [p.educations[0]?.organization, p.employments[0]?.organization].filter(Boolean).join(" · "),
         rank: i + 1,
         orcid: p,
+        total,
       }));
   }
 }

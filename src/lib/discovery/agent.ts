@@ -74,6 +74,8 @@ export type SearchMetrics = {
   linkedinResultsSkipped: number;
   candidatesConsidered: number;
   durationMs: number;
+  /** What ORCID says it holds for the more specific searches: how many people match, in words. */
+  coverage?: { label: string; total: number }[];
 };
 
 type SearchRow = Database["public"]["Tables"]["network_searches"]["Row"];
@@ -271,6 +273,12 @@ async function searchStep(
       }
       metrics.queries++;
       metrics.results += results.length;
+      if (q.provider === "orcid" && q.label && !error) {
+        const total = results.find((r) => r.total !== undefined)?.total ?? 0;
+        // The same subject can be searched under another spelling (SFU); the larger count is the registry's.
+        const same = (metrics.coverage ?? []).find((c) => c.label === q.label);
+        metrics.coverage = [...(metrics.coverage ?? []).filter((c) => c.label !== q.label), { label: q.label, total: Math.max(total, same?.total ?? 0) }].slice(-12);
+      }
       tagged.push(...results.map((r) => ({ ...r, queryId: q.id })));
       await db.from("network_search_queries").update({ result_count: results.length, error, executed_at: new Date().toISOString() }).eq("id", q.id);
     }),

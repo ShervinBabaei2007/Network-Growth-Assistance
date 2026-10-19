@@ -7,6 +7,8 @@ export type SearchResult = {
   rank: number;
   structured?: GitHubProfile;
   orcid?: OrcidProfile;
+  /** How many people the source says match the whole query (ORCID), of which only some are read. */
+  total?: number;
 };
 
 /** One education or employment entry from an ORCID record, as the person entered it. */

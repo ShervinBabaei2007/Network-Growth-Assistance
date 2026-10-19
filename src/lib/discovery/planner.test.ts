@@ -78,3 +78,16 @@ describe("a request that names no school", () => {
     expect(planQueries(nursing).some((p) => p.provider === "github")).toBe(false);
   });
 });
+
+describe("ORCID searches", () => {
+  const base = testCriteria("Find 20 SFU Computer Science alumni working at Microsoft");
+  const c = { ...base, companies: ["Microsoft"], education: { ...base.education, institution: "Simon Fraser University", institutionAliases: ["SFU"] } };
+  const orcid = planQueries(c).filter((p) => p.provider === "orcid");
+
+  it("also searches the school's short form, under the same label", () => {
+    const full = orcid.find((p) => p.query.includes('"Simon Fraser University"') && p.query.includes('"Microsoft"'));
+    const short = orcid.find((p) => p.query.startsWith('affiliation-org-name:"SFU"') && p.query.includes('"Microsoft"'));
+    expect(full?.label).toBeTruthy();
+    expect(short?.label).toBe(full?.label);
+  });
+});
