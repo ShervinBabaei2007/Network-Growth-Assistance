@@ -11,7 +11,8 @@ import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 export type SignInState = { status: "idle" | "sent" | "error"; message?: string };
-export type PasswordState = { status: "idle" | "confirm" | "reset-sent" | "error"; message?: string };
+export type PasswordState = { status: "idle" | "confirm" | "reset-sent" | "error"; message?: string; email?: string };
+export type ResendState = { status: "idle" | "sent" | "error"; message?: string };
 
 const magicLinkSchema = z.object({ email: z.email("errors.invalidEmail") });
 
@@ -144,8 +145,28 @@ export async function signUpWithPassword(_prev: PasswordState, formData: FormDat
   });
   if (error) return { status: "error", message: t("errors.accountNotCreated") };
   // With email confirmation on there is no session yet; an already-registered address looks the same.
-  if (!data.session) return { status: "confirm" };
+  if (!data.session) return { status: "confirm", email: parsed.data.email };
   redirect(await nextFromRequest());
+}
+
+/** Sends the sign-up confirmation email again, for someone waiting on the "check your inbox" screen. */
+export async function resendConfirmation(_prev: ResendState, formData: FormData): Promise<ResendState> {
+  const t = await getT();
+  const parsed = magicLinkSchema.safeParse({ email: formData.get("email") });
+  if (!parsed.success) return { status: "error", message: t(parsed.error.issues[0]?.message as MessageKey) };
+
+  const redirectTo = await callbackUrl(await nextFromRequest());
+  if (!redirectTo) return { status: "error", message: t("errors.noSiteAddress") };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: parsed.data.email,
+    options: { emailRedirectTo: redirectTo },
+  });
+  // Supabase answers 429 while its minimum time between emails hasn't passed.
+  if (error) return { status: "error", message: t(error.status === 429 ? "errors.resendTooSoon" : "errors.confirmNotResent") };
+  return { status: "sent" };
 }
 
 export async function requestPasswordReset(_prev: PasswordState, formData: FormData): Promise<PasswordState> {

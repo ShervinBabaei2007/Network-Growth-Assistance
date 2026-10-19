@@ -1,14 +1,16 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import {
   requestPasswordReset,
+  resendConfirmation,
   sendMagicLink,
   signInWithGoogle,
   signInWithPassword,
   signUpWithPassword,
   type PasswordState,
+  type ResendState,
   type SignInState,
 } from "@/app/auth/actions";
 import { FormError } from "@/components/form-error";
@@ -124,14 +126,16 @@ function SignInForm({ onForgot, onLink }: { onForgot: () => void; onLink: () => 
 }
 
 function SignUpForm() {
+  // Remounting with a new key clears the form state, for "Use a different email".
+  const [attempt, setAttempt] = useState(0);
+  return <SignUpAttempt key={attempt} onRestart={() => setAttempt((n) => n + 1)} />;
+}
+
+function SignUpAttempt({ onRestart }: { onRestart: () => void }) {
   const t = useT();
   const [state, action, pending] = useActionState<PasswordState, FormData>(signUpWithPassword, { status: "idle" });
   if (state.status === "confirm") {
-    return (
-      <p className="text-sm" role="status">
-        {t("auth.checkInboxConfirm")}
-      </p>
-    );
+    return <ConfirmPending email={state.email} onRestart={onRestart} />;
   }
   return (
     <form action={action} className="grid gap-3">
@@ -144,6 +148,56 @@ function SignUpForm() {
         {pending ? t("auth.creatingAccount") : t("auth.createAccount")}
       </Button>
     </form>
+  );
+}
+
+/** Hosted Supabase allows one confirmation email per address every 60 seconds by default. */
+const RESEND_COOLDOWN_SECONDS = 60;
+
+function ConfirmPending({ email, onRestart }: { email?: string; onRestart: () => void }) {
+  const t = useT();
+  const [state, action, pending] = useActionState<ResendState, FormData>(resendConfirmation, { status: "idle" });
+  // The first email was just sent, so the countdown starts right away and restarts after each resend.
+  const [secondsLeft, setSecondsLeft] = useState(RESEND_COOLDOWN_SECONDS);
+  const [lastState, setLastState] = useState(state);
+  if (state !== lastState) {
+    setLastState(state);
+    if (state.status === "sent") setSecondsLeft(RESEND_COOLDOWN_SECONDS);
+  }
+
+  useEffect(() => {
+    if (secondsLeft === 0) return;
+    const timer = setTimeout(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [secondsLeft]);
+
+  return (
+    <div className="grid gap-3">
+      <p className="text-sm" role="status">
+        {t("auth.checkInboxConfirm")}
+      </p>
+      {email ? (
+        <p className="text-sm">
+          {t("auth.confirmSentTo", { email })}
+        </p>
+      ) : null}
+      <p className="text-xs text-muted-foreground">{t("auth.checkSpam")}</p>
+      {email ? (
+        <form action={action} className="grid gap-3">
+          <input type="hidden" name="email" value={email} />
+          <Button type="submit" variant="outline" disabled={pending || secondsLeft > 0}>
+            {pending ? t("auth.sending") : secondsLeft > 0 ? t("auth.resendIn", { seconds: secondsLeft }) : t("auth.resendEmail")}
+          </Button>
+          <div aria-live="polite">
+            {state.status === "sent" ? <p className="text-sm">{t("auth.resent")}</p> : null}
+            {state.status === "error" ? <FormError>{state.message}</FormError> : null}
+          </div>
+        </form>
+      ) : null}
+      <button type="button" onClick={onRestart} className="text-xs text-muted-foreground underline underline-offset-4">
+        {t("auth.useDifferentEmail")}
+      </button>
+    </div>
   );
 }
 
