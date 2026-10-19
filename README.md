@@ -1,17 +1,12 @@
 <div align="center">
 
-# 🤝 Network Growth Assistant
+<img src="docs/images/banner.svg" alt="Network Growth Assistant. Built with Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, Supabase, PostgreSQL, Vercel, Zod, Vitest, Playwright, GitHub Actions and free AI services." width="100%" />
 
 **Grow your professional network and run your job search from one calm, honest workspace.**
 
 Know who to contact next. Find real, recent jobs from employers' own career pages. Track every application, and every follow-up.
 
 [![Live app](https://img.shields.io/badge/live%20app-open-1f66c1?style=for-the-badge&logo=vercel&logoColor=white)](https://linkedin-network-growth-assistance.vercel.app)
-[![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-06b6d4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Base%20UI-18181b?style=flat-square&logo=shadcnui&logoColor=white)](https://ui.shadcn.com)
-[![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ecf8e?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
 [![CI](https://img.shields.io/github/actions/workflow/status/ShervinBabaei2007/Network-Growth-Assistance/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/ShervinBabaei2007/Network-Growth-Assistance/actions/workflows/ci.yml)
 ![Unit tests](https://img.shields.io/badge/unit%20tests-1051%20passing-2da44e?style=flat-square)
 ![Database tests](https://img.shields.io/badge/pgTAP-297%20passing-2da44e?style=flat-square)
@@ -19,11 +14,9 @@ Know who to contact next. Find real, recent jobs from employers' own career page
 
 <br />
 
-<img src="docs/images/overview-breakdown.png" alt="The Overview page: network total, pipeline and activity" width="78%" />
-&nbsp;
-<img src="docs/images/mobile-overview.png" alt="The same app on a phone" width="17%" />
+<a href="docs/media/demo.mp4"><img src="docs/images/demo.gif" alt="A 30-second tour: Overview, Discover finding verified people with their sources, Jobs with fit explained and compare, Applications, Follow-ups, and the same app on a phone." width="86%" /></a>
 
-<sub>Fictional data. Every picture here is generated from the app with <code>npm run docs:screenshots</code>.</sub>
+<sub>A 30-second tour on fictional example data. <a href="docs/media/demo.mp4"><b>Watch the full-quality video (MP4)</b></a>. Regenerate it with <code>npm run docs:video</code>.</sub>
 
 </div>
 
@@ -126,6 +119,8 @@ For the detail behind each feature and what is not built, see the [feature guide
 <a id="gallery"></a>
 
 ## 🖼️ Gallery
+
+<sub>Fictional data. Every picture here is generated from the app with <code>npm run docs:screenshots</code>.</sub>
 
 <table>
   <tr>

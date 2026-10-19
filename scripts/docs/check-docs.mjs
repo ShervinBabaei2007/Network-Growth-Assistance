@@ -13,7 +13,8 @@
  * It warns (exit 0) about variables in .env.example that no document mentions.
  */
 import { execSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, normalize, relative, sep } from "node:path";
 
 const ROOT = process.cwd();
@@ -113,20 +114,22 @@ const pgtap = readdirSync(join(ROOT, "supabase/tests"))
   .reduce((sum, f) => sum + Number(readFileSync(join(ROOT, "supabase/tests", f), "utf8").match(/plan\((\d+)\)/)?.[1] ?? 0), 0);
 let unit = NaN;
 if (full) {
-  const out = execSync("npx vitest run --reporter=json", { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 * 1024 * 1024 });
-  unit = JSON.parse(out.slice(out.indexOf("{"))).numTotalTests;
+  const report = join(tmpdir(), `vitest-report-${process.pid}.json`);
+  execSync(`npx vitest run --reporter=json --outputFile="${report}"`, { cwd: ROOT, stdio: "ignore" });
+  unit = JSON.parse(readFileSync(report, "utf8")).numTotalTests;
+  rmSync(report, { force: true });
 }
 const claimed = (re, text) => [...text.matchAll(re)].map((m) => Number(m[1].replace(/,/g, "")));
 for (const file of docs) {
   const text = read(file);
   for (const n of claimed(/\b(\d+)\s+migrations?\b/gi, text)) if (n !== migrations) fail(file, `says ${n} migrations; the repository has ${migrations}`);
-  for (const n of claimed(/\b([\d,]+)\s+database tests?\b/gi, text)) if (n !== pgtap) fail(file, `says ${n} database tests; the pgTAP plans add up to ${pgtap}`);
+  for (const n of claimed(/\b(\d[\d,]*)\s+database tests?\b/gi, text)) if (n !== pgtap) fail(file, `says ${n} database tests; the pgTAP plans add up to ${pgtap}`);
   for (const n of claimed(/pgTAP-(\d+)%20passing/g, text)) if (n !== pgtap) fail(file, `badge says ${n} database tests; the pgTAP plans add up to ${pgtap}`);
-  for (const n of claimed(/\b([\d,]+)\s+end-to-end tests?\b/gi, text)) if (n !== e2e) fail(file, `says ${n} end-to-end tests; Playwright lists ${e2e}`);
+  for (const n of claimed(/\b(\d[\d,]*)\s+end-to-end tests?\b/gi, text)) if (n !== e2e) fail(file, `says ${n} end-to-end tests; Playwright lists ${e2e}`);
   for (const n of claimed(/e2e-(\d+)%20passing/g, text)) if (n !== e2e) fail(file, `badge says ${n} end-to-end tests; Playwright lists ${e2e}`);
   if (full) {
-    for (const n of claimed(/\b([\d,]+)\s+unit tests?\b/gi, text)) if (n !== unit) fail(file, `says ${n} unit tests; Vitest runs ${unit}`);
-    for (const n of claimed(/unit%20tests-([\d,]+)%20passing/g, text)) if (n !== unit) fail(file, `badge says ${n} unit tests; Vitest runs ${unit}`);
+    for (const n of claimed(/\b(\d[\d,]*)\s+unit tests?\b/gi, text)) if (n !== unit) fail(file, `says ${n} unit tests; Vitest runs ${unit}`);
+    for (const n of claimed(/unit%20tests-(\d[\d,]*)%20passing/g, text)) if (n !== unit) fail(file, `badge says ${n} unit tests; Vitest runs ${unit}`);
   }
 }
 
