@@ -26,6 +26,7 @@ Status words are kept separate on purpose:
 | `46fc4b9` | README rewrite with screenshots (`npm run docs:screenshots`) |
 | merges on `main`, 2026-10-18 | One branch per feature, each merged with its own commits: `feat/auth-signup-signin`, `feat/demo-workspace`, `feat/landing-page`, `feat/a11y-axe`, `feat/staging-smoke`, `feat/command-palette`, `feat/follow-up-cadence`, `feat/bulk-actions-saved-views`, `feat/monitoring`, `feat/interview-prep`, `feat/i18n-fr-ca` |
 | merges on `main`, second round | `feat/job-compare-hide` (compare jobs, hide companies and titles, private job notes), `feat/resume-tracks` (several base resumes, a track per job, coverage check, PDF and Word download), `perf/hydrate-less` (long-task trace, cheaper job card layout), `perf/large-lists` (grouped progress queries, list-sort indexes, 20,000-row benchmark), `perf/crawl-storage` (shortened old postings, dropped unused vectors, storage report and 70% warning) |
+| merges on `main`, third round (2026-10-18/19) | `fix/bug-fixing-jobs-sidebar`, `fix/page-descriptions`, `fix/discover-notes`, `fix/trim-page-text` (shorter page text), `fix/follow-ups-test` and `fix/cron-row-limits` (cron jobs read in ordered pages: the database returns at most 1,000 rows a query), `fix/discover-free-search` (Discover with no school, free Tavily web search, GitHub rate-limit handling), `fix/discover-precision` (stale ORCID jobs, company-name and school lookalikes such as New York University, labelled sources, ROR short-name lookup), `fix/discover-ai-capacity` (free AI chain of Gemini models, Groq and Mistral; own key first; per-person cap; request cache) |
 | after the merges | Google sign-in fixed locally (provider enabled from `supabase/.env`, friendly message when unset), home page simplified to one column, README and docs rewritten |
 
 ## Scope of the first release
@@ -254,6 +255,8 @@ Settings 82: its heading paints early, which puts the page's one startup task in
 
 ## Since then (2026-10-18): the top ten features, and sign-in
 
+(Totals in the table below were last re-checked on 2026-10-19 after the Discover work.)
+
 Built in order, each on its own branch with small commits, then merged. Every branch passed lint, types, unit tests and its own end-to-end tests before merging.
 
 | Feature | Status | Evidence |
@@ -276,10 +279,10 @@ Built in order, each on its own branch with small commits, then merged. Every br
 | Check | Result |
 |---|---|
 | `npm run typecheck`, `npm run lint` | pass |
-| `npm test` | pass: 972 tests (84 files) |
-| `npm run test:db` | pass: 264 tests (22 files) |
+| `npm test` | pass: 1,051 tests (97 files) |
+| `npm run test:db` | pass: 297 tests (26 files) |
 | `npm run build`, `npm run check:bundle`, `npm run check:budget` | pass (35 routes within budget) |
-| `npx playwright test` | pass: 83 (desktop and phone) |
+| `npx playwright test` | pass: 89 listed (desktop and phone); the discovery, accessibility and applications specs were re-run after the Discover changes |
 | About 40 of the end-to-end tests against a production build (`next start`) | pass, after tests were made to wait for the page to load before clicking |
 
 **Found and fixed along the way:**
@@ -304,8 +307,8 @@ Built in order, each on its own branch with small commits, then merged. Every br
 |---|---|---|
 | Command palette; j/k/s/o/d/? shortcuts | 7 (settings and onboarding) | palette, `g`-letter navigation and `?` done; `j`/`k` and per-row keys not started |
 | Remember searches/filters per track; 25/50/100 per page; mobile filter summary | 2 (saved searches) and 5 (tracks) | done for Candidates (saved views, last filters, page size); mobile filter button with a count on Jobs; other lists not started |
-| Compare 2–3 jobs | 3 (company view) | not started |
-| Hide companies or title patterns, with Undo; duplicate-paste warning | 2 | not started |
+| Compare 2–3 jobs | 3 (company view) | done: `feat/job-compare-hide` (side-by-side table, stacked cards on a phone) |
+| Hide companies or title patterns, with Undo; duplicate-paste warning | 2 | hide and Undo done (`feat/job-compare-hide`, Jobs → Hidden); duplicate-paste warning not started |
 | Copy a job summary; CSV export of saved/applied jobs; preferred external search links | 2 | external search links exist; the rest not started |
 | `.ics` for calendar events | 1 | done |
 | Optional Gemini employer search (after re-checking its terms) | 3 | not started |
@@ -334,15 +337,15 @@ Built in order, each on its own branch with small commits, then merged. Every br
 - Performance: **now measured** (Lighthouse above, first-load JavaScript per route). Still missing: the proposed server-time budget for tracker pages with 500 applications, which needs a seeded dataset and a staging deploy.
 - Accessibility: Lighthouse scored 100 on the pages measured on 2026-10-17 (before the newest pages, not re-measured), contrast is unit-tested and an **axe scan runs in the end-to-end tests** (`e2e/a11y.spec.ts`, see `docs/ACCESSIBILITY.md`). There is still **no manual screen-reader pass**; the checklist for it is in that file.
 - A real SMTP provider (deliverability, SPF/DKIM, limits) is your configuration and is **unverified**.
-- **Release gates, 2026-10-18:** a CI workflow, per-route JavaScript budget (`npm run check:budget`), smoke script (`npm run smoke`) and a local backup-and-restore rehearsal (`scripts/restore-rehearsal.sh`, 46 tables matched, 8 seconds) are in place. **Still open:** a real staging deployment (needs a second Supabase and Vercel project), the smoke checks run against it, and a restore into a hosted scratch project. The CI workflow has not yet run on GitHub.
-- **Release status:** everything built so far is **implemented and verified locally**, and the signed-out and signed-in pages are measured on production. It is **not release-ready for a wide launch** until a hosted restore rehearsal, staging smoke checks, a screen-reader pass, a fresh Lighthouse run on the newest pages, a first green run of the CI workflow on GitHub and legal review of the Privacy Policy and Terms are done.
+- **Release gates, 2026-10-18:** a CI workflow, per-route JavaScript budget (`npm run check:budget`), smoke script (`npm run smoke`) and a local backup-and-restore rehearsal (`scripts/restore-rehearsal.sh`, 46 tables matched, 8 seconds) are in place. **Still open:** a real staging deployment (needs a second Supabase and Vercel project), the smoke checks run against it, and a restore into a hosted scratch project. The CI workflow has since run on GitHub, and its latest completed run on `main` passed (earlier runs were cancelled by newer pushes).
+- **Release status:** everything built so far is **implemented and verified locally**, and the signed-out and signed-in pages are measured on production. It is **not release-ready for a wide launch** until a hosted restore rehearsal, staging smoke checks, a screen-reader pass, a fresh Lighthouse run on the newest pages and legal review of the Privacy Policy and Terms are done. Discover was tested live on 2026-10-19 with ten requests across schools and fields: every person marked verified in the final runs had their school and current employer confirmed in their raw ORCID record, and the one bug it found (New York University counted as York University) was fixed.
 
 ## Next
 
 1. Rehearse a restore into a hosted scratch project and record it in `docs/DEPLOYMENT.md`.
 2. Add a staging deployment and run `npm run smoke` and the end-to-end tests against it.
 3. Do the manual screen-reader pass from `docs/ACCESSIBILITY.md`.
-4. Watch the first run of `.github/workflows/ci.yml` on GitHub and fix what it finds.
+4. Keep an eye on `.github/workflows/ci.yml` runs on GitHub (the first completed run passed).
 5. Re-measure Lighthouse on the newest pages.
 6. Translate the remaining pages into French, and extend bulk actions to People and Applications.
 7. Improvement-plan phases 4 onward, starting with the remaining polish items above (compare jobs, `j`/`k` shortcuts).

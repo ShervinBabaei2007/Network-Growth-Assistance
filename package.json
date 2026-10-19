@@ -18,7 +18,7 @@
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
     "test:e2e": "playwright test",
-    "docs:screenshots": "playwright test -c playwright.readme.config.ts",
+    "docs:screenshots": "playwright test -c playwright.readme.config.ts && node scripts/docs/frame-screenshots.mjs",
     "check:bundle": "node scripts/check-client-bundle.mjs",
     "check:budget": "node scripts/check-route-budget.mjs",
     "smoke": "node scripts/smoke.mjs",
@@ -27,7 +27,10 @@
     "bench:clean": "docker exec -i supabase_db_LinkedinNetworkGrowthAssistance psql -U postgres < scripts/bench/clean.sql",
     "ops:report": "node scripts/ops-report.mjs",
     "employers:discover": "node scripts/employers.mjs discover",
-    "employers:load": "node scripts/employers.mjs load"
+    "employers:load": "node scripts/employers.mjs load",
+    "docs:check": "node scripts/docs/check-docs.mjs",
+    "docs:banner": "node scripts/docs/banner.mjs",
+    "docs:video": "node scripts/docs/make-video.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
@@ -67,5 +70,8 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.3"
+  },
+  "optionalDependencies": {
+    "ffmpeg-static": "^5.3.0"
   }
 }
