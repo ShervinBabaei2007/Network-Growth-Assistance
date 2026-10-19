@@ -233,3 +233,16 @@ describe("a school written in full, with its program right after", () => {
     expect(parseRequestDeterministic("Find 5 McGill University alumni").education.institution).toBe("McGill University");
   });
 });
+
+describe("a school is not another school with a longer name", () => {
+  const york = institutionMatcher({ ...base(), education: { ...base().education, institution: "York University", institutionAliases: [] } })!;
+  it("rejects New York University for York University", () => {
+    expect(matchInstitution("Education: New York University — Applied Psychology — PhD", york)).toBeNull();
+    expect(matchInstitution("Institute of Human Development & Social Change, New York University", york)).toBeNull();
+  });
+  it("still accepts York University in any ordinary sentence", () => {
+    expect(matchInstitution("Education: York University — Psychology — PhD (2020–present)", york)).toBe("strong");
+    expect(matchInstitution("I studied at the York University campus in Toronto", york)).toBe("strong");
+    expect(matchInstitution("BA, New York University; PhD, York University", york)).toBe("strong");
+  });
+});

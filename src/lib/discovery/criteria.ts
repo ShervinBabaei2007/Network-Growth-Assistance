@@ -74,11 +74,29 @@ export function institutionMatcher(criteria: NetworkingCriteria): InstitutionMat
   return { name, strong, acronyms, domains };
 }
 
+/**
+ * Words that, written right before a school's name, make it another school: "New York University" is not "York University",
+ * "Northern Arizona University" is not "Arizona University".
+ */
+const NAME_QUALIFIERS = new Set(
+  "new north south east west northern southern eastern western central royal city state national saint st san santa los great greater old upper lower free open".split(" "),
+);
+
+/** Whether `phrase` occurs in the cleaned text on its own, not as the tail of a longer school name. */
+function standsAlone(t: string, phrase: string): boolean {
+  const needle = ` ${phrase} `;
+  for (let at = t.indexOf(needle); at >= 0; at = t.indexOf(needle, at + 1)) {
+    const before = t.slice(0, at).trimEnd().split(" ").pop() ?? "";
+    if (!NAME_QUALIFIERS.has(before)) return true;
+  }
+  return false;
+}
+
 /** Which kind of mention of the institution `text` contains, if any. */
 export function matchInstitution(text: string, m: InstitutionMatcher): "strong" | "acronym" | null {
   const t = clean(text);
-  if (hasAny(t, m.strong)) return "strong";
-  if (hasAny(t, m.acronyms)) return "acronym";
+  if (m.strong.some((p) => standsAlone(t, p))) return "strong";
+  if (m.acronyms.some((p) => standsAlone(t, p))) return "acronym";
   return null;
 }
 
