@@ -284,3 +284,14 @@ describe("startups", () => {
     expect(asked.criteria.includeStartups).toBe(true);
   });
 });
+
+describe("a field written after 'X University'", () => {
+  it("is kept as the program", () => {
+    const a = parseRequestDeterministic("Find 10 York University Psychology alumni working as researchers");
+    expect(a.education.institution).toBe("York University");
+    expect(a.education.programs).toEqual(["Psychology"]);
+    const b = parseRequestDeterministic("Find 10 Queen's University Commerce alumni working at RBC in Toronto");
+    expect(b.education.programs).toEqual(["Commerce"]);
+    expect(parseRequestDeterministic("Find 10 McGill University alumni working at Shopify").education.programs).toEqual([]);
+  });
+});

@@ -133,6 +133,11 @@ export function parseRequestDeterministic(query: string, catalog?: Catalog): Net
     const cut = written.search(new RegExp(`\\s(?:${FIELD_WORDS})\\b`, "i"));
     const name = cut > 0 ? written.slice(0, cut).trim() : written;
     if (cut > 0) writtenField = written.slice(cut).trim();
+    else if (m) {
+      // "York University Psychology alumni": the field written right after the school's name.
+      const after = query.slice((m.index ?? 0) + m[0].length).match(new RegExp(`^\\s+((?:${FIELD_WORDS})(?:\\s+[A-Z][a-z]+){0,2})(?=\\s|$)`));
+      if (after) writtenField = after[1];
+    }
     if (name && !/^(Find|Show|Get|List)\b/.test(name)) institution = name;
   }
 

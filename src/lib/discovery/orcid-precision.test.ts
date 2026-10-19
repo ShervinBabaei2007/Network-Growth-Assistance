@@ -70,3 +70,15 @@ describe("people from the right school with no sign of the company", () => {
     expect(scorePerson(evaluateCriteria(d.facts, startups, NOW), d.facts).tier).toBe("possible");
   });
 });
+
+describe("what a person wrote in their free-text biography", () => {
+  it("is not a job title or a degree: a sentence about 'a researcher's duty' does not make a verified researcher", () => {
+    const researchers = { ...criteria, companies: [], roles: ["Researcher"], education: { ...criteria.education, programs: [] } };
+    const p = person({ educations: [msc], biography: "A researcher's responsibility to uphold the law of the land.", lastModified: "2026-03-01T00:00:00Z" });
+    const d = draftFromOrcid(p, researchers, NOW)!;
+    const role = d.facts.find((f) => f.field === "role");
+    expect(role?.confidence).toBe("low");
+    const scored = scorePerson(evaluateCriteria(d.facts, researchers, NOW), d.facts);
+    expect(scored.tier).toBe("possible");
+  });
+});
