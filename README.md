@@ -486,7 +486,7 @@ docs/              deployment guide, feature guide, accessibility, implementatio
 
 ## Contributing and licence
 
-Questions, bug reports and ideas are welcome. Please open an issue, or use the **Send feedback** button in the app. If you plan to send a change, run the checks above first and keep the change small and focused. To refresh the pictures and the demo video in this README after a visual change, run `npm run db:start`, then `npm run docs:screenshots` and `npm run docs:video`; run `npm run docs:check` after editing any document.
+Security problems should be reported privately, not as issues: see [SECURITY.md](SECURITY.md). Questions, bug reports and ideas are welcome. Please open an issue, or use the **Send feedback** button in the app. If you plan to send a change, run the checks above first and keep the change small and focused. To refresh the pictures and the demo video in this README after a visual change, run `npm run db:start`, then `npm run docs:screenshots` and `npm run docs:video`; run `npm run docs:check` after editing any document.
 
 No licence has been chosen yet, so all rights are reserved. Please ask before reusing the code.
 
