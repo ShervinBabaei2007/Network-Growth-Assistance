@@ -18,6 +18,7 @@ import { blocksToText, resumeBlocks } from "@/lib/job-postings/render/layout";
 import { highestDegree, yearsOfExperience } from "@/lib/job-postings/resume";
 import { completenessChecks, fieldLabel, importSummary } from "@/lib/job-postings/resume-fields";
 import { FieldMetaMap, ResumeFacts, ResumeProfile, WORK_AUTHORIZATION } from "@/lib/job-postings/types";
+import { log } from "@/lib/server/log";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { MAIN_TRACK_LABEL, normalizeTrack, sameTrack, trackLabel } from "@/lib/job-postings/tracks";
@@ -57,11 +58,17 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
     .from("resumes")
     .select("id, label, track, file_name, source_kind, original_file_path, raw_text, profile, original_profile, field_meta, facts, parsed_with, is_active, created_at, updated_at")
     .order("created_at", { ascending: false });
-  if (error) return <LoadError what="your resumes" />;
+  if (error) {
+    log("error", "resume-page", "load_failed", { code: error.code, message: error.message });
+    return <LoadError what="your resumes" />;
+  }
   const track = normalizeTrack(typeof params.track === "string" ? params.track : null);
   const trackNames = [...new Map(resumes.filter((r) => r.is_active).map((r) => [(r.track ?? "").toLowerCase(), r.track])).values()].sort((a, b) => Number(a !== null) - Number(b !== null) || (a ?? "").localeCompare(b ?? ""));
   const active = resumes.find((r) => r.is_active && sameTrack(r.track, track));
   const profile = active ? ResumeProfile.safeParse(active.profile) : null;
+  if (active && profile && !profile.success) {
+    log("error", "resume-page", "profile_invalid", { resumeId: active.id, issues: profile.error.issues.slice(0, 3).map((i) => `${i.path.join(".")}: ${i.code}`).join("; ") });
+  }
   const facts = ResumeFacts.parse(active?.facts ?? {});
   const access = await aiAccess(supabase);
   const aiNote = access.ok
