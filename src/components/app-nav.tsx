@@ -191,8 +191,8 @@ export function SidebarNav({ goal }: { goal?: Goal }) {
   );
 }
 
-const loadSheet = () => import("@/components/mobile-nav-sheet");
-const MobileNavSheet = lazy(loadSheet);
+export const loadSheet = () => import("@/components/mobile-nav-sheet");
+export const MobileNavSheet = lazy(loadSheet);
 
 /**
  * The phone menu. Until it is used this is only the button; the panel (and the dialog code behind it) is fetched

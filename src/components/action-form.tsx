@@ -49,6 +49,7 @@ export function ActionForm({
   resetOnSuccess,
   protect,
   draftKey,
+  id,
 }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   submitLabel: string;
@@ -62,6 +63,8 @@ export function ActionForm({
   protect?: boolean;
   /** Also keep a draft of the text fields under this key (see lib/drafts.ts `draftKey`). */
   draftKey?: string;
+  /** Lets a button elsewhere on the page submit this form (a button's `form` attribute), e.g. a swipe action. */
+  id?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, { status: "idle" });
   const formRef = useRef<HTMLFormElement>(null);
@@ -131,6 +134,7 @@ export function ActionForm({
 
   return (
     <form
+      id={id}
       ref={formRef}
       action={formAction}
       onInput={onEdit}

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { ACCENTS } from "./appearance";
 
 // Reads the colour tokens from globals.css and checks WCAG contrast in both themes, so a
 // palette change can't quietly make text or form-field borders hard to see.
@@ -88,6 +89,54 @@ describe.each([["light", light], ["dark", dark]] as const)("%s theme contrast", 
     expect(contrast(theme, fg, bg)).toBeGreaterThanOrEqual(4.5);
   });
   it.each(COMPONENTS)("%s against %s is at least 3:1", (fg, bg) => {
+    expect(contrast(theme, fg, bg)).toBeGreaterThanOrEqual(3);
+  });
+});
+
+// Every accent colour, in both themes: the same text and component checks as the default blue.
+const NON_DEFAULT_ACCENTS = ACCENTS.filter((a) => a !== "blue");
+describe.each(NON_DEFAULT_ACCENTS)("accent %s", (accent) => {
+  const accentLight = { ...light, ...tokens(block(`:root[data-accent="${accent}"]`)) };
+  const accentDark = { ...dark, ...tokens(block(`.dark[data-accent="${accent}"]`)) };
+  it("defines both its light and dark tokens", () => {
+    expect(accentLight.primary).not.toBe(light.primary);
+    expect(accentDark.primary).not.toBe(dark.primary);
+  });
+  describe.each([["light", accentLight], ["dark", accentDark]] as const)("%s", (_name, theme) => {
+    it.each(TEXT)("%s on %s is at least 4.5:1", (fg, bg) => {
+      expect(contrast(theme, fg, bg)).toBeGreaterThanOrEqual(4.5);
+    });
+    it.each(COMPONENTS)("%s against %s is at least 3:1", (fg, bg) => {
+      expect(contrast(theme, fg, bg)).toBeGreaterThanOrEqual(3);
+    });
+  });
+});
+
+// The high-contrast theme, over light and over dark: the normal checks, and 7:1 (WCAG AAA) for body text.
+const AAA: [string, string][] = [
+  ["foreground", "background"], ["card-foreground", "card"], ["muted-foreground", "background"], ["muted-foreground", "card"],
+  ["primary-foreground", "primary"], ["primary", "background"],
+];
+describe.each([
+  ["light", { ...light, ...tokens(block(':root[data-contrast="high"]')) }],
+  ["dark", { ...dark, ...tokens(block('.dark[data-contrast="high"]')) }],
+] as const)("high contrast over %s", (_name, theme) => {
+  it.each(TEXT)("%s on %s is at least 4.5:1", (fg, bg) => {
+    expect(contrast(theme, fg, bg)).toBeGreaterThanOrEqual(4.5);
+  });
+  it.each(AAA)("%s on %s is at least 7:1", (fg, bg) => {
+    expect(contrast(theme, fg, bg)).toBeGreaterThanOrEqual(7);
+  });
+  it.each([...COMPONENTS, ["border", "background"]] as [string, string][])("%s against %s is at least 3:1", (fg, bg) => {
+    expect(contrast(theme, fg, bg)).toBeGreaterThanOrEqual(3);
+  });
+});
+
+// Progress visuals (goal ring, funnel, heatmap, sparkline) draw with the meter tokens. The filled colour is a graphic
+// that carries meaning, so it needs 3:1 against the surface it sits on (WCAG 1.4.11). "Pending" is told apart by its
+// hatched pattern, not by its shade, and every visual also has the numbers in text, so only the fill is checked.
+describe.each([["light", light], ["dark", dark], ["high contrast light", { ...light, ...tokens(block(':root[data-contrast="high"]')) }]] as const)("progress visuals in the %s theme", (_name, theme) => {
+  it.each([["meter-fill", "card"], ["meter-fill", "background"]] as [string, string][])("%s against %s is at least 3:1", (fg, bg) => {
     expect(contrast(theme, fg, bg)).toBeGreaterThanOrEqual(3);
   });
 });

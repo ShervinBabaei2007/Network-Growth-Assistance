@@ -29,6 +29,9 @@ export const metadata: Metadata = {
   metadataBase: siteUrl(),
   title: "Network Growth Assistant",
   description: "Plan, prioritize and track your professional networking and job search.",
+  // iOS adds to the home screen from these; Android reads the manifest (src/app/manifest.ts).
+  icons: { apple: "/pwa-icon?size=180" },
+  appleWebApp: { capable: true, title: "Network Growth", statusBarStyle: "default" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

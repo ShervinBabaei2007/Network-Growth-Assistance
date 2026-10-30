@@ -3,6 +3,8 @@ import { LogOut } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
 import { NotificationBell } from "@/components/alerts/notification-bell";
 import { MobileNav, SidebarNav } from "@/components/app-nav";
+import { BottomTabs } from "@/components/bottom-tabs";
+import { PwaSupport } from "@/components/pwa-support";
 import { CommandLauncher } from "@/components/command-palette/launcher";
 import { AppearanceSync } from "@/components/appearance-sync";
 import { SampleDataBanner } from "@/components/sample-data-banner";
@@ -50,6 +52,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             <LocalizedHeaderActions />
           </Suspense>
         </header>
+        <PwaSupport />
         <Suspense fallback={null}>
           <PauseBanner />
         </Suspense>
@@ -67,9 +70,12 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           </WithLocale>
         </Suspense>
         {/* Content stays a readable width on large monitors instead of spanning the whole screen. */}
-        <main id="main" tabIndex={-1} className="flex-1 px-[max(1rem,env(safe-area-inset-left))] py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] outline-none md:px-8 md:py-8">
+        <main id="main" tabIndex={-1} className="flex-1 px-[max(1rem,env(safe-area-inset-left))] py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] outline-none max-md:pb-[calc(4.75rem+env(safe-area-inset-bottom))] md:px-8 md:py-8">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
+        <Suspense fallback={null}>
+          <GoalBottomTabs />
+        </Suspense>
       </div>
     </div>
   );
@@ -90,6 +96,15 @@ async function GoalMobileNav() {
   return (
     <I18nProvider locale={locale}>
       <MobileNav goal={read?.state.goal} />
+    </I18nProvider>
+  );
+}
+
+async function GoalBottomTabs() {
+  const [read, locale] = await Promise.all([getOnboarding(), getLocale()]);
+  return (
+    <I18nProvider locale={locale}>
+      <BottomTabs goal={read?.state.goal} />
     </I18nProvider>
   );
 }
@@ -124,7 +139,7 @@ async function SampleBanner() {
 async function SavedAppearance() {
   const { row: data } = await getSettings();
   if (!data) return null;
-  return <AppearanceSync value={normalizeAppearance({ theme: data.theme, density: data.density, text: data.text_size })} />;
+  return <AppearanceSync value={normalizeAppearance({ theme: data.theme, density: data.density, text: data.text_size, accent: data.accent, contrast: data.contrast })} />;
 }
 
 /** Gives client components below it the person's language. */

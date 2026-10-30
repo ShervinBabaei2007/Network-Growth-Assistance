@@ -9,6 +9,7 @@ import { BaselineForm, SnapshotForm } from "@/components/connection-forms";
 import { LoadError } from "@/components/load-error";
 import { GettingStartedCard } from "@/components/onboarding/checklist";
 import { PageHeader } from "@/components/page-header";
+import { GoalRing } from "@/components/progress-visuals";
 import { MeterLegend, ProgressMeter } from "@/components/progress-meter";
 import { StatTile } from "@/components/stat-tile";
 import { Badge } from "@/components/ui/badge";
@@ -122,7 +123,9 @@ async function OverviewContent() {
           </CardHeader>
           <CardContent className="grid gap-4">
             {overall.additionalSinceStart !== null && overall.growthGoal !== null ? (
-              <div className="grid gap-1.5">
+              <div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
+                {overall.growthGoal > 0 ? <GoalRing accepted={Math.max(0, overall.additionalSinceStart)} pending={overall.pending} target={overall.growthGoal} label="Progress toward the growth goal" /> : null}
+                <div className="grid gap-1.5">
                 <ProgressMeter
                   label="Growth toward the overall target"
                   accepted={Math.max(0, overall.additionalSinceStart)}
@@ -134,6 +137,7 @@ async function OverviewContent() {
                   {overall.growthGoal.toLocaleString("en-CA")} new connections needed ·{" "}
                   {overall.remaining?.toLocaleString("en-CA")} to go
                 </p>
+                </div>
               </div>
             ) : null}
             <p className="text-xs text-muted-foreground">

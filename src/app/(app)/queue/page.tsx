@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { ActionForm } from "@/components/action-form";
+import { SwipeActions } from "@/components/swipe-actions";
 import { LoadError } from "@/components/load-error";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -108,7 +109,21 @@ async function QueueContent() {
           {open.map((item) => {
             const c = item.candidates;
             return (
-              <Card key={item.id}>
+              <SwipeActions
+                key={item.id}
+                label={`Quick actions for ${c.full_name}`}
+                actions={
+                  <>
+                    <button type="submit" form={`skip-${item.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                      Skip today
+                    </button>
+                    <button type="submit" form={`sent-${item.id}`} className={buttonVariants({ size: "sm" })}>
+                      Mark sent
+                    </button>
+                  </>
+                }
+              >
+              <Card>
                 <CardContent className="grid gap-3 pt-4">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="grid gap-0.5">
@@ -136,7 +151,7 @@ async function QueueContent() {
                   </div>
                   {c.notes ? <p className="text-sm">Your notes: {c.notes}</p> : null}
                   <div className="flex flex-wrap items-end gap-3">
-                    <ActionForm action={markQueueItemSent} submitLabel="Mark sent" size="sm" className="min-w-0 flex-1">
+                    <ActionForm id={`sent-${item.id}`} action={markQueueItemSent} submitLabel="Mark sent" size="sm" className="min-w-0 flex-1">
                       <input type="hidden" name="queueId" value={item.id} />
                       <input type="hidden" name="candidateId" value={item.candidate_id} />
                       <NoteField
@@ -148,13 +163,14 @@ async function QueueContent() {
                         notesLeft={notesLeft}
                       />
                     </ActionForm>
-                    <ActionForm action={skipQueueItem} submitLabel="Skip today" variant="outline" size="sm">
+                    <ActionForm id={`skip-${item.id}`} action={skipQueueItem} submitLabel="Skip today" variant="outline" size="sm">
                       <input type="hidden" name="queueId" value={item.id} />
                       <input type="hidden" name="candidateId" value={item.candidate_id} />
                     </ActionForm>
                   </div>
                 </CardContent>
               </Card>
+              </SwipeActions>
             );
           })}
         </section>

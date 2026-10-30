@@ -10,6 +10,7 @@ import { ExternalLink, SearchX, Upload, Users } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { LoadExample } from "@/components/load-example";
 import { CategoryLabel, StatusBadge } from "@/components/candidate-badges";
+import { ListKeyNav } from "@/components/list-key-nav";
 import { LoadError } from "@/components/load-error";
 import { AppSelect } from "@/components/app-select";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -209,6 +210,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
           </EmptyState>
         )
       ) : (
+        <ListKeyNav>
         <Table stack>
           <TableHeader>
             <TableRow>
@@ -226,12 +228,12 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
           </TableHeader>
           <TableBody>
             {data.map((c) => (
-              <TableRow key={c.id}>
+              <TableRow key={c.id} className="has-[a[aria-current=true]]:bg-muted">
                 <TableCell>
                   <RowSelect scope="candidates" id={c.id} name={c.full_name} />
                 </TableCell>
                 <TableCell className="max-w-48 truncate font-medium">
-                  <Link href={`/candidates/${c.id}`} className="underline-offset-4 hover:underline">
+                  <Link href={`/candidates/${c.id}`} data-row-link className="underline-offset-4 hover:underline">
                     {c.full_name}
                   </Link>
                 </TableCell>
@@ -262,6 +264,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
             ))}
           </TableBody>
         </Table>
+        </ListKeyNav>
       )}
 
       <PageNav current={page} pages={pages} href={pageHref} />

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { JobMoreMenu } from "@/components/jobs/job-more-menu";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
+import { EmployerMark, FitBreakdown, PayRange } from "@/components/jobs/fit-breakdown-view";
 import { FitChip, SourceTag, TIER_STYLE, VerificationBadge, type TierKey } from "@/components/jobs/job-visuals";
 import { buttonVariants } from "@/components/ui/button";
 import { applyState } from "@/lib/job-postings/apply-state";
 import type { FitExplanation } from "@/lib/job-postings/fit";
+import type { BreakdownRow, PayBar } from "@/lib/job-postings/fit-breakdown";
 import { placeLabel, postedLabel } from "@/lib/job-postings/labels";
 import { LEVEL_LABELS, WORKPLACE_LABELS, type Workplace } from "@/lib/job-postings/levels";
 import type { JobSource } from "@/lib/job-postings/source";
@@ -51,6 +53,8 @@ export function JobCard({
   status,
   source,
   alsoOn,
+  breakdown = [],
+  pay = null,
 }: {
   job: CardJob;
   fit: { tier: TierKey; score: number | null; summary: string | null } | null;
@@ -59,6 +63,10 @@ export function JobCard({
   status: "saved" | "applied" | "dismissed" | null;
   source: JobSource;
   alsoOn: string[];
+  /** One bar per area of the posting (skills, experience, eligibility), from the same results as the score. */
+  breakdown?: BreakdownRow[];
+  /** The stated pay as a range against the person's own minimum; null when the posting states none. */
+  pay?: PayBar | null;
 }) {
   const tier: TierKey = fit?.tier ?? "unchecked";
   const apply = applyState(j);
@@ -68,9 +76,12 @@ export function JobCard({
   return (
     <li className={cn("grid gap-2 rounded-xl border border-l-4 bg-card p-4 shadow-xs transition-shadow [contain-intrinsic-size:auto_9rem] [content-visibility:auto] hover:shadow-sm", TIER_STYLE[tier].border)}>
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-        <Link href={`/jobs/${j.id}`} className="min-w-0 text-base leading-snug font-semibold hover:text-primary hover:underline">
-          {j.title}
-        </Link>
+        <div className="flex min-w-0 items-start gap-3">
+          <EmployerMark name={j.company} />
+          <Link href={`/jobs/${j.id}`} className="min-w-0 text-base leading-snug font-semibold hover:text-primary hover:underline">
+            {j.title}
+          </Link>
+        </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {status === "applied" ? <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">Applied</span> : null}
           {/* Verified is the normal case and the page says so once; only call out listings that are not. */}
@@ -110,6 +121,8 @@ export function JobCard({
             Details <ChevronDown aria-hidden className="size-3.5 transition-transform group-open:rotate-180" />
           </summary>
           <div className="mt-2 grid gap-1.5 text-xs text-muted-foreground">
+            <FitBreakdown rows={breakdown} tier={tier} />
+            {pay ? <PayRange bar={pay} /> : null}
             <p className="flex flex-wrap gap-x-3 gap-y-0.5">
               {j.workplace_type ? <span>{WORKPLACE_LABELS[j.workplace_type as Workplace]}</span> : null}
               {j.employment_type ? <span>{j.employment_type}</span> : null}

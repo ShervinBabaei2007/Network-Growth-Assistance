@@ -411,11 +411,11 @@ export async function updateNoteProfile(_: FormState, formData: FormData): Promi
 
 // ---------------------------------------------------------------- appearance and tracker
 
-/** Saves the theme, density and text size. The page applies them right away; this keeps them for every device. */
+/** Saves the theme, accent, contrast, density and text size. The page applies them right away; this keeps them for every device. */
 export async function saveAppearance(input: Appearance): Promise<ActionResult> {
   const a = normalizeAppearance(input);
   const ctx = await context();
-  const { error } = await ctx.supabase.from("settings").update({ theme: a.theme, density: a.density, text_size: a.text }).eq("user_id", ctx.userId);
+  const { error } = await ctx.supabase.from("settings").update({ theme: a.theme, density: a.density, text_size: a.text, accent: a.accent, contrast: a.contrast }).eq("user_id", ctx.userId);
   if (error) return err("Couldn't save your appearance settings. Try again.");
   return ok("Appearance saved.");
 }

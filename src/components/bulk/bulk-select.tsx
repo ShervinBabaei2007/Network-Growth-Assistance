@@ -48,7 +48,7 @@ export function BulkBarFrame({ scope, children }: { scope: string; children: Rea
     <div
       role="region"
       aria-label="Bulk actions"
-      className="sticky bottom-3 z-30 flex flex-wrap items-center gap-2 rounded-xl border bg-popover p-2 pl-3 text-sm shadow-lg"
+      className="sticky bottom-3 z-30 max-md:bottom-[calc(4.75rem+env(safe-area-inset-bottom))] flex flex-wrap items-center gap-2 rounded-xl border bg-popover p-2 pl-3 text-sm shadow-lg"
       data-testid="bulk-bar"
     >
       <p className="mr-auto font-medium" aria-live="polite">

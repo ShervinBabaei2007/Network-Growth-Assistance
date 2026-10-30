@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { Disclosure } from "@/components/disclosure";
+import { ListKeyNav } from "@/components/list-key-nav";
 import { LoadError } from "@/components/load-error";
 import { RememberLastView, ViewsMenu, type SavedView } from "@/components/views-menu";
 import { PAGE_SIZES, parsePageSize } from "@/lib/views";
@@ -169,6 +170,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
           )}
         </EmptyState>
       ) : (
+        <ListKeyNav>
         <Table stack>
           <TableHeader>
             <TableRow>
@@ -184,12 +186,12 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
           </TableHeader>
           <TableBody>
             {data.map((p) => (
-              <TableRow key={p.id}>
+              <TableRow key={p.id} className="has-[a[aria-current=true]]:bg-muted">
                 <TableCell>
                   <RowSelect scope="people" id={p.id} name={p.full_name} />
                 </TableCell>
                 <TableCell className="max-w-48 truncate font-medium">
-                  <Link href={`/people/${p.id}`} className="underline-offset-4 hover:underline">
+                  <Link href={`/people/${p.id}`} data-row-link className="underline-offset-4 hover:underline">
                     {p.full_name}
                   </Link>
                   {p.tags.length ? (
@@ -214,6 +216,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
             ))}
           </TableBody>
         </Table>
+        </ListKeyNav>
       )}
 
       <PageNav current={page} pages={pages} href={href} />
