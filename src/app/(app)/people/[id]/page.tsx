@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PaneSignal } from "@/components/master-detail";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -9,6 +10,7 @@ export const metadata = { title: "Person · Network Growth" };
 export default function PersonPage({ params }: PageProps<"/people/[id]">) {
   return (
     <div data-record-page className="grid max-w-3xl gap-6">
+      <PaneSignal kind="record" />
       <Link href="/people" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" aria-hidden /> People
       </Link>

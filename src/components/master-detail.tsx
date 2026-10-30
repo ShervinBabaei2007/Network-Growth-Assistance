@@ -2,7 +2,9 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-export { MasterDetail } from "@/components/master-detail-shell";
+import { PaneSignal } from "@/components/master-detail-shell";
+
+export { MasterDetail, PaneSignal } from "@/components/master-detail-shell";
 
 /** What the right-hand side says before anything is chosen. Hidden below xl, where there is no right-hand side. */
 export function DetailPlaceholder({ what }: { what: string }) {
@@ -17,6 +19,7 @@ export function DetailPlaceholder({ what }: { what: string }) {
 export function DetailPane({ backHref, backLabel, children }: { backHref: string; backLabel: string; children: ReactNode }) {
   return (
     <div data-detail className="grid gap-4 xl:rounded-xl xl:border xl:bg-card xl:p-4">
+      <PaneSignal kind="detail" />
       <Link href={backHref} className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground xl:hidden">
         <ArrowLeft className="size-4" aria-hidden /> {backLabel}
       </Link>
