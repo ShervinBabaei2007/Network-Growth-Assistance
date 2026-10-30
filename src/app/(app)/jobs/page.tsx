@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { expansionNotice, RANGES, relatedTitles, type Range } from "@/lib/job-postings/feed";
 import { activeFilterCount, type Filters } from "@/lib/job-postings/filters";
+import { fitBreakdown, payBar } from "@/lib/job-postings/fit-breakdown";
 import { explainFit } from "@/lib/job-postings/fit";
 import { timeAgo } from "@/lib/job-postings/labels";
 import { LEVEL_LABELS, LEVELS, WORKPLACE_LABELS } from "@/lib/job-postings/levels";
@@ -330,6 +331,8 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
                   status={stateBy.get(j.id) ?? null}
                   source={jobSource(j, employer)}
                   alsoOn={[...new Set(twins.map((t) => alsoListedOn(t.source)))]}
+                  breakdown={fit?.success ? fitBreakdown(fit.data.requirements, fit.data.results, (t) => skillsIn(t).map((s) => s.name)) : []}
+                  pay={payBar(j, filters.minSalary, currency)}
                 />
               );
             })}
