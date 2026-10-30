@@ -6,7 +6,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
-import { ExternalLink, Upload } from "lucide-react";
+import { ExternalLink, SearchX, Upload, Users } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { LoadExample } from "@/components/load-example";
 import { CategoryLabel, StatusBadge } from "@/components/candidate-badges";
 import { LoadError } from "@/components/load-error";
 import { AppSelect } from "@/components/app-select";
@@ -184,11 +186,28 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
       </p>
 
       {data.length === 0 ? (
-        <p className="rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground">
-          {q || status || discipline || university || review
-            ? "No candidates match these filters."
-            : "No candidates yet. Add people you find through LinkedIn search, or import a list."}
-        </p>
+        q || status || discipline || university || review ? (
+          <EmptyState icon={<SearchX aria-hidden />} title="No candidates match these filters" description="Try removing a filter or searching for something else.">
+            <Link href="/candidates?clear=1" className={buttonVariants({ size: "sm", variant: "outline" })}>
+              Clear filters
+            </Link>
+          </EmptyState>
+        ) : (
+          <EmptyState
+            icon={<Users aria-hidden />}
+            title="No candidates yet"
+            description="Paste profile links from your own LinkedIn searches, or import a list. Each person is sorted by school and program so you can approve them for your queue."
+          >
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link href="/candidates/import" className={buttonVariants({ size: "sm" })}>
+                Import a list
+              </Link>
+              <Suspense fallback={null}>
+                <LoadExample />
+              </Suspense>
+            </div>
+          </EmptyState>
+        )
       ) : (
         <Table stack>
           <TableHeader>

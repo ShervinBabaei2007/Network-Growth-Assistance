@@ -2,7 +2,9 @@ import { Suspense } from "react";
 import { PageNav } from "@/components/page-nav";
 import { Disclosure } from "@/components/disclosure";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { ExternalLink, Users } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -118,9 +120,17 @@ async function ConnectionList({ searchParams }: Pick<PageProps<"/connections">, 
       </p>
 
       {data.length === 0 ? (
-        <p className="rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground">
-          {q ? "No connections match." : "No known connections yet. Import your Connections.csv so Discover can skip people you already know."}
-        </p>
+        <EmptyState
+          icon={<Users aria-hidden />}
+          title={q ? "No connections match" : "No known connections yet"}
+          description={q ? "Try a different name or company." : "Import your Connections.csv above so Discover can skip people you already know. You see what will change before anything is saved."}
+        >
+          {q ? (
+            <Link href="/connections" className={buttonVariants({ size: "sm", variant: "outline" })}>
+              Clear search
+            </Link>
+          ) : null}
+        </EmptyState>
       ) : (
         <Table stack>
           <TableHeader>

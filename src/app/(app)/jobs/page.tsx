@@ -360,8 +360,24 @@ function EmptyState({
   filtered: boolean;
   where: string;
 }) {
-  if (tab === "saved") return <EmptyPanel icon={<Bookmark aria-hidden />} title="Nothing saved yet" description="Save a job from its card and it will be kept here." />;
-  if (tab !== "all" && !hasResume) return <EmptyPanel icon={<FileText aria-hidden />} title="Import your resume to sort jobs by fit" description="Jobs are scored against your resume, so this is the quickest way to see good matches." />;
+  if (tab === "saved") {
+    return (
+      <EmptyPanel icon={<Bookmark aria-hidden />} title="Nothing saved yet" description="Save a job from its card and it will be kept here, with your notes and its place in the tracker.">
+        <Link href={href({ tab: "all", page: "" })} className={buttonVariants({ size: "sm" })}>
+          Browse all jobs
+        </Link>
+      </EmptyPanel>
+    );
+  }
+  if (tab !== "all" && !hasResume) {
+    return (
+      <EmptyPanel icon={<FileText aria-hidden />} title="Import your resume to sort jobs by fit" description="Jobs are scored against your resume, so this is the quickest way to see good matches.">
+        <Link href="/jobs/resume" className={buttonVariants({ size: "sm" })}>
+          Add your resume
+        </Link>
+      </EmptyPanel>
+    );
+  }
   const related = searched[0] ? [...relatedTitles(searched[0]).related, ...relatedTitles(searched[0]).broader].slice(0, 2) : [];
   const actions = [
     explicitRange?.key !== "30d" ? { label: "Expand the date range to 30 days", href: href({ range: "30d", page: "" }) } : null,

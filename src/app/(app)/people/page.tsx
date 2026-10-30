@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { LoadError } from "@/components/load-error";
+import { LoadExample } from "@/components/load-example";
 import { RowSelect, SelectAll } from "@/components/bulk/bulk-select";
 import { PeopleBulkBar } from "./bulk-bar";
 import { AppSelect } from "@/components/app-select";
@@ -126,8 +127,23 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
         <EmptyState
           icon={<BookUser aria-hidden />}
           title={q || status || tag || due ? "Nobody matches these filters" : "No saved people yet"}
-          description={q || status || tag || due ? "Try removing a filter or searching for something else." : "Run a search in Discover and save the people worth meeting."}
-        />
+          description={q || status || tag || due ? "Try removing a filter or searching for something else." : "Run a search in Discover and save the people worth meeting. Each one gets a status, notes and reminders here."}
+        >
+          {q || status || tag || due ? (
+            <Link href="/people" className={buttonVariants({ size: "sm", variant: "outline" })}>
+              Clear filters
+            </Link>
+          ) : (
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link href="/discover" className={buttonVariants({ size: "sm" })}>
+                Go to Discover
+              </Link>
+              <Suspense fallback={null}>
+                <LoadExample />
+              </Suspense>
+            </div>
+          )}
+        </EmptyState>
       ) : (
         <Table stack>
           <TableHeader>

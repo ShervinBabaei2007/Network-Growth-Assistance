@@ -34,3 +34,28 @@ test("look around with example data, see it labelled, exclude it from the export
   await page.goto("/overview");
   await expect(wizard).toBeVisible();
 });
+
+test("an empty page offers example data, and it only shows while the account is empty", async ({ page }) => {
+  const email = uniqueEmail("sample-empty");
+  await signIn(page, email);
+  await page.goto("/candidates");
+  await expect(page.getByRole("heading", { name: "No candidates yet" })).toBeVisible();
+  await page.getByRole("button", { name: "Load example data" }).click();
+  await expect(page.getByTestId("sample-banner")).toBeVisible();
+  await expect.poll(() => counts(email).then((c) => c.candidates)).toBe(30);
+
+  // Clearing removes every example row again.
+  await page.getByRole("button", { name: "Clear sample data" }).click();
+  await expect(page.getByTestId("sample-banner")).toBeHidden();
+  await expect.poll(() => counts(email)).toEqual({ candidates: 0, applications: 0, universities: 0 });
+});
+
+test("the example-data button is not offered once the account has its own data", async ({ page }) => {
+  const email = uniqueEmail("sample-own");
+  await signIn(page, email);
+  const user_id = await userIdFor(email);
+  await adminRest("POST", "universities", [{ user_id, name: "My School" }]);
+  await page.goto("/people");
+  await expect(page.getByRole("heading", { name: "No saved people yet" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Load example data" })).toHaveCount(0);
+});
