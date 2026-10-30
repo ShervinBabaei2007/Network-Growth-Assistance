@@ -24,19 +24,19 @@ test.describe("wide screen", () => {
     await page.goto("/people");
     await expect(page.getByText("Choose a person from the list")).toBeVisible();
 
-    await page.getByRole("link", { name: "Ana Alvarez" }).click();
+    await page.getByRole("link", { name: "Ana Alvarez", exact: true }).click();
     await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
     const pane = page.getByRole("complementary", { name: "Selected record" });
     await expect(pane.getByRole("heading", { name: "Ana Alvarez" })).toBeVisible();
     // The list is still there, with the open row marked.
-    await expect(page.getByRole("link", { name: "Bo Bennett" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Ana Alvarez" })).toHaveAttribute("aria-current", "true");
+    await expect(page.getByRole("link", { name: "Bo Bennett", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ana Alvarez", exact: true })).toHaveAttribute("aria-current", "true");
 
     // Arrow keys move through the list while the record changes.
-    await page.getByRole("link", { name: "Ana Alvarez" }).focus();
+    await page.getByRole("link", { name: "Ana Alvarez", exact: true }).focus();
     await page.keyboard.press("ArrowDown");
     await expect(pane.getByRole("heading", { name: "Bo Bennett" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Bo Bennett" })).toBeFocused();
+    await expect(page.getByRole("link", { name: "Bo Bennett", exact: true })).toBeFocused();
     await page.keyboard.press("ArrowDown");
     await expect(pane.getByRole("heading", { name: "Cleo Chan" })).toBeVisible();
     await page.keyboard.press("ArrowUp");
@@ -62,12 +62,12 @@ test.describe("phone", () => {
     await signIn(page, email);
     await seedPeople(email);
     await page.goto("/people");
-    await page.getByRole("link", { name: "Ana Alvarez" }).click();
+    await page.getByRole("link", { name: "Ana Alvarez", exact: true }).click();
     await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
     await expect(page.getByRole("heading", { name: "Ana Alvarez" })).toBeVisible();
     // The list is not on screen at the same time.
-    await expect(page.getByRole("link", { name: "Bo Bennett" })).toBeHidden();
+    await expect(page.getByRole("link", { name: "Bo Bennett", exact: true })).toBeHidden();
     await page.getByRole("link", { name: "People", exact: true }).first().click();
-    await expect(page.getByRole("link", { name: "Bo Bennett" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Bo Bennett", exact: true })).toBeVisible();
   });
 });

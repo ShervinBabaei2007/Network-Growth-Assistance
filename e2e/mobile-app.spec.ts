@@ -21,6 +21,7 @@ test("the bottom tab bar shows the main places, marks the current one, and More 
 
 test("the tab bar never covers the end of a page", async ({ page }) => {
   await signIn(page, uniqueEmail("tabs-pad"), "/settings");
+  await expect(page.getByTestId("bottom-tabs")).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   const bar = await page.getByTestId("bottom-tabs").boundingBox();
   const last = await page.locator("main > div").boundingBox();

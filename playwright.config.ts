@@ -18,8 +18,8 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] }, testIgnore: [/mobile\.spec\.ts/, /readme-(screenshots|video).*\.spec\.ts/] },
-    { name: "mobile", use: { ...devices["Pixel 7"] }, testMatch: /(mobile|sticky-nav|onboarding)\.spec\.ts/ },
+    { name: "desktop", use: { ...devices["Desktop Chrome"] }, testIgnore: [/mobile\.spec\.ts/, /mobile-app\.spec\.ts/, /readme-(screenshots|video).*\.spec\.ts/] },
+    { name: "mobile", use: { ...devices["Pixel 7"] }, testMatch: /(mobile|mobile-app|sticky-nav|onboarding)\.spec\.ts/ },
   ],
   webServer: {
     command: "npm run dev -- --port 3000",

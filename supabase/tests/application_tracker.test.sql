@@ -44,7 +44,7 @@ select is(
   3, 'moving a stage bumps the version');
 select throws_ok(
   $$select public.set_application_stage((select id from public.applications), 'interviewing', 1)$$,
-  '40001', null, 'a stale version is refused');
+  'P0409', null, 'a stale version is refused');
 select is((select stage::text from public.applications), 'screening', 'a refused change leaves the stage alone');
 
 -- Save on a job that's further along doesn't move it back.

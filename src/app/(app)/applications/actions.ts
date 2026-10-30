@@ -25,7 +25,7 @@ type Db = ActionContext["supabase"];
 type PgError = { code?: string } | null;
 
 function failure(error: PgError, fallback: string): ActionResult<never> {
-  if (error?.code === "40001") return err("This application changed in another tab or window. Reload the page and try again.");
+  if (error?.code === "P0409" || error?.code === "40001") return err("This application changed in another tab or window. Reload the page and try again.");
   if (error?.code === "23505") return err("Another attempt at this job is still open. Close that one first.");
   if (error?.code === "P0002") return err("That application wasn't found.");
   return err(fallback);

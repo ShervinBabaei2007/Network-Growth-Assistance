@@ -221,11 +221,15 @@ function AppFacts({ app }: { app: TrackerApp }) {
 
 /** A card's drag handle. Pointer, touch and keyboard (Space to lift, arrows to move, Space to drop) all start here. */
 function DragHandle({ id, title }: { id: string; title: string }) {
-  const { attributes, listeners, setActivatorNodeRef } = useDraggable({ id });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef } = useDraggable({ id });
   return (
     <button
       type="button"
-      ref={setActivatorNodeRef}
+      ref={(el) => {
+        // The handle is both the dragged node (dnd-kit measures it for collisions) and the activator.
+        setNodeRef(el);
+        setActivatorNodeRef(el);
+      }}
       {...attributes}
       {...listeners}
       aria-label={`Move ${title} to another stage`}
@@ -384,6 +388,8 @@ function Board({ apps, pending, move }: { apps: TrackerApp[]; pending: boolean; 
       </div>
       <p className="hidden text-xs text-muted-foreground md:block">Drag a card by its grip to another column, or use the stage menu on the card.</p>
       <DndContext
+        // A fixed id keeps dnd-kit's generated aria ids the same on the server and the client.
+        id="applications-board"
         sensors={sensors}
         collisionDetection={collide}
         accessibility={{
