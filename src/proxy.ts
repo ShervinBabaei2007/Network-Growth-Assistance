@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv } from "@/lib/env.public";
 
 // Files for search engines and agents must be readable without signing in, or they only ever see the sign-in page.
-const PUBLIC_PATHS = ["/login", "/auth", "/guides", "/privacy", "/terms", "/robots.txt", "/sitemap.xml", "/llms.txt", "/.well-known"];
+// The install manifest, service worker and icons are fetched by the browser without cookies, so they are public too.
+const PUBLIC_PATHS = ["/login", "/auth", "/guides", "/privacy", "/terms", "/robots.txt", "/sitemap.xml", "/llms.txt", "/.well-known", "/manifest.webmanifest", "/sw.js", "/offline.html", "/pwa-icon"];
 
 /** Refreshes the Supabase session cookie and sends signed-out visitors to /login. */
 export async function proxy(request: NextRequest) {

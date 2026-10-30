@@ -19,6 +19,7 @@ export const frCA: Messages = {
     skip: "Passer",
     done: "Terminé",
     mainNavigation: "Principale",
+    quickNavigation: "Raccourcis",
     sidebar: "Barre latérale",
   },
   nav: {

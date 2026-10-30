@@ -21,6 +21,7 @@ export const en = {
     skip: "Skip",
     done: "Done",
     mainNavigation: "Main",
+    quickNavigation: "Quick links",
     sidebar: "Sidebar",
   },
   nav: {

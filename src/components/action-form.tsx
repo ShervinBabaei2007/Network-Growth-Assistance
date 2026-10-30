@@ -19,6 +19,7 @@ export function ActionForm({
   variant,
   size,
   resetOnSuccess,
+  id,
 }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   submitLabel: string;
@@ -28,6 +29,8 @@ export function ActionForm({
   size?: "default" | "sm";
   /** Clear the fields after a successful save (for "add another" forms). */
   resetOnSuccess?: boolean;
+  /** Lets a button elsewhere on the page submit this form (a button's `form` attribute), e.g. a swipe action. */
+  id?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, { status: "idle" });
   const formRef = useRef<HTMLFormElement>(null);
@@ -56,6 +59,7 @@ export function ActionForm({
 
   return (
     <form
+      id={id}
       ref={formRef}
       action={formAction}
       onReset={(e) => {

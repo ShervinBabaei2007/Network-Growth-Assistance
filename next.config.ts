@@ -8,6 +8,14 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // The browser must always check for a new service worker; a stale one would keep serving old code.
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+        ],
+      },
+      {
         source: "/:path*",
         headers: [
           // The app is never meant to be framed (clickjacking protection).
