@@ -74,7 +74,7 @@ async function SettingsContent() {
         className="lg:col-span-2"
       >
         <div className="grid gap-6">
-          <ActionForm action={updateGoal} submitLabel="Save goal">
+          <ActionForm action={updateGoal} protect submitLabel="Save goal">
             <div className="grid gap-3 sm:grid-cols-3">
               <Field id="overallTarget" label="Connection goal (total)">
                 <Input id="overallTarget" name="overallTarget" type="number" min={1} max={30000} defaultValue={s.overall_target ?? ""} placeholder="Not set" />
@@ -127,7 +127,7 @@ async function SettingsContent() {
           <div className="grid gap-3">
             <h2 className="text-sm font-semibold">Targets</h2>
             {catalog.disciplines.length ? (
-              <ActionForm action={updateTargets} submitLabel="Save targets">
+              <ActionForm action={updateTargets} protect submitLabel="Save targets">
                 <p className="text-xs text-muted-foreground">Per discipline, and the share from each school. Leave empty for no target.</p>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {catalog.disciplines.map((d) => (
@@ -163,14 +163,14 @@ async function SettingsContent() {
         <AppearanceForm initial={normalizeAppearance({ theme: s.theme, density: s.density, text: s.text_size })} />
       </Section>
       <Section title="Applications" description="When to suggest marking an application “No response”. Nothing is changed automatically.">
-        <ActionForm action={updateTrackerSettings} submitLabel="Save">
+        <ActionForm action={updateTrackerSettings} protect submitLabel="Save">
           <Field id="noResponseDays" label="Suggest after this many days without a reply">
             <Input id="noResponseDays" name="noResponseDays" type="number" min={1} max={365} defaultValue={s.no_response_days} required className="w-28" />
           </Field>
         </ActionForm>
       </Section>
       <Section id="notifications" title="Notifications" description="What appears in your notifications (the bell at the top). Saved-search alerts are set on each search.">
-        <ActionForm action={updateNotificationSettings} submitLabel="Save">
+        <ActionForm action={updateNotificationSettings} protect submitLabel="Save">
           <div className="grid gap-2 text-sm">
             <label className="flex items-center gap-2">
               <Checkbox name="notifyReminders" defaultChecked={s.notify_reminders} /> Reminders when they&apos;re due
@@ -216,7 +216,7 @@ async function SettingsContent() {
         title="Daily planning"
         description="LinkedIn's limits vary by account and change over time, so nothing is assumed. Enter what you plan to do and any limits LinkedIn has shown you."
       >
-        <ActionForm action={updatePlanning} submitLabel="Save planning">
+        <ActionForm action={updatePlanning} protect submitLabel="Save planning">
           <div className="grid gap-3 sm:grid-cols-2">
             <Field id="dailyInviteTarget" label="Invitations you plan to send per day">
               <Input id="dailyInviteTarget" name="dailyInviteTarget" type="number" min={0} max={1000} defaultValue={s.daily_invite_target ?? ""} placeholder="Not set" />
@@ -253,7 +253,7 @@ async function SettingsContent() {
         title="About you (for connection notes)"
         description="Suggested notes only mention what you enter here and what's on the candidate's record. Nothing is invented."
       >
-        <ActionForm action={updateNoteProfile} submitLabel="Save">
+        <ActionForm action={updateNoteProfile} protect submitLabel="Save">
           <Field id="mySchool" label="Your school">
             <Input id="mySchool" name="mySchool" maxLength={200} defaultValue={s.my_school_text ?? ""} placeholder="Your school, college or employer" />
           </Field>
