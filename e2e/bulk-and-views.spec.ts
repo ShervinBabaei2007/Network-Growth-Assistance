@@ -147,3 +147,34 @@ test("saved views: save, open from the menu, remembered on return, per-page size
   await page.goto("/candidates?clear=1&size=25");
   await expect(page.getByText(/page 1 of 2/)).toBeVisible();
 });
+
+test("People: tag, mark sent and snooze many at once, each with Undo", async ({ page }) => {
+  const email = uniqueEmail("bulk-people");
+  await signIn(page, email);
+  const user_id = await userIdFor(email);
+  await adminRest(
+    "POST",
+    "network_people",
+    ["Dana Wu", "Eli Park"].map((full_name) => ({ user_id, full_name, normalized_name: full_name.toLowerCase(), saved: true })),
+  );
+  await page.goto("/people");
+  await page.waitForLoadState("networkidle");
+
+  await page.getByRole("checkbox", { name: "Select everyone on this page" }).click();
+  await expect(bar(page)).toContainText("2 selected");
+
+  // Tag both, then Undo removes the tag again.
+  await bar(page).getByRole("button", { name: "Add tag…" }).click();
+  await bar(page).getByLabel("Tag to add").fill("coffee");
+  await bar(page).getByRole("button", { name: "Add tag" }).click();
+  await expect(toast(page, "Tagged 2 “coffee”")).toBeVisible();
+  await expect(row(page, "Dana Wu")).toContainText("coffee");
+  await toast(page, "Tagged 2").getByRole("button", { name: "Undo" }).click();
+  await expect(row(page, "Dana Wu")).not.toContainText("coffee");
+
+  // Mark sent for both.
+  await page.getByRole("checkbox", { name: "Select everyone on this page" }).click();
+  await bar(page).getByRole("button", { name: "Mark sent" }).click();
+  await expect(toast(page, "2 marked connection sent manually")).toBeVisible();
+  await expect(row(page, "Eli Park")).toContainText("Connection request sent");
+});

@@ -28,7 +28,8 @@ import { loadMyProgress } from "@/lib/data/dashboard";
 import { searchLinks } from "@/lib/prioritize/search-links";
 import { createClient } from "@/lib/supabase/server";
 import { PAGE_SIZES, parsePageSize } from "@/lib/views";
-import { BulkBar, RowSelect, SelectAll } from "./bulk-select";
+import { RowSelect, SelectAll } from "@/components/bulk/bulk-select";
+import { BulkBar } from "./bulk-select";
 import { QuickAddForm } from "./quick-add";
 import { QuickCapture } from "./quick-capture";
 import { RememberLastView, ViewsMenu, type SavedView } from "./views-menu";
@@ -193,7 +194,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">
-                <SelectAll ids={data.map((c) => c.id)} />
+                <SelectAll scope="candidates" ids={data.map((c) => c.id)} label="Select everyone on this page" />
               </TableHead>
               <TableHead>Name</TableHead>
               <TableHead>School · program</TableHead>
@@ -208,7 +209,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
             {data.map((c) => (
               <TableRow key={c.id}>
                 <TableCell>
-                  <RowSelect id={c.id} name={c.full_name} />
+                  <RowSelect scope="candidates" id={c.id} name={c.full_name} />
                 </TableCell>
                 <TableCell className="max-w-48 truncate font-medium">
                   <Link href={`/candidates/${c.id}`} className="underline-offset-4 hover:underline">

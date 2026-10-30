@@ -6,6 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { LoadError } from "@/components/load-error";
+import { RowSelect, SelectAll } from "@/components/bulk/bulk-select";
+import { PeopleBulkBar } from "./bulk-bar";
 import { AppSelect } from "@/components/app-select";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -130,6 +132,9 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
         <Table stack>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <SelectAll scope="people" ids={data.map((p) => p.id)} label="Select everyone on this page" />
+              </TableHead>
               <TableHead>Name</TableHead>
               <TableHead className="hidden md:table-cell">Role</TableHead>
               <TableHead>Status</TableHead>
@@ -140,6 +145,9 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
           <TableBody>
             {data.map((p) => (
               <TableRow key={p.id}>
+                <TableCell>
+                  <RowSelect scope="people" id={p.id} name={p.full_name} />
+                </TableCell>
                 <TableCell className="max-w-48 truncate font-medium">
                   <Link href={`/people/${p.id}`} className="underline-offset-4 hover:underline">
                     {p.full_name}
@@ -169,6 +177,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
       )}
 
       <PageNav current={page} pages={pages} href={href} />
+      <PeopleBulkBar />
     </section>
   );
 }

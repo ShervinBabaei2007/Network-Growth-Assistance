@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowDown, ArrowUp, Bell, CalendarClock, Clock } from "lucide-react";
 import { AppSelect } from "@/components/app-select";
+import { BulkBarFrame, RowSelect, SelectAll, useBulkSelection } from "@/components/bulk/bulk-select";
 import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import type { SortDir, SortKey } from "@/lib/applications/sort";
 import { CLOSED_STAGES, isClosed, OPEN_STAGES, STAGE_HINT, STAGE_LABEL, STAGES, type Stage } from "@/lib/applications/stages";
 import { cn } from "@/lib/utils";
 import { moveStage } from "./actions";
+import { bulkMoveStage, undoBulkMoveStage, type ApplicationsMove } from "./bulk-actions";
 
 export type TrackerApp = ApplicationSummary & { changedLabel: string; appliedLabel: string | null; nextInterviewLabel: string | null };
 type Quiet = { id: string; title: string; company: string | null; days: number; stage: Stage; version: number };
@@ -60,7 +62,57 @@ export function Tracker({ apps, view, sort, quiet, afterDays }: { apps: TrackerA
       {quiet.length ? <NoResponseSuggestions quiet={quiet} afterDays={afterDays} pending={pending} move={move} /> : null}
 
       {view === "board" ? <Board apps={apps} pending={pending} move={move} /> : <List apps={apps} sort={sort} pending={pending} move={move} />}
+      <ApplicationsBulkBar apps={apps} />
     </div>
+  );
+}
+
+const SCOPE = "applications";
+
+/** Appears when applications are ticked: move them all to one stage, with Undo. */
+function ApplicationsBulkBar({ apps }: { apps: TrackerApp[] }) {
+  const { selected, store } = useBulkSelection(SCOPE);
+  const { pending, run } = useActionRunner();
+  const [to, setTo] = useState<Stage>("applied");
+  const last = useRef<ApplicationsMove | null>(null);
+  if (selected.length === 0) return null;
+  const versions = new Map(apps.map((a) => [a.id, a.version]));
+  const items = selected.flatMap((id) => (versions.has(id) ? [{ id, version: versions.get(id)! }] : []));
+  return (
+    <BulkBarFrame scope={SCOPE}>
+      <label htmlFor="bulk-stage" className="text-muted-foreground">
+        Move to
+      </label>
+      <AppSelect id="bulk-stage" value={to} onChange={(e) => setTo(e.target.value as Stage)} className="h-8 w-40 text-sm">
+        {STAGES.map((s) => (
+          <option key={s} value={s}>
+            {STAGE_LABEL[s]}
+          </option>
+        ))}
+      </AppSelect>
+      <Button
+        size="sm"
+        disabled={pending}
+        onClick={() =>
+          run(
+            async () => {
+              const r = await bulkMoveStage(items, to);
+              if (r.ok && r.data) {
+                last.current = r.data;
+                store.clear();
+              }
+              return r;
+            },
+            { undo: () => undoBulkMoveStage(last.current!) },
+          )
+        }
+      >
+        Move {selected.length}
+      </Button>
+      <Button size="sm" variant="ghost" onClick={() => store.clear()}>
+        Clear
+      </Button>
+    </BulkBarFrame>
   );
 }
 
@@ -181,9 +233,12 @@ function Board({ apps, pending, move }: { apps: TrackerApp[]; pending: boolean; 
                 {c.apps.map((a) => (
                   <li key={a.id} className="grid gap-2 rounded-lg border bg-card p-2.5 text-sm">
                     <div className="grid gap-0.5">
-                      <Link href={`/applications/${a.id}`} className="font-medium leading-snug break-words hover:underline">
-                        {a.title}
-                      </Link>
+                      <div className="flex items-start gap-2">
+                        <RowSelect scope={SCOPE} id={a.id} name={a.title} />
+                        <Link href={`/applications/${a.id}`} className="font-medium leading-snug break-words hover:underline">
+                          {a.title}
+                        </Link>
+                      </div>
                       {a.company ? <span className="text-xs break-words text-muted-foreground">{a.company}</span> : null}
                       {c.key === "closed" ? (
                         <Badge variant={a.stage === "accepted" ? "default" : "secondary"} className="mt-1">
@@ -221,6 +276,9 @@ function List({ apps, sort, pending, move }: { apps: TrackerApp[]; sort: { key: 
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-10">
+              <SelectAll scope={SCOPE} ids={apps.map((a) => a.id)} label="Select every application" />
+            </TableHead>
             {HEADINGS.map((h) => {
               const active = sort.key === h.key;
               const next: SortDir = active && sort.dir === "asc" ? "desc" : "asc";
@@ -240,6 +298,9 @@ function List({ apps, sort, pending, move }: { apps: TrackerApp[]; sort: { key: 
         <TableBody>
           {apps.map((a) => (
             <TableRow key={a.id}>
+              <TableCell>
+                <RowSelect scope={SCOPE} id={a.id} name={a.title} />
+              </TableCell>
               <TableCell className="max-w-64 whitespace-normal">
                 <Link href={`/applications/${a.id}`} className="font-medium hover:underline">
                   {a.title}
