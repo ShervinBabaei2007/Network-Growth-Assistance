@@ -178,3 +178,33 @@ test("People: tag, mark sent and snooze many at once, each with Undo", async ({ 
   await expect(toast(page, "2 marked connection sent manually")).toBeVisible();
   await expect(row(page, "Eli Park")).toContainText("Connection request sent");
 });
+
+test("People: saved views, page size and a remembered last view", async ({ page }) => {
+  const email = uniqueEmail("views-people");
+  await signIn(page, email);
+  const user_id = await userIdFor(email);
+  await adminRest("POST", "network_people", [
+    { user_id, full_name: "Gus Connected", normalized_name: "gus connected", saved: true, crm_status: "connected" },
+    { user_id, full_name: "Hana Shortlisted", normalized_name: "hana shortlisted", saved: true, crm_status: "shortlisted" },
+  ]);
+
+  await page.goto("/people?status=connected");
+  await page.waitForLoadState("networkidle");
+  await expect(row(page, "Gus Connected")).toBeVisible();
+  await expect(row(page, "Hana Shortlisted")).toHaveCount(0);
+
+  await page.getByText(/^Saved views/).click();
+  await expect(page.getByTestId("views-menu")).toContainText("1 filter applied");
+  await page.getByLabel("Save these filters as").fill("Connected");
+  await page.getByRole("button", { name: "Save view" }).click();
+  await expect(toast(page, "Saved “Connected”.")).toBeVisible();
+
+  // Coming back with no filters restores the last ones.
+  await page.goto("/overview");
+  await page.goto("/people");
+  await expect(page).toHaveURL(/status=connected/);
+
+  // Rows per page is a filter-free setting in the URL.
+  await page.goto("/people?clear=1&size=25");
+  await expect(page.getByLabel("Per page")).toHaveValue("25");
+});

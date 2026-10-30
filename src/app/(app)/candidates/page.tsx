@@ -34,7 +34,7 @@ import { RowSelect, SelectAll } from "@/components/bulk/bulk-select";
 import { BulkBar } from "./bulk-select";
 import { QuickAddForm } from "./quick-add";
 import { QuickCapture } from "./quick-capture";
-import { RememberLastView, ViewsMenu, type SavedView } from "./views-menu";
+import { RememberLastView, ViewsMenu, type SavedView } from "@/components/views-menu";
 
 export const metadata = { title: "Candidates · Network Growth" };
 
@@ -71,7 +71,7 @@ export default function CandidatesPage({ searchParams }: PageProps<"/candidates"
       </Disclosure>
 
       <Suspense fallback={null}>
-        <RememberLastView />
+        <RememberLastView page="candidates" />
       </Suspense>
 
       <Suspense fallback={<PageSkeleton label="Loading candidates…" />}>
@@ -177,7 +177,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
       </form>
 
       <Disclosure id="views" summary={`Saved views${views.length ? ` (${views.length})` : ""}`}>
-        <ViewsMenu views={views} />
+        <ViewsMenu page="candidates" views={views} />
       </Disclosure>
 
       <p className="text-sm text-muted-foreground" aria-live="polite">

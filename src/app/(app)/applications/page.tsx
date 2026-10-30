@@ -4,7 +4,9 @@ import { EmptyState } from "@/components/empty-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { LoadError } from "@/components/load-error";
+import { Disclosure } from "@/components/disclosure";
 import { PageHeader } from "@/components/page-header";
+import { RememberLastView, ViewsMenu, type SavedView } from "@/components/views-menu";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDateOnly, formatDay, formatDateTime } from "@/lib/applications/format";
 import { LIST_LIMIT, loadApplications } from "@/lib/applications/load";
@@ -42,7 +44,12 @@ async function ApplicationsView({ searchParams }: Pick<PageProps<"/applications"
   const sort = parseSort(one(sp.sort) || undefined, one(sp.dir) || undefined);
 
   const supabase = await createClient();
-  const [loaded, { data: settings }] = await Promise.all([loadApplications(supabase), supabase.from("settings").select("timezone, no_response_days").single()]);
+  const [loaded, { data: settings }, { data: viewRows }] = await Promise.all([
+    loadApplications(supabase),
+    supabase.from("settings").select("timezone, no_response_days").single(),
+    supabase.from("saved_views").select("id, name, query").eq("page", "applications").order("created_at"),
+  ]);
+  const views: SavedView[] = viewRows ?? [];
   if (!loaded) return <LoadError what="your applications" />;
   const tz = settings?.timezone ?? "UTC";
   const afterDays = settings?.no_response_days ?? 21;
@@ -72,12 +79,16 @@ async function ApplicationsView({ searchParams }: Pick<PageProps<"/applications"
 
   return (
     <>
+      <RememberLastView page="applications" />
       {loaded.truncated ? (
         <p role="status" className="text-sm text-muted-foreground">
           Showing your {LIST_LIMIT} most recently changed applications.
         </p>
       ) : null}
       <Tracker apps={apps} view={view} sort={sort} quiet={quiet} afterDays={afterDays} />
+      <Disclosure id="views" summary={`Saved views${views.length ? ` (${views.length})` : ""}`}>
+        <ViewsMenu page="applications" views={views} />
+      </Disclosure>
     </>
   );
 }

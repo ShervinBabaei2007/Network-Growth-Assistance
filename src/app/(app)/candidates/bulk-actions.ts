@@ -5,10 +5,9 @@ import { z } from "zod";
 import { err, ok, type ActionResult } from "@/lib/action-result";
 import { MAX_SELECTION } from "@/lib/selection";
 import { actionContext, logActivity } from "@/lib/server/action-context";
-import { isViewPage, MAX_VIEW_NAME, normalizeViewQuery } from "@/lib/views";
 
 /**
- * Bulk changes to candidates and saved views. Each bulk action applies the same rules as the single-row one,
+ * Bulk changes to candidates. Each bulk action applies the same rules as the single-row one,
  * skips rows that rule would refuse (and says how many), and returns what it changed so Undo can put it back.
  * Everything runs under the user's own row-level security.
  */
@@ -89,34 +88,4 @@ export async function bulkDeleteCandidates(rawIds: string[]): Promise<ActionResu
   await logActivity(ctx, "candidate.bulk_deleted", { count: count ?? 0 });
   refresh();
   return ok(`${count ?? 0} deleted.`);
-}
-
-// ---------------------------------------------------------------- saved views
-
-const viewName = z.string().trim().min(1, "Give the view a name.").max(MAX_VIEW_NAME, `Use ${MAX_VIEW_NAME} characters or fewer.`);
-
-export async function saveView(page: string, name: string, search: string): Promise<ActionResult<{ id: string }>> {
-  if (!isViewPage(page)) return err("Unknown page.");
-  const parsedName = viewName.safeParse(name);
-  if (!parsedName.success) return err(parsedName.error.issues[0]?.message ?? "Give the view a name.");
-  const query = normalizeViewQuery(page, search);
-  if (!query) return err("Choose at least one filter first, then save the view.");
-  const ctx = await actionContext();
-  const { data, error } = await ctx.supabase.from("saved_views").insert({ page, name: parsedName.data, query }).select("id").single();
-  if (error) {
-    if (error.code === "23505") return err("You already have a view with that name.");
-    if (error.code === "P0001") return err("You can keep up to 30 saved views. Delete one first.");
-    return err("Couldn't save the view. Try again.");
-  }
-  refresh();
-  return ok(`Saved “${parsedName.data}”.`, { data: { id: data.id } });
-}
-
-export async function deleteView(id: string): Promise<ActionResult> {
-  if (!z.uuid().safeParse(id).success) return err("Unknown view.");
-  const ctx = await actionContext();
-  const { error, count } = await ctx.supabase.from("saved_views").delete({ count: "exact" }).eq("id", id);
-  if (error || !count) return err("Couldn't delete the view. Try again.");
-  refresh();
-  return ok("View deleted.");
 }
