@@ -8,9 +8,9 @@ Know who to contact next. Find real, recent jobs from employers' own career page
 
 [![Live app](https://img.shields.io/badge/live%20app-open-1f66c1?style=for-the-badge&logo=vercel&logoColor=white)](https://linkedin-network-growth-assistance.vercel.app)
 [![CI](https://img.shields.io/github/actions/workflow/status/ShervinBabaei2007/Network-Growth-Assistance/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/ShervinBabaei2007/Network-Growth-Assistance/actions/workflows/ci.yml)
-![Unit tests](https://img.shields.io/badge/unit%20tests-1051%20passing-2da44e?style=flat-square)
-![Database tests](https://img.shields.io/badge/pgTAP-297%20passing-2da44e?style=flat-square)
-![End to end](https://img.shields.io/badge/e2e-89%20passing-2da44e?style=flat-square)
+![Unit tests](https://img.shields.io/badge/unit%20tests-1509%20passing-2da44e?style=flat-square)
+![Database tests](https://img.shields.io/badge/pgTAP-298%20passing-2da44e?style=flat-square)
+![End to end](https://img.shields.io/badge/e2e-110%20tests-2da44e?style=flat-square)
 
 <br />
 
@@ -98,20 +98,20 @@ Set your own goal, schools, disciplines and targets. The Overview shows where yo
 | --- | --- |
 | **Home page and guides** | A short public home page, plus three how-to guides (export your LinkedIn connections, build a networking plan, track job applications). Signed-in people go straight to Overview. |
 | **Sign-in** | Sign in or sign up with Google, with email and password (email confirmed, password reset included), or with an emailed sign-in link. |
-| **Welcome and example data** | A four-step welcome, an 18-stop tour and a checklist. **Look around with example data** fills an empty account with clearly labelled made-up people, a plan and applications, and one click removes them. Examples are never exported. |
+| **Welcome and example data** | A four-step welcome, an 18-stop tour and a checklist. **Look around with example data** fills an empty account with clearly labelled made-up people, a plan and applications, and one click removes them. Examples are never exported. An empty People or Candidates page offers the same button, and each empty page names its next step. |
 | **Network** | Candidates with search, de-duplication and status. Quick capture from a page you copy yourself. CSV and LinkedIn data-export import. A daily queue ordered by your priorities, with suggested connection notes. |
-| **Bulk actions and saved views** | On Candidates: tick people to approve, mark not a match, do not contact or delete, with Undo and a count of anyone skipped. Save named filter views; the last filters are remembered; 25, 50 or 100 per page. |
+| **Bulk actions and saved views** | Tick rows on Candidates, People or Applications and change them together, with Undo and a count of anyone skipped: approve or delete candidates; set a status, mark sent, tag, snooze or delete people; move applications to a stage. Save named filter views on Candidates, People, Applications and Jobs; the last filters are remembered; 25, 50 or 100 per page. |
 | **Follow-ups** | When someone accepts, four suggested touches (thank-you, a short chat, 30- and 90-day check-ins) with editable drafts you copy and send yourself. Done, snooze or dismiss, with Undo. Due ones show on Overview and in the bell. |
 | **Discover** | A research assistant that finds people worth meeting from public sources (GitHub, ORCID, optional web search). Every fact quotes its source; fewer people beat weaker evidence. Works with or without a named school. Never visits LinkedIn. |
-| **People** | A small CRM: status, notes, tags, reminders, referrals and "people at this company". |
-| **Jobs** | Recent postings from employers' own boards plus free remote feeds. Verified links, fit checks against your resume, tailored resumes and cover letters, saved-search alerts, side-by-side compare, hidden companies and private notes, and a resume track per kind of role. |
-| **Applications** | A board and a list from saved to offer, with timeline, interviews, reminders, contacts, documents and calendar (`.ics`) export. |
+| **People** | A small CRM: status, notes, tags, reminders, referrals and "people at this company". On a wide screen, People and Candidates open a record beside the list and the arrow keys move through it. |
+| **Jobs** | Recent postings from employers' own boards plus free remote feeds. Verified links, fit checks against your resume (a bar per area of the posting, and the pay range against your minimum), tailored resumes and cover letters, saved-search alerts, side-by-side compare, hidden companies and private notes, and a resume track per kind of role. |
+| **Applications** | A board (drag a card between stages with a mouse, a finger or the keyboard) and a list from saved to offer, with timeline, interviews, reminders, contacts, documents and calendar (`.ics`) export. |
 | **Interview prep** | For applications in Screening, Interviewing or Offer: likely topics from the posting, your own resume lines matched to common questions, questions to ask them and a checklist for the day. Built only from your records, so it cannot invent experience or company facts. Copy or download as Markdown, or save a copy to the timeline. |
 | **Search and shortcuts** | **Ctrl+K** (or **/**) searches your candidates, people, applications and jobs and jumps to any page. **g** then a letter goes to a page; **?** lists them. Never fires while you type. |
-| **Overview and Analytics** | Progress toward your goal, by discipline and school. Nothing is estimated or invented. |
+| **Overview and Analytics** | Progress toward your goal as a ring and bars, by discipline and school, plus an outreach funnel and a daily activity heatmap. Every chart has a table version, and waiting invitations are hatched, never counted as accepted. Nothing is estimated or invented. |
 | **English and Canadian French** | Menu, top bar, sign-in, welcome, banners and search are available in French. Other pages are still English (see [Limits](#limits)). |
-| **Your account** | Export or delete all your data from Settings. Add your own free AI key (stored encrypted) for unlimited AI use. Light and dark themes, adjustable density and text size. |
-| **Phone friendly** | Lists become cards, filters tuck behind a button, touch targets are bigger and dropdowns use your phone's own picker. |
+| **Your account** | Export or delete all your data from Settings. Add your own free AI key (stored encrypted) for unlimited AI use. Light and dark themes, five accent colours, a high-contrast theme, adjustable density and text size, with a live preview. |
+| **Phone friendly** | Lists become cards, filters tuck behind a button, touch targets are bigger and dropdowns use your phone's own picker. A bottom tab bar reaches the places you use all day, queue cards reveal Skip and Mark sent on a swipe (the buttons stay), and the app can be installed to a home screen. |
 | **Monitoring and cost control** | Page-speed and error reports kept in your own database, with no personal data and nothing sent to a third party. An operator script also prints database size against the plan, AI use and the largest tables, and the daily job shortens old postings to stay within the free tier. |
 | **Free to run** | No paid API is needed. Jobs use employers' public boards; Discover uses GitHub and ORCID; AI uses free tiers and degrades to plain rules when they run out. |
 
@@ -315,7 +315,7 @@ npm run check:bundle  # confirms no AI key reaches the browser (run after build)
 npm run check:budget  # first-load JavaScript per route stays within budget (run after build)
 ```
 
-The last full run passed **1,051 unit tests, 297 database tests and 89 end-to-end tests** (desktop and phone), plus the build, the bundle check and the route budget. `.github/workflows/ci.yml` runs the same checks on every pull request and push to `main`; it has run on GitHub and the badge above shows its latest result. `npm run docs:check` keeps these numbers, the links and the environment variables in this README and `docs/` honest.
+The suites are **1,509 unit tests, 298 database tests and 110 end-to-end tests** (desktop and phone). In the last local run all the unit and database tests passed and 108 of the 110 end-to-end tests did; the two that did not are the phone onboarding tests, which Next.js's own development overlay covers (they pass with it hidden). The production build, the bundle check and the route budget could not be re-run: `next build` stops at a Next.js security-advisory check for the installed version, so upgrade Next.js and run them before a release. `.github/workflows/ci.yml` runs the same checks on every pull request and push to `main`; it has run on GitHub and the badge above shows its latest result. `npm run docs:check` keeps these numbers, the links and the environment variables in this README and `docs/` honest.
 
 - **Run the end-to-end tests with a fresh build folder.** Running `npm run build` and then Playwright straight away can break the dev server, because both use `.next`. Run the tests first, or delete `.next` in between.
 - **Wait for hydration in new sign-in tests.** The sign-in page is plain HTML until its JavaScript loads, and a click before then does nothing, so tests wait for the page to settle.
@@ -412,6 +412,8 @@ src/lib/           the logic: job-postings, discovery, ai (the free-service chai
                    applications, follow-ups, interview-prep, progress, classify, i18n, monitoring,
                    ops (storage and cost), net (safe fetching), server, email
 src/components/    shared interface pieces (components/ui is shadcn)
+public/sw.js       the service worker for the installed app (static files, plus a 12-hour private copy
+                   of the queue and saved jobs that is deleted when you reach the sign-in page)
 src/proxy.ts       refreshes the session, sends signed-out visitors to /login, and sends
                    signed-in visitors from the home page to Overview
 src/instrumentation.ts   records server errors (scrubbed) next to the logs
@@ -462,6 +464,9 @@ docs/              deployment guide, feature guide, accessibility, implementatio
 | "Email isn't set up on this server" in Settings | One of `SMTP_HOST`, `SMTP_FROM`, `APP_URL` or `EMAIL_TOKEN_SECRET` is missing, misspelled, or not set for Production. Redeploy afterwards. |
 | New pages or features fail on the deployed site | The newest migrations haven't been applied. Run `npx supabase db push`. |
 | Local end-to-end tests fail all at once | The dev server broke after a build. Delete `.next` and run again. |
+| `next dev` or `next build` stops at once with an upgrade reminder | The installed Next.js version has a published security advisory, and the command stops once to say so. Run it again to continue, and plan to upgrade Next.js. |
+| Phone end-to-end tests time out on a button near the bottom left | Next.js's development overlay badge sits over it. It only appears in development; hide it or upgrade Next.js. |
+| Dragging a card on the Applications board hangs or does nothing after a migration was skipped | Apply `20261043_stage_conflict_code` (`npx supabase db push`); before it, a version conflict stalled for about a minute. |
 | Local sign-in fails with a rate-limit error | Too many sign-ins in five minutes. `supabase/config.toml` raises the limit; restart Supabase after changing it. |
 | A new variable has no effect | Variables apply only to new deployments. Redeploy, and for `NEXT_PUBLIC_` ones, rebuild. |
 | Discover says "AI wasn't used for this search" | The free AI is used up for today, or the person has used their share of `DISCOVERY_AI_SEARCHES`. Add `GROQ_API_KEY` or `MISTRAL_API_KEY`, or ask the person to add their own free key in Settings. Results are still scored from the evidence. |
@@ -472,7 +477,10 @@ docs/              deployment guide, feature guide, accessibility, implementatio
 ## Limits
 
 - **French is partial.** Only the menu, top bar, sign-in, welcome, banners and search are translated. Every other page, the home page, guides, legal pages, the tour, emails, and dates, numbers and money on those pages are English.
-- **Bulk actions and saved views are on Candidates only,** not People or Applications. There are no `j`/`k` list shortcuts.
+- **Bulk actions:** Applications can be moved between stages in bulk but not deleted or snoozed (the tracker has neither). There are no `j`/`k` list shortcuts.
+- **Master-detail** (a record beside its list) covers People and Candidates, not Applications, whose six-column board needs the full width. Reloading on a record shows the ordinary full page, and the divider is a fixed width.
+- **Unsaved-change warnings and drafts** cover the Settings forms, the notes on a person, an application and a job. They do not cover the resume and document editors, and the browser Back button is not intercepted.
+- **The installed app** has not been tried on a real Android or iOS device. Only the queue and saved jobs open offline, read-only. Employer logos are initials; favicons are not fetched.
 - **Interview prep and follow-up drafts use fixed templates and word matching.** There is no AI rewrite, and no company facts are added.
 - **Monitoring has no web dashboard.** The report is a script and a protected JSON route, and nothing alerts you when a new error appears.
 - **Discover is limited by what is public.** ORCID mostly lists researchers, so ordinary engineers appear mainly through GitHub or optional web search. "Verified" means every part of the request is stated in a public source the app quotes, not that anyone else checked it. Whether an employer is a startup is not stated in public records, so such requests return *possible* matches. A narrow request (a school plus one employer plus a city) may honestly return only a few people.
