@@ -131,3 +131,12 @@ describe.each([
     expect(contrast(theme, fg, bg)).toBeGreaterThanOrEqual(3);
   });
 });
+
+// Progress visuals (goal ring, funnel, heatmap, sparkline) draw with the meter tokens. The filled colour is a graphic
+// that carries meaning, so it needs 3:1 against the surface it sits on (WCAG 1.4.11). "Pending" is told apart by its
+// hatched pattern, not by its shade, and every visual also has the numbers in text, so only the fill is checked.
+describe.each([["light", light], ["dark", dark], ["high contrast light", { ...light, ...tokens(block(':root[data-contrast="high"]')) }]] as const)("progress visuals in the %s theme", (_name, theme) => {
+  it.each([["meter-fill", "card"], ["meter-fill", "background"]] as [string, string][])("%s against %s is at least 3:1", (fg, bg) => {
+    expect(contrast(theme, fg, bg)).toBeGreaterThanOrEqual(3);
+  });
+});

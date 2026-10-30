@@ -4,6 +4,7 @@ import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { LazyDailyBars, LazyNetworkLine } from "@/components/lazy-chart";
+import { ActivityHeatmap, Funnel } from "@/components/progress-visuals";
 import { LoadError } from "@/components/load-error";
 import { StatTile } from "@/components/stat-tile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,9 +12,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { buildAnalytics } from "@/lib/analytics";
 import { currentUserId, loadExportConnections, loadInvitations } from "@/lib/data/dashboard";
 import { getSettings } from "@/lib/data/settings";
-import { disciplineName, poolUniversities, targetUniversities, universityName } from "@/lib/domain";
+import { disciplineName, poolUniversities, targetUniversities, universityName, type CandidateStatus } from "@/lib/domain";
 import { computeTodaysPlan } from "@/lib/jobs/daily-queue";
 import { createClient } from "@/lib/supabase/server";
+import { buildFunnel, buildHeatGrid } from "@/lib/visuals";
 
 export const metadata = { title: "Analytics · Network Growth" };
 
@@ -67,7 +69,30 @@ async function load(supabase: Supabase) {
     exportConnections,
     snapshots: snapshots.map((s) => ({ recordedAt: s.recorded_at, total: s.total_connections })),
   });
-  return { analytics, plan: todays.plan, progress: todays.progress };
+  const funnel = await loadFunnel(supabase);
+  return { analytics, plan: todays.plan, progress: todays.progress, funnel };
+}
+
+/**
+ * Where people are in the pipeline right now, from each candidate's current status. "Approved" means approved at some
+ * point (people since invited are included); someone approved and later marked "not a match" is not.
+ */
+async function loadFunnel(supabase: Supabase) {
+  const count = async (statuses?: CandidateStatus[]) => {
+    const base = supabase.from("candidates").select("id", { count: "exact", head: true });
+    const { count: n, error } = await (statuses ? base.in("status", statuses) : base);
+    if (error) throw error;
+    return n ?? 0;
+  };
+  const invitedStatuses: CandidateStatus[] = ["invitation_sent", "invitation_pending", "connected", "declined_withdrawn"];
+  const [discovered, approvedNow, invited, pending, accepted] = await Promise.all([
+    count(),
+    count(["approved"]),
+    count(invitedStatuses),
+    count(["invitation_sent", "invitation_pending"]),
+    count(["connected"]),
+  ]);
+  return buildFunnel({ discovered, approved: approvedNow + invited, invited, pending, accepted });
 }
 
 async function AnalyticsContent() {
@@ -79,7 +104,8 @@ async function AnalyticsContent() {
     console.error("[analytics] load failed:", e instanceof Error ? e.message : e);
     return <LoadError what="analytics" />;
   }
-  const { analytics: a, plan, progress } = data;
+  const { analytics: a, plan, progress, funnel } = data;
+  const heat = buildHeatGrid(a.daily.map((d) => ({ date: d.date, count: d.sent + d.accepted })));
   const acc = a.acceptance;
 
   return (
@@ -88,7 +114,7 @@ async function AnalyticsContent() {
         <h2 id="acceptance" className="font-medium">
           Acceptance
         </h2>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatTile
             label="Acceptance rate"
             value={acc.rate === null ? "Not enough data" : `${Math.round(acc.rate * 100)}%`}
@@ -97,6 +123,8 @@ async function AnalyticsContent() {
           <StatTile label="Pending" value={acc.pending} hint="Not in the rate until they resolve" />
           <StatTile label="Declined or withdrawn" value={acc.declined + acc.withdrawn} />
           <StatTile label="Ready for outreach" value={progress.overall.readyForOutreach} hint="Approved, not yet invited" />
+          <StatTile label={`Sent, last ${DAYS} days`} value={a.daily.reduce((n, d) => n + d.sent, 0)} hint="Invitations you recorded" trend={a.daily.map((d) => d.sent)} />
+          <StatTile label={`Accepted, last ${DAYS} days`} value={a.daily.reduce((n, d) => n + d.accepted, 0)} hint="Connections that said yes" trend={a.daily.map((d) => d.accepted)} />
         </div>
         <p className="text-xs text-muted-foreground">
           The rate is accepted ÷ (accepted + declined + withdrawn). Pending invitations are left out
@@ -112,6 +140,26 @@ async function AnalyticsContent() {
         </ChartCard>
         <ChartCard title={`Connections accepted · last ${DAYS} days`} empty={!a.hasActivity} table={<DailyTable rows={a.daily} />}>
           <LazyDailyBars data={a.daily} dataKey="accepted" unit="accepted" label={`Connections accepted per day over the last ${DAYS} days`} />
+        </ChartCard>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ChartCard
+          title="Outreach funnel"
+          description="Where the people you found are now. Waiting invitations are hatched and never counted as accepted."
+          empty={!funnel}
+          emptyText="Nobody has been added yet. The funnel appears once you have candidates."
+          table={funnel ? <FunnelTable steps={funnel} /> : null}
+        >
+          {funnel ? <Funnel steps={funnel} /> : null}
+        </ChartCard>
+        <ChartCard
+          title={`Activity · last ${DAYS} days`}
+          description="Invitations sent plus connections accepted, per day."
+          empty={!heat}
+          table={<DailyTable rows={a.daily} />}
+        >
+          {heat ? <ActivityHeatmap grid={heat} label={`Activity per day over the last ${DAYS} days: ${heat.total} in total, busiest day ${heat.max}. A table follows.`} /> : null}
         </ChartCard>
       </div>
 
@@ -270,6 +318,31 @@ function ChartCard({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function FunnelTable({ steps }: { steps: NonNullable<Awaited<ReturnType<typeof loadFunnel>>> }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Step</TableHead>
+          <TableHead className="text-right">People</TableHead>
+          <TableHead className="text-right">Waiting for an answer</TableHead>
+          <TableHead className="text-right">Didn&apos;t continue</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody className="tabular-nums">
+        {steps.map((s) => (
+          <TableRow key={s.key}>
+            <TableCell>{s.label}</TableCell>
+            <TableCell className="text-right">{s.value}</TableCell>
+            <TableCell className="text-right">{s.pending || "—"}</TableCell>
+            <TableCell className="text-right">{s.dropOffPercent === null ? "—" : `${s.dropOffPercent}%`}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
