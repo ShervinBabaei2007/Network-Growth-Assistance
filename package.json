@@ -48,7 +48,6 @@
     "nodemailer": "^10.1.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "react-resizable-panels": "^4.15.3",
     "recharts": "^3.10.1",
     "server-only": "^0.0.1",
     "shadcn": "^4.21.4",

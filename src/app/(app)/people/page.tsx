@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
+import { ListKeyNav } from "@/components/list-key-nav";
 import { LoadError } from "@/components/load-error";
 import { AppSelect } from "@/components/app-select";
 import { Badge } from "@/components/ui/badge";
@@ -127,6 +128,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
           description={q || status || tag || due ? "Try removing a filter or searching for something else." : "Run a search in Discover and save the people worth meeting."}
         />
       ) : (
+        <ListKeyNav>
         <Table stack>
           <TableHeader>
             <TableRow>
@@ -139,9 +141,9 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
           </TableHeader>
           <TableBody>
             {data.map((p) => (
-              <TableRow key={p.id}>
+              <TableRow key={p.id} className="has-[a[aria-current=true]]:bg-muted">
                 <TableCell className="max-w-48 truncate font-medium">
-                  <Link href={`/people/${p.id}`} className="underline-offset-4 hover:underline">
+                  <Link href={`/people/${p.id}`} data-row-link className="underline-offset-4 hover:underline">
                     {p.full_name}
                   </Link>
                   {p.tags.length ? (
@@ -166,6 +168,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
             ))}
           </TableBody>
         </Table>
+        </ListKeyNav>
       )}
 
       <PageNav current={page} pages={pages} href={href} />
