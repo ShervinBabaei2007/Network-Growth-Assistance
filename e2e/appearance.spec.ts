@@ -7,6 +7,8 @@ test("an accent and high contrast apply without a reload and are there before th
   await signIn(page, uniqueEmail("accent"), "/settings");
   const html = page.locator("html");
   await expect(html).toHaveAttribute("data-accent", "blue");
+  // The controls load when the section nears the viewport.
+  await page.getByRole("heading", { name: "Appearance" }).scrollIntoViewIfNeeded();
 
   await page.getByRole("button", { name: "Teal" }).click();
   await expect(html).toHaveAttribute("data-accent", "teal");
@@ -25,6 +27,7 @@ test("an accent and high contrast apply without a reload and are there before th
 
 test("choosing the pressed option again keeps it", async ({ page }) => {
   await signIn(page, uniqueEmail("accent-same"), "/settings");
+  await page.getByRole("heading", { name: "Appearance" }).scrollIntoViewIfNeeded();
   await page.getByRole("button", { name: "Rose" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-accent", "rose");
   await page.getByRole("button", { name: "Rose" }).click();

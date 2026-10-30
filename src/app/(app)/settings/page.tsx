@@ -32,7 +32,7 @@ import { updateNotificationSettings } from "@/app/(app)/jobs/searches/actions";
 import { emailConfigured } from "@/lib/email/mailer";
 import { AiKeySection } from "./ai-key-section";
 import { LanguageSwitchServer } from "@/components/language-switch-server";
-import { AppearanceForm } from "./appearance-form";
+import { LazyAppearanceForm } from "./appearance-lazy";
 import { DeleteCategoryButton } from "./category-delete";
 import { LazyEdit } from "./lazy-edit";
 import { TimeZoneInput } from "./timezone-input";
@@ -160,7 +160,7 @@ async function SettingsContent() {
       </Section>
 
       <Section title="Appearance" description="How the app looks on every device you sign in on.">
-        <AppearanceForm initial={normalizeAppearance({ theme: s.theme, density: s.density, text: s.text_size, accent: s.accent, contrast: s.contrast })} />
+        <LazyAppearanceForm initial={normalizeAppearance({ theme: s.theme, density: s.density, text: s.text_size, accent: s.accent, contrast: s.contrast })} />
       </Section>
       <Section title="Applications" description="When to suggest marking an application “No response”. Nothing is changed automatically.">
         <ActionForm action={updateTrackerSettings} protect submitLabel="Save">
