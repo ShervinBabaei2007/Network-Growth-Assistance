@@ -160,7 +160,7 @@ async function SettingsContent() {
       </Section>
 
       <Section title="Appearance" description="How the app looks on every device you sign in on.">
-        <AppearanceForm initial={normalizeAppearance({ theme: s.theme, density: s.density, text: s.text_size })} />
+        <AppearanceForm initial={normalizeAppearance({ theme: s.theme, density: s.density, text: s.text_size, accent: s.accent, contrast: s.contrast })} />
       </Section>
       <Section title="Applications" description="When to suggest marking an application “No response”. Nothing is changed automatically.">
         <ActionForm action={updateTrackerSettings} submitLabel="Save">

@@ -124,7 +124,7 @@ async function SampleBanner() {
 async function SavedAppearance() {
   const { row: data } = await getSettings();
   if (!data) return null;
-  return <AppearanceSync value={normalizeAppearance({ theme: data.theme, density: data.density, text: data.text_size })} />;
+  return <AppearanceSync value={normalizeAppearance({ theme: data.theme, density: data.density, text: data.text_size, accent: data.accent, contrast: data.contrast })} />;
 }
 
 /** Gives client components below it the person's language. */
