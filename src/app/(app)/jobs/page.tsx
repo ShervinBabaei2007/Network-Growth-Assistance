@@ -3,6 +3,7 @@ import { PageNav } from "@/components/page-nav";
 import { FiltersToggle } from "@/components/jobs/filters-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState as EmptyPanel } from "@/components/empty-state";
+import { ViewsMenu, type SavedView } from "@/components/views-menu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Disclosure } from "@/components/disclosure";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -120,12 +121,14 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
   if (!userId) return <LoadError what="postings" />;
 
   const query = fromSearchParams(raw);
-  const [feed, { data: lastRun }, { count: employerCount }, { data: me }] = await Promise.all([
+  const [feed, { data: lastRun }, { count: employerCount }, { data: me }, { data: viewRows }] = await Promise.all([
     loadFeed(supabase, userId, query, { refresh: true, client: await searchingClient(), background: (work) => after(work) }),
     supabase.from("job_crawl_runs").select("finished_at").not("finished_at", "is", null).order("started_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("employers").select("id", { count: "exact", head: true }).neq("status", "disabled").neq("ats", "fixture"),
     supabase.from("settings").select("timezone").eq("user_id", userId).single(),
+    supabase.from("saved_views").select("id, name, query").eq("page", "jobs").order("created_at"),
   ]);
+  const views: SavedView[] = viewRows ?? [];
   if ("error" in feed) return <LoadError what="postings" />;
 
   const { settings, resume, notices, newlyFetched, range, expandedFrom, firstCount, duplicatesOf, matches: matchBy, states: stateBy, employers: employerBy, excludedCount, tabs: inTab } = feed;
@@ -200,6 +203,9 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
       <FiltersToggle count={activeFilterCount(filters)} className="lg:sticky lg:top-20 lg:[grid-area:filters]">
       <aside className="grid gap-4" aria-label="Filters and preferences">
         <FiltersPanel sp={sp} filters={filters} provinces={inCanada ? provinces : []} provFilter={provFilter} hrefBase={href} explicitRange={explicitRange} showAdzuna={providerNames.includes("adzuna")} showUsajobs={providerNames.includes("usajobs")} showCareerjet={providerNames.includes("careerjet")} currency={currency} />
+        <Disclosure id="views" summary={`Saved views${views.length ? ` (${views.length})` : ""}`}>
+          <ViewsMenu page="jobs" views={views} />
+        </Disclosure>
         <PreferencesCard settings={settings} resumeTitles={feed.resolved.titlesFromResume ? searched : []} />
         <Disclosure variant="plain" summary="About these results" className="px-1 text-xs">
           <div className="grid gap-1.5">
@@ -360,8 +366,24 @@ function EmptyState({
   filtered: boolean;
   where: string;
 }) {
-  if (tab === "saved") return <EmptyPanel icon={<Bookmark aria-hidden />} title="Nothing saved yet" description="Save a job from its card and it will be kept here." />;
-  if (tab !== "all" && !hasResume) return <EmptyPanel icon={<FileText aria-hidden />} title="Import your resume to sort jobs by fit" description="Jobs are scored against your resume, so this is the quickest way to see good matches." />;
+  if (tab === "saved") {
+    return (
+      <EmptyPanel icon={<Bookmark aria-hidden />} title="Nothing saved yet" description="Save a job from its card and it will be kept here, with your notes and its place in the tracker.">
+        <Link href={href({ tab: "all", page: "" })} className={buttonVariants({ size: "sm" })}>
+          Browse all jobs
+        </Link>
+      </EmptyPanel>
+    );
+  }
+  if (tab !== "all" && !hasResume) {
+    return (
+      <EmptyPanel icon={<FileText aria-hidden />} title="Import your resume to sort jobs by fit" description="Jobs are scored against your resume, so this is the quickest way to see good matches.">
+        <Link href="/jobs/resume" className={buttonVariants({ size: "sm" })}>
+          Add your resume
+        </Link>
+      </EmptyPanel>
+    );
+  }
   const related = searched[0] ? [...relatedTitles(searched[0]).related, ...relatedTitles(searched[0]).broader].slice(0, 2) : [];
   const actions = [
     explicitRange?.key !== "30d" ? { label: "Expand the date range to 30 days", href: href({ range: "30d", page: "" }) } : null,

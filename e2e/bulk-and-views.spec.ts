@@ -147,3 +147,64 @@ test("saved views: save, open from the menu, remembered on return, per-page size
   await page.goto("/candidates?clear=1&size=25");
   await expect(page.getByText(/page 1 of 2/)).toBeVisible();
 });
+
+test("People: tag, mark sent and snooze many at once, each with Undo", async ({ page }) => {
+  const email = uniqueEmail("bulk-people");
+  await signIn(page, email);
+  const user_id = await userIdFor(email);
+  await adminRest(
+    "POST",
+    "network_people",
+    ["Dana Wu", "Eli Park"].map((full_name) => ({ user_id, full_name, normalized_name: full_name.toLowerCase(), saved: true })),
+  );
+  await page.goto("/people");
+  await page.waitForLoadState("networkidle");
+
+  await page.getByRole("checkbox", { name: "Select everyone on this page" }).click();
+  await expect(bar(page)).toContainText("2 selected");
+
+  // Tag both, then Undo removes the tag again.
+  await bar(page).getByRole("button", { name: "Add tag…" }).click();
+  await bar(page).getByLabel("Tag to add").fill("coffee");
+  await bar(page).getByRole("button", { name: "Add tag" }).click();
+  await expect(toast(page, "Tagged 2 “coffee”")).toBeVisible();
+  await expect(row(page, "Dana Wu")).toContainText("coffee");
+  await toast(page, "Tagged 2").getByRole("button", { name: "Undo" }).click();
+  await expect(row(page, "Dana Wu")).not.toContainText("coffee");
+
+  // Mark sent for both.
+  await page.getByRole("checkbox", { name: "Select everyone on this page" }).click();
+  await bar(page).getByRole("button", { name: "Mark sent" }).click();
+  await expect(toast(page, "2 marked connection sent manually")).toBeVisible();
+  await expect(row(page, "Eli Park")).toContainText("Connection request sent");
+});
+
+test("People: saved views, page size and a remembered last view", async ({ page }) => {
+  const email = uniqueEmail("views-people");
+  await signIn(page, email);
+  const user_id = await userIdFor(email);
+  await adminRest("POST", "network_people", [
+    { user_id, full_name: "Gus Connected", normalized_name: "gus connected", saved: true, crm_status: "connected" },
+    { user_id, full_name: "Hana Shortlisted", normalized_name: "hana shortlisted", saved: true, crm_status: "shortlisted" },
+  ]);
+
+  await page.goto("/people?status=connected");
+  await page.waitForLoadState("networkidle");
+  await expect(row(page, "Gus Connected")).toBeVisible();
+  await expect(row(page, "Hana Shortlisted")).toHaveCount(0);
+
+  await page.getByText(/^Saved views/).click();
+  await expect(page.getByTestId("views-menu")).toContainText("1 filter applied");
+  await page.getByLabel("Save these filters as").fill("Connected");
+  await page.getByRole("button", { name: "Save view" }).click();
+  await expect(toast(page, "Saved “Connected”.")).toBeVisible();
+
+  // Coming back with no filters restores the last ones.
+  await page.goto("/overview");
+  await page.goto("/people");
+  await expect(page).toHaveURL(/status=connected/);
+
+  // Rows per page is a filter-free setting in the URL.
+  await page.goto("/people?clear=1&size=25");
+  await expect(page.getByLabel("Per page")).toHaveValue("25");
+});

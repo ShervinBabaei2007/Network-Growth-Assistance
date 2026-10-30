@@ -11,6 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DraftBanner } from "@/components/draft-banner";
+import { useDraft } from "@/hooks/use-draft";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { draftKey } from "@/lib/drafts";
 import { isClosed, PAY_PERIODS, STAGE_HINT, STAGE_LABEL, STAGES, type PayPeriod, type Stage } from "@/lib/applications/stages";
 import { cn } from "@/lib/utils";
 import {
@@ -629,6 +633,9 @@ function Details({ data }: { data: DetailData }) {
   const [v, setV] = useState(data.details);
   const set = <K extends keyof DetailData["details"]>(k: K, value: DetailData["details"][K]) => setV({ ...v, [k]: value });
   const changed = JSON.stringify(v) !== JSON.stringify(data.details);
+  useUnsavedChanges(changed);
+  // The notes are the part worth keeping if the tab dies; the rest are short fields that are quick to retype.
+  const draft = useDraft(draftKey("application-notes", data.id), v.notes, data.details.notes);
   return (
     <Card>
       <CardHeader>
@@ -677,6 +684,7 @@ function Details({ data }: { data: DetailData }) {
               </div>
             </div>
           </fieldset>
+          {draft.offered !== null ? <DraftBanner what="note" onRestore={() => set("notes", draft.accept() ?? "")} onDiscard={draft.discard} /> : null}
           <div className="grid gap-1">
             <Label htmlFor="app-notes">Notes</Label>
             <Textarea id="app-notes" rows={4} maxLength={10000} value={v.notes} onChange={(e) => set("notes", e.target.value)} />

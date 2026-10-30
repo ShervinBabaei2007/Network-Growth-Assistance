@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(7);
+select plan(8);
 
 insert into auth.users (id, email)
 values
@@ -14,9 +14,10 @@ set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","r
 select lives_ok($$insert into public.saved_views (page, name, query) values ('candidates', 'Needs review', 'review=1')$$, 'a user saves a view');
 select throws_ok($$insert into public.saved_views (page, name, query) values ('candidates', '  needs REVIEW ', 'q=x')$$, '23505', null, 'view names are unique per page, ignoring case and spaces');
 select throws_ok($$insert into public.saved_views (page, name, query) values ('elsewhere', 'X', '')$$, '23514', null, 'only known pages can have views');
+select lives_ok($$insert into public.saved_views (page, name, query) values ('people', 'Due', 'due=1'), ('applications', 'Board', 'view=list'), ('jobs', 'Remote', 'wp=remote')$$, 'People, Applications and Jobs can have views too');
 select throws_ok($$insert into public.saved_views (page, name, query) values ('candidates', repeat('a', 61), '')$$, '23514', null, 'names are limited to 60 characters');
 
-insert into public.saved_views (page, name) select 'candidates', 'v' || g from generate_series(1, 29) g;
+insert into public.saved_views (page, name) select 'candidates', 'v' || g from generate_series(1, 26) g;
 select throws_ok($$insert into public.saved_views (page, name) values ('candidates', 'one too many')$$, 'P0001', null, 'a user can keep at most 30 views');
 
 set local request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';

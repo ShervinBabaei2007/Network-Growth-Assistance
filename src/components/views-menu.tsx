@@ -4,30 +4,30 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Trash2 } from "lucide-react";
-import { deleteView, saveView } from "./bulk-actions";
+import { deleteView, saveView } from "@/lib/views-actions";
 import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { activeFilterCount, normalizeViewQuery, viewHref } from "@/lib/views";
+import { activeFilterCount, normalizeViewQuery, viewHref, type ViewPage } from "@/lib/views";
 
 export type SavedView = { id: string; name: string; query: string };
 
-const LAST_KEY = "candidates:last-view";
 
 /**
  * Remembers the last filters used on this device and brings them back when the page is opened with none. A
  * per-device convenience kept in the browser; saved views (below) are the part kept in the account.
  */
-export function RememberLastView() {
+export function RememberLastView({ page }: { page: ViewPage }) {
   const router = useRouter();
   const search = useSearchParams();
   useEffect(() => {
-    const current = normalizeViewQuery("candidates", search);
+    const LAST_KEY = `${page}:last-view`;
+    const current = normalizeViewQuery(page, search);
     try {
       if (search.size === 0) {
         const last = localStorage.getItem(LAST_KEY);
-        if (last) router.replace(viewHref("candidates", normalizeViewQuery("candidates", last)));
+        if (last) router.replace(viewHref(page, normalizeViewQuery(page, last)));
         return;
       }
       if (current) localStorage.setItem(LAST_KEY, current);
@@ -35,18 +35,18 @@ export function RememberLastView() {
     } catch {
       // Storage can be blocked; the page works the same without it.
     }
-  }, [search, router]);
+  }, [page, search, router]);
   return null;
 }
 
 /** Saved views: open one, save the current filters under a name, or delete one. */
-export function ViewsMenu({ views }: { views: SavedView[] }) {
+export function ViewsMenu({ page, views }: { page: ViewPage; views: SavedView[] }) {
   const search = useSearchParams();
   const pathname = usePathname();
   const { pending, run } = useActionRunner();
   const [name, setName] = useState("");
-  const current = normalizeViewQuery("candidates", search);
-  const count = activeFilterCount("candidates", search);
+  const current = normalizeViewQuery(page, search);
+  const count = activeFilterCount(page, search);
 
   return (
     <div className="grid gap-3" data-testid="views-menu">
@@ -58,8 +58,8 @@ export function ViewsMenu({ views }: { views: SavedView[] }) {
           {views.map((v) => (
             <li key={v.id} className="flex items-center justify-between gap-2">
               <Link
-                href={viewHref("candidates", v.query)}
-                aria-current={v.query === current && pathname === "/candidates" ? "true" : undefined}
+                href={viewHref(page, v.query)}
+                aria-current={v.query === current && pathname === `/${page}` ? "true" : undefined}
                 className="min-w-0 truncate rounded-md px-2 py-1 text-sm underline-offset-4 hover:bg-muted hover:underline aria-[current=true]:font-semibold"
               >
                 {v.name}
@@ -77,14 +77,14 @@ export function ViewsMenu({ views }: { views: SavedView[] }) {
         className="flex flex-wrap items-end gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          run(() => saveView("candidates", name, current), { onSuccess: () => setName("") });
+          run(() => saveView(page, name, current), { onSuccess: () => setName("") });
         }}
       >
         <div className="grid gap-1.5">
           <Label htmlFor="view-name">Save these filters as</Label>
           <Input id="view-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="Needs review · my school" />
         </div>
-        <Button type="submit" size="sm" disabled={pending || !name.trim() || count === 0}>
+        <Button type="submit" size="sm" disabled={pending || !name.trim() || !current}>
           Save view
         </Button>
       </form>

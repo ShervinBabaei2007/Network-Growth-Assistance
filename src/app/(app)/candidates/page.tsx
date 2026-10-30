@@ -6,7 +6,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
-import { ExternalLink, Upload } from "lucide-react";
+import { ExternalLink, SearchX, Upload, Users } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { LoadExample } from "@/components/load-example";
 import { CategoryLabel, StatusBadge } from "@/components/candidate-badges";
 import { LoadError } from "@/components/load-error";
 import { AppSelect } from "@/components/app-select";
@@ -28,10 +30,11 @@ import { loadMyProgress } from "@/lib/data/dashboard";
 import { searchLinks } from "@/lib/prioritize/search-links";
 import { createClient } from "@/lib/supabase/server";
 import { PAGE_SIZES, parsePageSize } from "@/lib/views";
-import { BulkBar, RowSelect, SelectAll } from "./bulk-select";
+import { RowSelect, SelectAll } from "@/components/bulk/bulk-select";
+import { BulkBar } from "./bulk-select";
 import { QuickAddForm } from "./quick-add";
 import { QuickCapture } from "./quick-capture";
-import { RememberLastView, ViewsMenu, type SavedView } from "./views-menu";
+import { RememberLastView, ViewsMenu, type SavedView } from "@/components/views-menu";
 
 export const metadata = { title: "Candidates · Network Growth" };
 
@@ -68,7 +71,7 @@ export default function CandidatesPage({ searchParams }: PageProps<"/candidates"
       </Disclosure>
 
       <Suspense fallback={null}>
-        <RememberLastView />
+        <RememberLastView page="candidates" />
       </Suspense>
 
       <Suspense fallback={<PageSkeleton label="Loading candidates…" />}>
@@ -174,7 +177,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
       </form>
 
       <Disclosure id="views" summary={`Saved views${views.length ? ` (${views.length})` : ""}`}>
-        <ViewsMenu views={views} />
+        <ViewsMenu page="candidates" views={views} />
       </Disclosure>
 
       <p className="text-sm text-muted-foreground" aria-live="polite">
@@ -183,17 +186,34 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
       </p>
 
       {data.length === 0 ? (
-        <p className="rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground">
-          {q || status || discipline || university || review
-            ? "No candidates match these filters."
-            : "No candidates yet. Add people you find through LinkedIn search, or import a list."}
-        </p>
+        q || status || discipline || university || review ? (
+          <EmptyState icon={<SearchX aria-hidden />} title="No candidates match these filters" description="Try removing a filter or searching for something else.">
+            <Link href="/candidates?clear=1" className={buttonVariants({ size: "sm", variant: "outline" })}>
+              Clear filters
+            </Link>
+          </EmptyState>
+        ) : (
+          <EmptyState
+            icon={<Users aria-hidden />}
+            title="No candidates yet"
+            description="Paste profile links from your own LinkedIn searches, or import a list. Each person is sorted by school and program so you can approve them for your queue."
+          >
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link href="/candidates/import" className={buttonVariants({ size: "sm" })}>
+                Import a list
+              </Link>
+              <Suspense fallback={null}>
+                <LoadExample />
+              </Suspense>
+            </div>
+          </EmptyState>
+        )
       ) : (
         <Table stack>
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">
-                <SelectAll ids={data.map((c) => c.id)} />
+                <SelectAll scope="candidates" ids={data.map((c) => c.id)} label="Select everyone on this page" />
               </TableHead>
               <TableHead>Name</TableHead>
               <TableHead>School · program</TableHead>
@@ -208,7 +228,7 @@ async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "s
             {data.map((c) => (
               <TableRow key={c.id}>
                 <TableCell>
-                  <RowSelect id={c.id} name={c.full_name} />
+                  <RowSelect scope="candidates" id={c.id} name={c.full_name} />
                 </TableCell>
                 <TableCell className="max-w-48 truncate font-medium">
                   <Link href={`/candidates/${c.id}`} className="underline-offset-4 hover:underline">

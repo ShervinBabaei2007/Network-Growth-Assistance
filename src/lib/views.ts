@@ -3,13 +3,19 @@
  * the back button and sharing all keep working. Pure, so the rules are unit-tested. No Zod: the browser uses it too.
  */
 
-export const VIEW_PAGES = ["candidates"] as const;
+export const VIEW_PAGES = ["candidates", "people", "applications", "jobs"] as const;
 export type ViewPage = (typeof VIEW_PAGES)[number];
 
 /** The search parameters that make up a view, per page. Anything else (like `page`) is not part of it. */
 const VIEW_KEYS: Record<ViewPage, readonly string[]> = {
   candidates: ["q", "status", "discipline", "university", "review", "size"],
+  people: ["q", "status", "tag", "due", "size"],
+  applications: ["view", "sort", "dir"],
+  jobs: ["q", "where", "country", "range", "tab", "prov", "all", "level", "wp", "wpu", "type", "pay", "minpay", "company", "src", "unchecked"],
 };
+
+/** Keys that change how a list looks, not which rows it shows, so they are not counted as filters. */
+const NOT_FILTERS: readonly string[] = ["size", "view", "sort", "dir"];
 
 export const PAGE_SIZES = [25, 50, 100] as const;
 export const DEFAULT_PAGE_SIZE = 50;
@@ -43,10 +49,10 @@ export function viewHref(page: ViewPage, query: string): string {
   return `/${page}${query ? `?${query}` : ""}`;
 }
 
-/** How many filters are applied (the page size is not counted). */
+/** How many filters are applied (page size, layout and sort are not counted). */
 export function activeFilterCount(page: ViewPage, search: string | URLSearchParams): number {
   const params = new URLSearchParams(normalizeViewQuery(page, search));
-  params.delete("size");
+  for (const key of NOT_FILTERS) params.delete(key);
   return [...params.keys()].length;
 }
 

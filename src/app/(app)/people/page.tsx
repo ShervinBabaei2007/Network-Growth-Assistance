@@ -5,7 +5,13 @@ import { EmptyState } from "@/components/empty-state";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
+import { Disclosure } from "@/components/disclosure";
 import { LoadError } from "@/components/load-error";
+import { RememberLastView, ViewsMenu, type SavedView } from "@/components/views-menu";
+import { PAGE_SIZES, parsePageSize } from "@/lib/views";
+import { LoadExample } from "@/components/load-example";
+import { RowSelect, SelectAll } from "@/components/bulk/bulk-select";
+import { PeopleBulkBar } from "./bulk-bar";
 import { AppSelect } from "@/components/app-select";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -18,7 +24,6 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "People · Network Growth" };
 
-const PAGE_SIZE = 50;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
 export default function PeoplePage({ searchParams }: PageProps<"/people">) {
@@ -36,6 +41,9 @@ export default function PeoplePage({ searchParams }: PageProps<"/people">) {
           Discover more
         </Link>
       </div>
+      <Suspense fallback={null}>
+        <RememberLastView page="people" />
+      </Suspense>
       <Suspense fallback={<PageSkeleton label="Loading people…" />}>
         <PeopleList searchParams={searchParams} />
       </Suspense>
@@ -50,9 +58,14 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
   const tag = one(sp.tag).trim();
   const due = one(sp.due) === "1";
   const page = Math.max(1, Number(one(sp.page)) || 1);
+  const PAGE_SIZE = parsePageSize(one(sp.size));
 
   const supabase = await createClient();
-  const { data: settings } = await supabase.from("settings").select("timezone").single();
+  const [{ data: settings }, { data: viewRows }] = await Promise.all([
+    supabase.from("settings").select("timezone").single(),
+    supabase.from("saved_views").select("id, name, query").eq("page", "people").order("created_at"),
+  ]);
+  const views: SavedView[] = viewRows ?? [];
   const today = localDate(new Date(), settings?.timezone ?? "UTC");
 
   let query = supabase
@@ -74,7 +87,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const href = (p: number) => {
     const s = new URLSearchParams();
-    for (const [k, v] of Object.entries({ q, status, tag, due: due ? "1" : "" })) if (v) s.set(k, v);
+    for (const [k, v] of Object.entries({ q, status, tag, due: due ? "1" : "", size: PAGE_SIZE === 50 ? "" : String(PAGE_SIZE) })) if (v) s.set(k, v);
     if (p > 1) s.set("page", String(p));
     return `/people${s.size ? `?${s}` : ""}`;
   };
@@ -84,7 +97,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
       <h2 id="people-heading" className="sr-only">
         Saved people
       </h2>
-      <form role="search" className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:grid-cols-5">
+      <form role="search" className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:grid-cols-6">
         <div className="grid gap-1.5 lg:col-span-2">
           <Label htmlFor="q">Search</Label>
           <Input id="q" name="q" defaultValue={q} placeholder="Name, company, role, notes" />
@@ -104,6 +117,16 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
           <Label htmlFor="tag">Tag</Label>
           <Input id="tag" name="tag" defaultValue={tag} placeholder="A tag you added" />
         </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="size">Per page</Label>
+          <AppSelect id="size" name="size" defaultValue={String(PAGE_SIZE)}>
+            {PAGE_SIZES.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </AppSelect>
+        </div>
         <div className="flex items-end gap-3">
           <label className="flex h-8 items-center gap-2 text-sm">
             <Checkbox name="due" value="1" defaultChecked={due} />
@@ -115,6 +138,10 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
         </div>
       </form>
 
+      <Disclosure id="views" summary={`Saved views${views.length ? ` (${views.length})` : ""}`}>
+        <ViewsMenu page="people" views={views} />
+      </Disclosure>
+
       <p className="text-sm text-muted-foreground" aria-live="polite">
         {total.toLocaleString("en-CA")} {total === 1 ? "person" : "people"}
         {total > PAGE_SIZE ? ` · page ${page} of ${pages}` : ""}
@@ -124,12 +151,30 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
         <EmptyState
           icon={<BookUser aria-hidden />}
           title={q || status || tag || due ? "Nobody matches these filters" : "No saved people yet"}
-          description={q || status || tag || due ? "Try removing a filter or searching for something else." : "Run a search in Discover and save the people worth meeting."}
-        />
+          description={q || status || tag || due ? "Try removing a filter or searching for something else." : "Run a search in Discover and save the people worth meeting. Each one gets a status, notes and reminders here."}
+        >
+          {q || status || tag || due ? (
+            <Link href="/people?clear=1" className={buttonVariants({ size: "sm", variant: "outline" })}>
+              Clear filters
+            </Link>
+          ) : (
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link href="/discover" className={buttonVariants({ size: "sm" })}>
+                Go to Discover
+              </Link>
+              <Suspense fallback={null}>
+                <LoadExample />
+              </Suspense>
+            </div>
+          )}
+        </EmptyState>
       ) : (
         <Table stack>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <SelectAll scope="people" ids={data.map((p) => p.id)} label="Select everyone on this page" />
+              </TableHead>
               <TableHead>Name</TableHead>
               <TableHead className="hidden md:table-cell">Role</TableHead>
               <TableHead>Status</TableHead>
@@ -140,6 +185,9 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
           <TableBody>
             {data.map((p) => (
               <TableRow key={p.id}>
+                <TableCell>
+                  <RowSelect scope="people" id={p.id} name={p.full_name} />
+                </TableCell>
                 <TableCell className="max-w-48 truncate font-medium">
                   <Link href={`/people/${p.id}`} className="underline-offset-4 hover:underline">
                     {p.full_name}
@@ -169,6 +217,7 @@ async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchPa
       )}
 
       <PageNav current={page} pages={pages} href={href} />
+      <PeopleBulkBar />
     </section>
   );
 }

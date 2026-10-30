@@ -37,3 +37,19 @@ describe("activeFilterCount and viewHref", () => {
     expect(viewHref("candidates", "")).toBe("/candidates");
   });
 });
+
+describe("views on other pages", () => {
+  it("each page keeps only its own keys", () => {
+    expect(normalizeViewQuery("people", "q=a&due=1&status=connected&review=1&page=2&size=25")).toBe("q=a&status=connected&due=1&size=25");
+    expect(normalizeViewQuery("applications", "dir=desc&view=list&sort=company&q=ignored")).toBe("view=list&sort=company&dir=desc");
+    expect(normalizeViewQuery("jobs", "q=dev&wp=remote&tab=saved&page=3&evil=1")).toBe("q=dev&tab=saved&wp=remote");
+  });
+  it("does not count layout or sort as filters", () => {
+    expect(activeFilterCount("applications", "view=list&sort=title&dir=asc")).toBe(0);
+    expect(activeFilterCount("people", "status=connected&due=1&size=100")).toBe(2);
+  });
+  it("builds links for each page", () => {
+    expect(viewHref("applications", "view=list")).toBe("/applications?view=list");
+    expect(viewHref("jobs", "")).toBe("/jobs");
+  });
+});

@@ -20,6 +20,7 @@ import {
   type ActionResult,
 } from "@/app/(app)/people/actions";
 import { ActionForm } from "@/components/action-form";
+import { draftKey } from "@/lib/drafts";
 import { AppSelect } from "@/components/app-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -275,7 +276,7 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
       </Section>
 
       <Section title="Notes and follow-up">
-        <ActionForm action={updatePersonCrm} submitLabel="Save" size="sm">
+        <ActionForm action={updatePersonCrm} submitLabel="Save" size="sm" protect draftKey={draftKey("person-notes", p.id)}>
           <input type="hidden" name="id" value={p.id} />
           <div className="grid gap-1.5">
             <Label htmlFor={`notes-${p.id}`}>Notes (private)</Label>
