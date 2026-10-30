@@ -47,9 +47,13 @@ test("the keyboard can pick a card up, move it a column and drop it", async ({ p
   await seed(email, ["Key Card"]);
   await page.goto("/applications");
 
+  await page.waitForLoadState("networkidle");
+  const live = page.getByRole("status").filter({ hasText: /Key Card/ });
   await card(page, "Key Card").getByRole("button", { name: /Move Key Card/ }).focus();
   await page.keyboard.press("Space");
+  await expect(live).toContainText("over Saved");
   await page.keyboard.press("ArrowRight");
+  await expect(live).toContainText("over Applied");
   await page.keyboard.press("Space");
   await expect(toast(page, "Saved → Applied")).toBeVisible();
   await expect(column(page, "Applied").getByText("Key Card")).toBeVisible();
@@ -85,7 +89,8 @@ test("the stage menu still moves a card, and a bulk move changes several at once
 
   await page.getByRole("checkbox", { name: "Select every application" }).click();
   await expect(page.getByTestId("bulk-bar")).toContainText("2 selected");
-  await page.getByLabel("Move to").selectOption("applied");
+  await page.getByLabel("Move to").click();
+  await page.getByRole("option", { name: "Applied", exact: true }).first().click();
   await page.getByRole("button", { name: "Move 2" }).click();
   await expect(toast(page, "2 moved to Applied")).toBeVisible();
   await toast(page, "2 moved to Applied").getByRole("button", { name: "Undo" }).click();
