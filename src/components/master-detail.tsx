@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { PaneSignal } from "@/components/master-detail-shell";
 
-export { MasterDetail, PaneDivider, PaneSignal } from "@/components/master-detail-shell";
+export { MasterDetail, PaneSignal } from "@/components/master-detail-shell";
 
 /** What the right-hand side says before anything is chosen. Hidden below xl, where there is no right-hand side. */
 export function DetailPlaceholder({ what }: { what: string }) {

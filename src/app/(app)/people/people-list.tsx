@@ -71,8 +71,9 @@ export async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "s
       <h2 id="people-heading" className="sr-only">
         Saved people
       </h2>
-      <form role="search" className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:grid-cols-6">
-        <div className="grid gap-1.5 lg:col-span-2">
+      <div className="@container">
+      <form role="search" className="grid gap-3 rounded-lg border bg-card p-3 @lg:grid-cols-2 @3xl:grid-cols-4 @5xl:grid-cols-6">
+        <div className="grid gap-1.5 @3xl:col-span-2">
           <Label htmlFor="q">Search</Label>
           <Input id="q" name="q" defaultValue={q} placeholder="Name, company, role, notes" />
         </div>
@@ -101,8 +102,8 @@ export async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "s
             ))}
           </AppSelect>
         </div>
-        <div className="flex items-end gap-3">
-          <label className="flex h-8 items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-end gap-x-3 gap-y-2 @lg:col-span-2 @3xl:col-span-2 @5xl:col-span-1">
+          <label className="flex h-8 items-center gap-2 text-sm whitespace-nowrap">
             <Checkbox name="due" value="1" defaultChecked={due} />
             Reminder due
           </label>
@@ -111,6 +112,7 @@ export async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "s
           </Button>
         </div>
       </form>
+      </div>
 
       <Disclosure id="views" summary={`Saved views${views.length ? ` (${views.length})` : ""}`}>
         <ViewsMenu page="people" views={views} />

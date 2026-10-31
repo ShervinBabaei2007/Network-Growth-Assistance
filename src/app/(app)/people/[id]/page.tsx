@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { PaneDivider, PaneSignal } from "@/components/master-detail";
+import { PaneSignal } from "@/components/master-detail";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { SPLIT_GRID } from "@/lib/pane";
 import { PeopleList } from "../people-list";
@@ -23,7 +23,6 @@ export default function PersonPage({ params, searchParams }: PageProps<"/people/
           <PeopleList searchParams={searchParams} />
         </Suspense>
       </div>
-      <PaneDivider className="group-data-[pane-open]/md:hidden" />
       <div className="grid min-w-0 content-start gap-6 max-xl:max-w-3xl xl:sticky xl:top-20 xl:max-h-[calc(100dvh-6rem)] xl:overflow-y-auto xl:rounded-xl xl:border xl:bg-card xl:p-4 group-data-[pane-open]/md:hidden">
         <Link href="/people" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="size-4" aria-hidden /> People

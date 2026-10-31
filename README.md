@@ -8,9 +8,9 @@ Know who to contact next. Find real, recent jobs from employers' own career page
 
 [![Live app](https://img.shields.io/badge/live%20app-open-1f66c1?style=for-the-badge&logo=vercel&logoColor=white)](https://linkedin-network-growth-assistance.vercel.app)
 [![CI](https://img.shields.io/github/actions/workflow/status/ShervinBabaei2007/Network-Growth-Assistance/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/ShervinBabaei2007/Network-Growth-Assistance/actions/workflows/ci.yml)
-![Unit tests](https://img.shields.io/badge/unit%20tests-1516%20passing-2da44e?style=flat-square)
+![Unit tests](https://img.shields.io/badge/unit%20tests-1517%20passing-2da44e?style=flat-square)
 ![Database tests](https://img.shields.io/badge/pgTAP-298%20passing-2da44e?style=flat-square)
-![End to end](https://img.shields.io/badge/e2e-119%20tests-2da44e?style=flat-square)
+![End to end](https://img.shields.io/badge/e2e-118%20tests-2da44e?style=flat-square)
 
 <br />
 
@@ -103,7 +103,7 @@ Set your own goal, schools, disciplines and targets. The Overview shows where yo
 | **Bulk actions and saved views** | Tick rows on Candidates, People or Applications and change them together, with Undo and a count of anyone skipped: approve or delete candidates; set a status, mark sent, tag, snooze or delete people; move applications to a stage or snooze their open reminders. Save named filter views on Candidates, People, Applications and Jobs; the last filters are remembered; 25, 50 or 100 per page. |
 | **Follow-ups** | When someone accepts, four suggested touches (thank-you, a short chat, 30- and 90-day check-ins) with editable drafts you copy and send yourself. Done, snooze or dismiss, with Undo. Due ones show on Overview and in the bell. |
 | **Discover** | A research assistant that finds people worth meeting from public sources (GitHub, ORCID, optional web search). Every fact quotes its source; fewer people beat weaker evidence. Works with or without a named school. Never visits LinkedIn. |
-| **People** | A small CRM: status, notes, tags, reminders, referrals and "people at this company". On a wide screen, People, Candidates and the Applications list open a record beside the list; the arrow keys move through the list, a drag handle (or the arrow keys on it) resizes the pane, and a link or reload keeps the list beside the record. |
+| **People** | A small CRM: status, notes, tags, reminders, referrals and "people at this company". On a wide screen, People, Candidates and the Applications list open a record beside the list; the arrow keys move through the list, and a link or reload keeps the list beside the record. |
 | **Jobs** | Recent postings from employers' own boards plus free remote feeds. Verified links, fit checks against your resume (a bar per area of the posting, and the pay range against your minimum), tailored resumes and cover letters, saved-search alerts, side-by-side compare, hidden companies and private notes, and a resume track per kind of role. |
 | **Applications** | A board (drag a card between stages with a mouse, a finger or the keyboard) and a list from saved to offer, with timeline, interviews, reminders, contacts, documents and calendar (`.ics`) export. |
 | **Interview prep** | For applications in Screening, Interviewing or Offer: likely topics from the posting, your own resume lines matched to common questions, questions to ask them and a checklist for the day. Built only from your records, so it cannot invent experience or company facts. Copy or download as Markdown, or save a copy to the timeline. |
@@ -315,7 +315,7 @@ npm run check:bundle  # confirms no AI key reaches the browser (run after build)
 npm run check:budget  # first-load JavaScript per route stays within budget (run after build)
 ```
 
-The suites are **1,516 unit tests, 298 database tests and 119 end-to-end tests** (desktop and phone), and the last full local run passed all of them, plus the production build, the bundle check and the route budget (on Next.js 16.4.3). `.github/workflows/ci.yml` runs the same checks on every pull request and push to `main`; it has run on GitHub and the badge above shows its latest result. `npm run docs:check` keeps these numbers, the links and the environment variables in this README and `docs/` honest.
+The suites are **1,517 unit tests, 298 database tests and 118 end-to-end tests** (desktop and phone), and the last full local run passed all of them, plus the production build, the bundle check and the route budget (on Next.js 16.4.3). `.github/workflows/ci.yml` runs the same checks on every pull request and push to `main`; it has run on GitHub and the badge above shows its latest result. `npm run docs:check` keeps these numbers, the links and the environment variables in this README and `docs/` honest.
 
 - **Run the end-to-end tests with a fresh build folder.** Running `npm run build` and then Playwright straight away can break the dev server, because both use `.next`. Run the tests first, or delete `.next` in between.
 - **Wait for hydration in new sign-in tests.** The sign-in page is plain HTML until its JavaScript loads, and a click before then does nothing, so tests wait for the page to settle.
@@ -477,7 +477,7 @@ docs/              deployment guide, feature guide, accessibility, implementatio
 
 - **French is partial.** Only the menu, top bar, sign-in, welcome, banners and search are translated. Every other page, the home page, guides, legal pages, the tour, emails, and dates, numbers and money on those pages are English.
 - **Bulk actions:** Applications can be moved between stages and have their open reminders snoozed in bulk, but not deleted (the tracker has no delete). There are no `j`/`k` list shortcuts.
-- **Master-detail** works on People, Candidates and the Applications list view. From the Applications board a record replaces the board, because six columns cannot share a row with a pane. The pane's width is saved on the device.
+- **Master-detail** works on People, Candidates and the Applications list view. From the Applications board a record replaces the board, because six columns cannot share a row with a pane.
 - **Unsaved-change warnings and drafts** cover the Settings forms and the notes on a person, an application and a job, and the resume and tailored-document editors. Drafts live in this browser for up to 14 days. After a form with unsaved edits is saved, one extra press of the browser's Back button is needed to leave the page.
 - **The installed app** has not been tried on a real Android or iOS device. Only the queue and saved jobs open offline, read-only. Employers' logos are shown as initials: the employers table only stores applicant-tracking-system addresses, so there is no reliable website to fetch a favicon from.
 - **Interview prep and follow-up drafts use fixed templates and word matching.** There is no AI rewrite, and no company facts are added.

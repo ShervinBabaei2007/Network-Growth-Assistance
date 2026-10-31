@@ -60,7 +60,7 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
   const manual = p.proximity === "manual_second" || p.proximity === "manual_third";
 
   return (
-    <div className="grid gap-4 text-sm">
+    <div className="@container grid gap-4 text-sm">
       {/* Profile */}
       <div className="grid gap-1">
         {p.current_title || p.current_company ? <p className="font-medium">{[p.current_title, p.current_company].filter(Boolean).join(" @ ")}</p> : null}
@@ -282,7 +282,7 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
             <Label htmlFor={`notes-${p.id}`}>Notes (private)</Label>
             <Textarea id={`notes-${p.id}`} name="notes" maxLength={5000} defaultValue={p.notes ?? ""} rows={3} />
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 @@3xl:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor={`tags-${p.id}`}>Tags</Label>
               <Input id={`tags-${p.id}`} name="tags" defaultValue={p.tags.join(", ")} placeholder="Comma-separated, e.g. school, field, follow up" />
@@ -306,7 +306,7 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
       <Section title="History">
         <ActionForm action={logPersonInteraction} submitLabel="Add" size="sm" resetOnSuccess>
           <input type="hidden" name="id" value={p.id} />
-          <div className="grid gap-3 sm:grid-cols-[10rem_1fr_9rem]">
+          <div className="grid gap-3 @@3xl:grid-cols-[10rem_1fr_9rem]">
             <div className="grid gap-1.5">
               <Label htmlFor={`kind-${p.id}`}>Type</Label>
               <AppSelect id={`kind-${p.id}`} name="kind" defaultValue="note">

@@ -30,7 +30,7 @@ function InterviewForm({ initial, submitLabel, pending, onSubmit, onCancel }: { 
         onSubmit(v);
       }}
     >
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 @@3xl:grid-cols-2">
         <div className="grid gap-1">
           <Label htmlFor={`${idp}-when`}>Date and time</Label>
           <Input id={`${idp}-when`} type="datetime-local" required value={v.startsLocal} onChange={(e) => set("startsLocal", e.target.value)} />

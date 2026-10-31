@@ -44,7 +44,7 @@ function useMove() {
 export function Tracker({ apps, view, sort, quiet, afterDays }: { apps: TrackerApp[]; view: "board" | "list"; sort: { key: SortKey; dir: SortDir }; quiet: Quiet[]; afterDays: number }) {
   const { pending, move } = useMove();
   return (
-    <div className="grid gap-5">
+    <div className="grid gap-5" data-board-view={view === "board" ? "" : undefined}>
       <nav aria-label="View" className="flex flex-wrap items-center gap-2">
         <ViewLink href="/applications" active={view === "board"}>
           Board

@@ -42,7 +42,7 @@ export async function CandidateRecord({ params }: Pick<PageProps<"/candidates/[i
   const hidden = <input type="hidden" name="id" value={c.id} />;
 
   return (
-    <>
+    <div className="@container grid gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="grid gap-1">
           <h1 className="text-xl font-semibold">{c.full_name}</h1>
@@ -62,7 +62,7 @@ export async function CandidateRecord({ params }: Pick<PageProps<"/candidates/[i
         </a>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 @3xl:grid-cols-2">
         <Section title="Next step">
           {c.status === "new" || c.status === "awaiting_review" ? (
             <div className="grid gap-3">
@@ -114,7 +114,7 @@ export async function CandidateRecord({ params }: Pick<PageProps<"/candidates/[i
               {invitation.outcome === "pending" ? (
                 <ActionForm action={resolveInvitation} submitLabel="Save outcome">
                   {hidden}
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 @@3xl:grid-cols-2">
                     <Field id="outcome" label="Outcome">
                       <AppSelect id="outcome" name="outcome" defaultValue="accepted">
                         <option value="accepted">Accepted</option>
@@ -146,7 +146,7 @@ export async function CandidateRecord({ params }: Pick<PageProps<"/candidates/[i
         <Section title="School and discipline" description="Only confirmed values count toward targets. Choose from your own lists (Settings → Your networking plan).">
           <ActionForm action={confirmClassification} submitLabel="Confirm">
             {hidden}
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 @@3xl:grid-cols-2">
               <Field id="university" label="School">
                 <AppSelect id="university" name="university" defaultValue={c.university ?? ""}>
                   <option value="">Unknown / not one of my schools</option>
@@ -181,7 +181,7 @@ export async function CandidateRecord({ params }: Pick<PageProps<"/candidates/[i
         <Section title="Details">
           <ActionForm action={updateCandidate} submitLabel="Save details">
             {hidden}
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 @@3xl:grid-cols-2">
               <Field id="fullName" label="Name">
                 <Input id="fullName" name="fullName" defaultValue={c.full_name} required maxLength={200} />
               </Field>
@@ -232,7 +232,7 @@ export async function CandidateRecord({ params }: Pick<PageProps<"/candidates/[i
           </ActionForm>
         </Section>
       </div>
-    </>
+    </div>
   );
 }
 

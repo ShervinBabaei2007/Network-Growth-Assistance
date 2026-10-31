@@ -45,7 +45,7 @@ export function Details({ data }: { data: DetailData }) {
           </div>
           <fieldset className="grid gap-2">
             <legend className="mb-1 text-sm font-medium">Offered pay</legend>
-            <div className="grid grid-cols-[2fr_1fr] gap-2 sm:grid-cols-[2fr_1fr_1.5fr]">
+            <div className="grid grid-cols-[2fr_1fr] gap-2 @@3xl:grid-cols-[2fr_1fr_1.5fr]">
               <div className="grid gap-1">
                 <Label htmlFor="pay-amount" className="text-xs text-muted-foreground">
                   Amount

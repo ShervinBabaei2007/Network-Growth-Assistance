@@ -59,29 +59,6 @@ test.describe("wide screen", () => {
     await expect(page.getByRole("heading", { name: "Bo Bennett" })).toBeVisible();
   });
 
-  test("the divider resizes the pane by keyboard and remembers the width", async ({ page }) => {
-    const email = uniqueEmail("md-divider");
-    await signIn(page, email);
-    const [first] = await seedPeople(email);
-    await page.goto(`/people/${first.id}`);
-    // The server-rendered page briefly holds the frame's divider as well as its own; wait for the frame to step aside.
-    await expect(page.getByTestId("pane-divider")).toHaveCount(1);
-    const divider = page.getByTestId("pane-divider");
-    await expect(divider).toBeVisible();
-    const before = Number(await divider.getAttribute("aria-valuenow"));
-    await divider.focus();
-    await page.keyboard.press("ArrowLeft");
-    await expect(divider).toHaveAttribute("aria-valuenow", String(before + 2));
-    await page.keyboard.press("Home");
-    await expect(divider).toHaveAttribute("aria-valuenow", "22");
-    await page.keyboard.press("End");
-    await expect(divider).toHaveAttribute("aria-valuenow", "48");
-    // Remembered on this device.
-    await page.reload();
-    await expect(page.getByTestId("pane-divider")).toHaveCount(1);
-    await expect(page.getByTestId("pane-divider")).toHaveAttribute("aria-valuenow", "48");
-  });
-
   test("a remembered view does not close the pane when a record is chosen", async ({ page }) => {
     const email = uniqueEmail("md-remember");
     await signIn(page, email);
@@ -129,6 +106,10 @@ test.describe("wide screen", () => {
 
     // From the board there is no room for a pane: the record replaces the board.
     await page.goto("/applications");
+    // The board has the full width: no empty "choose an application" pane is reserved beside it.
+    await expect(page.getByText("Choose an application")).toBeHidden();
+    const column = await page.locator("section[data-column]").first().boundingBox();
+    expect(column!.width).toBeGreaterThan(150);
     await page.getByRole("link", { name: "Alpha Role", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Alpha Role" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Beta Role", exact: true })).toBeHidden();

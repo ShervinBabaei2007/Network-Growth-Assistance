@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { leavesPage } from "@/lib/leaves-page";
 
 export const UNSAVED_MESSAGE = "You have unsaved changes. Leave this page and lose them?";
 
@@ -25,10 +26,8 @@ export function useUnsavedChanges(dirty: boolean, message = UNSAVED_MESSAGE) {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const link = e.target instanceof Element ? e.target.closest<HTMLAnchorElement>("a[href]") : null;
       if (!link || (link.target && link.target !== "_self") || link.hasAttribute("download")) return;
-      const to = new URL(link.href, location.href);
-      if (to.origin !== location.origin) return;
-      // A link to this same page (or a hash on it) does not lose anything.
-      if (to.pathname === location.pathname && to.search === location.search) return;
+      // Other sites, this same page (or a hash on it) and file downloads keep the page open: nothing is lost.
+      if (!leavesPage(new URL(link.href, location.href), location)) return;
       if (!window.confirm(message)) {
         e.preventDefault();
         e.stopPropagation();

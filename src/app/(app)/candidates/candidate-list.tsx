@@ -86,8 +86,9 @@ export async function CandidateList({ searchParams }: Pick<PageProps<"/candidate
       <h2 id="list-heading" className="sr-only">
         Candidate list
       </h2>
-      <form key={`${q}|${status}|${discipline}|${university}|${review}|${pageSize}`} className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:grid-cols-7" role="search">
-        <div className="grid gap-1.5 lg:col-span-2">
+      <div className="@container">
+      <form key={`${q}|${status}|${discipline}|${university}|${review}|${pageSize}`} className="grid gap-3 rounded-lg border bg-card p-3 @lg:grid-cols-2 @3xl:grid-cols-4 @5xl:grid-cols-7" role="search">
+        <div className="grid gap-1.5 @3xl:col-span-2">
           <Label htmlFor="q">Search</Label>
           <Input id="q" name="q" defaultValue={q} placeholder="Name, school, program, role" />
         </div>
@@ -104,8 +105,8 @@ export async function CandidateList({ searchParams }: Pick<PageProps<"/candidate
             ))}
           </AppSelect>
         </div>
-        <div className="flex items-end gap-3">
-          <label className="flex h-8 items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-end gap-x-3 gap-y-2 @lg:col-span-2 @3xl:col-span-2 @5xl:col-span-1">
+          <label className="flex h-8 items-center gap-2 text-sm whitespace-nowrap">
             <Checkbox name="review" value="1" defaultChecked={review} />
             Needs review
           </label>
@@ -117,6 +118,7 @@ export async function CandidateList({ searchParams }: Pick<PageProps<"/candidate
           </Link>
         </div>
       </form>
+      </div>
 
       <Disclosure id="views" summary={`Saved views${views.length ? ` (${views.length})` : ""}`}>
         <ViewsMenu page="candidates" views={views} />

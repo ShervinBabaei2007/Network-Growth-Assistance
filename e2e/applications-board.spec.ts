@@ -25,6 +25,7 @@ test("drag a card to another stage with the mouse, then Undo", async ({ page }) 
   await seed(email, ["Drag Me"]);
   await page.goto("/applications");
   await expect(column(page, "Saved").getByText("Drag Me")).toBeVisible();
+  await page.waitForLoadState("networkidle"); // the drag-and-drop code loads as its own chunk after the markup
 
   const handle = card(page, "Drag Me").getByRole("button", { name: /Move Drag Me/ });
   const from = await handle.boundingBox();
@@ -65,6 +66,7 @@ test("a card changed in another tab is put back with a clear message", async ({ 
   const [id] = await seed(email, ["Stale Card"]);
   await page.goto("/applications");
   await expect(column(page, "Saved").getByText("Stale Card")).toBeVisible();
+  await page.waitForLoadState("networkidle"); // the drag-and-drop code loads as its own chunk after the markup
 
   // Another tab changes it after this page loaded.
   await adminRest("PATCH", `applications?id=eq.${id}`, { version: 9 });
