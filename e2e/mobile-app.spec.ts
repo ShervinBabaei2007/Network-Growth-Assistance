@@ -76,7 +76,7 @@ test("swiping a queue card left reveals Skip and Mark sent, and the swipe itself
   const box = (await row.boundingBox())!;
   const y = box.y + 24;
   const cdp = await page.context().newCDPSession(page);
-  const touch = (type: string, x: number) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
+  const touch = (type: "touchStart" | "touchMove" | "touchEnd", x: number) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
   await touch("touchStart", box.x + box.width - 20);
   for (let i = 1; i <= 8; i++) await touch("touchMove", box.x + box.width - 20 - i * 24);
   await touch("touchEnd", 0);
