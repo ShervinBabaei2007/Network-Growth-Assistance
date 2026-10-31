@@ -68,7 +68,7 @@ export async function saveSearch(params: Record<string, string>, input: AlertInp
 
 /** Changes a search's name or alert schedule. Doesn't reset what it has already shown. */
 export async function updateSearch(id: string, input: AlertInput): Promise<ActionResult> {
-  if (!uuid.safeParse(id).success) return err("Unknown search.");
+  if (!uuid.safeParse(id).success) return err("We couldn't find that search. Reload the page and try again.");
   const alert = Alert.safeParse(input);
   if (!alert.success) return err(alert.error.issues[0]?.message ?? "Check the alert settings.");
   const ctx = await actionContext();
@@ -95,10 +95,10 @@ export async function updateSearch(id: string, input: AlertInput): Promise<Actio
 
 /** Deletes a search and what it has seen. Undo restores it from a fresh starting point. */
 export async function deleteSearch(id: string): Promise<ActionResult<{ snapshot: unknown }>> {
-  if (!uuid.safeParse(id).success) return err("Unknown search.");
+  if (!uuid.safeParse(id).success) return err("We couldn't find that search. Reload the page and try again.");
   const ctx = await actionContext();
   const { data: row } = await ctx.supabase.from("saved_searches").select("id, name, query, alert_frequency, alert_weekday, alert_hour, email_digest").eq("id", id).maybeSingle();
-  if (!row) return err("That search wasn't found.");
+  if (!row) return err("We couldn't find that search. Reload the page and try again.");
   const { error } = await ctx.supabase.from("saved_searches").delete().eq("id", id);
   if (error) return err("Couldn't delete it. Try again.");
   refresh();
@@ -107,7 +107,7 @@ export async function deleteSearch(id: string): Promise<ActionResult<{ snapshot:
 
 export async function restoreSearch(snapshot: unknown): Promise<ActionResult> {
   const s = z.object({ name: z.string(), query: FeedQuery, alert_frequency: z.enum(["off", "daily", "weekly"]), alert_weekday: z.number(), alert_hour: z.number(), email_digest: z.boolean() }).safeParse(snapshot);
-  if (!s.success) return err("Couldn't restore it.");
+  if (!s.success) return err("Couldn't restore it. Reload the page and try again.");
   const r = await saveSearch(s.data.query.params as Record<string, string>, { name: s.data.name, frequency: s.data.alert_frequency, weekday: s.data.alert_weekday, hour: s.data.alert_hour, emailDigest: s.data.email_digest });
   return r.ok ? ok("Search restored.") : err(r.error);
 }
@@ -115,7 +115,7 @@ export async function restoreSearch(snapshot: unknown): Promise<ActionResult> {
 // ------------------------------------------------------------ notifications
 
 export async function setNotificationRead(id: string, read: boolean): Promise<ActionResult> {
-  if (!uuid.safeParse(id).success) return err("Unknown notification.");
+  if (!uuid.safeParse(id).success) return err("We couldn't find that notification. Reload the page and try again.");
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("notifications").update({ read_at: read ? new Date().toISOString() : null }).eq("id", id);
   if (error) return err("Couldn't update it. Try again.");

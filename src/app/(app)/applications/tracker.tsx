@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Clock } from "lucide-react";
+import { ArrowDown, ArrowUp, BellOff, Clock } from "lucide-react";
 import { AppSelect } from "@/components/app-select";
 import { BulkBarFrame, RowSelect, SelectAll, useBulkSelection } from "@/components/bulk/bulk-select";
 import { useActionRunner } from "@/components/toast/use-action-runner";
@@ -12,7 +12,7 @@ import type { SortDir, SortKey } from "@/lib/applications/sort";
 import { isClosed, STAGE_LABEL, STAGES, type Stage } from "@/lib/applications/stages";
 import { cn } from "@/lib/utils";
 import { moveStage } from "./actions";
-import { bulkMoveStage, undoBulkMoveStage, type ApplicationsMove } from "./bulk-actions";
+import { bulkMoveStage, bulkSnoozeReminders, undoBulkMoveStage, undoBulkSnoozeReminders, type ApplicationsMove, type ReminderSnooze } from "./bulk-actions";
 import { AppFacts, MoveSelect, SCOPE, type MoveFn, type Quiet, type TrackerApp } from "./tracker-shared";
 import dynamic from "next/dynamic";
 
@@ -69,6 +69,7 @@ function ApplicationsBulkBar({ apps }: { apps: TrackerApp[] }) {
   const { pending, run } = useActionRunner();
   const [to, setTo] = useState<Stage>("applied");
   const last = useRef<ApplicationsMove | null>(null);
+  const lastSnooze = useRef<ReminderSnooze | null>(null);
   if (selected.length === 0) return null;
   const versions = new Map(apps.map((a) => [a.id, a.version]));
   const items = selected.flatMap((id) => (versions.has(id) ? [{ id, version: versions.get(id)! }] : []));
@@ -102,6 +103,26 @@ function ApplicationsBulkBar({ apps }: { apps: TrackerApp[] }) {
         }
       >
         Move {selected.length}
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={pending}
+        onClick={() =>
+          run(
+            async () => {
+              const r = await bulkSnoozeReminders([...selected], 7);
+              if (r.ok && r.data) {
+                lastSnooze.current = r.data;
+                store.clear();
+              }
+              return r;
+            },
+            { undo: () => undoBulkSnoozeReminders(lastSnooze.current!) },
+          )
+        }
+      >
+        <BellOff aria-hidden /> Snooze reminders 7 days
       </Button>
       <Button size="sm" variant="ghost" onClick={() => store.clear()}>
         Clear

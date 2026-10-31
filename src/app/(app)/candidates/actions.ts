@@ -197,7 +197,7 @@ export async function confirmClassification(_: FormState, formData: FormData): P
 
 export async function reclassifyCandidate(_: FormState, formData: FormData): Promise<FormState> {
   const id = z.uuid().safeParse(formData.get("id"));
-  if (!id.success) return failed("Unknown candidate.");
+  if (!id.success) return failed("We couldn't find that candidate. Reload the page and try again.");
   const ctx = await actionContext();
   const { data: cand } = await ctx.supabase
     .from("candidates")
@@ -321,7 +321,7 @@ export async function resolveInvitation(_: FormState, formData: FormData): Promi
 
 export async function deleteInvitation(_: FormState, formData: FormData): Promise<FormState> {
   const id = z.uuid().safeParse(formData.get("id"));
-  if (!id.success) return failed("Unknown candidate.");
+  if (!id.success) return failed("We couldn't find that candidate. Reload the page and try again.");
   if (formData.get("confirm") !== "on") return failed("Tick the box to confirm.");
   const ctx = await actionContext();
 
@@ -335,7 +335,7 @@ export async function deleteInvitation(_: FormState, formData: FormData): Promis
 
 export async function deleteCandidate(_: FormState, formData: FormData): Promise<FormState> {
   const id = z.uuid().safeParse(formData.get("id"));
-  if (!id.success) return failed("Unknown candidate.");
+  if (!id.success) return failed("We couldn't find that candidate. Reload the page and try again.");
   if (formData.get("confirm") !== "on") return failed("Tick the box to confirm.");
   const ctx = await actionContext();
 

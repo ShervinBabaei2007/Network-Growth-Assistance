@@ -96,3 +96,39 @@ test("the stage menu still moves a card, and a bulk move changes several at once
   await toast(page, "2 moved to Applied").getByRole("button", { name: "Undo" }).click();
   await expect(toast(page, "2 moved back")).toBeVisible();
 });
+
+test("bulk snooze moves open reminders a week later, skips applications without one, and Undo puts them back", async ({ page }) => {
+  const email = uniqueEmail("apps-snooze");
+  await signIn(page, email);
+  const user_id = await userIdFor(email);
+  const [withReminder, without] = (await adminRest("POST", "applications", [
+    { user_id, title: "Has Reminder", company: "Co", stage: "applied" },
+    { user_id, title: "No Reminder", company: "Co", stage: "applied" },
+  ])) as { id: string }[];
+  const due = "2030-03-04T17:00:00+00:00";
+  const [reminder] = (await adminRest("POST", "application_reminders", [{ user_id, application_id: withReminder.id, due_at: due, text: "Follow up" }])) as { id: string }[];
+  const dueAt = async () => ((await adminRest("GET", `application_reminders?id=eq.${reminder.id}&select=due_at`)) as { due_at: string }[])[0].due_at;
+  void without;
+
+  await page.goto("/applications?view=list");
+  await page.getByRole("checkbox", { name: "Select every application" }).click();
+  await expect(page.getByTestId("bulk-bar")).toContainText("2 selected");
+  await page.getByRole("button", { name: "Snooze reminders 7 days" }).click();
+  await expect(toast(page, "1 reminder on 1 application moved 7 days later")).toBeVisible();
+  await expect.poll(async () => new Date(await dueAt()).getTime()).toBeGreaterThan(new Date(due).getTime() + 6 * 24 * 3600 * 1000);
+
+  await toast(page, "moved 7 days later").getByRole("button", { name: "Undo" }).click();
+  await expect(toast(page, "1 reminder moved back")).toBeVisible();
+  await expect.poll(async () => new Date(await dueAt()).getTime()).toBe(new Date(due).getTime());
+});
+
+test("bulk snooze explains itself when no selected application has a reminder", async ({ page }) => {
+  const email = uniqueEmail("apps-snooze-none");
+  await signIn(page, email);
+  const user_id = await userIdFor(email);
+  await adminRest("POST", "applications", [{ user_id, title: "Lonely", company: "Co", stage: "applied" }]);
+  await page.goto("/applications?view=list");
+  await page.getByRole("checkbox", { name: "Select every application" }).click();
+  await page.getByRole("button", { name: "Snooze reminders 7 days" }).click();
+  await expect(toast(page, "None of these applications have an open reminder")).toBeVisible();
+});

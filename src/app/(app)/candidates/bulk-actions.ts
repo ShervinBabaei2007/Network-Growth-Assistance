@@ -62,7 +62,7 @@ export async function undoBulkStatus(change: BulkStatusChange): Promise<ActionRe
       changed: z.array(z.object({ id: z.uuid(), previous: z.enum(ANY_STATUS) })).min(1).max(MAX_SELECTION),
     })
     .safeParse(change);
-  if (!parsed.success) return err("Couldn't undo that.");
+  if (!parsed.success) return err("Couldn't undo that. It may already have changed; reload the page to see where things stand.");
   const ctx = await actionContext();
   const byPrevious = new Map<string, string[]>();
   for (const c of parsed.data.changed) byPrevious.set(c.previous, [...(byPrevious.get(c.previous) ?? []), c.id]);

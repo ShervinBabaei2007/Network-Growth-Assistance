@@ -91,7 +91,7 @@ export async function saveJobPreferences(_: FormState, formData: FormData): Prom
 const STATUS_MESSAGE = { saved: "Job saved.", applied: "Application marked as applied.", dismissed: "Job hidden from your results." } as const;
 
 export async function setJobStatus(jobId: string, status: "saved" | "applied" | "dismissed" | null): Promise<ActionResult> {
-  if (!uuid.safeParse(jobId).success || (status !== null && !["saved", "applied", "dismissed"].includes(status))) return err("Unknown job.");
+  if (!uuid.safeParse(jobId).success || (status !== null && !["saved", "applied", "dismissed"].includes(status))) return err("We couldn't find that job. Reload the page and try again.");
   const ctx = await actionContext();
   const { error } =
     status === null
@@ -113,7 +113,7 @@ export async function setJobStatus(jobId: string, status: "saved" | "applied" | 
 }
 
 export async function checkFit(jobId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(jobId).success) return err("Unknown job.");
+  if (!uuid.safeParse(jobId).success) return err("We couldn't find that job. Reload the page and try again.");
   const ctx = await actionContext();
   if (!(await allow(ctx.supabase, LIMITS.checkFit))) return err(LIMITS.checkFit.message);
   const resume = await loadResumeForJob(ctx.supabase, jobId);

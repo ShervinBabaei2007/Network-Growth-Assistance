@@ -19,7 +19,7 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 /** Marks a suggestion done or dismissed, or puts it back (used by Undo). */
 export async function setFollowUpState(id: string, state: "suggested" | "done" | "dismissed"): Promise<ActionResult> {
-  if (!uuid.safeParse(id).success) return err("Unknown follow-up.");
+  if (!uuid.safeParse(id).success) return err("We couldn't find that follow-up. Reload the page and try again.");
   const ctx = await actionContext();
   const { error, count } = await ctx.supabase
     .from("follow_ups")
@@ -32,7 +32,7 @@ export async function setFollowUpState(id: string, state: "suggested" | "done" |
 
 /** Moves a suggestion to a week from today in the user's time zone. */
 export async function snoozeFollowUp(id: string): Promise<ActionResult> {
-  if (!uuid.safeParse(id).success) return err("Unknown follow-up.");
+  if (!uuid.safeParse(id).success) return err("We couldn't find that follow-up. Reload the page and try again.");
   const ctx = await actionContext();
   const today = localDate(new Date(), ctx.settings.timezone);
   const due = new Date(Date.parse(`${today}T00:00:00Z`) + 7 * 86_400_000).toISOString().slice(0, 10);
@@ -41,7 +41,7 @@ export async function snoozeFollowUp(id: string): Promise<ActionResult> {
 
 /** Sets the due date directly (used by Undo to restore the previous date). */
 export async function setFollowUpDue(id: string, dueOn: string): Promise<ActionResult> {
-  if (!uuid.safeParse(id).success || !isoDate.safeParse(dueOn).success) return err("Unknown follow-up.");
+  if (!uuid.safeParse(id).success || !isoDate.safeParse(dueOn).success) return err("We couldn't find that follow-up. Reload the page and try again.");
   return setDue(id, dueOn, "Date restored.");
 }
 
@@ -58,7 +58,7 @@ async function setDue(id: string, dueOn: string, message: string): Promise<Actio
  * rather than blocking: the message is theirs, but they should know if it states something we can't back up.
  */
 export async function checkFollowUpText(id: string, text: string): Promise<ActionResult<{ problem: string | null }>> {
-  if (!uuid.safeParse(id).success) return err("Unknown follow-up.");
+  if (!uuid.safeParse(id).success) return err("We couldn't find that follow-up. Reload the page and try again.");
   if (text.length > FOLLOW_UP_LIMIT * 3) return err("That message is too long.");
   const ctx = await actionContext();
   const { data, error } = await ctx.supabase.from("follow_ups").select("candidates(full_name, university, discipline)").eq("id", id).single();

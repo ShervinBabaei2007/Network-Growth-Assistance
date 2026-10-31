@@ -28,7 +28,7 @@ export async function saveView(page: string, name: string, search: string): Prom
 }
 
 export async function deleteView(id: string): Promise<ActionResult> {
-  if (!z.uuid().safeParse(id).success) return err("Unknown view.");
+  if (!z.uuid().safeParse(id).success) return err("We couldn't find that view. Reload the page and try again.");
   const ctx = await actionContext();
   const { error, count } = await ctx.supabase.from("saved_views").delete({ count: "exact" }).eq("id", id);
   if (error || !count) return err("Couldn't delete the view. Try again.");

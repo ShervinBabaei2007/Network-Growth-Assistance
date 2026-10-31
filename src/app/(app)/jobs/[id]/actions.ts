@@ -120,7 +120,7 @@ async function fallBackToNotes(ctx: ActionContext, c: WorkContext, reason: Fallb
  * resume. Saves a new version; earlier versions and the resume itself are untouched.
  */
 export async function tailorForJob(jobId: string, mode: TailorMode, format: DocumentFormat): Promise<WorkResult> {
-  if (!uuid.safeParse(jobId).success || !isMode(mode) || (format !== "resume" && format !== "cv")) return err("Unknown job.");
+  if (!uuid.safeParse(jobId).success || !isMode(mode) || (format !== "resume" && format !== "cv")) return err("We couldn't find that job. Reload the page and try again.");
   const ctx = await actionContext();
   const w = await workContext(ctx, jobId);
   if (!w.ok) return err(w.error);
@@ -181,7 +181,7 @@ export async function tailorForJob(jobId: string, mode: TailorMode, format: Docu
  * template filled from the resume, labelled as a template. Each one is a new version.
  */
 export async function generateCoverLetter(jobId: string, mode: TailorMode, useAi: boolean): Promise<WorkResult> {
-  if (!uuid.safeParse(jobId).success || !isMode(mode)) return err("Unknown job.");
+  if (!uuid.safeParse(jobId).success || !isMode(mode)) return err("We couldn't find that job. Reload the page and try again.");
   const ctx = await actionContext();
   const w = await workContext(ctx, jobId);
   if (!w.ok) return err(w.error);
@@ -229,7 +229,7 @@ export async function generateCoverLetter(jobId: string, mode: TailorMode, useAi
 
 /** "Get Resume Improvement Notes": advice only. The resume isn't changed. */
 export async function getImprovementNotes(jobId: string, useAi: boolean): Promise<WorkResult> {
-  if (!uuid.safeParse(jobId).success) return err("Unknown job.");
+  if (!uuid.safeParse(jobId).success) return err("We couldn't find that job. Reload the page and try again.");
   const ctx = await actionContext();
   const w = await workContext(ctx, jobId);
   if (!w.ok) return err(w.error);
@@ -256,10 +256,10 @@ export async function getImprovementNotes(jobId: string, useAi: boolean): Promis
 
 /** Hides one note (or brings it back). The notes stay advice; nothing else changes. */
 export async function setNoteDismissed(notesId: string, noteId: string, dismissed: boolean): Promise<ActionResult> {
-  if (!uuid.safeParse(notesId).success || !/^[an]\d{1,3}$/.test(noteId)) return err("Unknown note.");
+  if (!uuid.safeParse(notesId).success || !/^[an]\d{1,3}$/.test(noteId)) return err("We couldn't find that note. Reload the page and try again.");
   const ctx = await actionContext();
   const { data } = await ctx.supabase.from("improvement_notes").select("dismissed").eq("id", notesId).maybeSingle();
-  if (!data) return err("Unknown note.");
+  if (!data) return err("We couldn't find that note. Reload the page and try again.");
   const next = dismissed ? [...new Set([...data.dismissed, noteId])] : data.dismissed.filter((d) => d !== noteId);
   const { error } = await ctx.supabase.from("improvement_notes").update({ dismissed: next }).eq("id", notesId);
   if (error) return err("Couldn't update. Try again.");
@@ -269,7 +269,7 @@ export async function setNoteDismissed(notesId: string, noteId: string, dismisse
 
 /** Picks which resume track to use for this job (null is the main resume) and checks the job against it. */
 export async function setJobTrack(jobId: string, rawTrack: string | null): Promise<ActionResult> {
-  if (!uuid.safeParse(jobId).success) return err("Unknown job.");
+  if (!uuid.safeParse(jobId).success) return err("We couldn't find that job. Reload the page and try again.");
   const track = normalizeTrack(rawTrack);
   const ctx = await actionContext();
   const resume = await loadActiveResume(ctx.supabase, undefined, track);

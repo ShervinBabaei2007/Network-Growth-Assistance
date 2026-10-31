@@ -9,6 +9,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useProtectedState } from "@/hooks/use-protected-state";
+import { draftKey } from "@/lib/drafts";
 import { SECTION_HEADINGS } from "@/lib/job-postings/document-sections";
 import type { CoverLetterDoc, GuardIssue, TailoredResumeDoc } from "@/lib/job-postings/documents";
 import { discardDocumentEdit, saveDocumentEdit } from "../documents/actions";
@@ -67,6 +69,7 @@ export function GuardReport({ issues }: { issues: GuardIssue[] }) {
 export function ResumeDocEditor({ docId, initial, generated, edited, originals }: { docId: string; initial: TailoredResumeDoc; generated: TailoredResumeDoc; edited: boolean; originals: Record<string, string> }) {
   const [doc, setDoc] = useState(initial);
   const { pending, message, save, discard } = useSave(docId);
+  const draftBanner = useProtectedState<TailoredResumeDoc>(draftKey("tailored-resume", docId), doc, initial, setDoc, (d): d is TailoredResumeDoc => typeof d === "object" && d !== null && Array.isArray((d as TailoredResumeDoc).sections));
 
   const setBullet = (si: number, ei: number, bi: number, text: string | null) =>
     setDoc((d) => ({
@@ -85,6 +88,7 @@ export function ResumeDocEditor({ docId, initial, generated, edited, originals }
 
   return (
     <div className="grid gap-4">
+      {draftBanner}
       <Toolbar docId={docId} edited={edited} pending={pending} message={message} onSave={() => save(doc)} onDiscard={() => discard(() => setDoc(generated))} />
       <div className="grid gap-1.5">
         <Label htmlFor={`${docId}-summary`}>Summary</Label>
@@ -142,8 +146,10 @@ export function ResumeDocEditor({ docId, initial, generated, edited, originals }
 export function LetterDocEditor({ docId, initial, generated, edited }: { docId: string; initial: CoverLetterDoc; generated: CoverLetterDoc; edited: boolean }) {
   const [doc, setDoc] = useState(initial);
   const { pending, message, save, discard } = useSave(docId);
+  const draftBanner = useProtectedState<CoverLetterDoc>(draftKey("cover-letter", docId), doc, initial, setDoc, (d): d is CoverLetterDoc => typeof d === "object" && d !== null && typeof (d as CoverLetterDoc).greeting === "string");
   return (
     <div className="grid gap-4">
+      {draftBanner}
       <Toolbar docId={docId} edited={edited} pending={pending} message={message} onSave={() => save(doc)} onDiscard={() => discard(() => setDoc(generated))} />
       <div className="grid gap-1.5">
         <Label htmlFor={`${docId}-greeting`}>Greeting</Label>

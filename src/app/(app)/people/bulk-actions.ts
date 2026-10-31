@@ -62,7 +62,7 @@ export async function undoBulkPersonStatus(change: PersonStatusChange): Promise<
   const parsed = z
     .object({ status: z.enum(STATUSES), changed: z.array(z.object({ id: z.uuid(), previous: z.enum(STATUSES) })).min(1).max(MAX_SELECTION) })
     .safeParse(change);
-  if (!parsed.success) return err("Couldn't undo that.");
+  if (!parsed.success) return err("Couldn't undo that. It may already have changed; reload the page to see where things stand.");
   const ctx = await actionContext();
   for (const [previous, group] of groupBy(parsed.data.changed, (c) => c.previous, (c) => c.id)) {
     const { error } = await ctx.supabase.from("network_people").update({ crm_status: previous }).in("id", group).eq("crm_status", parsed.data.status);
@@ -99,7 +99,7 @@ export async function bulkAddPersonTag(rawIds: string[], rawTag: string): Promis
 
 export async function undoBulkPersonTag(change: PersonTagChange): Promise<ActionResult> {
   const parsed = z.object({ tag: z.string().min(1).max(40), changed: z.array(z.uuid()).min(1).max(MAX_SELECTION) }).safeParse(change);
-  if (!parsed.success) return err("Couldn't undo that.");
+  if (!parsed.success) return err("Couldn't undo that. It may already have changed; reload the page to see where things stand.");
   const ctx = await actionContext();
   const { data: rows, error } = await ctx.supabase.from("network_people").select("id, tags").in("id", parsed.data.changed);
   if (error) return err("Couldn't undo that. Try again.");
@@ -135,7 +135,7 @@ export async function undoBulkSnoozePeople(change: PersonSnoozeChange): Promise<
   const parsed = z
     .object({ until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), changed: z.array(z.object({ id: z.uuid(), previous: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable() })).min(1).max(MAX_SELECTION) })
     .safeParse(change);
-  if (!parsed.success) return err("Couldn't undo that.");
+  if (!parsed.success) return err("Couldn't undo that. It may already have changed; reload the page to see where things stand.");
   const ctx = await actionContext();
   for (const [previous, group] of groupBy(parsed.data.changed, (c) => c.previous, (c) => c.id)) {
     const { error } = await ctx.supabase.from("network_people").update({ reminder_at: previous }).in("id", group).eq("reminder_at", parsed.data.until);

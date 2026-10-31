@@ -29,10 +29,10 @@ function unsupported(doc: TailoredResumeDoc, known: string): string[] {
 }
 
 export async function saveDocumentEdit(docId: string, content: unknown): Promise<ActionResult> {
-  if (!uuid.safeParse(docId).success) return err("Unknown document.");
+  if (!uuid.safeParse(docId).success) return err("We couldn't find that document. Reload the page and try again.");
   const ctx = await actionContext();
   const { data: doc } = await ctx.supabase.from("tailored_documents").select("kind, resume_id").eq("id", docId).is("deleted_at", null).maybeSingle();
-  if (!doc) return err("Unknown document.");
+  if (!doc) return err("We couldn't find that document. Reload the page and try again.");
   const parsed = doc.kind === "cover_letter" ? CoverLetterDoc.safeParse(content) : TailoredResumeDoc.safeParse(content);
   if (!parsed.success) return err("Something in the edit is too long or empty. Check it and try again.");
   const { error } = await ctx.supabase.from("tailored_documents").update({ edited: asJson(parsed.data) }).eq("id", docId);
@@ -55,7 +55,7 @@ export async function saveDocumentEdit(docId: string, content: unknown): Promise
 }
 
 export async function discardDocumentEdit(docId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(docId).success) return err("Unknown document.");
+  if (!uuid.safeParse(docId).success) return err("We couldn't find that document. Reload the page and try again.");
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("tailored_documents").update({ edited: null }).eq("id", docId);
   if (error) return err("Couldn't reset. Try again.");
@@ -65,7 +65,7 @@ export async function discardDocumentEdit(docId: string): Promise<ActionResult> 
 
 /** Deletes a generated version. It's kept for a week so Undo works, then purged. */
 export async function deleteDocument(docId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(docId).success) return err("Unknown document.");
+  if (!uuid.safeParse(docId).success) return err("We couldn't find that document. Reload the page and try again.");
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("tailored_documents").update({ deleted_at: new Date().toISOString() }).eq("id", docId);
   if (error) return err("Couldn't delete it. Try again.");
@@ -75,7 +75,7 @@ export async function deleteDocument(docId: string): Promise<ActionResult> {
 }
 
 export async function restoreDocument(docId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(docId).success) return err("Unknown document.");
+  if (!uuid.safeParse(docId).success) return err("We couldn't find that document. Reload the page and try again.");
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("tailored_documents").update({ deleted_at: null }).eq("id", docId);
   if (error) return err("Couldn't restore it. Try again.");

@@ -27,7 +27,7 @@ const itemSchema = z.object({ queueId: z.uuid(), candidateId: z.uuid(), note: z.
 /** The person sent the invitation on LinkedIn; record it and close the queue item. */
 export async function markQueueItemSent(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = itemSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failed("Unknown queue item.");
+  if (!parsed.success) return failed("We couldn't find that queue item. Reload the page and try again.");
   const ctx = await actionContext();
   if (ctx.settings.paused) return failed("Outreach is paused. Resume it in Settings first.");
 
@@ -48,7 +48,7 @@ export async function markQueueItemSent(_: FormState, formData: FormData): Promi
 
 export async function skipQueueItem(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = itemSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failed("Unknown queue item.");
+  if (!parsed.success) return failed("We couldn't find that queue item. Reload the page and try again.");
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("daily_queue").update({ state: "skipped" }).eq("id", parsed.data.queueId).eq("state", "queued");
   if (error) return failed("Couldn't skip. Try again.");

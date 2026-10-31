@@ -69,3 +69,41 @@ test("a half-written note comes back after the tab is closed", async ({ page, co
   await again.reload();
   await expect(again.getByTestId("draft-banner")).toHaveCount(0);
 });
+
+test("the Back button asks before leaving a form with unsaved edits", async ({ page }) => {
+  await signIn(page, uniqueEmail("back"), "/overview");
+  await page.goto("/settings");
+  await page.waitForLoadState("networkidle");
+  const input = page.locator("#dailyInviteTarget");
+  await input.fill("14");
+
+  // Saying no keeps the page and what was typed.
+  let asked = 0;
+  page.once("dialog", async (d) => {
+    asked++;
+    await d.dismiss();
+  });
+  await page.goBack();
+  await expect.poll(() => asked).toBe(1);
+  await expect(page).toHaveURL(/\/settings/);
+  await expect(input).toHaveValue("14");
+
+  // Asking again works (the spare entry was put back), and yes leaves.
+  page.once("dialog", (d) => d.accept());
+  await page.goBack();
+  await expect(page).toHaveURL(/\/overview/);
+});
+
+test("the Back button does not ask when nothing was changed", async ({ page }) => {
+  await signIn(page, uniqueEmail("back-clean"), "/overview");
+  await page.goto("/settings");
+  await page.waitForLoadState("networkidle");
+  let asked = false;
+  page.on("dialog", async (d) => {
+    asked = true;
+    await d.accept();
+  });
+  await page.goBack();
+  await expect(page).toHaveURL(/\/overview/);
+  expect(asked).toBe(false);
+});

@@ -28,7 +28,7 @@ async function addFilter(kind: HiddenKind, rawPattern: string): Promise<ActionRe
 
 /** Hides every posting from this job's company, from the feed and from alerts. */
 export async function hideCompanyOfJob(jobId: string): Promise<ActionResult<{ filterId: string | null }>> {
-  if (!uuid.safeParse(jobId).success) return err("Unknown job.");
+  if (!uuid.safeParse(jobId).success) return err("We couldn't find that job. Reload the page and try again.");
   const ctx = await actionContext();
   const { data: job } = await ctx.supabase.from("jobs").select("company").eq("id", jobId).maybeSingle();
   if (!job?.company) return err("This posting has no company name to hide.");
@@ -41,7 +41,7 @@ export async function hideTitlePattern(pattern: string): Promise<ActionResult<{ 
 
 /** Also the Undo for hiding. */
 export async function removeJobFilter(filterId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(filterId).success) return err("Unknown filter.");
+  if (!uuid.safeParse(filterId).success) return err("We couldn't find that filter. Reload the page and try again.");
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("job_filters").delete().eq("id", filterId);
   if (error) return err("Couldn't remove that. Try again.");
@@ -50,7 +50,7 @@ export async function removeJobFilter(filterId: string): Promise<ActionResult> {
 }
 
 export async function saveJobNote(jobId: string, body: string): Promise<ActionResult> {
-  if (!uuid.safeParse(jobId).success) return err("Unknown job.");
+  if (!uuid.safeParse(jobId).success) return err("We couldn't find that job. Reload the page and try again.");
   const text = body.trim();
   if (text.length === 0) return err("Write something first, or use Delete note.");
   if (text.length > 2000) return err("Notes are limited to 2,000 characters. Shorten it and save again.");
@@ -62,7 +62,7 @@ export async function saveJobNote(jobId: string, body: string): Promise<ActionRe
 }
 
 export async function deleteJobNote(jobId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(jobId).success) return err("Unknown job.");
+  if (!uuid.safeParse(jobId).success) return err("We couldn't find that job. Reload the page and try again.");
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("job_notes").delete().eq("job_id", jobId);
   if (error) return err("Couldn't delete your note. Try again.");

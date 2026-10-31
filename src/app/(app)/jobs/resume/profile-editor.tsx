@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useProtectedState } from "@/hooks/use-protected-state";
+import { draftKey } from "@/lib/drafts";
 import { getAt, setAt } from "@/lib/job-postings/resume-paths";
 import { groupSkills, projectTechnologies, SKILL_GROUP_LABELS, type SkillGroup } from "@/lib/job-postings/skill-groups";
 import type { FieldMetaMap, ResumeEntry, ResumeProfile } from "@/lib/job-postings/types";
@@ -50,6 +52,7 @@ export function ProfileEditor({ resumeId, initial, meta: initialMeta }: { resume
   const [meta, setMeta] = useState(initialMeta);
   const { pending, run } = useActionRunner();
   const confirmRunner = useActionRunner();
+  const draftBanner = useProtectedState<ResumeProfile>(draftKey("resume-profile", resumeId), p, initial, setP, (d): d is ResumeProfile => typeof d === "object" && d !== null && Array.isArray((d as ResumeProfile).skills) && Array.isArray((d as ResumeProfile).experience));
 
   const edited = (path: string) => getAt(p, path) !== getAt(initial, path);
   const confirm = (path: string) =>
@@ -74,6 +77,7 @@ export function ProfileEditor({ resumeId, initial, meta: initialMeta }: { resume
 
   return (
     <div className="grid gap-6">
+      {draftBanner}
       <section aria-labelledby="contact-heading" className="grid gap-3">
         <h3 id="contact-heading" className="font-medium">
           Contact

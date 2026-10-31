@@ -12,9 +12,9 @@ const uuid = z.uuid();
  * is checked here: it must be a modest-sized object, and it only ever lands on the signed-in user's own application.
  */
 export async function savePrepSnapshot(applicationId: string, pack: unknown): Promise<ActionResult> {
-  if (!uuid.safeParse(applicationId).success) return err("Unknown application.");
+  if (!uuid.safeParse(applicationId).success) return err("We couldn't find that application. Reload the page and try again.");
   const parsed = z.object({ heading: z.string().max(300) }).passthrough().safeParse(pack);
-  if (!parsed.success || JSON.stringify(pack).length > 150_000) return err("Couldn't save that prep pack.");
+  if (!parsed.success || JSON.stringify(pack).length > 150_000) return err("Couldn't save that prep pack. Try again.");
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("interview_preps").insert({ application_id: applicationId, content: parsed.data as never });
   if (error) return err("Couldn't save the prep pack. Try again.");

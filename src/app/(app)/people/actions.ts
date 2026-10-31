@@ -40,7 +40,7 @@ async function rescoreFor(ctx: ActionContext, personId: string) {
 // ------------------------------------------------------------ CRM status
 
 export async function savePerson(personId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(personId).success) return err("Unknown person.");
+  if (!uuid.safeParse(personId).success) return err("We couldn't find that person. Reload the page and try again.");
   const ctx = await actionContext();
   const { data, error } = await ctx.supabase.from("network_people").update({ saved: true }).eq("id", personId).select("crm_status").single();
   if (error) return err("Couldn't save. Try again.");
@@ -76,7 +76,7 @@ const FEEDBACK = ["great_match", "not_relevant", "already_connected", "wrong_per
 
 export async function givePersonFeedback(personId: string, kind: string, searchId?: string | null): Promise<ActionResult> {
   const k = z.enum(FEEDBACK).safeParse(kind);
-  if (!uuid.safeParse(personId).success || !k.success) return err("Unknown feedback.");
+  if (!uuid.safeParse(personId).success || !k.success) return err("We couldn't find that feedback. Reload the page and try again.");
   const ctx = await actionContext();
   const { error } = await ctx.supabase
     .from("network_feedback")
@@ -93,7 +93,7 @@ export async function givePersonFeedback(personId: string, kind: string, searchI
 
 export async function undoPersonFeedback(personId: string, kind: string): Promise<ActionResult> {
   const k = z.enum(FEEDBACK).safeParse(kind);
-  if (!uuid.safeParse(personId).success || !k.success) return err("Unknown feedback.");
+  if (!uuid.safeParse(personId).success || !k.success) return err("We couldn't find that feedback. Reload the page and try again.");
   const ctx = await actionContext();
   await ctx.supabase.from("network_feedback").delete().eq("person_id", personId).eq("kind", k.data);
   if (k.data === "not_relevant" || k.data === "wrong_person") await ctx.supabase.from("network_people").update({ crm_status: "discovered" }).eq("id", personId).eq("crm_status", "not_relevant");
@@ -127,7 +127,7 @@ async function markSamePerson(ctx: ActionContext, personId: string, knownId: str
 
 /** The user's answer to "is this one of your connections?" It's stored and reused by later searches. */
 export async function resolveKnownMatch(personId: string, same: boolean): Promise<ActionResult> {
-  if (!uuid.safeParse(personId).success) return err("Unknown person.");
+  if (!uuid.safeParse(personId).success) return err("We couldn't find that person. Reload the page and try again.");
   const ctx = await actionContext();
   await markSamePerson(ctx, personId, null, same);
   await rescoreFor(ctx, personId);
@@ -213,10 +213,10 @@ export async function recordPersonEvent(personId: string, kind: "linkedin_opened
 
 /** A suggested intro built from verified facts; optionally polished by AI. Never sent by the app. */
 export async function generateIntro(personId: string, useAi: boolean): Promise<ActionResult> {
-  if (!uuid.safeParse(personId).success) return err("Unknown person.");
+  if (!uuid.safeParse(personId).success) return err("We couldn't find that person. Reload the page and try again.");
   const ctx = await actionContext();
   const detail = await loadPersonDetail(ctx.supabase, personId);
-  if (!detail) return err("Unknown person.");
+  if (!detail) return err("We couldn't find that person. Reload the page and try again.");
   const draft = suggestIntro(detail.introFacts, INTRO_LIMIT);
   if (!useAi) return { ok: true, text: draft };
   // The user's own key, or the server's within the daily allowance (charged before the call).
@@ -235,10 +235,10 @@ export async function generateIntro(personId: string, useAi: boolean): Promise<A
  * profile link is known. School and program come from verified evidence only.
  */
 export async function sendToCandidates(personId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(personId).success) return err("Unknown person.");
+  if (!uuid.safeParse(personId).success) return err("We couldn't find that person. Reload the page and try again.");
   const ctx = await actionContext();
   const detail = await loadPersonDetail(ctx.supabase, personId);
-  if (!detail) return err("Unknown person.");
+  if (!detail) return err("We couldn't find that person. Reload the page and try again.");
   const p = detail.person;
   if (!p.linkedin_url) return err("Add their LinkedIn profile link first (open their profile yourself and paste the address).");
   const url = normalizeProfileUrl(p.linkedin_url);
@@ -318,12 +318,12 @@ export async function saveNetworkingGoal(_: FormState, formData: FormData): Prom
 /** Saves the LinkedIn profile link the user found themselves (e.g. via "Find on LinkedIn"). */
 export async function saveLinkedInUrl(_: FormState, formData: FormData): Promise<FormState> {
   const id = uuid.safeParse(formData.get("id"));
-  if (!id.success) return failed("Unknown person.");
+  if (!id.success) return failed("We couldn't find that person. Reload the page and try again.");
   const url = normalizeProfileUrl(String(formData.get("linkedinUrl") ?? ""));
   if (!url.ok) return failed(url.reason);
   const ctx = await actionContext();
   const { data: p } = await ctx.supabase.from("network_people").select("identity_keys").eq("id", id.data).single();
-  if (!p) return failed("Unknown person.");
+  if (!p) return failed("We couldn't find that person. Reload the page and try again.");
   const { error } = await ctx.supabase
     .from("network_people")
     .update({ linkedin_url: url.url, linkedin_key: url.key, identity_keys: [...new Set([...p.identity_keys.filter((k) => !k.startsWith("linkedin:")), `linkedin:${url.key}`])] })

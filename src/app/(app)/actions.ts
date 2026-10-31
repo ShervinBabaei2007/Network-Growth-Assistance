@@ -297,7 +297,7 @@ export async function saveCategory(_: FormState, formData: FormData): Promise<Fo
 
 /** Removes a school or discipline. Its candidates go back to review and its targets are removed. */
 export async function deleteCategory(kind: "university" | "discipline", id: string): Promise<ActionResult> {
-  if ((kind !== "university" && kind !== "discipline") || !z.uuid().safeParse(id).success) return err("Unknown entry.");
+  if ((kind !== "university" && kind !== "discipline") || !z.uuid().safeParse(id).success) return err("We couldn't find that entry. Reload the page and try again.");
   const ctx = await context();
   const { data, error } =
     kind === "university"
@@ -423,13 +423,13 @@ export async function saveAppearance(input: Appearance): Promise<ActionResult> {
 /** Saves where the user is in the welcome and tour. Only the caller's own settings row can change. */
 export async function saveOnboarding(patch: Partial<OnboardingState>): Promise<ActionResult> {
   const parsed = onboardingPatchSchema.safeParse(patch);
-  if (!parsed.success) return err("Couldn't save your setup progress.");
+  if (!parsed.success) return err("Couldn't save your setup progress. Try again.");
   const ctx = await context();
   const { data: row, error: readError } = await ctx.supabase.from("settings").select("onboarding").eq("user_id", ctx.userId).single();
   if (readError) return err("Couldn't save your setup progress. Try again.");
   // Merge into what is stored, then check the whole thing, so only known fields are ever written.
   const merged = onboardingInputSchema.safeParse({ ...parseOnboarding(row.onboarding), ...parsed.data });
-  if (!merged.success) return err("Couldn't save your setup progress.");
+  if (!merged.success) return err("Couldn't save your setup progress. Try again.");
   const { error } = await ctx.supabase.from("settings").update({ onboarding: merged.data }).eq("user_id", ctx.userId);
   if (error) return err("Couldn't save your setup progress. Try again.");
   return ok("Saved.");

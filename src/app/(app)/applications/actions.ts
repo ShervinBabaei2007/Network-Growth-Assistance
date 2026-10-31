@@ -27,7 +27,7 @@ type PgError = { code?: string } | null;
 function failure(error: PgError, fallback: string): ActionResult<never> {
   if (error?.code === "P0409" || error?.code === "40001") return err("This application changed in another tab or window. Reload the page and try again.");
   if (error?.code === "23505") return err("Another attempt at this job is still open. Close that one first.");
-  if (error?.code === "P0002") return err("That application wasn't found.");
+  if (error?.code === "P0002") return err("We couldn't find that application. Reload the page and try again.");
   return err(fallback);
 }
 
@@ -39,10 +39,10 @@ async function addEvent(db: Db, applicationId: string, kind: "note" | "response"
 
 /** Moves an application. Returns the new version, which the Undo needs. */
 export async function moveStage(applicationId: string, to: Stage, expectedVersion: number): Promise<ActionResult<{ version: number; from: Stage }>> {
-  if (!uuid.safeParse(applicationId).success || !stage.safeParse(to).success || !Number.isInteger(expectedVersion)) return err("Unknown application.");
+  if (!uuid.safeParse(applicationId).success || !stage.safeParse(to).success || !Number.isInteger(expectedVersion)) return err("We couldn't find that application. Reload the page and try again.");
   const ctx = await actionContext();
   const { data: before } = await ctx.supabase.from("applications").select("stage").eq("id", applicationId).maybeSingle();
-  if (!before) return err("That application wasn't found.");
+  if (!before) return err("We couldn't find that application. Reload the page and try again.");
   const { data: version, error } = await ctx.supabase.rpc("set_application_stage", { p_id: applicationId, p_stage: to, p_expected_version: expectedVersion });
   if (error || version === null) return failure(error, "Couldn't move it. Try again.");
   await logActivity(ctx, "applications.stage", { application: applicationId, to });
@@ -52,7 +52,7 @@ export async function moveStage(applicationId: string, to: Stage, expectedVersio
 
 /** Starts a new attempt at a job after the last one closed. */
 export async function applyAgain(applicationId: string, to: "saved" | "applied"): Promise<ActionResult<{ id: string }>> {
-  if (!uuid.safeParse(applicationId).success || !["saved", "applied"].includes(to)) return err("Unknown application.");
+  if (!uuid.safeParse(applicationId).success || !["saved", "applied"].includes(to)) return err("We couldn't find that application. Reload the page and try again.");
   const ctx = await actionContext();
   const { data: id, error } = await ctx.supabase.rpc("apply_again", { p_id: applicationId, p_stage: to });
   if (error || !id) return failure(error, "Couldn't start a new attempt. Try again.");
@@ -76,7 +76,7 @@ const Details = z
   });
 
 export async function saveDetails(applicationId: string, input: z.input<typeof Details>): Promise<ActionResult> {
-  if (!uuid.safeParse(applicationId).success) return err("Unknown application.");
+  if (!uuid.safeParse(applicationId).success) return err("We couldn't find that application. Reload the page and try again.");
   const parsed = Details.safeParse(input);
   if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Check the details and try again.");
   const d = parsed.data;
@@ -100,7 +100,7 @@ export async function saveDetails(applicationId: string, input: z.input<typeof D
 
 export async function addNote(applicationId: string, kind: "note" | "response", text: string): Promise<ActionResult<{ id: string }>> {
   const body = text.trim();
-  if (!uuid.safeParse(applicationId).success || !["note", "response"].includes(kind)) return err("Unknown application.");
+  if (!uuid.safeParse(applicationId).success || !["note", "response"].includes(kind)) return err("We couldn't find that application. Reload the page and try again.");
   if (!body || body.length > 2000) return err("Write a note of up to 2,000 characters.");
   const ctx = await actionContext();
   const { data, error } = await addEvent(ctx.supabase, applicationId, kind, body);
@@ -110,7 +110,7 @@ export async function addNote(applicationId: string, kind: "note" | "response", 
 }
 
 export async function deleteNote(eventId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(eventId).success) return err("Unknown note.");
+  if (!uuid.safeParse(eventId).success) return err("We couldn't find that note. Reload the page and try again.");
   const ctx = await actionContext();
   const { error, count } = await ctx.supabase.from("application_events").delete({ count: "exact" }).eq("id", eventId);
   if (error || !count) return err("Couldn't remove it. Only notes and responses you added can be removed.");
@@ -133,7 +133,7 @@ export type InterviewInput = z.input<typeof Interview>;
 const KIND_WORD: Record<string, string> = { phone: "Phone", video: "Video", onsite: "On-site", technical: "Technical", other: "" };
 
 export async function addInterview(applicationId: string, input: InterviewInput): Promise<ActionResult<{ id: string }>> {
-  if (!uuid.safeParse(applicationId).success) return err("Unknown application.");
+  if (!uuid.safeParse(applicationId).success) return err("We couldn't find that application. Reload the page and try again.");
   const parsed = Interview.safeParse(input);
   if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Check the interview details.");
   const i = parsed.data;
@@ -155,13 +155,13 @@ export async function addInterview(applicationId: string, input: InterviewInput)
  * first, because the calendar copy they already exported will be replaced.
  */
 export async function updateInterview(interviewId: string, input: InterviewInput, confirmTimeChange: boolean): Promise<ActionResult<{ needsConfirmation?: boolean }>> {
-  if (!uuid.safeParse(interviewId).success) return err("Unknown interview.");
+  if (!uuid.safeParse(interviewId).success) return err("We couldn't find that interview. Reload the page and try again.");
   const parsed = Interview.safeParse(input);
   if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Check the interview details.");
   const i = parsed.data;
   const ctx = await actionContext();
   const { data: current } = await ctx.supabase.from("application_interviews").select("application_id, starts_at, duration_minutes, ics_sequence").eq("id", interviewId).maybeSingle();
-  if (!current) return err("That interview wasn't found.");
+  if (!current) return err("We couldn't find that interview. Reload the page and try again.");
   const startsAt = localDateTimeToInstant(i.startsLocal, i.timezone).toISOString();
   const timeChanged = Date.parse(current.starts_at) !== Date.parse(startsAt) || current.duration_minutes !== i.durationMinutes;
   if (timeChanged && !confirmTimeChange) return err("Confirm the new date and time.", { data: { needsConfirmation: true } });
@@ -184,7 +184,7 @@ export async function updateInterview(interviewId: string, input: InterviewInput
 }
 
 export async function deleteInterview(interviewId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(interviewId).success) return err("Unknown interview.");
+  if (!uuid.safeParse(interviewId).success) return err("We couldn't find that interview. Reload the page and try again.");
   const ctx = await actionContext();
   const { data: gone, error } = await ctx.supabase.from("application_interviews").delete().eq("id", interviewId).select("application_id").maybeSingle();
   if (error || !gone) return err("Couldn't remove the interview. Try again.");
@@ -197,7 +197,7 @@ export async function deleteInterview(interviewId: string): Promise<ActionResult
 
 export async function addReminder(applicationId: string, dueLocal: string, text: string): Promise<ActionResult<{ id: string }>> {
   const body = text.trim();
-  if (!uuid.safeParse(applicationId).success) return err("Unknown application.");
+  if (!uuid.safeParse(applicationId).success) return err("We couldn't find that application. Reload the page and try again.");
   if (!localDateTime.safeParse(dueLocal).success) return err("Pick when to be reminded.");
   if (!body || body.length > 500) return err("Say what to do, in up to 500 characters.");
   const ctx = await actionContext();
@@ -210,7 +210,7 @@ export async function addReminder(applicationId: string, dueLocal: string, text:
 }
 
 export async function setReminderDone(reminderId: string, done: boolean): Promise<ActionResult> {
-  if (!uuid.safeParse(reminderId).success) return err("Unknown reminder.");
+  if (!uuid.safeParse(reminderId).success) return err("We couldn't find that reminder. Reload the page and try again.");
   const ctx = await actionContext();
   const { error, count } = await ctx.supabase.from("application_reminders").update({ done_at: done ? new Date().toISOString() : null }, { count: "exact" }).eq("id", reminderId);
   if (error || !count) return err("Couldn't update the reminder. Try again.");
@@ -219,7 +219,7 @@ export async function setReminderDone(reminderId: string, done: boolean): Promis
 }
 
 export async function deleteReminder(reminderId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(reminderId).success) return err("Unknown reminder.");
+  if (!uuid.safeParse(reminderId).success) return err("We couldn't find that reminder. Reload the page and try again.");
   const ctx = await actionContext();
   const { error, count } = await ctx.supabase.from("application_reminders").delete({ count: "exact" }).eq("id", reminderId);
   if (error || !count) return err("Couldn't remove the reminder. Try again.");
@@ -259,7 +259,7 @@ export async function unlinkContact(applicationId: string, personId: string): Pr
  * document (its edited text if the user edited it) or a resume version.
  */
 export async function linkDocument(applicationId: string, source: { tailoredId?: string; resumeId?: string }): Promise<ActionResult> {
-  if (!uuid.safeParse(applicationId).success) return err("Unknown application.");
+  if (!uuid.safeParse(applicationId).success) return err("We couldn't find that application. Reload the page and try again.");
   const ctx = await actionContext();
   const res = await snapshotDocument(ctx.supabase, applicationId, source);
   if (!res.ok) return res;
@@ -288,7 +288,7 @@ async function snapshotDocument(db: Db, applicationId: string, source: { tailore
 }
 
 export async function unlinkDocument(linkId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(linkId).success) return err("Unknown document.");
+  if (!uuid.safeParse(linkId).success) return err("We couldn't find that document. Reload the page and try again.");
   const ctx = await actionContext();
   const { error, count } = await ctx.supabase.from("application_documents").delete({ count: "exact" }).eq("id", linkId);
   if (error || !count) return err("Couldn't unlink it. Try again.");
@@ -303,7 +303,7 @@ export async function unlinkDocument(linkId: string): Promise<ActionResult> {
  * counts as applying: this runs only when the user confirms, with the date they give.
  */
 export async function markApplied(jobId: string, appliedOn: string, document: { tailoredId?: string; resumeId?: string } | null): Promise<ActionResult<{ applicationId: string }>> {
-  if (!uuid.safeParse(jobId).success) return err("Unknown job.");
+  if (!uuid.safeParse(jobId).success) return err("We couldn't find that job. Reload the page and try again.");
   if (!isoDate.safeParse(appliedOn).success) return err("Pick the date you applied.");
   const ctx = await actionContext();
   const { error: stateError } = await ctx.supabase

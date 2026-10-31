@@ -32,7 +32,7 @@ const Facts = z.object({
 
 export async function saveResumeFacts(_: FormState, formData: FormData): Promise<FormState> {
   const id = formData.get("resumeId")?.toString() ?? "";
-  if (!uuid.safeParse(id).success) return failed("Unknown resume.");
+  if (!uuid.safeParse(id).success) return failed("We couldn't find that resume. Reload the page and try again.");
   const parsed = Facts.safeParse({
     workAuthorization: formData.get("workAuthorization"),
     securityClearance: formData.get("securityClearance") === "on",
@@ -49,14 +49,14 @@ export async function saveResumeFacts(_: FormState, formData: FormData): Promise
 
 /** Saves the working profile, keeping ids stable and clearing review flags on what the user changed or confirmed. */
 export async function saveResumeProfile(resumeId: string, profile: unknown, confirmed: string[] = []): Promise<ActionResult> {
-  if (!uuid.safeParse(resumeId).success) return err("Unknown resume.");
+  if (!uuid.safeParse(resumeId).success) return err("We couldn't find that resume. Reload the page and try again.");
   const parsed = ResumeProfile.safeParse(profile);
   if (!parsed.success) return err("Some fields aren't valid. Check them and try again.");
   const next = withStableIds(parsed.data);
   if (JSON.stringify(next).length > 120_000) return err("That's too long for a resume.");
   const ctx = await actionContext();
   const { data: current } = await ctx.supabase.from("resumes").select("profile, field_meta").eq("id", resumeId).maybeSingle();
-  if (!current) return err("Unknown resume.");
+  if (!current) return err("We couldn't find that resume. Reload the page and try again.");
   const before = ResumeProfile.safeParse(current.profile);
   const meta = confirmFields(before.success ? before.data : next, next, FieldMetaMap.catch({}).parse(current.field_meta), confirmed.filter((p) => /^[\w.]{1,60}$/.test(p)));
   const { error } = await ctx.supabase.from("resumes").update({ profile: asJson(next), field_meta: asJson(meta) }).eq("id", resumeId);
@@ -76,7 +76,7 @@ export async function confirmResumeField(resumeId: string, path: string): Promis
   if (!uuid.safeParse(resumeId).success || !FIELD_PATH.test(path)) return err("Unknown field.");
   const ctx = await actionContext();
   const { data } = await ctx.supabase.from("resumes").select("field_meta").eq("id", resumeId).maybeSingle();
-  if (!data) return err("Unknown resume.");
+  if (!data) return err("We couldn't find that resume. Reload the page and try again.");
   const meta = FieldMetaMap.catch({}).parse(data.field_meta);
   meta[path] = { confidence: 1, needsReview: false, reason: "Checked by you." };
   const { error } = await ctx.supabase.from("resumes").update({ field_meta: asJson(meta) }).eq("id", resumeId);
@@ -87,10 +87,10 @@ export async function confirmResumeField(resumeId: string, path: string): Promis
 
 /** Puts the parsed original back as the working profile. The current profile is kept for Undo. */
 export async function restoreOriginalProfile(resumeId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(resumeId).success) return err("Unknown resume.");
+  if (!uuid.safeParse(resumeId).success) return err("We couldn't find that resume. Reload the page and try again.");
   const ctx = await actionContext();
   const { data } = await ctx.supabase.from("resumes").select("profile, original_profile, raw_text").eq("id", resumeId).maybeSingle();
-  if (!data) return err("Unknown resume.");
+  if (!data) return err("We couldn't find that resume. Reload the page and try again.");
   const original = ResumeProfile.safeParse(data.original_profile);
   if (!data.original_profile || !original.success) return err("The parsed original isn't available for resumes imported before versions were kept. Import the file again to start from it.");
   const { error } = await ctx.supabase
@@ -106,7 +106,7 @@ export async function restoreOriginalProfile(resumeId: string): Promise<ActionRe
 
 /** Undoes a restore: the profile from before it comes back. */
 export async function undoRestoreProfile(resumeId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(resumeId).success) return err("Unknown resume.");
+  if (!uuid.safeParse(resumeId).success) return err("We couldn't find that resume. Reload the page and try again.");
   const ctx = await actionContext();
   const { data } = await ctx.supabase.from("resumes").select("previous_profile, raw_text").eq("id", resumeId).maybeSingle();
   const previous = ResumeProfile.safeParse(data?.previous_profile);
@@ -122,10 +122,10 @@ export async function undoRestoreProfile(resumeId: string): Promise<ActionResult
 }
 
 export async function setActiveResume(resumeId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(resumeId).success) return err("Unknown resume.");
+  if (!uuid.safeParse(resumeId).success) return err("We couldn't find that resume. Reload the page and try again.");
   const ctx = await actionContext();
   const { data: target } = await ctx.supabase.from("resumes").select("track").eq("id", resumeId).maybeSingle();
-  if (!target) return err("Unknown resume.");
+  if (!target) return err("We couldn't find that resume. Reload the page and try again.");
   // Only this resume's track changes hands; the other tracks keep their current resume.
   const deactivate = ctx.supabase.from("resumes").update({ is_active: false }).eq("is_active", true);
   await (target.track === null ? deactivate.is("track", null) : deactivate.ilike("track", trackPattern(target.track)));
@@ -137,10 +137,10 @@ export async function setActiveResume(resumeId: string): Promise<ActionResult> {
 
 /** Deletes a whole resume, its stored file and what was made from it. Asked for explicitly, with a confirmation. */
 export async function deleteResume(resumeId: string): Promise<ActionResult> {
-  if (!uuid.safeParse(resumeId).success) return err("Unknown resume.");
+  if (!uuid.safeParse(resumeId).success) return err("We couldn't find that resume. Reload the page and try again.");
   const ctx = await actionContext();
   const { data } = await ctx.supabase.from("resumes").select("original_file_path").eq("id", resumeId).maybeSingle();
-  if (!data) return err("Unknown resume.");
+  if (!data) return err("We couldn't find that resume. Reload the page and try again.");
   const { error } = await ctx.supabase.from("resumes").delete().eq("id", resumeId);
   if (error) return err("Couldn't delete. Try again.");
   if (data.original_file_path) await ctx.supabase.storage.from("resumes").remove([data.original_file_path]);

@@ -126,7 +126,7 @@ export async function updateKnownConnection(_: FormState, formData: FormData): P
 
 export async function deleteKnownConnection(_: FormState, formData: FormData): Promise<FormState> {
   const id = z.uuid().safeParse(formData.get("id"));
-  if (!id.success) return failed("Unknown connection.");
+  if (!id.success) return failed("We couldn't find that connection. Reload the page and try again.");
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("known_connections").delete().eq("id", id.data);
   if (error) return failed("Couldn't delete. Try again.");
