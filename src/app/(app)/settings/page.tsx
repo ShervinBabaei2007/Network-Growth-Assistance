@@ -355,7 +355,9 @@ function Section({
   className?: string;
 }) {
   return (
-    <Card id={id} className={cn("scroll-mt-6", className)}>
+    // Every section after the first is skipped by layout and paint until it nears the screen (the page is ~6,800px tall).
+    // Links to a section's id, find-in-page and focus still work: `auto` renders it when it is needed.
+    <Card id={id} className={cn("scroll-mt-6", id !== "plan" && "[contain-intrinsic-size:auto_22rem] [content-visibility:auto]", className)}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
