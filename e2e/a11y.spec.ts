@@ -58,6 +58,8 @@ test("the phone layout (390 px) has no serious violations", async ({ page }) => 
 
 test("keyboard: the skip link moves focus to the main content", async ({ page }) => {
   await signIn(page, uniqueEmail("skip"));
+  // On a cold development server the first page can still be hydrating; a key pressed before then is lost.
+  await page.waitForLoadState("networkidle");
   await page.keyboard.press("Tab");
   const skip = page.getByRole("link", { name: "Skip to content" });
   await expect(skip).toBeFocused();
