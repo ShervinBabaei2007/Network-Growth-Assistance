@@ -15,6 +15,8 @@ import { moveStage } from "./actions";
 import { bulkMoveStage, bulkSnoozeReminders, undoBulkMoveStage, undoBulkSnoozeReminders, type ApplicationsMove, type ReminderSnooze } from "./bulk-actions";
 import { AppFacts, MoveSelect, SCOPE, type MoveFn, type Quiet, type TrackerApp } from "./tracker-shared";
 import dynamic from "next/dynamic";
+import { ListKeyNav } from "@/components/list-key-nav";
+import { PaneSignal } from "@/components/master-detail";
 
 // The drag-and-drop board (about 70 KB of dnd-kit) loads as its own chunk; its server-rendered markup is already on the page.
 const Board = dynamic(() => import("./board").then((m) => m.Board));
@@ -57,6 +59,7 @@ export function Tracker({ apps, view, sort, quiet, afterDays }: { apps: TrackerA
 
       {quiet.length ? <NoResponseSuggestions quiet={quiet} afterDays={afterDays} pending={pending} move={move} /> : null}
 
+      {view === "board" ? <PaneSignal kind="board" /> : null}
       {view === "board" ? <Board apps={apps} pending={pending} move={move} /> : <List apps={apps} sort={sort} pending={pending} move={move} />}
       <ApplicationsBulkBar apps={apps} />
     </div>
@@ -189,7 +192,7 @@ const HEADINGS: { key: SortKey; label: string }[] = [
 
 function List({ apps, sort, pending, move }: { apps: TrackerApp[]; sort: { key: SortKey; dir: SortDir }; pending: boolean; move: MoveFn }) {
   return (
-    <div className="overflow-x-auto rounded-xl border">
+    <ListKeyNav className="overflow-x-auto rounded-xl border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -214,12 +217,12 @@ function List({ apps, sort, pending, move }: { apps: TrackerApp[]; sort: { key: 
         </TableHeader>
         <TableBody>
           {apps.map((a) => (
-            <TableRow key={a.id}>
+            <TableRow key={a.id} className="has-[a[aria-current=true]]:bg-muted">
               <TableCell>
                 <RowSelect scope={SCOPE} id={a.id} name={a.title} />
               </TableCell>
               <TableCell className="max-w-64 whitespace-normal">
-                <Link href={`/applications/${a.id}`} className="font-medium hover:underline">
+                <Link href={`/applications/${a.id}`} data-row-link className="font-medium hover:underline">
                   {a.title}
                 </Link>
                 {a.attempt > 1 ? <span className="block text-xs text-muted-foreground">Attempt {a.attempt}</span> : null}
@@ -237,6 +240,6 @@ function List({ apps, sort, pending, move }: { apps: TrackerApp[]; sort: { key: 
           ))}
         </TableBody>
       </Table>
-    </div>
+    </ListKeyNav>
   );
 }

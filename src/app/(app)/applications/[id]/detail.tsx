@@ -15,7 +15,8 @@ export type { DetailData } from "./detail-data";
  */
 export function ApplicationDetail({ data }: { data: DetailData }) {
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+    <div className="@container">
+      <div className="grid gap-6 @4xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <div className="grid content-start gap-6">
         <StageCard data={data} />
         <Timeline data={data} />
@@ -26,6 +27,7 @@ export function ApplicationDetail({ data }: { data: DetailData }) {
         <Contacts data={data} />
         <Documents data={data} />
         <Details data={data} />
+      </div>
       </div>
     </div>
   );

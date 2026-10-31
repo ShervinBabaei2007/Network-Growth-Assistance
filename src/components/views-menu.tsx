@@ -21,7 +21,11 @@ export type SavedView = { id: string; name: string; query: string };
 export function RememberLastView({ page }: { page: ViewPage }) {
   const router = useRouter();
   const search = useSearchParams();
+  const pathname = usePathname();
   useEffect(() => {
+    // The list page stays mounted while a record is open beside it (the URL is /people/ID, with no filters). Only the
+    // list's own URL is a "no filters" visit; anywhere else this must not send the person back to the list.
+    if (pathname !== `/${page}`) return;
     const LAST_KEY = `${page}:last-view`;
     const current = normalizeViewQuery(page, search);
     try {
@@ -35,7 +39,7 @@ export function RememberLastView({ page }: { page: ViewPage }) {
     } catch {
       // Storage can be blocked; the page works the same without it.
     }
-  }, [page, search, router]);
+  }, [page, pathname, search, router]);
   return null;
 }
 

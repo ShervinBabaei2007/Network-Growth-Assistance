@@ -43,14 +43,95 @@ test.describe("wide screen", () => {
     await expect(pane.getByRole("heading", { name: "Bo Bennett" })).toBeVisible();
   });
 
-  test("a link to a record still opens it directly, as a full page", async ({ page }) => {
+  test("a link or a reload keeps the list beside the record", async ({ page }) => {
     const email = uniqueEmail("md-direct");
     await signIn(page, email);
     const [first] = await seedPeople(email);
     await page.goto(`/people/${first.id}`);
+    // The record fills the right-hand side and the list is still there, with this row marked.
     await expect(page.getByRole("heading", { name: first.full_name })).toBeVisible();
-    await expect(page.locator("[data-record-page]")).toBeVisible();
-    await expect(page.getByRole("link", { name: "People", exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Bo Bennett", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: first.full_name, exact: true })).toHaveAttribute("aria-current", "true");
+    // Arrow keys still move through the list from a record that was opened directly.
+    await page.getByRole("link", { name: first.full_name, exact: true }).focus();
+    await page.keyboard.press("ArrowDown");
+    await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
+    await expect(page.getByRole("heading", { name: "Bo Bennett" })).toBeVisible();
+  });
+
+  test("the divider resizes the pane by keyboard and remembers the width", async ({ page }) => {
+    const email = uniqueEmail("md-divider");
+    await signIn(page, email);
+    const [first] = await seedPeople(email);
+    await page.goto(`/people/${first.id}`);
+    // The server-rendered page briefly holds the frame's divider as well as its own; wait for the frame to step aside.
+    await expect(page.getByTestId("pane-divider")).toHaveCount(1);
+    const divider = page.getByTestId("pane-divider");
+    await expect(divider).toBeVisible();
+    const before = Number(await divider.getAttribute("aria-valuenow"));
+    await divider.focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect(divider).toHaveAttribute("aria-valuenow", String(before + 2));
+    await page.keyboard.press("Home");
+    await expect(divider).toHaveAttribute("aria-valuenow", "22");
+    await page.keyboard.press("End");
+    await expect(divider).toHaveAttribute("aria-valuenow", "48");
+    // Remembered on this device.
+    await page.reload();
+    await expect(page.getByTestId("pane-divider")).toHaveCount(1);
+    await expect(page.getByTestId("pane-divider")).toHaveAttribute("aria-valuenow", "48");
+  });
+
+  test("a remembered view does not close the pane when a record is chosen", async ({ page }) => {
+    const email = uniqueEmail("md-remember");
+    await signIn(page, email);
+    await seedPeople(email);
+    // Using a filter once stores it as this device's last view; a row link has no filters in its URL.
+    await page.goto("/people?q=a");
+    await page.getByRole("link", { name: "Ana Alvarez", exact: true }).click();
+    await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
+    await page.waitForTimeout(1500);
+    await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
+    await expect(page.getByRole("complementary", { name: "Selected record" }).getByRole("heading", { name: "Ana Alvarez" })).toBeVisible();
+  });
+
+  test("candidates open beside their list too", async ({ page }) => {
+    const email = uniqueEmail("md-cand");
+    await signIn(page, email);
+    const user_id = await userIdFor(email);
+    const stamp = Date.now() % 100000;
+    await adminRest("POST", "candidates", ["Cam Okafor", "Dee Park"].map((full_name, i) => ({
+      user_id, full_name, profile_url: `https://www.linkedin.com/in/md-${stamp}-${i}`, profile_key: `md-${stamp}-${i}`,
+      university_confidence: "needs_review", discipline_confidence: "needs_review", status: "awaiting_review",
+    })));
+    await page.goto("/candidates");
+    await page.getByRole("link", { name: "Cam Okafor", exact: true }).click();
+    await expect(page).toHaveURL(/\/candidates\/[0-9a-f-]{36}$/);
+    await expect(page.getByRole("complementary", { name: "Selected record" }).getByRole("heading", { name: "Cam Okafor" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Dee Park", exact: true })).toBeVisible();
+    // A reload keeps both.
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Cam Okafor" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Dee Park", exact: true })).toBeVisible();
+  });
+
+  test("applications open beside the list view, but a board card opens the full page", async ({ page }) => {
+    const email = uniqueEmail("md-apps");
+    await signIn(page, email);
+    const user_id = await userIdFor(email);
+    await adminRest("POST", "applications", ["Alpha Role", "Beta Role"].map((title) => ({ user_id, title, company: "Co", stage: "applied" })));
+
+    await page.goto("/applications?view=list");
+    await page.getByRole("link", { name: "Alpha Role", exact: true }).click();
+    await expect(page).toHaveURL(/\/applications\/[0-9a-f-]{36}$/);
+    await expect(page.getByRole("complementary", { name: "Selected record" }).getByRole("heading", { name: "Alpha Role" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Beta Role", exact: true })).toBeVisible();
+
+    // From the board there is no room for a pane: the record replaces the board.
+    await page.goto("/applications");
+    await page.getByRole("link", { name: "Alpha Role", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Alpha Role" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Beta Role", exact: true })).toBeHidden();
   });
 });
 

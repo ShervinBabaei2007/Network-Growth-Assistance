@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signIn, uniqueEmail } from "./helpers";
+import { adminRest, signIn, uniqueEmail, userIdFor } from "./helpers";
 
 /** The app-like phone experience: a bottom tab bar beside the hamburger, and an installable manifest. */
 
@@ -49,4 +49,47 @@ test("the install manifest, service worker and icons are public", async ({ reque
   const icon = await request.get("/pwa-icon?size=192");
   expect(icon.ok()).toBe(true);
   expect(icon.headers()["content-type"]).toContain("image/png");
+});
+
+test("swiping a queue card left reveals Skip and Mark sent, and the swipe itself changes nothing", async ({ page }) => {
+  const email = uniqueEmail("swipe");
+  await signIn(page, email, "/overview", { welcome: true });
+  const wizard = page.getByTestId("onboarding-wizard");
+  await wizard.getByRole("button", { name: "Next", exact: true }).click();
+  await wizard.getByRole("button", { name: "Look around with example data" }).click();
+  await expect(page.getByTestId("sample-banner")).toBeVisible();
+  // The queue needs a daily target; the example data does not set one.
+  await adminRest("PATCH", `settings?user_id=eq.${await userIdFor(email)}`, { daily_invite_target: 10 });
+  await page.goto("/queue");
+  await page.getByRole("heading", { name: "Daily Queue" }).waitFor();
+  await page.waitForLoadState("networkidle");
+  if ((await page.getByTestId("swipe-row").count()) === 0) await page.getByRole("button", { name: "Build today's queue" }).click();
+  const row = page.getByTestId("swipe-row").first();
+  await expect(row).toBeVisible({ timeout: 30_000 });
+
+  // getByRole skips aria-hidden elements, which is exactly the closed state being checked, so select by attribute.
+  const tray = row.locator('[role="group"][aria-label^="Quick actions"]');
+  // Closed: the tray is hidden from assistive tech and cannot be focused, so nothing is announced twice.
+  await expect(tray).toHaveAttribute("aria-hidden", "true");
+
+  // A real touch drag from the right of the card towards the left.
+  const box = (await row.boundingBox())!;
+  const y = box.y + 24;
+  const cdp = await page.context().newCDPSession(page);
+  const touch = (type: string, x: number) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
+  await touch("touchStart", box.x + box.width - 20);
+  for (let i = 1; i <= 8; i++) await touch("touchMove", box.x + box.width - 20 - i * 24);
+  await touch("touchEnd", 0);
+
+  await expect(tray).toHaveAttribute("aria-hidden", "false");
+  await expect(tray.getByRole("button", { name: "Skip today" })).toBeVisible();
+  await expect(tray.getByRole("button", { name: "Mark sent" })).toBeVisible();
+  // Nothing was recorded by the swipe: the card is still there.
+  await expect(row.getByRole("link", { name: /open on linkedin/i })).toBeVisible();
+
+  // The tray's button does what the card's own button does.
+  // (The card's form unmounts when the list refreshes, so there is no toast to wait for; the list shrinking is the proof.)
+  const before = await page.getByTestId("swipe-row").count();
+  await tray.getByRole("button", { name: "Skip today" }).click();
+  await expect(page.getByTestId("swipe-row")).toHaveCount(before - 1);
 });
