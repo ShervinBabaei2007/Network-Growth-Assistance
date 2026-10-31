@@ -101,8 +101,10 @@ test("without a resume or a posting it says what is missing", async ({ page }) =
   await signIn(page, email);
   const id = await setUp(email, { resume: false, job: false });
   await page.goto(`/applications/${id}/prep`);
-  await expect(page.getByText("You haven't added a resume")).toBeVisible();
-  await expect(page.getByText("isn't linked to a saved posting")).toBeVisible();
+  // Scoped to the main region: while the page streams, a hidden copy of the content also sits in the document.
+  const main = page.locator("#main");
+  await expect(main.getByText("You haven't added a resume")).toBeVisible();
+  await expect(main.getByText("isn't linked to a saved posting")).toBeVisible();
   await expect(page.getByTestId("prep-story")).toHaveCount(0);
 });
 
