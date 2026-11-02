@@ -26,12 +26,23 @@ Know who to contact next. Find real, recent jobs from employers' own career page
 >
 > The app **never scrapes LinkedIn**, **never sends invitations or messages for you** and **never asks for your LinkedIn password**. You open every profile and send every message yourself. It only reads what you paste, import or search for in public sources, and it tells you where every fact came from.
 
-## Contents
+<a id="contents"></a>
 
-[Showcase](#showcase) · [What it does](#what-it-does) · [Gallery](#gallery) · [How a day works](#how-a-day-works) · [Quick start](#quick-start) · [Sign-in](#sign-in) · [Configuration](#configuration) · [Checks](#checks) · [Deploying](#deploying) · [How it is built](#how-it-is-built) · [Privacy](#privacy) · [Troubleshooting](#troubleshooting) · [Limits](#limits) · [Contributing](#contributing)
+## Find your way around
+
+| I want to… | Go to |
+| --- | --- |
+| **See the product** | [Feature showcase](#showcase) · [Screenshot gallery](#gallery) · [Daily workflow](#how-a-day-works) · [All capabilities](#what-it-does) |
+| **Try or run it** | [Quick start](#quick-start) · [Sign-in setup](#sign-in) · [Environment variables](#configuration) · [Deploy to production](#deploying) |
+| **Review the engineering** | [Architecture and stack](#how-it-is-built) · [Tests and quality checks](#checks) |
+| **Understand the policies** | [Privacy and data](#privacy) · [Known limitations](#limits) · [Copyright and permissions](#copyright) |
+| **Get support or contribute** | [Troubleshooting](#troubleshooting) · [Contributing](#contributing) |
+
+**Quick links:** [Open the live app](https://linkedin-network-growth-assistance.vercel.app) · [Watch the demo](docs/media/demo.mp4) · [Detailed feature guide](docs/FEATURES.md) · [Deployment guide](docs/DEPLOYMENT.md) · [Security reporting](SECURITY.md)
 
 ---
 
+<!-- Explore the product -->
 <a id="showcase"></a>
 
 ## Showcase
@@ -90,33 +101,6 @@ Set your own goal, schools, disciplines and targets. The Overview shows where yo
 
 ---
 
-<a id="what-it-does"></a>
-
-## What it does
-
-| Area | What you get |
-| --- | --- |
-| **Home page and guides** | A short public home page, plus three how-to guides (export your LinkedIn connections, build a networking plan, track job applications). Signed-in people go straight to Overview. |
-| **Sign-in** | Sign in or sign up with Google, with email and password (email confirmed, password reset included), or with an emailed sign-in link. |
-| **Welcome and example data** | A four-step welcome, an 18-stop tour and a checklist. **Look around with example data** fills an empty account with clearly labelled made-up people, a plan and applications, and one click removes them. Examples are never exported. An empty People or Candidates page offers the same button, and each empty page names its next step. |
-| **Network** | Candidates with search, de-duplication and status. Quick capture from a page you copy yourself. CSV and LinkedIn data-export import. A daily queue ordered by your priorities, with suggested connection notes. |
-| **Bulk actions and saved views** | Tick rows on Candidates, People or Applications and change them together, with Undo and a count of anyone skipped: approve or delete candidates; set a status, mark sent, tag, snooze or delete people; move applications to a stage or snooze their open reminders. Save named filter views on Candidates, People, Applications and Jobs; the last filters are remembered; 25, 50 or 100 per page. |
-| **Follow-ups** | When someone accepts, four suggested touches (thank-you, a short chat, 30- and 90-day check-ins) with editable drafts you copy and send yourself. Done, snooze or dismiss, with Undo. Due ones show on Overview and in the bell. |
-| **Discover** | A research assistant that finds people worth meeting from public sources (GitHub, ORCID, optional web search). Every fact quotes its source; fewer people beat weaker evidence. Works with or without a named school. Never visits LinkedIn. |
-| **People** | A small CRM: status, notes, tags, reminders, referrals and "people at this company". On a wide screen, People, Candidates and the Applications list open a record beside the list; the arrow keys move through the list, and a link or reload keeps the list beside the record. |
-| **Jobs** | Recent postings from employers' own boards plus free remote feeds. Verified links, fit checks against your resume (a bar per area of the posting, and the pay range against your minimum), tailored resumes and cover letters, saved-search alerts, side-by-side compare, hidden companies and private notes, and a resume track per kind of role. |
-| **Applications** | A board (drag a card between stages with a mouse, a finger or the keyboard) and a list from saved to offer, with timeline, interviews, reminders, contacts, documents and calendar (`.ics`) export. |
-| **Interview prep** | For applications in Screening, Interviewing or Offer: likely topics from the posting, your own resume lines matched to common questions, questions to ask them and a checklist for the day. Built only from your records, so it cannot invent experience or company facts. Copy or download as Markdown, or save a copy to the timeline. |
-| **Search and shortcuts** | **Ctrl+K** (or **/**) searches your candidates, people, applications and jobs and jumps to any page. **g** then a letter goes to a page; **?** lists them. Never fires while you type. |
-| **Overview and Analytics** | Progress toward your goal as a ring and bars, by discipline and school, plus an outreach funnel and a daily activity heatmap. Every chart has a table version, and waiting invitations are hatched, never counted as accepted. Nothing is estimated or invented. |
-| **English and Canadian French** | Menu, top bar, sign-in, welcome, banners and search are available in French. Other pages are still English (see [Limits](#limits)). |
-| **Your account** | Export or delete all your data from Settings. Add your own free AI key (stored encrypted) for unlimited AI use. Light and dark themes, five accent colours, a high-contrast theme, adjustable density and text size, with a live preview. |
-| **Phone friendly** | Lists become cards, filters tuck behind a button, touch targets are bigger and dropdowns use your phone's own picker. A bottom tab bar reaches the places you use all day, queue cards reveal Skip and Mark sent on a swipe (the buttons stay), and the app can be installed to a home screen. |
-| **Monitoring and cost control** | Page-speed and error reports kept in your own database, with no personal data and nothing sent to a third party. An operator script also prints database size against the plan, AI use and the largest tables, and the daily job shortens old postings to stay within the free tier. |
-| **Free to run** | No paid API is needed. Jobs use employers' public boards; Discover uses GitHub and ORCID; AI uses free tiers and degrades to plain rules when they run out. |
-
-For the detail behind each feature and what is not built, see the [feature guide](docs/FEATURES.md).
-
 <a id="gallery"></a>
 
 ## Gallery
@@ -159,6 +143,8 @@ For the detail behind each feature and what is not built, see the [feature guide
 
 </div>
 
+---
+
 <a id="how-a-day-works"></a>
 
 ## How a day works
@@ -182,6 +168,40 @@ flowchart LR
 6. **Check progress** on Overview, Disciplines, Schools and Analytics.
 7. **Search jobs.** Save a search to get alerts, track what you apply for, look up people you know at each company, and open **Interview prep** once you reach screening.
 
+---
+
+<a id="what-it-does"></a>
+
+## What it does
+
+| Area | What you get |
+| --- | --- |
+| **Home page and guides** | A short public home page, plus three how-to guides (export your LinkedIn connections, build a networking plan, track job applications). Signed-in people go straight to Overview. |
+| **Sign-in** | Sign in or sign up with Google, with email and password (email confirmed, password reset included), or with an emailed sign-in link. |
+| **Welcome and example data** | A four-step welcome, an 18-stop tour and a checklist. **Look around with example data** fills an empty account with clearly labelled made-up people, a plan and applications, and one click removes them. Examples are never exported. An empty People or Candidates page offers the same button, and each empty page names its next step. |
+| **Network** | Candidates with search, de-duplication and status. Quick capture from a page you copy yourself. CSV and LinkedIn data-export import. A daily queue ordered by your priorities, with suggested connection notes. |
+| **Bulk actions and saved views** | Tick rows on Candidates, People or Applications and change them together, with Undo and a count of anyone skipped: approve or delete candidates; set a status, mark sent, tag, snooze or delete people; move applications to a stage or snooze their open reminders. Save named filter views on Candidates, People, Applications and Jobs; the last filters are remembered; 25, 50 or 100 per page. |
+| **Follow-ups** | When someone accepts, four suggested touches (thank-you, a short chat, 30- and 90-day check-ins) with editable drafts you copy and send yourself. Done, snooze or dismiss, with Undo. Due ones show on Overview and in the bell. |
+| **Discover** | A research assistant that finds people worth meeting from public sources (GitHub, ORCID, optional web search). Every fact quotes its source; fewer people beat weaker evidence. Works with or without a named school. Never visits LinkedIn. |
+| **People** | A small CRM: status, notes, tags, reminders, referrals and "people at this company". On a wide screen, People, Candidates and the Applications list open a record beside the list; the arrow keys move through the list, and a link or reload keeps the list beside the record. |
+| **Jobs** | Recent postings from employers' own boards plus free remote feeds. Verified links, fit checks against your resume (a bar per area of the posting, and the pay range against your minimum), tailored resumes and cover letters, saved-search alerts, side-by-side compare, hidden companies and private notes, and a resume track per kind of role. |
+| **Applications** | A board (drag a card between stages with a mouse, a finger or the keyboard) and a list from saved to offer, with timeline, interviews, reminders, contacts, documents and calendar (`.ics`) export. |
+| **Interview prep** | For applications in Screening, Interviewing or Offer: likely topics from the posting, your own resume lines matched to common questions, questions to ask them and a checklist for the day. Built only from your records, so it cannot invent experience or company facts. Copy or download as Markdown, or save a copy to the timeline. |
+| **Search and shortcuts** | **Ctrl+K** (or **/**) searches your candidates, people, applications and jobs and jumps to any page. **g** then a letter goes to a page; **?** lists them. Never fires while you type. |
+| **Overview and Analytics** | Progress toward your goal as a ring and bars, by discipline and school, plus an outreach funnel and a daily activity heatmap. Every chart has a table version, and waiting invitations are hatched, never counted as accepted. Nothing is estimated or invented. |
+| **English and Canadian French** | Menu, top bar, sign-in, welcome, banners and search are available in French. Other pages are still English (see [Limits](#limits)). |
+| **Your account** | Export or delete all your data from Settings. Add your own free AI key (stored encrypted) for unlimited AI use. Light and dark themes, five accent colours, a high-contrast theme, adjustable density and text size, with a live preview. |
+| **Phone friendly** | Lists become cards, filters tuck behind a button, touch targets are bigger and dropdowns use your phone's own picker. A bottom tab bar reaches the places you use all day, queue cards reveal Skip and Mark sent on a swipe (the buttons stay), and the app can be installed to a home screen. |
+| **Monitoring and cost control** | Page-speed and error reports kept in your own database, with no personal data and nothing sent to a third party. An operator script also prints database size against the plan, AI use and the largest tables, and the daily job shortens old postings to stay within the free tier. |
+| **Free to run** | No paid API is needed. Jobs use employers' public boards; Discover uses GitHub and ORCID; AI uses free tiers and degrades to plain rules when they run out. |
+
+For the detail behind each feature and what is not built, see the [feature guide](docs/FEATURES.md).
+
+[Back to contents](#contents)
+
+---
+
+<!-- Run and deploy -->
 <a id="quick-start"></a>
 
 ## Quick start
@@ -230,6 +250,8 @@ Then:
 
 </details>
 
+---
+
 <a id="sign-in"></a>
 
 ## Sign-in
@@ -248,6 +270,8 @@ The sign-in page has **Sign in** and **Sign up** tabs, a **Continue with Google*
 Until you do, the button returns to the sign-in page with "Google sign-in isn't available right now" and, locally, a note saying what is missing.
 
 **Google, deployed.** Create a second client whose redirect URI is `https://<project-ref>.supabase.co/auth/v1/callback`, then turn Google on in Supabase **Authentication → Sign In / Providers → Google** and paste its ID and secret. Details are in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#google-sign-in).
+
+---
 
 <a id="configuration"></a>
 
@@ -300,35 +324,7 @@ Alert emails switch on only when `SMTP_HOST`, `SMTP_FROM`, `APP_URL` and `EMAIL_
 
 **Tests only.** `DISCOVERY_FIXTURES` and `JOBS_FIXTURES` switch on built-in fictional data. Never set them in production. They are ignored in production builds.
 
-<a id="checks"></a>
-
-## Running the checks
-
-```sh
-npm run typecheck
-npm run lint
-npm test              # Vitest unit tests
-npm run test:db       # pgTAP: security rules and data constraints (needs db:start)
-npm run test:e2e      # Playwright end to end (needs db:start)
-npm run build
-npm run check:bundle  # confirms no AI key reaches the browser (run after build)
-npm run check:budget  # first-load JavaScript per route stays within budget (run after build)
-```
-
-The suites are **1,517 unit tests, 298 database tests and 118 end-to-end tests** (desktop and phone), and the last full local run passed all of them, plus the production build, the bundle check and the route budget (on Next.js 16.4.3). `.github/workflows/ci.yml` runs the same checks on every pull request and push to `main`; it has run on GitHub and the badge above shows its latest result. `npm run docs:check` keeps these numbers, the links and the environment variables in this README and `docs/` honest.
-
-- **Run the end-to-end tests with a fresh build folder.** Running `npm run build` and then Playwright straight away can break the dev server, because both use `.next`. Run the tests first, or delete `.next` in between.
-- **Wait for hydration in new sign-in tests.** The sign-in page is plain HTML until its JavaScript loads, and a click before then does nothing, so tests wait for the page to settle.
-- **Local sign-in limits.** `supabase/config.toml` raises the local sign-in rate limit so the suite can create many users. Restart Supabase after changing it.
-
-| Quality | Result |
-| --- | --- |
-| Automated accessibility | An axe-core scan (WCAG A and AA) of the public pages and every main signed-in page runs in the end-to-end tests, in light and dark, desktop and phone. Serious and critical findings fail the run. |
-| Screen reader | **Not done.** The checklist is in [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md). |
-| Colour contrast | Every text and form-field pair is unit-tested in both themes (`src/lib/contrast.test.ts`) |
-| Lighthouse | Accessibility, best practices and SEO scored 100 and performance 93–99 on 11 of 12 pages when last measured on production, before the newest features. They have not been re-measured. |
-
-After you change a migration, run it locally, then `npm run db:types` to regenerate `src/lib/supabase/database.types.ts`.
+---
 
 <a id="deploying"></a>
 
@@ -354,6 +350,11 @@ The app runs on **Vercel** (web app and one daily job) and **Supabase** (databas
 
 The app serves `robots.txt` (crawling allowed), a sitemap and `llms.txt` for its public pages (home, guides, sign-in, privacy, terms). Pages behind sign-in redirect signed-out visitors, bots included, to `/login`.
 
+[Back to contents](#contents)
+
+---
+
+<!-- Engineering and quality -->
 <a id="how-it-is-built"></a>
 
 ## How it is built
@@ -436,6 +437,43 @@ docs/              deployment guide, feature guide, accessibility, implementatio
 - Text lives in typed message files (`src/lib/i18n/messages`): the French file must have exactly the English keys or the build fails.
 - Dropdowns are the shadcn Select on desktop and the phone's own picker on touch devices; lists turn into cards below 768 px.
 
+---
+
+<a id="checks"></a>
+
+## Running the checks
+
+```sh
+npm run typecheck
+npm run lint
+npm test              # Vitest unit tests
+npm run test:db       # pgTAP: security rules and data constraints (needs db:start)
+npm run test:e2e      # Playwright end to end (needs db:start)
+npm run build
+npm run check:bundle  # confirms no AI key reaches the browser (run after build)
+npm run check:budget  # first-load JavaScript per route stays within budget (run after build)
+```
+
+The suites are **1,517 unit tests, 298 database tests and 118 end-to-end tests** (desktop and phone), and the last full local run passed all of them, plus the production build, the bundle check and the route budget (on Next.js 16.4.3). `.github/workflows/ci.yml` runs the same checks on every pull request and push to `main`; it has run on GitHub and the badge above shows its latest result. `npm run docs:check` keeps these numbers, the links and the environment variables in this README and `docs/` honest.
+
+- **Run the end-to-end tests with a fresh build folder.** Running `npm run build` and then Playwright straight away can break the dev server, because both use `.next`. Run the tests first, or delete `.next` in between.
+- **Wait for hydration in new sign-in tests.** The sign-in page is plain HTML until its JavaScript loads, and a click before then does nothing, so tests wait for the page to settle.
+- **Local sign-in limits.** `supabase/config.toml` raises the local sign-in rate limit so the suite can create many users. Restart Supabase after changing it.
+
+| Quality | Result |
+| --- | --- |
+| Automated accessibility | An axe-core scan (WCAG A and AA) of the public pages and every main signed-in page runs in the end-to-end tests, in light and dark, desktop and phone. Serious and critical findings fail the run. |
+| Screen reader | **Not done.** The checklist is in [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md). |
+| Colour contrast | Every text and form-field pair is unit-tested in both themes (`src/lib/contrast.test.ts`) |
+| Lighthouse | Accessibility, best practices and SEO scored 100 and performance 93–99 on 11 of 12 pages when last measured on production, before the newest features. They have not been re-measured. |
+
+After you change a migration, run it locally, then `npm run db:types` to regenerate `src/lib/supabase/database.types.ts`.
+
+[Back to contents](#contents)
+
+---
+
+<!-- Trust, support and usage -->
 <a id="privacy"></a>
 
 ## Privacy and data
@@ -445,6 +483,28 @@ docs/              deployment guide, feature guide, accessibility, implementatio
 - Page-speed and error reports go to your own database, not to an analytics company. They hold only the page type, a measurement or a cleaned error message and phone-or-computer, with no account, IP address or page content, and are deleted after 30 or 90 days. Nothing is sent if the browser says Do Not Track.
 - When you use an AI feature, the text it needs (for example your resume and a job posting) goes to the AI provider. **On free tiers (Gemini, Mistral), the provider may use it to improve its products.** Use a paid key, or skip AI features, if that matters to you. Discover sends only public web text, never your records.
 - The site has a [Privacy Policy](src/app/privacy/page.tsx) and [Terms of Service](src/app/terms/page.tsx), written to follow British Columbia law. They are a starting point, not legal advice. Have them reviewed before a wide launch.
+
+---
+
+<a id="limits"></a>
+
+## Limits
+
+- **French is partial.** Only the menu, top bar, sign-in, welcome, banners and search are translated. Every other page, the home page, guides, legal pages, the tour, emails, and dates, numbers and money on those pages are English.
+- **Bulk actions:** Applications can be moved between stages and have their open reminders snoozed in bulk, but not deleted (the tracker has no delete). There are no `j`/`k` list shortcuts.
+- **Master-detail** works on People, Candidates and the Applications list view. From the Applications board a record replaces the board, because six columns cannot share a row with a pane.
+- **Unsaved-change warnings and drafts** cover the Settings forms and the notes on a person, an application and a job, and the resume and tailored-document editors. Drafts live in this browser for up to 14 days. After a form with unsaved edits is saved, one extra press of the browser's Back button is needed to leave the page.
+- **The installed app** has not been tried on a real Android or iOS device. Only the queue and saved jobs open offline, read-only. Employers' logos are shown as initials: the employers table only stores applicant-tracking-system addresses, so there is no reliable website to fetch a favicon from.
+- **Interview prep and follow-up drafts use fixed templates and word matching.** There is no AI rewrite, and no company facts are added.
+- **Monitoring has no web dashboard.** The report is a script and a protected JSON route, and nothing alerts you when a new error appears.
+- **Discover is limited by what is public.** ORCID mostly lists researchers, so ordinary engineers appear mainly through GitHub or optional web search. "Verified" means every part of the request is stated in a public source the app quotes, not that anyone else checked it. Whether an employer is a startup is not stated in public records, so such requests return *possible* matches. A narrow request (a school plus one employer plus a city) may honestly return only a few people.
+- Job coverage follows the employer directory. Large retailers and many big employers use systems with no public API, so in-store retail jobs stay thin. The app does not scrape.
+- Jobicy and Remotive list only remote jobs, and Remotive's arrive a day late.
+- Free AI tiers have daily request limits (the full Gemini Flash model allows about 20 requests a day). The app chains several free services and each person gets a few AI-assisted Discover searches a day; when all are used up, Tailor Resume gives improvement notes and Discover scores from evidence alone.
+- Links on sites that block automated checks stay **Not yet verified**.
+- **Still open before a wide launch:** a screen-reader review, a staging deployment with the smoke checks run against it, restoring a backup into a hosted project (only a local rehearsal is done), re-measuring Lighthouse on the newest pages, and a legal review of the Privacy Policy and Terms.
+
+---
 
 <a id="troubleshooting"></a>
 
@@ -471,34 +531,50 @@ docs/              deployment guide, feature guide, accessibility, implementatio
 | Discover says "AI wasn't used for this search" | The free AI is used up for today, or the person has used their share of `DISCOVERY_AI_SEARCHES`. Add `GROQ_API_KEY` or `MISTRAL_API_KEY`, or ask the person to add their own free key in Settings. Results are still scored from the evidence. |
 | Discover finds few or no people | Public sources only hold what people published. The page says how many people ORCID lists for your request. Name a school or a place, and set a free `GITHUB_TOKEN` (GitHub allows only 60 profile lookups an hour without one). |
 
-<a id="limits"></a>
-
-## Limits
-
-- **French is partial.** Only the menu, top bar, sign-in, welcome, banners and search are translated. Every other page, the home page, guides, legal pages, the tour, emails, and dates, numbers and money on those pages are English.
-- **Bulk actions:** Applications can be moved between stages and have their open reminders snoozed in bulk, but not deleted (the tracker has no delete). There are no `j`/`k` list shortcuts.
-- **Master-detail** works on People, Candidates and the Applications list view. From the Applications board a record replaces the board, because six columns cannot share a row with a pane.
-- **Unsaved-change warnings and drafts** cover the Settings forms and the notes on a person, an application and a job, and the resume and tailored-document editors. Drafts live in this browser for up to 14 days. After a form with unsaved edits is saved, one extra press of the browser's Back button is needed to leave the page.
-- **The installed app** has not been tried on a real Android or iOS device. Only the queue and saved jobs open offline, read-only. Employers' logos are shown as initials: the employers table only stores applicant-tracking-system addresses, so there is no reliable website to fetch a favicon from.
-- **Interview prep and follow-up drafts use fixed templates and word matching.** There is no AI rewrite, and no company facts are added.
-- **Monitoring has no web dashboard.** The report is a script and a protected JSON route, and nothing alerts you when a new error appears.
-- **Discover is limited by what is public.** ORCID mostly lists researchers, so ordinary engineers appear mainly through GitHub or optional web search. "Verified" means every part of the request is stated in a public source the app quotes, not that anyone else checked it. Whether an employer is a startup is not stated in public records, so such requests return *possible* matches. A narrow request (a school plus one employer plus a city) may honestly return only a few people.
-- Job coverage follows the employer directory. Large retailers and many big employers use systems with no public API, so in-store retail jobs stay thin. The app does not scrape.
-- Jobicy and Remotive list only remote jobs, and Remotive's arrive a day late.
-- Free AI tiers have daily request limits (the full Gemini Flash model allows about 20 requests a day). The app chains several free services and each person gets a few AI-assisted Discover searches a day; when all are used up, Tailor Resume gives improvement notes and Discover scores from evidence alone.
-- Links on sites that block automated checks stay **Not yet verified**.
-- **Still open before a wide launch:** a screen-reader review, a staging deployment with the smoke checks run against it, restoring a backup into a hosted project (only a local rehearsal is done), re-measuring Lighthouse on the newest pages, and a legal review of the Privacy Policy and Terms.
+---
 
 <a id="contributing"></a>
 
-## Contributing and licence
+## Contributing
 
 Security problems should be reported privately, not as issues: see [SECURITY.md](SECURITY.md). Questions, bug reports and ideas are welcome. Please open an issue, or use the **Send feedback** button in the app. If you plan to send a change, run the checks above first and keep the change small and focused. To refresh the pictures and the demo video in this README after a visual change, run `npm run db:start`, then `npm run docs:screenshots` and `npm run docs:video`; run `npm run docs:check` after editing any document.
 
-No licence has been chosen yet, so all rights are reserved. Please ask before reusing the code.
-
 This project is not affiliated with LinkedIn, Google or any employer.
 
+---
+
+<a id="copyright"></a>
+
+## Copyright
+
+**Copyright © 2026 Shervin Babaei. All rights reserved.**
+
+Network Growth Assistance is an independently developed software project by Shervin Babaei.
+
+Unless otherwise stated, the original source code, documentation, designs, and other original materials created by the copyright holder are protected under applicable copyright laws.
+
+### Usage & Permissions
+
+This repository is publicly available for viewing, educational reference, and portfolio demonstration purposes.
+
+**No open-source license is granted.** Unauthorized reproduction, modification, redistribution, sublicensing, or commercial use of the original copyrighted materials requires prior written permission from the copyright holder, except where otherwise permitted by law.
+
+Public availability does not constitute permission to reuse or redistribute the original source code.
+
+### Third-Party Components
+
+Third-party libraries, frameworks, dependencies, assets, and contributions remain subject to their respective licenses and ownership rights.
+
+### Permission Requests
+
+For licensing inquiries, collaboration opportunities, or permission to reuse original materials, please contact the repository owner.
+
+---
+
 <div align="center">
+
+[↑ Back to contents](#contents)
+
 <sub>Built with Next.js, Supabase and TypeScript · Your network, your rules.</sub>
+
 </div>
