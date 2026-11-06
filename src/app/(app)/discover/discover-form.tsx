@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { FormError } from "@/components/form-error";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useTransition } from "react";
@@ -19,19 +20,20 @@ const EXAMPLES = [
   "Find 20 Computer Science alumni working as software engineers at startups",
 ];
 
-async function start(body: { query: string; criteria?: NetworkingCriteria | null; parentSearchId?: string | null }): Promise<{ id?: string; error?: string }> {
+async function start(body: { query: string; criteria?: NetworkingCriteria | null; parentSearchId?: string | null }, tr: ReturnType<typeof useTr>): Promise<{ id?: string; error?: string }> {
   try {
     const res = await fetch("/api/network/discover", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const json = (await res.json().catch(() => ({}))) as { id?: string; error?: string };
-    if (!res.ok) return { error: json.error ?? "Couldn't start the search. Try again." };
+    if (!res.ok) return { error: json.error ?? tr("msg.couldnTStartThe75a8", "Couldn't start the search. Try again.") };
     return json;
   } catch {
-    return { error: "Couldn't reach the server. Check your connection and try again." };
+    return { error: tr("msg.couldnTReachThe62e7", "Couldn't reach the server. Check your connection and try again.") };
   }
 }
 
 /** The natural-language request box. */
 export function DiscoverForm({ initialQuery = "", error: initialError }: { initialQuery?: string; error?: string }) {
+  const tr = useTr();
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [error, setError] = useState<string | null>(initialError ?? null);
@@ -41,16 +43,16 @@ export function DiscoverForm({ initialQuery = "", error: initialError }: { initi
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const r = await start({ query });
+      const r = await start({ query }, tr);
       if (r.id) router.push(`/discover/${r.id}`);
-      else setError(r.error ?? "Couldn't start the search.");
+      else setError(r.error ?? tr("msg.couldnTStartThe5948", "Couldn't start the search."));
     });
   };
 
   return (
-    <form onSubmit={submit} className="grid gap-3" aria-label="Find people">
+    <form onSubmit={submit} className="grid gap-3" aria-label={tr("msg.findPeoplea5d7", "Find people")}>
       <Label htmlFor="discoverQuery" className="sr-only">
-        Who would you like to meet?
+        {tr("msg.whoWouldYouLike22f9", "Who would you like to meet?")}
       </Label>
       <Textarea
         id="discoverQuery"
@@ -58,14 +60,14 @@ export function DiscoverForm({ initialQuery = "", error: initialError }: { initi
         onChange={(e) => setQuery(e.target.value)}
         rows={3}
         maxLength={1000}
-        placeholder="e.g. Find 25 alumni of my school who studied my program and now work in my field"
+        placeholder={tr("msg.eGFind25ef10", "e.g. Find 25 alumni of my school who studied my program and now work in my field")}
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) (e.currentTarget.form as HTMLFormElement | null)?.requestSubmit();
         }}
       />
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending || query.trim().length < 3}>
-          <Search aria-hidden /> {pending ? "Starting…" : "Find people"}
+          <Search aria-hidden /> {pending ? tr("msg.startingc04b", "Starting…") : tr("msg.findPeoplea5d7", "Find people")}
         </Button>
         {error ? (
           <FormError>
@@ -74,7 +76,7 @@ export function DiscoverForm({ initialQuery = "", error: initialError }: { initi
         ) : null}
       </div>
       <div className="grid gap-1.5">
-        <p className="text-xs text-muted-foreground">Try:</p>
+        <p className="text-xs text-muted-foreground">{tr("msg.try0888", "Try:")}</p>
         <ul className="flex flex-wrap gap-2">
           {EXAMPLES.map((ex) => (
             <li key={ex}>
@@ -97,6 +99,7 @@ const list = (s: string) =>
 
 /** Edit the structured criteria of an earlier search and run it as a new one. */
 export function CriteriaEditor({ query, criteria, parentSearchId }: { query: string; criteria: NetworkingCriteria; parentSearchId: string }) {
+  const tr = useTr();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -130,9 +133,9 @@ export function CriteriaEditor({ query, criteria, parentSearchId }: { query: str
     };
     setError(null);
     startTransition(async () => {
-      const r = await start({ query, criteria: next, parentSearchId });
+      const r = await start({ query, criteria: next, parentSearchId }, tr);
       if (r.id) router.push(`/discover/${r.id}`);
-      else setError(r.error ?? "Couldn't start the search.");
+      else setError(r.error ?? tr("msg.couldnTStartThe5948", "Couldn't start the search."));
     });
   };
 
@@ -152,32 +155,32 @@ export function CriteriaEditor({ query, criteria, parentSearchId }: { query: str
   return (
     <form onSubmit={submit} className="grid gap-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {field("targetCount", "How many people", String(c.targetCount), undefined, "number")}
+        {field("targetCount", tr("msg.howManyPeopled660", "How many people"), String(c.targetCount), undefined, "number")}
         {field("institution", "School", c.education.institution ?? "")}
-        {field("aliases", "School also written as", c.education.institutionAliases.join(", "), "Comma-separated short forms people use for it")}
-        {field("domains", "School website (optional)", c.education.institutionDomains.join(", "), "e.g. its domain, so its own pages can be searched")}
-        {field("programs", "Programs or fields", c.education.programs.join(", "), "Comma-separated, any field")}
-        {field("programAliases", "Programs also written as", c.education.programAliases.join(", "), "Comma-separated abbreviations and other names, e.g. a degree's short form")}
+        {field("aliases", tr("msg.schoolAlsoWrittenAs1de1", "School also written as"), c.education.institutionAliases.join(", "), tr("msg.commaSeparatedShortFormsd197", "Comma-separated short forms people use for it"))}
+        {field("domains", tr("msg.schoolWebsiteOptional2afe", "School website (optional)"), c.education.institutionDomains.join(", "), tr("msg.eGItsDomainb516", "e.g. its domain, so its own pages can be searched"))}
+        {field("programs", tr("msg.programsOrFields37a3", "Programs or fields"), c.education.programs.join(", "), tr("msg.commaSeparatedAnyFieldf559", "Comma-separated, any field"))}
+        {field("programAliases", tr("msg.programsAlsoWrittenAs1bac", "Programs also written as"), c.education.programAliases.join(", "), tr("msg.commaSeparatedAbbreviationsAnd072c", "Comma-separated abbreviations and other names, e.g. a degree's short form"))}
         {field("roles", "Roles", c.roles.join(", "))}
-        {field("companies", "Companies", c.companies.join(", "))}
-        {field("locations", "Cities or regions", c.locations.join(", "))}
-        {field("country", "Located in country", c.country ?? "", "Only people shown to live or work there can be verified. Leave blank for anywhere.")}
-        {field("gradMin", "Graduated from (year)", c.education.graduationYearMin?.toString() ?? "", undefined, "number")}
-        {field("gradMax", "Graduated by (year)", c.education.graduationYearMax?.toString() ?? "", undefined, "number")}
+        {field("companies", tr("msg.companiesedef", "Companies"), c.companies.join(", "))}
+        {field("locations", tr("msg.citiesOrRegions64e0", "Cities or regions"), c.locations.join(", "))}
+        {field("country", tr("msg.locatedInCountryce8c", "Located in country"), c.country ?? "", tr("msg.onlyPeopleShownTo8d7e", "Only people shown to live or work there can be verified. Leave blank for anywhere."))}
+        {field("gradMin", tr("msg.graduatedFromYeare95f", "Graduated from (year)"), c.education.graduationYearMin?.toString() ?? "", undefined, "number")}
+        {field("gradMax", tr("msg.graduatedByYear4da4", "Graduated by (year)"), c.education.graduationYearMax?.toString() ?? "", undefined, "number")}
       </div>
       <div className="grid max-w-xs gap-1.5">
-        <Label htmlFor="ce-status">Who</Label>
+        <Label htmlFor="ce-status">{tr("msg.who4ee9", "Who")}</Label>
         <AppSelect id="ce-status" name="status" defaultValue={c.education.status}>
-          <option value="any">Students and alumni</option>
-          <option value="alumni">Alumni only</option>
-          <option value="student">Current students only</option>
+          <option value="any">{tr("msg.studentsAndAlumnia944", "Students and alumni")}</option>
+          <option value="alumni">{tr("msg.alumniOnlyc485", "Alumni only")}</option>
+          <option value="student">{tr("msg.currentStudentsOnlye3e3", "Current students only")}</option>
         </AppSelect>
       </div>
-      {field("goal", "Your goal for this search (optional)", c.goal ?? "", "Used to rank people and word explanations, e.g. what you're hoping to learn or find")}
+      {field("goal", tr("msg.yourGoalForThis8a7a", "Your goal for this search (optional)"), c.goal ?? "", tr("msg.usedToRankPeoplee597", "Used to rank people and word explanations, e.g. what you're hoping to learn or find"))}
       <div className="flex flex-wrap gap-4 text-sm">
         <label className="flex items-center gap-2">
           <Checkbox name="startups" defaultChecked={c.includeStartups} />
-          Startups are fine
+          {tr("msg.startupsAreFined784", "Startups are fine")}
         </label>
         <label className="flex items-center gap-2">
           <Checkbox name="exclude" defaultChecked={c.excludeExistingConnections} />
@@ -186,7 +189,7 @@ export function CriteriaEditor({ query, criteria, parentSearchId }: { query: str
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending}>
-          {pending ? "Starting…" : "Run modified search"}
+          {pending ? tr("msg.startingc04b", "Starting…") : tr("msg.runModifiedSearchc682", "Run modified search")}
         </Button>
         {error ? (
           <FormError>

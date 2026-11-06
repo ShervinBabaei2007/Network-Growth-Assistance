@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { AppSelect } from "@/components/app-select";
@@ -28,6 +29,7 @@ function nameFromSlug(key: string) {
 }
 
 export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoApprove: boolean }) {
+  const tr = useTr();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [approve, setApprove] = useState(true);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
@@ -52,7 +54,7 @@ export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoA
     let people = html ? captureFromHtml(html, new DOMParser()) : [];
     if (people.length === 0) people = captureFromText(text);
     if (people.length === 0) {
-      setMessage({ kind: "error", text: "No LinkedIn profiles found. On a LinkedIn search results page, press Ctrl+A then Ctrl+C, and paste here." });
+      setMessage({ kind: "error", text: tr("msg.noLinkedinProfilesFound7795", "No LinkedIn profiles found. On a LinkedIn search results page, press Ctrl+A then Ctrl+C, and paste here.") });
       return;
     }
     const prepared: Row[] = people.map((p) => {
@@ -103,7 +105,7 @@ export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoA
     );
   };
   const missing = (r: Row) =>
-    r.university === null && r.discipline === null ? "Needs school and program" : r.university === null ? "Needs school" : r.discipline === null ? "Needs program" : null;
+    r.university === null && r.discipline === null ? tr("msg.needsSchoolAndProgramdfae", "Needs school and program") : r.university === null ? tr("msg.needsSchoole6de", "Needs school") : r.discipline === null ? tr("msg.needsProgram548a", "Needs program") : null;
 
   const selected = rows?.filter((r) => r.include && addable(r)) ?? [];
   const incomplete = rows?.filter((r) => !r.existing && !r.alreadyConnected && missing(r)).length ?? 0;
@@ -145,8 +147,8 @@ export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoA
             onChange={() => {}}
             value=""
             rows={3}
-            aria-label="Paste a LinkedIn search results page here"
-            placeholder="On a LinkedIn people-search page: Ctrl+A, Ctrl+C. Then click here and press Ctrl+V."
+            aria-label={tr("msg.pasteALinkedinSearch4b26", "Paste a LinkedIn search results page here")}
+            placeholder={tr("msg.onALinkedinPeopleb7bb", "On a LinkedIn people-search page: Ctrl+A, Ctrl+C. Then click here and press Ctrl+V.")}
             className="w-full rounded-lg border border-dashed border-input bg-transparent px-3 py-4 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
           <p className="text-xs text-muted-foreground">
@@ -163,7 +165,7 @@ export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoA
               {checking ? "checking your list…" : `${selected.length} ready to add · ${incomplete} missing school or program`}
             </p>
             <label className="grid gap-1 text-xs">
-              School for rows without one
+              {tr("msg.schoolForRowsWithout384b", "School for rows without one")}
               <AppSelect className="w-40" defaultValue="" onChange={(e) => fillBlank("university", e.target.value)}>
                 <option value="">—</option>
                 {catalog.universities.map((u) => (
@@ -174,7 +176,7 @@ export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoA
               </AppSelect>
             </label>
             <label className="grid gap-1 text-xs">
-              Discipline for rows without one
+              {tr("msg.disciplineForRowsWithouta4a9", "Discipline for rows without one")}
               <AppSelect className="w-48" defaultValue="" onChange={(e) => fillBlank("discipline", e.target.value)}>
                 <option value="">—</option>
                 {catalog.disciplines.map((d) => (
@@ -196,20 +198,20 @@ export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoA
                   onCheckedChange={(include) => update(r.key, { include })}
                 />
                 <div className="grid min-w-0 gap-0.5">
-                  <Input aria-label="Name" value={r.name} onChange={(e) => update(r.key, { name: e.target.value })} className="h-7" />
+                  <Input aria-label={tr("msg.name49ee", "Name")} value={r.name} onChange={(e) => update(r.key, { name: e.target.value })} className="h-7" />
                   <p className="truncate text-xs text-muted-foreground" title={r.headline ?? ""}>
                     {r.alreadyConnected ? (
-                      <Badge variant="outline">Already connected</Badge>
+                      <Badge variant="outline">{tr("msg.alreadyConnected1f95", "Already connected")}</Badge>
                     ) : r.existing ? (
-                      <Badge variant="outline">Already in your list</Badge>
+                      <Badge variant="outline">{tr("msg.alreadyInYourList037a", "Already in your list")}</Badge>
                     ) : missing(r) ? (
                       <Badge variant="outline">{missing(r)}</Badge>
                     ) : null}{" "}
-                    {r.headline ?? "No headline"}
+                    {r.headline ?? tr("msg.noHeadline1d44", "No headline")}
                   </p>
                 </div>
                 <AppSelect aria-label={`School for ${r.name}`} value={r.university ?? ""} onChange={(e) => update(r.key, { university: (e.target.value || null) as University | null })}>
-                  <option value="">School?</option>
+                  <option value="">{tr("msg.school3840", "School?")}</option>
                   {catalog.universities.map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.name}
@@ -217,7 +219,7 @@ export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoA
                   ))}
                 </AppSelect>
                 <AppSelect aria-label={`Program for ${r.name}`} value={r.discipline ?? ""} onChange={(e) => update(r.key, { discipline: (e.target.value || null) as Discipline | null })}>
-                  <option value="">Discipline?</option>
+                  <option value="">{tr("msg.disciplineff3c", "Discipline?")}</option>
                   {catalog.disciplines.map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.name}
@@ -230,14 +232,14 @@ export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoA
 
           <div className="flex flex-wrap items-center gap-3">
             <Button onClick={save} disabled={pending || checking || selected.length === 0}>
-              {pending ? "Saving…" : `Add ${selected.length} ${selected.length === 1 ? "person" : "people"}`}
+              {pending ? tr("msg.savingeedf", "Saving…") : `Add ${selected.length} ${selected.length === 1 ? "person" : "people"}`}
             </Button>
             {autoApprove ? (
-              <p className="text-sm text-muted-foreground">Auto-approve is on: rows with school and program set are approved.</p>
+              <p className="text-sm text-muted-foreground">{tr("msg.autoApproveIsOn44bd", "Auto-approve is on: rows with school and program set are approved.")}</p>
             ) : (
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox checked={approve} onCheckedChange={setApprove} />
-                Approve the ones with school and program set
+                {tr("msg.approveTheOnesWithc677", "Approve the ones with school and program set")}
               </label>
             )}
             <Button variant="ghost" onClick={() => setRows(null)}>
@@ -245,7 +247,7 @@ export function QuickCapture({ catalog, autoApprove }: { catalog: Catalog; autoA
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Only people with both a school and a program are added. To include someone else, set theirs above.
+            {tr("msg.onlyPeopleWithBoth8eb6", "Only people with both a school and a program are added. To include someone else, set theirs above.")}
           </p>
         </div>
       )}

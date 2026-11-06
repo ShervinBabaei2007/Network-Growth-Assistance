@@ -23,7 +23,7 @@ export async function AiKeySection() {
   return (
     <Card id="ai-key" className="scroll-mt-24">
       <CardHeader>
-        <CardTitle>AI for Jobs (optional)</CardTitle>
+        <CardTitle>{t("msg.aiForJobsOptional6420")}</CardTitle>
         <CardDescription>
           AI rewrites tailored resumes, CVs and cover letters for a job, and adds detail to Improvement Notes. It never adds anything your resume
           doesn&apos;t say. Without AI, you get Improvement Notes to apply yourself, and searching and fit checks work the same.{" "}

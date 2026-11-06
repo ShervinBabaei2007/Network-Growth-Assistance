@@ -74,10 +74,10 @@ export function NotesView({
           </p>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={() => document.getElementById("notes-list")?.scrollIntoView({ behavior: "smooth" })}>
-              <ListChecks aria-hidden /> View Improvement Notes
+              <ListChecks aria-hidden /> {tr("msg.viewImprovementNotes19ed", "View Improvement Notes")}
             </Button>
             <Link href="/settings#ai-key" className={buttonVariants({ size: "sm", variant: "outline" })}>
-              <KeyRound aria-hidden /> Use My Own AI Key
+              <KeyRound aria-hidden /> {tr("msg.useMyOwnAi9b6a", "Use My Own AI Key")}
             </Link>
             <Button
               size="sm"
@@ -89,7 +89,7 @@ export function NotesView({
                 )
               }
             >
-              Try AI Tailoring Again Later
+              {tr("msg.tryAiTailoringAgain77b2", "Try AI Tailoring Again Later")}
             </Button>
             <Button
               size="sm"
@@ -191,7 +191,7 @@ export function NotesView({
         })}
         {!visible.length ? (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Check aria-hidden className="size-4" /> No suggestions left.
+            <Check aria-hidden className="size-4" /> {tr("msg.noSuggestionsLefte3c9", "No suggestions left.")}
           </p>
         ) : null}
       </section>

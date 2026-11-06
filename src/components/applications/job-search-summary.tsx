@@ -1,3 +1,4 @@
+import { getT } from "@/lib/i18n/server";
 import Link from "next/link";
 import { ReminderDoneButton } from "@/components/applications/reminder-done";
 import { buttonVariants } from "@/components/ui/button";
@@ -13,6 +14,7 @@ const WEEK_MS = 7 * 86_400_000;
 
 /** Overview: what needs doing in the job search this week. Hidden until something is tracked. */
 export async function JobSearchSummary() {
+  const t = await getT();
   const supabase = await createClient();
   const now = new Date();
   const [loaded, reminders, { data: settings }, { data: interviews }] = await Promise.all([
@@ -36,7 +38,7 @@ export async function JobSearchSummary() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Job search</CardTitle>
+        <CardTitle>{t("msg.jobSearch69a8")}</CardTitle>
         <CardDescription>
           {open} open application{open === 1 ? "" : "s"}
           {quiet ? ` · ${quiet} with no reply for a while` : ""}
@@ -45,7 +47,7 @@ export async function JobSearchSummary() {
       <CardContent className="grid gap-4 md:grid-cols-2">
         <section aria-labelledby="due-reminders" className="grid content-start gap-2">
           <h3 id="due-reminders" className="text-sm font-medium">
-            Reminders due this week
+            {t("msg.remindersDueThisWeek0fa3")}
           </h3>
           {reminders.length ? (
             <ul className="grid gap-2">
@@ -70,19 +72,19 @@ export async function JobSearchSummary() {
               })}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">Nothing due.</p>
+            <p className="text-sm text-muted-foreground">{t("msg.nothingDue3b87")}</p>
           )}
         </section>
         <section aria-labelledby="upcoming-interviews" className="grid content-start gap-2">
           <h3 id="upcoming-interviews" className="text-sm font-medium">
-            Interviews in the next 7 days
+            {t("msg.interviewsInTheNextd08c")}
           </h3>
           {interviews?.length ? (
             <ul className="grid gap-2 text-sm">
               {interviews.map((i) => (
                 <li key={i.id}>
                   <Link href={`/applications/${i.application_id}`} className="font-medium hover:underline">
-                    {i.applications?.title ?? "Interview"}
+                    {i.applications?.title ?? t("msg.interviewcb20")}
                   </Link>
                   {i.applications?.company ? <span className="text-muted-foreground"> · {i.applications.company}</span> : null}
                   <span className="block text-xs text-muted-foreground">
@@ -92,14 +94,14 @@ export async function JobSearchSummary() {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">None scheduled.</p>
+            <p className="text-sm text-muted-foreground">{t("msg.noneScheduled3b37")}</p>
           )}
           <div className="mt-1 flex flex-wrap gap-2">
             <Link href="/applications" className={buttonVariants({ variant: "outline", size: "sm" })}>
-              Open Applications
+              {t("msg.openApplications1c27")}
             </Link>
             <Link href="/notifications" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-              All notifications
+              {t("msg.allNotifications8e8a")}
             </Link>
           </div>
         </section>
