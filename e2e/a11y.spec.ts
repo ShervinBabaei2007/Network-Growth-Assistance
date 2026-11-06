@@ -81,3 +81,67 @@ test("reflow: pages fit a 320 px wide window (about 400% zoom) without sideways 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), path).toBe(true);
   }
 });
+
+test("zoom: pages fit a 200% zoom window (640 px wide) without sideways scrolling or serious violations", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 640, height: 360 });
+  for (const path of ["/", "/login", "/guides"]) {
+    await scan(page, path, "light");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), path).toBe(true);
+  }
+  await signIn(page, uniqueEmail("zoom"));
+  for (const path of ["/overview", "/applications", "/candidates", "/settings"]) {
+    await scan(page, path, "light");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), path).toBe(true);
+    await expect(page.locator("#main")).toBeVisible();
+  }
+});
+
+// WCAG 1.4.12: content must survive these user overrides without losing text or function.
+const TEXT_SPACING = `
+  * { line-height: 1.5 !important; letter-spacing: 0.12em !important; word-spacing: 0.16em !important; }
+  p { margin-bottom: 2em !important; }
+`;
+
+test("text spacing: the WCAG 1.4.12 overrides clip no text on buttons, tabs or headings", async ({ page }) => {
+  test.setTimeout(120_000);
+  await signIn(page, uniqueEmail("spacing"));
+  for (const path of ["/overview", "/applications", "/candidates", "/settings"]) {
+    await page.goto(path);
+    await page.waitForLoadState("networkidle");
+    const style = await page.addStyleTag({ content: TEXT_SPACING });
+    const clipped = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>("button, [role=tab], a, h1, h2, h3")]
+        .filter((el) => {
+          const box = el.getBoundingClientRect();
+          if (box.width <= 2 || box.height <= 2) return false; // visually hidden (skip link, sr-only)
+          const overflow = getComputedStyle(el).overflow;
+          return overflow !== "visible" && (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1) && !getComputedStyle(el).textOverflow.includes("ellipsis");
+        })
+        .slice(0, 5)
+        .map((el) => `${el.tagName.toLowerCase()} "${(el.textContent ?? "").trim().slice(0, 40)}"`),
+    );
+    expect(clipped, path).toEqual([]);
+    const results = await new AxeBuilder({ page }).withTags(TAGS).analyze();
+    const blocking = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id);
+    expect(blocking, path).toEqual([]);
+    await style.evaluate((el) => (el as Element).remove());
+  }
+});
+
+test("reduced motion: animations and transitions are effectively off", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await signIn(page, uniqueEmail("motion"));
+  await page.waitForLoadState("networkidle");
+  const longest = await page.evaluate(() => {
+    const ms = (v: string) => Math.max(0, ...v.split(",").map((s) => (s.trim().endsWith("ms") ? parseFloat(s) : parseFloat(s) * 1000) || 0));
+    let worst = 0;
+    for (const el of document.querySelectorAll<HTMLElement>("*")) {
+      const s = getComputedStyle(el);
+      worst = Math.max(worst, ms(s.animationDuration), ms(s.transitionDuration));
+    }
+    return worst;
+  });
+  expect(longest).toBeLessThanOrEqual(1);
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).not.toBe("smooth");
+});

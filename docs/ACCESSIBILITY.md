@@ -40,4 +40,4 @@ For each of Sign in / Sign up, Overview, Candidates (including the bulk action b
 5. The welcome dialog and tour: focus enters, is trapped, and returns; Escape works; each tour stop is announced.
 6. Toasts: a saved or failed message is announced once.
 7. Charts have a text alternative with the same facts.
-8. Everything works with the keyboard alone, at 200% zoom, with increased text spacing and with reduced motion.
+8. Everything works with the keyboard alone, at 200% zoom, with increased text spacing and with reduced motion. The zoom, text-spacing and reduced-motion checks run automatically in `e2e/a11y.spec.ts`; the manual pass confirms them by ear and eye.
