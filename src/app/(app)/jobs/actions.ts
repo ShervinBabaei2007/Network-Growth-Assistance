@@ -1,5 +1,6 @@
 "use server";
 
+import { getT } from "@/lib/i18n/server";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -70,7 +71,7 @@ export async function saveJobPreferences(_: FormState, formData: FormData): Prom
       job_exclude_keywords: parsed.data.exclude,
     })
     .eq("user_id", ctx.userId);
-  if (error) return failed("Couldn't save. Try again.");
+  if (error) return failed((await getT())("msg.couldnTSaveTryf998"));
   // A country nobody searched before: employers' boards are read again from scratch (the
   // earlier reads kept only other countries' jobs), starting with the next crawl.
   // Resetting every board is shared work, so each user can start only a few new countries a day.
@@ -200,7 +201,7 @@ export async function addManualPosting(_: FormState, formData: FormData): Promis
     )
     .select("id")
     .single();
-  if (error || !data) return failed("Couldn't add it. Try again.");
+  if (error || !data) return failed((await getT())("msg.couldnTAddItcae2"));
   const services = jobServices();
   await ctx.supabase.from("job_user_states").upsert({ user_id: ctx.userId, job_id: data.id, status: "saved" }, { onConflict: "user_id,job_id" });
   await ctx.supabase.rpc("sync_application_for_job", { p_job: data.id, p_stage: "saved" });
@@ -222,8 +223,8 @@ const MAX_EMPLOYERS_PER_DAY = 20;
 export async function addEmployer(_: FormState, formData: FormData): Promise<FormState> {
   const url = formData.get("url")?.toString().trim() ?? "";
   const name = formData.get("name")?.toString().trim() ?? "";
-  if (!/^https?:\/\/\S+$/i.test(url) || url.length > 500) return failed("Paste the employer's careers page or job board link.");
-  if (name.length < 2 || name.length > 200) return failed("Add the employer's name.");
+  if (!/^https?:\/\/\S+$/i.test(url) || url.length > 500) return failed((await getT())("msg.pasteTheEmployerSbde9"));
+  if (name.length < 2 || name.length > 200) return failed((await getT())("msg.addTheEmployerS04af"));
   // The employer's own website is optional and only ever typed by a person; it is what makes its icon appear on job cards.
   const websiteRaw = formData.get("website")?.toString().trim() ?? "";
   let website: string | null = null;
@@ -233,7 +234,7 @@ export async function addEmployer(_: FormState, formData: FormData): Promise<For
       if ((w.protocol !== "https:" && w.protocol !== "http:") || !w.hostname.includes(".") || w.username || w.password) throw new Error("bad website");
       website = w.origin;
     } catch {
-      return failed("That website doesn't look right. Use the employer's own address, like https://www.acme.com, or leave it empty.");
+      return failed((await getT())("msg.thatWebsiteDoesnT46f3"));
     }
   }
   const ctx = await actionContext();
@@ -243,7 +244,7 @@ export async function addEmployer(_: FormState, formData: FormData): Promise<For
   if ((count ?? 0) >= MAX_EMPLOYERS_PER_DAY) return failed(`You can add ${MAX_EMPLOYERS_PER_DAY} employers a day.`);
 
   const board = await detectFromCareersUrl(url, new HttpPageFetcher());
-  if (!board) return failed("Couldn't find a supported job board there. Supported: Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee and Workday.");
+  if (!board) return failed((await getT())("msg.couldnTFindA48c0"));
   const { data: existing } = await admin.from("employers").select("id, name").eq("ats", board.ats).eq("board_token", board.token).maybeSingle();
   if (existing) return saved(`${existing.name} is already in the directory.`);
 
@@ -254,10 +255,10 @@ export async function addEmployer(_: FormState, formData: FormData): Promise<For
     const r = await adapterFor(board.ats).fetchBoard(board.token, { signal: AbortSignal.timeout(20_000) });
     if (!r.notModified) matching = r.jobs.filter((j) => jobPlace(j.places, j.remote, wantedScope([country]))).length;
   } catch {
-    return failed("That job board didn't answer. Check the link and try again.");
+    return failed((await getT())("msg.thatJobBoardDidn16e9"));
   }
   const { error } = await admin.from("employers").insert({ name, ats: board.ats, board_token: board.token, careers_url: url, website, added_by: ctx.userId, next_crawl_at: new Date().toISOString() });
-  if (error) return failed("Couldn't add it. Try again.");
+  if (error) return failed((await getT())("msg.couldnTAddItcae2"));
   await logActivity(ctx, "jobs.employer_added", { ats: board.ats });
   refresh();
   const where = countryName(country) ?? "your country";
@@ -282,14 +283,14 @@ export async function crawlNow(): Promise<ActionResult> {
 
 export async function saveOwnAiKey(_: FormState, formData: FormData): Promise<FormState> {
   const key = formData.get("key")?.toString().trim() ?? "";
-  if (!canStoreKeys()) return failed("This server can't store keys (APP_ENCRYPTION_KEY isn't set).");
-  if (!(await validateOwnKey(key))) return failed("That key didn't work. Use a Gemini API key from Google AI Studio (starts with AIza or AQ.) or an Anthropic key, and try again.");
+  if (!canStoreKeys()) return failed((await getT())("msg.thisServerCanT4fee"));
+  if (!(await validateOwnKey(key))) return failed((await getT())("msg.thatKeyDidnT97cd"));
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("user_ai").upsert({ user_id: ctx.userId, own_key_ciphertext: encryptSecret(key), own_key_hint: `…${key.slice(-4)}` }, { onConflict: "user_id" });
-  if (error) return failed("Couldn't save. Try again.");
+  if (error) return failed((await getT())("msg.couldnTSaveTryf998"));
   await logActivity(ctx, "jobs.ai_key_saved");
   refresh();
-  return saved("Saved. AI tailoring now uses your own key.");
+  return saved((await getT())("msg.savedAiTailoringNow3905"));
 }
 
 export async function removeOwnAiKey(): Promise<ActionResult> {

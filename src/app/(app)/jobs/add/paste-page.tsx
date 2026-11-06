@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -39,10 +40,11 @@ function fill(p: Partial<PastedPosting>): string[] {
 /**
  * Paste a whole job page (Ctrl+A, Ctrl+C on LinkedIn, Indeed, Glassdoor, a careers page…)
  * and the form below is filled from it. Only what's pasted is read, here in the browser;
- * the page itself is never fetched. "Read with AI" asks the AI for the same fields and
+ * the page itself is never fetched. tr("msg.readWithAi779c", "Read with AI") asks the AI for the same fields and
  * keeps only values found in the paste.
  */
 export function PastePage({ aiAvailable }: { aiAvailable: boolean }) {
+  const tr = useTr();
   const [text, setText] = useState("");
   const [status, setStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -51,8 +53,8 @@ export function PastePage({ aiAvailable }: { aiAvailable: boolean }) {
     const filled = fill(parsePastedPage(page));
     setStatus(
       filled.length
-        ? { kind: "ok", text: `Filled ${filled.join(", ")} from the page. Check every field, and paste the link to the posting.` }
-        : { kind: "error", text: "Couldn't find the job's details in that text. Fill in the form yourself." },
+        ? { kind: "ok", text: tr("addPage.filled", "Filled {fields} from the page. Check every field, and paste the link to the posting.", { fields: filled.join(", ") }) }
+        : { kind: "error", text: tr("msg.couldnTFindThea64f", "Couldn't find the job's details in that text. Fill in the form yourself.") },
     );
   };
 
@@ -71,12 +73,12 @@ export function PastePage({ aiAvailable }: { aiAvailable: boolean }) {
 
   return (
     <div className="grid gap-2 rounded-lg border border-dashed p-3">
-      <Label htmlFor="paste-page">Quick fill: paste the whole job page (optional)</Label>
+      <Label htmlFor="paste-page">{tr("msg.quickFillPasteTheb16f", "Quick fill: paste the whole job page (optional)")}</Label>
       <Textarea
         id="paste-page"
         rows={4}
         value={text}
-        placeholder="On the job's page, press Ctrl+A then Ctrl+C, and paste here."
+        placeholder={tr("msg.onTheJobScb80", "On the job's page, press Ctrl+A then Ctrl+C, and paste here.")}
         onChange={(e) => setText(e.target.value)}
         onPaste={(e) => {
           const pasted = e.clipboardData.getData("text/plain");
@@ -85,14 +87,14 @@ export function PastePage({ aiAvailable }: { aiAvailable: boolean }) {
       />
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" size="sm" variant="outline" disabled={!text.trim()} onClick={() => fillFromRules(text)}>
-          Fill the form
+          {tr("msg.fillTheFormfe75", "Fill the form")}
         </Button>
         {aiAvailable ? (
           <Button type="button" size="sm" variant="outline" disabled={!text.trim() || pending} onClick={readWithAi}>
-            {pending ? "Reading…" : "Read with AI"}
+            {pending ? tr("msg.readingc31f", "Reading…") : tr("msg.readWithAi779c", "Read with AI")}
           </Button>
         ) : null}
-        <p className="text-xs text-muted-foreground">Read here in your browser from what you paste.</p>
+        <p className="text-xs text-muted-foreground">{tr("msg.readHereInYour09fe", "Read here in your browser from what you paste.")}</p>
       </div>
       {status ? (
         <p role="status" className={status.kind === "ok" ? "text-sm text-success" : "text-sm text-destructive"}>

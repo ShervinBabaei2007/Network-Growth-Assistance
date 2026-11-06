@@ -13,6 +13,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ATS_LABELS } from "@/lib/job-postings/ats";
 import { timeAgo } from "@/lib/job-postings/labels";
 import { createClient } from "@/lib/supabase/server";
+import { LocaleScope } from "@/components/locale-scope";
+import { formatters } from "@/lib/i18n";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { addEmployer } from "../actions";
 import { CrawlNowButton } from "./crawl-now";
 
@@ -30,35 +33,46 @@ export default function EmployersPage({ searchParams }: PageProps<"/jobs/employe
         title="pages.employers.title"
         description="pages.employers.description"
       />
+      <Suspense fallback={null}>
+        <AddEmployerCard />
+      </Suspense>
+      <Suspense fallback={<PageSkeleton labelKey="loading.employers" />}>
+        <Directory searchParams={searchParams} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function AddEmployerCard() {
+  const t = await getT();
+  return (
+    <LocaleScope groups={["ui"]}>
       <Card>
         <CardHeader>
-          <CardTitle>Add an employer</CardTitle>
-          <CardDescription>Paste their careers page or job board link. It&apos;s added once its board answers.</CardDescription>
+          <CardTitle>{t("msg.addAnEmployer5838")}</CardTitle>
+          <CardDescription>{t("msg.pasteTheirCareersPagea5a7")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <ActionForm action={addEmployer} submitLabel="Add employer" resetOnSuccess>
+          <ActionForm action={addEmployer} submitLabel={t("msg.addEmployer73e4")} resetOnSuccess>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-1.5">
-                <Label htmlFor="name">Employer</Label>
+                <Label htmlFor="name">{t("msg.employer96e4")}</Label>
                 <Input id="name" name="name" required maxLength={200} placeholder="Acme Robotics" />
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor="url">Careers page or job board</Label>
+                <Label htmlFor="url">{t("msg.careersPageOrJob1ce3")}</Label>
                 <Input id="url" name="url" type="url" required placeholder="https://jobs.lever.co/acme" />
               </div>
               <div className="grid gap-1.5 sm:col-span-2">
-                <Label htmlFor="website">Their website (optional)</Label>
+                <Label htmlFor="website">{t("msg.theirWebsiteOptionald18a")}</Label>
                 <Input id="website" name="website" inputMode="url" maxLength={200} placeholder="https://www.acme.com" aria-describedby="website-hint" />
-                <p id="website-hint" className="text-xs text-muted-foreground">Their own address, not a job board. When you give one, their logo shows on their job cards; otherwise we show initials.</p>
+                <p id="website-hint" className="text-xs text-muted-foreground">{t("msg.theirOwnAddressNota583")}</p>
               </div>
             </div>
           </ActionForm>
         </CardContent>
       </Card>
-      <Suspense fallback={<PageSkeleton labelKey="loading.employers" />}>
-        <Directory searchParams={searchParams} />
-      </Suspense>
-    </div>
+    </LocaleScope>
   );
 }
 
@@ -76,6 +90,7 @@ async function Directory({ searchParams }: Pick<PageProps<"/jobs/employers">, "s
   if (q) query = query.ilike("name", `%${q}%`);
   const [{ data, count, error }, { data: runs }] = await Promise.all([query, supabase.from("job_crawl_runs").select("started_at, boards, new_jobs, failed, embedded").order("started_at", { ascending: false }).limit(5)]);
   if (error) return <LoadError what="employers" />;
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   const total = count ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE));
 
@@ -83,38 +98,40 @@ async function Directory({ searchParams }: Pick<PageProps<"/jobs/employers">, "s
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Crawler</CardTitle>
+          <CardTitle>{t("msg.crawler820d")}</CardTitle>
           <CardDescription>
-            {runs?.length ? `Last run ${timeAgo(runs[0].started_at)}: ${runs[0].boards} boards read, ${runs[0].new_jobs} new jobs, ${runs[0].failed} failed.` : "Hasn't run yet."} It runs on a
-            schedule; reading now only reads boards that are already due.
+            {runs?.length ? t("employersPage.lastRun", { ago: timeAgo(runs[0].started_at, Date.now(), locale), boards: runs[0].boards, jobs: runs[0].new_jobs, failed: runs[0].failed }) : t("employersPage.neverRun")}
+            {t("employersPage.scheduleNote")}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <CrawlNowButton />
+          <LocaleScope groups={["employersPage"]}>
+            <CrawlNowButton />
+          </LocaleScope>
         </CardContent>
       </Card>
 
       <section aria-labelledby="directory-heading" className="grid gap-3">
         <h2 id="directory-heading" className="font-medium">
-          Directory ({total.toLocaleString("en-CA")})
+          {t("employersPage.directory", { count: formatters(locale).number(total) })}
         </h2>
         <form role="search" className="flex flex-wrap items-end gap-2">
           <div className="grid gap-1.5">
-            <Label htmlFor="q">Search</Label>
-            <Input id="q" name="q" defaultValue={q} placeholder="Employer name" />
+            <Label htmlFor="q">{t("msg.search1334")}</Label>
+            <Input id="q" name="q" defaultValue={q} placeholder={t("msg.employerName568e")} />
           </div>
           <Button type="submit" size="sm">
-            Search
+            {t("msg.search1334")}
           </Button>
         </form>
         <div className="overflow-x-auto rounded-lg border bg-card">
           <Table stack>
             <TableHeader>
               <TableRow>
-                <TableHead>Employer</TableHead>
-                <TableHead>Board</TableHead>
-                <TableHead className="text-right" title="Jobs open to the countries people search">Jobs kept</TableHead>
-                <TableHead>Last read</TableHead>
+                <TableHead>{t("msg.employer96e4")}</TableHead>
+                <TableHead>{t("msg.board6036")}</TableHead>
+                <TableHead className="text-right" title={t("msg.jobsOpenToThe554e")}>{t("msg.jobsKept7733")}</TableHead>
+                <TableHead>{t("msg.lastRead6d73")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -130,25 +147,25 @@ async function Directory({ searchParams }: Pick<PageProps<"/jobs/employers">, "s
                     )}
                     {e.status !== "active" ? (
                       <Badge variant="outline" className="ml-2" title={e.last_error ?? undefined}>
-                        {e.status === "failing" ? "Not answering" : "Paused"}
+                        {e.status === "failing" ? t("msg.notAnswering09a5") : t("msg.pausede991")}
                       </Badge>
                     ) : null}
                   </TableCell>
-                  <TableCell label="Board">{ATS_LABELS[e.ats]}</TableCell>
-                  <TableCell label="Jobs kept" className="text-right">{e.matching_jobs}</TableCell>
-                  <TableCell label="Last read" className="text-muted-foreground">{e.last_crawled_at ? timeAgo(e.last_crawled_at) : "Not yet"}</TableCell>
+                  <TableCell label={t("msg.board6036")}>{ATS_LABELS[e.ats]}</TableCell>
+                  <TableCell label={t("msg.jobsKept7733")} className="text-right">{e.matching_jobs}</TableCell>
+                  <TableCell label={t("msg.lastRead6d73")} className="text-muted-foreground">{e.last_crawled_at ? timeAgo(e.last_crawled_at, Date.now(), locale) : t("msg.notYet9d76")}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
         {pages > 1 ? (
-          <nav aria-label="Pages" className="flex items-center gap-3 text-sm">
-            {page > 1 ? <Link href={`/jobs/employers?${new URLSearchParams({ ...(q ? { q } : {}), page: String(page - 1) })}`}>← Previous</Link> : null}
+          <nav aria-label={t("employersPage.pagesNav")} className="flex items-center gap-3 text-sm">
+            {page > 1 ? <Link href={`/jobs/employers?${new URLSearchParams({ ...(q ? { q } : {}), page: String(page - 1) })}`}>{t("employersPage.prev")}</Link> : null}
             <span className="text-muted-foreground">
-              Page {page} of {pages}
+              {t("employersPage.pageOf", { page, pages })}
             </span>
-            {page < pages ? <Link href={`/jobs/employers?${new URLSearchParams({ ...(q ? { q } : {}), page: String(page + 1) })}`}>Next →</Link> : null}
+            {page < pages ? <Link href={`/jobs/employers?${new URLSearchParams({ ...(q ? { q } : {}), page: String(page + 1) })}`}>{t("employersPage.next")}</Link> : null}
           </nav>
         ) : null}
       </section>

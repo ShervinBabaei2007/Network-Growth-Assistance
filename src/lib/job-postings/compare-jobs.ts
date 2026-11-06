@@ -1,5 +1,6 @@
 import { LEVEL_LABELS, WORKPLACE_LABELS, type Workplace } from "./levels";
 import { placeLabel, postedLabel } from "./labels";
+import type { Locale, Translator } from "@/lib/i18n/core";
 
 /** Side-by-side comparison of up to three jobs. Only stored fields are shown; a missing one reads "Not stated". */
 
@@ -54,19 +55,21 @@ export function parseCompareIds(raw: string | undefined): string[] {
   return [...new Set(ids)].slice(0, MAX_COMPARE);
 }
 
-export function buildColumn(job: CompareJob, fit: CompareFit, sourceLabel: string): CompareColumn {
+export function buildColumn(job: CompareJob, fit: CompareFit, sourceLabel: string, opts: { t?: Translator; locale?: Locale } = {}): CompareColumn {
+  const { t, locale } = opts;
+  const notStated = t ? t("compare.notStated") : NOT_STATED;
   return {
     id: job.id,
     title: job.title,
     company: job.company,
     fit: fit ? { tier: fit.tier, score: fit.score } : null,
     rows: {
-      pay: job.salary ?? NOT_STATED,
-      level: job.experience_level ? (LEVEL_LABELS[job.experience_level as keyof typeof LEVEL_LABELS] ?? job.experience_level) : NOT_STATED,
-      workplace: job.workplace_type ? (WORKPLACE_LABELS[job.workplace_type as Workplace] ?? job.workplace_type) : job.remote ? "Remote" : NOT_STATED,
-      type: job.employment_type ?? NOT_STATED,
-      location: placeLabel(job),
-      posted: postedLabel(job),
+      pay: job.salary ?? notStated,
+      level: job.experience_level ? (t ? t(`level.${job.experience_level}` as "level.junior") : (LEVEL_LABELS[job.experience_level as keyof typeof LEVEL_LABELS] ?? job.experience_level)) : notStated,
+      workplace: job.workplace_type ? (t ? t(`workplace.${job.workplace_type}` as "workplace.remote") : (WORKPLACE_LABELS[job.workplace_type as Workplace] ?? job.workplace_type)) : job.remote ? (t ? t("workplace.remote") : "Remote") : notStated,
+      type: job.employment_type ?? notStated,
+      location: placeLabel(job, locale),
+      posted: postedLabel(job, Date.now(), locale),
       source: sourceLabel,
     },
     strong: fit?.strong ?? [],
