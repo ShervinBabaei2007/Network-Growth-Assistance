@@ -41,6 +41,14 @@ describe("digest", () => {
     expect(text).toContain("Stop all emails");
   });
 
+  it("is written in the recipient's language", () => {
+    const fr = renderDigest(d, "fr-CA");
+    expect(fr.subject).toBe("1 nouvel emploi pour Developer · BC");
+    expect(fr.text).toContain("Ne plus recevoir aucun courriel");
+    expect(fr.html).toContain('lang="fr-CA"');
+    expect(fr.html).toContain("Dev &lt;script&gt;");
+  });
+
   it("has no images or tracking", () => {
     expect(renderDigest(d).html).not.toMatch(/<img|pixel|utm_/i);
   });

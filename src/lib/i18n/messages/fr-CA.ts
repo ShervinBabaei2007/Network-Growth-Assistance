@@ -160,6 +160,15 @@ export const frCA: Messages = {
     pageBody: "Rien de ce que vous avez saisi n'a été perdu. Appuyez sur Réessayer. Si cela échoue encore, ouvrez une autre page depuis le menu et revenez plus tard, ou déconnectez-vous puis reconnectez-vous.",
     retry: "Réessayer",
   },
+  digestEmail: {
+    subjectOne: "1 nouvel emploi pour {search}",
+    subjectMany: "{count} nouveaux emplois pour {search}",
+    intro: "Nouveaux emplois pour votre recherche enregistrée « {search} » :",
+    more: "…et {count} de plus",
+    linkChecked: "Le lien de chaque emploi est vérifié dans l'application avant que le bouton Postuler soit activé.",
+    stopThis: "Ne plus recevoir de courriels pour cette recherche",
+    stopAll: "Ne plus recevoir aucun courriel",
+  },
   palette: {
     placeholder: "Aller à une page ou rechercher…",
     description: "Tapez pour aller à une page ou trouver une personne, un candidat, une candidature ou un emploi. Utilisez les flèches et Entrée.",

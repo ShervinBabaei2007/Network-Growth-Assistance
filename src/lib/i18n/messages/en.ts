@@ -162,6 +162,15 @@ export const en = {
     pageBody: "Nothing you entered was lost. Press Try again. If it fails again, open another page from the menu and come back later, or sign out and back in.",
     retry: "Try again",
   },
+  digestEmail: {
+    subjectOne: "1 new job for {search}",
+    subjectMany: "{count} new jobs for {search}",
+    intro: "New jobs for your saved search “{search}”:",
+    more: "…and {count} more",
+    linkChecked: "Each job's link is checked in the app before Apply is turned on.",
+    stopThis: "Stop emails for this search",
+    stopAll: "Stop all emails",
+  },
   palette: {
     placeholder: "Jump to a page or search…",
     description: "Type to jump to a page or find a person, candidate, application or job. Use the arrow keys and Enter.",

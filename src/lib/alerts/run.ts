@@ -1,3 +1,4 @@
+import { isLocale } from "@/lib/i18n";
 import "server-only";
 import { localDate, weekStart } from "@/lib/dates";
 import { selectAll } from "@/lib/discovery/store";
@@ -264,7 +265,7 @@ export async function sendQueuedEmails(db: Db, now: Date, limit = 20) {
     // The user may have turned email off since it was queued.
     const searchId = ((d.notifications?.data ?? {}) as { saved_search_id?: string }).saved_search_id ?? null;
     const [{ data: settings }, { data: search }] = await Promise.all([
-      db.from("settings").select("email_notifications").eq("user_id", d.user_id).single(),
+      db.from("settings").select("email_notifications, locale").eq("user_id", d.user_id).single(),
       searchId ? db.from("saved_searches").select("name, email_digest, query").eq("id", searchId).maybeSingle() : Promise.resolve({ data: null }),
     ]);
     if (!settings?.email_notifications || !search?.email_digest) {
@@ -286,7 +287,7 @@ export async function sendQueuedEmails(db: Db, now: Date, limit = 20) {
       }
       const one = `${config.appUrl}/api/email/unsubscribe?token=${unsubscribeToken({ userId: d.user_id, searchId }, config.secret, now.getTime())}`;
       const all = `${config.appUrl}/api/email/unsubscribe?token=${unsubscribeToken({ userId: d.user_id, searchId: null }, config.secret, now.getTime())}`;
-      const mail = renderDigest({ searchName: search.name, jobs, appUrl: config.appUrl, unsubscribeUrl: one, unsubscribeAllUrl: all });
+      const mail = renderDigest({ searchName: search.name, jobs, appUrl: config.appUrl, unsubscribeUrl: one, unsubscribeAllUrl: all }, isLocale(settings.locale) ? settings.locale : undefined);
       await mailer.send({ to, ...mail, headers: { "List-Unsubscribe": `<${one}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } });
       await db.from("email_deliveries").update({ status: "sent", sent_at: new Date().toISOString(), attempts: d.attempts + 1, last_error: null }).eq("id", d.id);
       out.sent++;
