@@ -207,6 +207,8 @@ test("the interview prep pack is in French", async ({ page, context }) => {
   await page.goto(`/applications/${row.id}/prep`);
   await expect(page.getByRole("heading", { name: "Préparation d'entrevue", level: 1 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Parlez-moi d'un problème difficile que vous avez résolu." })).toBeVisible();
+  // A section streams in; wait for the page to settle so only one copy is in the document.
+  await page.waitForLoadState("networkidle");
   await expect(page.getByText("Liste de vérification pour le jour J")).toBeVisible();
 });
 
