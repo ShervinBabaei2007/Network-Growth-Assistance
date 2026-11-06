@@ -1,3 +1,4 @@
+import { LocaleScope } from "@/components/locale-scope";
 import { Suspense } from "react";
 import { LoadError } from "@/components/load-error";
 import { PageHeaderT } from "@/components/tx";
@@ -26,5 +27,9 @@ async function Hidden() {
   const supabase = await createClient();
   const { data, error } = await supabase.from("job_filters").select("id, kind, pattern").order("created_at", { ascending: false });
   if (error) return <LoadError what="your hidden jobs" />;
-  return <HiddenList items={data as HiddenItem[]} />;
+  return (
+    <LocaleScope groups={["msg"]}>
+      <HiddenList items={data as HiddenItem[]} />
+    </LocaleScope>
+  );
 }

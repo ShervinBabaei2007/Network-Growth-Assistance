@@ -40,10 +40,10 @@ export function NoteForm({ applicationId }: { applicationId: string }) {
     >
       <div className="flex flex-wrap gap-2">
         <div className="grid gap-1">
-          <Label htmlFor="note-kind">{tr("msg.typea1fa", tr("msg.typea1fa", "Type"))}</Label>
+          <Label htmlFor="note-kind">{tr("msg.typea1fa", "Type")}</Label>
           <AppSelect id="note-kind" value={kind} onChange={(e) => setKind(e.target.value as "note" | "response")} className="w-40">
-            <option value="note">{tr("msg.note3b06", tr("msg.note3b06", "Note"))}</option>
-            <option value="response">{tr("msg.responseReceived8bb8", tr("msg.responseReceived8bb8", "Response received"))}</option>
+            <option value="note">{tr("msg.note3b06", "Note")}</option>
+            <option value="response">{tr("msg.responseReceived8bb8", "Response received")}</option>
           </AppSelect>
         </div>
       </div>
@@ -52,7 +52,7 @@ export function NoteForm({ applicationId }: { applicationId: string }) {
       </Label>
       <Textarea id="note-text" value={text} maxLength={2000} rows={3} onChange={(e) => setText(e.target.value)} placeholder={kind === "note" ? tr("msg.eGFollowedUp62e0", "e.g. Followed up with the recruiter by email") : tr("msg.eGInvitedTobd24", "e.g. Invited to a phone screen next week")} />
       <Button type="submit" size="sm" className="justify-self-start" disabled={pending || !text.trim()}>
-        {tr("msg.addToTimeline257e", tr("msg.addToTimeline257e", "Add to timeline"))}
+        {tr("msg.addToTimeline257e", "Add to timeline")}
       </Button>
     </form>
   );
@@ -63,7 +63,7 @@ export function RemoveEntry({ id, kind }: { id: string; kind: string }) {
   const tr = useTr();
   return (
     <Button size="xs" variant="ghost" className="justify-self-start" disabled={pending} onClick={() => run(() => deleteNote(id))} aria-label={kind === "response" ? tr("appRecord.removeResponse", "Remove this response") : tr("appRecord.removeNote", "Remove this note")}>
-      <Trash2 aria-hidden /> {tr("msg.remove1063", tr("msg.remove1063", "Remove"))}
+      <Trash2 aria-hidden /> {tr("msg.remove1063", "Remove")}
     </Button>
   );
 }

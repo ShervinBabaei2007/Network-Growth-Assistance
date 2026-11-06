@@ -1,3 +1,5 @@
+import { LocaleScope } from "@/components/locale-scope";
+import { getT } from "@/lib/i18n/server";
 import { Suspense } from "react";
 import { BellRing } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
@@ -37,15 +39,16 @@ async function Searches() {
   ]);
   if (error) return <LoadError what="your saved searches" />;
   const tz = settings?.timezone ?? "UTC";
+  const t = await getT();
   if (!data.length) {
     return (
       <EmptyState
         icon={<BellRing aria-hidden />}
-        title="No saved searches yet"
-        description="Search on the Jobs page, then choose “Save this search”. You can be told daily or weekly when new matching jobs appear."
+        title={t("msg.noSavedSearchesYet91cf")}
+        description={t("msg.searchOnTheJobs6c69")}
       >
         <Link href="/jobs" className={buttonVariants({ size: "sm" })}>
-          Search for jobs
+          {t("msg.searchForJobs866c")}
         </Link>
       </EmptyState>
     );
@@ -65,14 +68,16 @@ async function Searches() {
     <>
       {!settings?.email_notifications && items.some((i) => i.value.emailDigest) ? (
         <p role="status" className="rounded-lg border bg-muted/50 p-3 text-sm">
-          Some searches ask for email, but email is off in{" "}
+          {t("msg.someSearchesAskFor6362")}{" "}
           <Link href="/settings#notifications" className="text-primary underline-offset-4 hover:underline">
-            Settings → Notifications
+            {t("msg.settingsNotificationsc49c")}
           </Link>
-          . Until you turn it on, alerts appear only in the app.
+          {t("msg.untilYouTurnIt5e1f")}
         </p>
       ) : null}
-      <SearchList items={items} emailAvailable={emailConfigured()} timeZone={tz} />
+      <LocaleScope groups={["msg", "searchesPage", "ui"]}>
+        <SearchList items={items} emailAvailable={emailConfigured()} timeZone={tz} />
+      </LocaleScope>
     </>
   );
 }

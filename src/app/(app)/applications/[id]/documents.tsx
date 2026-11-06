@@ -19,8 +19,8 @@ export function Documents({ data }: { data: DetailData }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{tr("msg.documentsSent43c9", tr("msg.documentsSent43c9", "Documents sent"))}</CardTitle>
-        <CardDescription>{tr("msg.whichVersionYouSent5a7b", tr("msg.whichVersionYouSent5a7b", "Which version you sent."))}</CardDescription>
+        <CardTitle>{tr("msg.documentsSent43c9", "Documents sent")}</CardTitle>
+        <CardDescription>{tr("msg.whichVersionYouSent5a7b", "Which version you sent.")}</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
         {data.documents.length ? (
@@ -41,7 +41,7 @@ export function Documents({ data }: { data: DetailData }) {
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">{tr("msg.noDocumentsLinkedfcb1", tr("msg.noDocumentsLinkedfcb1", "No documents linked."))}</p>
+          <p className="text-sm text-muted-foreground">{tr("msg.noDocumentsLinkedfcb1", "No documents linked.")}</p>
         )}
         {options.length ? (
           <form
@@ -53,9 +53,9 @@ export function Documents({ data }: { data: DetailData }) {
             }}
           >
             <div className="grid gap-1">
-              <Label htmlFor="doc-choice">{tr("msg.version34b6", tr("msg.version34b6", "Version"))}</Label>
+              <Label htmlFor="doc-choice">{tr("msg.version34b6", "Version")}</Label>
               <AppSelect id="doc-choice" value={choice} onChange={(e) => setChoice(e.target.value)} required>
-                <option value="">{tr("msg.chooseADocument5489", tr("msg.chooseADocument5489", "Choose a document…"))}</option>
+                <option value="">{tr("msg.chooseADocument5489", "Choose a document…")}</option>
                 {options.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -64,7 +64,7 @@ export function Documents({ data }: { data: DetailData }) {
               </AppSelect>
             </div>
             <Button type="submit" size="sm" variant="outline" className="justify-self-start" disabled={pending || !choice}>
-              {tr("msg.linkDocument05bd", tr("msg.linkDocument05bd", "Link document"))}
+              {tr("msg.linkDocument05bd", "Link document")}
             </Button>
           </form>
         ) : null}

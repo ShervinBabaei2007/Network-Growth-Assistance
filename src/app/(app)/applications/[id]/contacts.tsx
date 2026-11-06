@@ -25,8 +25,8 @@ export function Contacts({ data }: { data: DetailData }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{tr("msg.contacts9aa6", tr("msg.contacts9aa6", "Contacts"))}</CardTitle>
-        <CardDescription>{tr("msg.peopleFromYourPeople916d", tr("msg.peopleFromYourPeople916d", "People from your People list who are part of this application."))}</CardDescription>
+        <CardTitle>{tr("msg.contacts9aa6", "Contacts")}</CardTitle>
+        <CardDescription>{tr("msg.peopleFromYourPeople916d", "People from your People list who are part of this application.")}</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
         {data.contacts.length ? (
@@ -47,7 +47,7 @@ export function Contacts({ data }: { data: DetailData }) {
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">{tr("msg.noContactsLinked2eaf", tr("msg.noContactsLinked2eaf", "No contacts linked."))}</p>
+          <p className="text-sm text-muted-foreground">{tr("msg.noContactsLinked2eaf", "No contacts linked.")}</p>
         )}
         {available.length ? (
           <form
@@ -58,9 +58,9 @@ export function Contacts({ data }: { data: DetailData }) {
             }}
           >
             <div className="grid gap-1">
-              <Label htmlFor="contact-person">{tr("msg.person40be", tr("msg.person40be", "Person"))}</Label>
+              <Label htmlFor="contact-person">{tr("msg.person40be", "Person")}</Label>
               <AppSelect id="contact-person" value={person} onChange={(e) => setPerson(e.target.value)} required>
-                <option value="">{tr("msg.chooseSomeone40ac", tr("msg.chooseSomeone40ac", "Choose someone…"))}</option>
+                <option value="">{tr("msg.chooseSomeone40ac", "Choose someone…")}</option>
                 {available.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.label}
@@ -69,7 +69,7 @@ export function Contacts({ data }: { data: DetailData }) {
               </AppSelect>
             </div>
             <div className="grid gap-1">
-              <Label htmlFor="contact-role">{tr("msg.rolebbba", tr("msg.rolebbba", "Role"))}</Label>
+              <Label htmlFor="contact-role">{tr("msg.rolebbba", "Role")}</Label>
               <AppSelect id="contact-role" value={role} onChange={(e) => setRole(e.target.value as typeof role)}>
                 {Object.keys(ROLE_LABEL).map((k) => (
                   <option key={k} value={k}>
@@ -79,7 +79,7 @@ export function Contacts({ data }: { data: DetailData }) {
               </AppSelect>
             </div>
             <Button type="submit" size="sm" variant="outline" className="justify-self-start" disabled={pending || !person}>
-              {tr("msg.linkContactb70c", tr("msg.linkContactb70c", "Link contact"))}
+              {tr("msg.linkContactb70c", "Link contact")}
             </Button>
           </form>
         ) : data.options.people.length ? null : (

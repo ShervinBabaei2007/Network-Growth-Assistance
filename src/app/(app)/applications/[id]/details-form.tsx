@@ -30,8 +30,8 @@ export function Details({ data }: { data: DetailData }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{tr("msg.details3ec3", tr("msg.details3ec3", "Details"))}</CardTitle>
-        <CardDescription>{tr("msg.payIsKeptExactly09cb", tr("msg.payIsKeptExactly09cb", "Pay is kept exactly as you enter it, in its own currency and period."))}</CardDescription>
+        <CardTitle>{tr("msg.details3ec3", "Details")}</CardTitle>
+        <CardDescription>{tr("msg.payIsKeptExactly09cb", "Pay is kept exactly as you enter it, in its own currency and period.")}</CardDescription>
       </CardHeader>
       <CardContent>
         <form
@@ -42,27 +42,27 @@ export function Details({ data }: { data: DetailData }) {
           }}
         >
           <div className="grid gap-1">
-            <Label htmlFor="applied-on">{tr("msg.dateApplied7db1", tr("msg.dateApplied7db1", "Date applied"))}</Label>
+            <Label htmlFor="applied-on">{tr("msg.dateApplied7db1", "Date applied")}</Label>
             <Input id="applied-on" type="date" value={v.appliedOn} onChange={(e) => set("appliedOn", e.target.value)} />
           </div>
           <fieldset className="grid gap-2">
-            <legend className="mb-1 text-sm font-medium">{tr("msg.offeredPay42a0", tr("msg.offeredPay42a0", "Offered pay"))}</legend>
+            <legend className="mb-1 text-sm font-medium">{tr("msg.offeredPay42a0", "Offered pay")}</legend>
             <div className="grid grid-cols-[2fr_1fr] gap-2 @@3xl:grid-cols-[2fr_1fr_1.5fr]">
               <div className="grid gap-1">
                 <Label htmlFor="pay-amount" className="text-xs text-muted-foreground">
-                  {tr("msg.amountb2f4", tr("msg.amountb2f4", "Amount"))}
+                  {tr("msg.amountb2f4", "Amount")}
                 </Label>
                 <Input id="pay-amount" inputMode="decimal" value={v.payAmount} onChange={(e) => set("payAmount", e.target.value)} placeholder="85000" />
               </div>
               <div className="grid gap-1">
                 <Label htmlFor="pay-currency" className="text-xs text-muted-foreground">
-                  {tr("msg.currency386c", tr("msg.currency386c", "Currency"))}
+                  {tr("msg.currency386c", "Currency")}
                 </Label>
                 <Input id="pay-currency" maxLength={3} value={v.payCurrency} onChange={(e) => set("payCurrency", e.target.value.toUpperCase())} placeholder="CAD" />
               </div>
               <div className="col-span-2 grid gap-1 sm:col-span-1">
                 <Label htmlFor="pay-period" className="text-xs text-muted-foreground">
-                  {tr("msg.perbc50", tr("msg.perbc50", "Per"))}
+                  {tr("msg.perbc50", "Per")}
                 </Label>
                 <AppSelect id="pay-period" value={v.payPeriod} onChange={(e) => set("payPeriod", e.target.value as PayPeriod | "")}>
                   <option value="">—</option>
@@ -77,16 +77,16 @@ export function Details({ data }: { data: DetailData }) {
           </fieldset>
           {draft.offered !== null ? <DraftBanner what="note" onRestore={() => set("notes", draft.accept() ?? "")} onDiscard={draft.discard} /> : null}
           <div className="grid gap-1">
-            <Label htmlFor="app-notes">{tr("msg.notesf4c6", tr("msg.notesf4c6", "Notes"))}</Label>
+            <Label htmlFor="app-notes">{tr("msg.notesf4c6", "Notes")}</Label>
             <Textarea id="app-notes" rows={4} maxLength={10000} value={v.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>
           <div className="flex gap-2">
             <Button type="submit" size="sm" disabled={pending || !changed}>
-              <Check aria-hidden /> {tr("msg.saveDetailscccd", tr("msg.saveDetailscccd", "Save details"))}
+              <Check aria-hidden /> {tr("msg.saveDetailscccd", "Save details")}
             </Button>
             {changed ? (
               <Button type="button" size="sm" variant="ghost" onClick={() => setV(data.details)}>
-                <Undo2 aria-hidden /> {tr("msg.discardChanges9831", tr("msg.discardChanges9831", "Discard changes"))}
+                <Undo2 aria-hidden /> {tr("msg.discardChanges9831", "Discard changes")}
               </Button>
             ) : null}
           </div>
