@@ -237,7 +237,7 @@ async function load() {
   const url = env("NEXT_PUBLIC_SUPABASE_URL");
   const key = env("SUPABASE_SECRET_KEY");
   if (!url || !key) throw new Error("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY.");
-  const rows = JSON.parse(readFileSync(SEED, "utf8")).map((e) => ({ name: e.name, ats: e.ats, board_token: e.token, careers_url: e.careers_url }));
+  const rows = JSON.parse(readFileSync(SEED, "utf8")).map((e) => ({ name: e.name, ats: e.ats, board_token: e.token, careers_url: e.careers_url, ...(e.website ? { website: e.website } : {}) }));
   for (let i = 0; i < rows.length; i += 200) {
     const res = await fetch(`${url}/rest/v1/employers?on_conflict=ats,board_token`, {
       method: "POST",

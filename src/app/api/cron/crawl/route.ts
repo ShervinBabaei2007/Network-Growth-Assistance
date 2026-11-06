@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { refreshEmployerIcons } from "@/lib/job-postings/employer-icons";
 import { crawlDue } from "@/lib/job-postings/crawler";
 import { syncFeeds } from "@/lib/job-postings/search";
 import { jobServices } from "@/lib/job-postings/services";
@@ -25,9 +26,10 @@ async function handle(request: Request) {
     const summary = await crawlDue(createAdminClient(), { deadline, embedder: services.embedder, fixtures: services.fixtures });
     // A feed failing never fails the crawl: board jobs and link checks still run.
     const feeds = Date.now() < deadline ? await syncFeeds({ fixtures: services.fixtures }) : null;
+    const icons = Date.now() < deadline ? await refreshEmployerIcons(createAdminClient(), { deadline }) : null;
     const linksChecked = Date.now() < deadline ? await verifyPending(100, deadline) : 0;
     log("info", "cron.crawl", "finished", { boards: summary.boards, newJobs: summary.newJobs, linksChecked });
-    return NextResponse.json({ ok: true, ...summary, feeds, linksChecked });
+    return NextResponse.json({ ok: true, ...summary, feeds, icons, linksChecked });
   } catch (e) {
     log("error", "cron.crawl", "failed", { message: errorMessage(e) });
     return NextResponse.json({ ok: false, error: "Crawl failed; see server logs." }, { status: 500 });

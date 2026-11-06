@@ -53,6 +53,7 @@ export function JobCard({
   status,
   source,
   alsoOn,
+  iconUrl,
   breakdown = [],
   pay = null,
 }: {
@@ -63,6 +64,8 @@ export function JobCard({
   status: "saved" | "applied" | "dismissed" | null;
   source: JobSource;
   alsoOn: string[];
+  /** Our own copy of the employer's icon, only when its website is confirmed and the icon was fetched. */
+  iconUrl?: string | null;
   /** One bar per area of the posting (skills, experience, eligibility), from the same results as the score. */
   breakdown?: BreakdownRow[];
   /** The stated pay as a range against the person's own minimum; null when the posting states none. */
@@ -77,7 +80,7 @@ export function JobCard({
     <li className={cn("grid gap-2 rounded-xl border border-l-4 bg-card p-4 shadow-xs transition-shadow [contain-intrinsic-size:auto_9rem] [content-visibility:auto] hover:shadow-sm", TIER_STYLE[tier].border)}>
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
         <div className="flex min-w-0 items-start gap-3">
-          <EmployerMark name={j.company} />
+          <EmployerMark name={j.company} iconUrl={iconUrl} />
           <Link href={`/jobs/${j.id}`} className="min-w-0 text-base leading-snug font-semibold hover:text-primary hover:underline">
             {j.title}
           </Link>

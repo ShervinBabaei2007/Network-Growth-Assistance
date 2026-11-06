@@ -90,7 +90,7 @@ export type FeedJob = {
   canonical_url: string | null;
 };
 
-export type EmployerInfo = { name: string; ats: AtsKind; careers_url: string | null };
+export type EmployerInfo = { name: string; ats: AtsKind; careers_url: string | null; has_icon?: boolean };
 export type FeedMatch = { tier: string; score: number; summary: string | null; results: unknown };
 type Status = "saved" | "applied" | "dismissed";
 
@@ -304,8 +304,8 @@ export async function loadFeed(db: Db, userId: string, query: FeedQuery, opts: L
 
   // Where each posting came from (and a last guard: sample employers never show outside fixture mode).
   const employerIds = [...new Set([...freshRows, ...savedJobs].map((j) => j.employer_id).filter((id): id is string => Boolean(id)))];
-  const employerParts = await Promise.all(chunk(employerIds, 100).map((ids) => db.from("employers").select("id, name, ats, careers_url").in("id", ids)));
-  const employers = new Map<string, EmployerInfo>(employerParts.flatMap((p) => (p.data ?? []).map((e) => [e.id, { name: e.name, ats: e.ats as AtsKind, careers_url: e.careers_url }] as const)));
+  const employerParts = await Promise.all(chunk(employerIds, 100).map((ids) => db.from("employers").select("id, name, ats, careers_url, has_icon").in("id", ids)));
+  const employers = new Map<string, EmployerInfo>(employerParts.flatMap((p) => (p.data ?? []).map((e) => [e.id, { name: e.name, ats: e.ats as AtsKind, careers_url: e.careers_url, has_icon: e.has_icon }] as const)));
   const isReal = (j: FeedJob) => services.fixtures || ((!j.employer_id || employers.get(j.employer_id)?.ats !== "fixture") && (Boolean(j.user_id) || !isFixtureLink(j.apply_url)));
 
   // 3–4. Filters, freshness window, one copy of each job.

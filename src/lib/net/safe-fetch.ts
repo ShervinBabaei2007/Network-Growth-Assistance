@@ -28,7 +28,13 @@ export type Resolver = (host: string) => Promise<Address[]>;
 /** Does one request to an already-vetted address. Swappable in tests. */
 /** `timeoutMs` is the socket's idle limit; `deadlineMs` caps the whole request, however slowly the body trickles in. */
 export type Transport = (url: URL, address: Address, opts: { timeoutMs: number; deadlineMs: number; maxBytes: number; headers: Record<string, string> }) => Promise<RawResponse>;
-export type RawResponse = { status: number; headers: Record<string, string | undefined>; body: string };
+export type RawResponse = {
+  status: number;
+  headers: Record<string, string | undefined>;
+  body: string;
+  /** The body exactly as received (capped at maxBytes). `body` is utf-8 text and would corrupt an image. */
+  bytes?: Uint8Array;
+};
 
 export type SafeResponse = RawResponse & { url: string; redirects: string[] };
 
@@ -171,7 +177,9 @@ const pinnedTransport: Transport = (url, address, opts) =>
         });
         const done = () => {
           if (expired) return reject(new Error("timed out"));
+          const bytes = Buffer.concat(chunks).subarray(0, opts.maxBytes);
           resolve({
+            bytes,
             status: res.statusCode ?? 0,
             headers: Object.fromEntries(Object.entries(res.headers).map(([k, v]) => [k, Array.isArray(v) ? v.join(", ") : (v ?? "")])),
             body: Buffer.concat(chunks).toString("utf8").slice(0, opts.maxBytes),

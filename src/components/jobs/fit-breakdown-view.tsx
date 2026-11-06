@@ -64,7 +64,7 @@ export function PayRange({ bar }: { bar: PayBar }) {
 }
 
 /** Initials in a neutral circle, so a list of employers is quicker to scan. Decorative: the company name is always in the text beside it. */
-export function EmployerMark({ name }: { name: string | null }) {
+export function EmployerMark({ name, iconUrl }: { name: string | null; iconUrl?: string | null }) {
   const initials = (name ?? "")
     .replace(/\b(inc|ltd|llc|corp|co|the|of|and)\b\.?/gi, "")
     .split(/[\s\-/&.,]+/)
@@ -73,8 +73,13 @@ export function EmployerMark({ name }: { name: string | null }) {
     .map((w) => w[0]!.toUpperCase())
     .join("");
   return (
-    <span aria-hidden className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border bg-muted text-xs font-semibold text-muted-foreground">
+    <span aria-hidden className="relative inline-flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted text-xs font-semibold text-muted-foreground">
       {initials || "•"}
+      {/* The employer's own icon covers the initials; if it fails to load, the initials underneath remain. */}
+      {iconUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- a tiny same-origin icon; the image optimiser would add nothing
+        <img src={iconUrl} alt="" width={32} height={32} loading="lazy" decoding="async" className="absolute inset-0 size-full bg-background object-contain p-1" />
+      ) : null}
     </span>
   );
 }

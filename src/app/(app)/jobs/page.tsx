@@ -337,6 +337,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
                   status={stateBy.get(j.id) ?? null}
                   source={jobSource(j, employer)}
                   alsoOn={[...new Set(twins.map((t) => alsoListedOn(t.source)))]}
+                  iconUrl={employer?.has_icon && j.employer_id ? `/api/employer-icon/${j.employer_id}` : null}
                   breakdown={fit?.success ? fitBreakdown(fit.data.requirements, fit.data.results, (t) => skillsIn(t).map((s) => s.name)) : []}
                   pay={payBar(j, filters.minSalary, currency)}
                 />

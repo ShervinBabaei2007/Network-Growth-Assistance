@@ -317,16 +317,36 @@ isOneToOne: false
       referencedColumns: ["id","user_id"]
     }
                   ]
-                },"employers": {
+                },"employer_icons": {
                   Row: {
-                    "added_by": string | null,"ats": Database["public"]['Enums']["ats_kind"],"board_token": string,"careers_url": string | null,"created_at": string,"etag": string | null,"failures": number,"id": string,"last_crawled_at": string | null,"last_error": string | null,"matching_jobs": number,"name": string,"next_crawl_at": string,"status": Database["public"]['Enums']["employer_status"],"updated_at": string
+                    "bytes": string,"content_type": string,"employer_id": string,"fetched_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "added_by"?: string | null,"ats": Database["public"]['Enums']["ats_kind"],"board_token": string,"careers_url"?: string | null,"created_at"?: string,"etag"?: string | null,"failures"?: number,"id"?: string,"last_crawled_at"?: string | null,"last_error"?: string | null,"matching_jobs"?: number,"name": string,"next_crawl_at"?: string,"status"?: Database["public"]['Enums']["employer_status"],"updated_at"?: string
+                    "bytes": string,"content_type": string,"employer_id": string,"fetched_at"?: string
                   }
                   Update: {
-                    "added_by"?: string | null,"ats"?: Database["public"]['Enums']["ats_kind"],"board_token"?: string,"careers_url"?: string | null,"created_at"?: string,"etag"?: string | null,"failures"?: number,"id"?: string,"last_crawled_at"?: string | null,"last_error"?: string | null,"matching_jobs"?: number,"name"?: string,"next_crawl_at"?: string,"status"?: Database["public"]['Enums']["employer_status"],"updated_at"?: string
+                    "bytes"?: string,"content_type"?: string,"employer_id"?: string,"fetched_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "employer_icons_employer_id_fkey"
+      columns: ["employer_id"]
+isOneToOne: true
+      referencedRelation: "employers"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"employers": {
+                  Row: {
+                    "added_by": string | null,"ats": Database["public"]['Enums']["ats_kind"],"board_token": string,"careers_url": string | null,"created_at": string,"etag": string | null,"failures": number,"has_icon": boolean,"icon_checked_at": string | null,"id": string,"last_crawled_at": string | null,"last_error": string | null,"matching_jobs": number,"name": string,"next_crawl_at": string,"status": Database["public"]['Enums']["employer_status"],"updated_at": string,"website": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "added_by"?: string | null,"ats": Database["public"]['Enums']["ats_kind"],"board_token": string,"careers_url"?: string | null,"created_at"?: string,"etag"?: string | null,"failures"?: number,"has_icon"?: boolean,"icon_checked_at"?: string | null,"id"?: string,"last_crawled_at"?: string | null,"last_error"?: string | null,"matching_jobs"?: number,"name": string,"next_crawl_at"?: string,"status"?: Database["public"]['Enums']["employer_status"],"updated_at"?: string,"website"?: string | null
+                  }
+                  Update: {
+                    "added_by"?: string | null,"ats"?: Database["public"]['Enums']["ats_kind"],"board_token"?: string,"careers_url"?: string | null,"created_at"?: string,"etag"?: string | null,"failures"?: number,"has_icon"?: boolean,"icon_checked_at"?: string | null,"id"?: string,"last_crawled_at"?: string | null,"last_error"?: string | null,"matching_jobs"?: number,"name"?: string,"next_crawl_at"?: string,"status"?: Database["public"]['Enums']["employer_status"],"updated_at"?: string,"website"?: string | null
                   }
                   Relationships: [
                     

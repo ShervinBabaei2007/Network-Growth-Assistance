@@ -127,3 +127,12 @@ describe("safeFetch", () => {
     await expect(safeFetch("https://jobs.example.com/a", { resolve: resolveTo("93.184.216.34"), transport, totalTimeoutMs: 50 })).rejects.toThrow(/timed out/);
   });
 });
+
+describe("safeFetch bytes", () => {
+  it("passes the transport's raw bytes through untouched", async () => {
+    const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0xff, 0xfe]);
+    const transport: Transport = async () => ({ status: 200, headers: { "content-type": "image/png" }, body: "", bytes: png });
+    const res = await safeFetch("https://www.example.com/favicon.ico", { resolve: resolveTo("93.184.216.34"), transport });
+    expect(Array.from(res.bytes ?? [])).toEqual(Array.from(png));
+  });
+});

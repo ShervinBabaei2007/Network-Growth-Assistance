@@ -224,6 +224,18 @@ export async function addEmployer(_: FormState, formData: FormData): Promise<For
   const name = formData.get("name")?.toString().trim() ?? "";
   if (!/^https?:\/\/\S+$/i.test(url) || url.length > 500) return failed("Paste the employer's careers page or job board link.");
   if (name.length < 2 || name.length > 200) return failed("Add the employer's name.");
+  // The employer's own website is optional and only ever typed by a person; it is what makes its icon appear on job cards.
+  const websiteRaw = formData.get("website")?.toString().trim() ?? "";
+  let website: string | null = null;
+  if (websiteRaw) {
+    try {
+      const w = new URL(/^https?:\/\//i.test(websiteRaw) ? websiteRaw : `https://${websiteRaw}`);
+      if ((w.protocol !== "https:" && w.protocol !== "http:") || !w.hostname.includes(".") || w.username || w.password) throw new Error("bad website");
+      website = w.origin;
+    } catch {
+      return failed("That website doesn't look right. Use the employer's own address, like https://www.acme.com, or leave it empty.");
+    }
+  }
   const ctx = await actionContext();
   const admin = createAdminClient();
   const since = new Date(Date.now() - 24 * 3600_000).toISOString();
@@ -244,7 +256,7 @@ export async function addEmployer(_: FormState, formData: FormData): Promise<For
   } catch {
     return failed("That job board didn't answer. Check the link and try again.");
   }
-  const { error } = await admin.from("employers").insert({ name, ats: board.ats, board_token: board.token, careers_url: url, added_by: ctx.userId, next_crawl_at: new Date().toISOString() });
+  const { error } = await admin.from("employers").insert({ name, ats: board.ats, board_token: board.token, careers_url: url, website, added_by: ctx.userId, next_crawl_at: new Date().toISOString() });
   if (error) return failed("Couldn't add it. Try again.");
   await logActivity(ctx, "jobs.employer_added", { ats: board.ats });
   refresh();

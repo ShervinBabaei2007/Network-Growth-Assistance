@@ -46,6 +46,11 @@ export default function EmployersPage({ searchParams }: PageProps<"/jobs/employe
                 <Label htmlFor="url">Careers page or job board</Label>
                 <Input id="url" name="url" type="url" required placeholder="https://jobs.lever.co/acme" />
               </div>
+              <div className="grid gap-1.5 sm:col-span-2">
+                <Label htmlFor="website">Their website (optional)</Label>
+                <Input id="website" name="website" inputMode="url" maxLength={200} placeholder="https://www.acme.com" aria-describedby="website-hint" />
+                <p id="website-hint" className="text-xs text-muted-foreground">Their own address, not a job board. When you give one, their logo shows on their job cards; otherwise we show initials.</p>
+              </div>
             </div>
           </ActionForm>
         </CardContent>
