@@ -1,5 +1,6 @@
 "use server";
 
+import { getT } from "@/lib/i18n/server";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -81,7 +82,7 @@ export async function addCandidate(_: FormState, formData: FormData): Promise<Fo
     .eq("profile_key", url.key)
     .maybeSingle();
   if (existing) {
-    return failed("This profile is already in your list.", {
+    return failed((await getT())("msg.thisProfileIsAlreadyab82"), {
       href: `/candidates/${existing.id}`,
       label: `Open ${existing.full_name}`,
     });
@@ -113,8 +114,8 @@ export async function addCandidate(_: FormState, formData: FormData): Promise<Fo
     })
     .select("id")
     .single();
-  if (isDuplicate(error)) return failed("This profile is already in your list.");
-  if (error || !row) return failed("Couldn't add the candidate. Try again.");
+  if (isDuplicate(error)) return failed((await getT())("msg.thisProfileIsAlreadyab82"));
+  if (error || !row) return failed((await getT())("msg.couldnTAddThe723a"));
 
   await logActivity(ctx, "candidate.added", { candidate: row.id, source: "manual" });
   refresh();
@@ -126,7 +127,7 @@ export async function addCandidate(_: FormState, formData: FormData): Promise<Fo
       link,
     );
   }
-  return saved(classified ? "Added." : "Added for review.", link);
+  return saved(classified ? (await getT())("msg.added1efb") : (await getT())("msg.addedForReview6204"), link);
 }
 
 // ---------------------------------------------------------------- edit
@@ -151,7 +152,7 @@ export async function updateCandidate(_: FormState, formData: FormData): Promise
       notes: d.notes,
     })
     .eq("id", d.id);
-  if (error) return failed("Couldn't save the changes. Try again.");
+  if (error) return failed((await getT())("msg.couldnTSaveTheac6f"));
 
   await logActivity(ctx, "candidate.updated", { candidate: d.id });
   refresh();
@@ -188,23 +189,23 @@ export async function confirmClassification(_: FormState, formData: FormData): P
         : {}),
     })
     .eq("id", id);
-  if (error) return failed("Couldn't save the classification. Try again.");
+  if (error) return failed((await getT())("msg.couldnTSaveTheb00c"));
 
   await logActivity(ctx, "candidate.classified", { candidate: id, university, discipline });
   refresh();
-  return saved(confirmedBoth ? "Confirmed." : "Saved; still needs review.");
+  return saved(confirmedBoth ? (await getT())("msg.confirmeda848") : (await getT())("msg.savedStillNeedsReview7bac"));
 }
 
 export async function reclassifyCandidate(_: FormState, formData: FormData): Promise<FormState> {
   const id = z.uuid().safeParse(formData.get("id"));
-  if (!id.success) return failed("We couldn't find that candidate. Reload the page and try again.");
+  if (!id.success) return failed((await getT())("msg.weCouldnTFindc7aa"));
   const ctx = await actionContext();
   const { data: cand } = await ctx.supabase
     .from("candidates")
     .select("raw_school_text, raw_program_text")
     .eq("id", id.data)
     .single();
-  if (!cand) return failed("Candidate not found.");
+  if (!cand) return failed((await getT())("msg.candidateNotFounde439"));
 
   const c = classifyCandidate(cand.raw_school_text, cand.raw_program_text, await loadCatalog(ctx.supabase));
   const { error } = await ctx.supabase
@@ -216,7 +217,7 @@ export async function reclassifyCandidate(_: FormState, formData: FormData): Pro
       discipline_confidence: c.discipline.confidence,
     })
     .eq("id", id.data);
-  if (error) return failed("Couldn't re-run classification.");
+  if (error) return failed((await getT())("msg.couldnTReRun49af"));
   refresh();
   return saved(`${c.university.reason} ${c.discipline.reason}`);
 }
@@ -238,19 +239,19 @@ export async function setCandidateStatus(_: FormState, formData: FormData): Prom
     .select("status, university_confidence, discipline_confidence, invitations(id)")
     .eq("id", id)
     .single();
-  if (!cand) return failed("Candidate not found.");
+  if (!cand) return failed((await getT())("msg.candidateNotFounde439"));
   if (cand.invitations.length > 0 && status !== "do_not_contact") {
-    return failed("This person already has an invitation recorded. Change it in the invitation section.");
+    return failed((await getT())("msg.thisPersonAlreadyHas560a"));
   }
   if (
     status === "approved" &&
     (cand.university_confidence !== "confirmed" || cand.discipline_confidence !== "confirmed")
   ) {
-    return failed("Confirm the school and program before approving.");
+    return failed((await getT())("msg.confirmTheSchoolAndd9ae"));
   }
 
   const { error } = await ctx.supabase.from("candidates").update({ status }).eq("id", id);
-  if (error) return failed("Couldn't update the status. Try again.");
+  if (error) return failed((await getT())("msg.couldnTUpdateThe2ffe"));
 
   await logActivity(ctx, "candidate.status", { candidate: id, status });
   refresh();
@@ -277,21 +278,21 @@ export async function recordInvitationSent(_: FormState, formData: FormData): Pr
   if (!parsed.success) return failed(firstIssue(parsed.error));
   const ctx = await actionContext();
   if (ctx.settings.paused) {
-    return failed("Outreach is paused. Resume it in Settings once LinkedIn's warning is resolved.");
+    return failed((await getT())("msg.outreachIsPausedResumee0a0"));
   }
   const sentAt = instantForDate(ctx, parsed.data.date);
-  if (!sentAt) return failed("The date can't be in the future.");
+  if (!sentAt) return failed((await getT())("msg.theDateCanT85bd"));
 
   const { error } = await ctx.supabase.rpc("record_invitation_sent", {
     p_candidate_id: parsed.data.id,
     p_sent_at: sentAt,
     p_note_text: parsed.data.note ?? undefined,
   });
-  if (error) return failed(functionError(error, "Couldn't record the invitation."));
+  if (error) return failed(functionError(error, (await getT())("msg.couldnTRecordThe2714")));
 
   await logActivity(ctx, "invitation.sent", { candidate: parsed.data.id });
   refresh();
-  return saved("Invitation recorded.");
+  return saved((await getT())("msg.invitationRecordedf52f"));
 }
 
 const resolveSchema = z.object({
@@ -305,14 +306,14 @@ export async function resolveInvitation(_: FormState, formData: FormData): Promi
   if (!parsed.success) return failed(firstIssue(parsed.error));
   const ctx = await actionContext();
   const at = instantForDate(ctx, parsed.data.date);
-  if (!at) return failed("The date can't be in the future.");
+  if (!at) return failed((await getT())("msg.theDateCanT85bd"));
 
   const { error } = await ctx.supabase.rpc("resolve_invitation", {
     p_candidate_id: parsed.data.id,
     p_outcome: parsed.data.outcome,
     p_resolved_at: at,
   });
-  if (error) return failed(functionError(error, "Couldn't update the invitation."));
+  if (error) return failed(functionError(error, (await getT())("msg.couldnTUpdateThedce1")));
 
   await logActivity(ctx, `invitation.${parsed.data.outcome}`, { candidate: parsed.data.id });
   refresh();
@@ -321,26 +322,26 @@ export async function resolveInvitation(_: FormState, formData: FormData): Promi
 
 export async function deleteInvitation(_: FormState, formData: FormData): Promise<FormState> {
   const id = z.uuid().safeParse(formData.get("id"));
-  if (!id.success) return failed("We couldn't find that candidate. Reload the page and try again.");
-  if (formData.get("confirm") !== "on") return failed("Tick the box to confirm.");
+  if (!id.success) return failed((await getT())("msg.weCouldnTFindc7aa"));
+  if (formData.get("confirm") !== "on") return failed((await getT())("msg.tickTheBoxTod39c"));
   const ctx = await actionContext();
 
   const { error } = await ctx.supabase.rpc("delete_invitation", { p_candidate_id: id.data });
-  if (error) return failed(functionError(error, "Couldn't remove the invitation."));
+  if (error) return failed(functionError(error, (await getT())("msg.couldnTRemoveThe99f9")));
 
   await logActivity(ctx, "invitation.deleted", { candidate: id.data });
   refresh();
-  return saved("Invitation record removed.");
+  return saved((await getT())("msg.invitationRecordRemovedfa91"));
 }
 
 export async function deleteCandidate(_: FormState, formData: FormData): Promise<FormState> {
   const id = z.uuid().safeParse(formData.get("id"));
-  if (!id.success) return failed("We couldn't find that candidate. Reload the page and try again.");
-  if (formData.get("confirm") !== "on") return failed("Tick the box to confirm.");
+  if (!id.success) return failed((await getT())("msg.weCouldnTFindc7aa"));
+  if (formData.get("confirm") !== "on") return failed((await getT())("msg.tickTheBoxTod39c"));
   const ctx = await actionContext();
 
   const { error } = await ctx.supabase.from("candidates").delete().eq("id", id.data);
-  if (error) return failed("Couldn't delete the record. Try again.");
+  if (error) return failed((await getT())("msg.couldnTDeleteTheb2eb"));
 
   await logActivity(ctx, "candidate.deleted", { candidate: id.data });
   redirect("/candidates");

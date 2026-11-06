@@ -209,3 +209,16 @@ test("the interview prep pack is in French", async ({ page, context }) => {
   await expect(page.getByText("Parlez-moi d'un problème difficile que vous avez résolu.")).toBeVisible();
   await expect(page.getByText("Liste de vérification pour le jour J")).toBeVisible();
 });
+
+test("a candidate's record is in French", async ({ page, context }) => {
+  test.setTimeout(120_000);
+  const email = uniqueEmail("fr-cand");
+  await signIn(page, email);
+  const id = await userIdFor(email);
+  const [row] = (await adminRest("POST", "candidates", [{ user_id: id, full_name: "Ada Lovelace", profile_url: "https://www.linkedin.com/in/ada-fr", profile_key: "in/ada-fr", status: "awaiting_review", source: "manual" }])) as { id: string }[];
+  await context.addCookies([{ name: "locale", value: "fr-CA", url: "http://localhost:3000" }]);
+  await page.goto(`/candidates/${row.id}`);
+  await expect(page.getByText("Prochaine étape", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Approuver pour l'envoi" })).toBeVisible();
+  await expect(page.getByText("Établissement et discipline")).toBeVisible();
+});
