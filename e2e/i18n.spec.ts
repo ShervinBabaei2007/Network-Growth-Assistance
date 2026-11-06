@@ -182,3 +182,17 @@ test("the Jobs page is in French", async ({ page, context }) => {
   await expect(page.getByRole("navigation", { name: "Correspondance" })).toBeVisible();
   await expect(page.getByText("Commencez par votre CV")).toBeVisible();
 });
+
+test("an application's record is in French", async ({ page, context }) => {
+  test.setTimeout(120_000);
+  const email = uniqueEmail("fr-record");
+  await signIn(page, email);
+  const id = await userIdFor(email);
+  const [row] = (await adminRest("POST", "applications", [{ user_id: id, title: "Alpha Role", company: "Co", stage: "interviewing" }])) as { id: string }[];
+  await context.addCookies([{ name: "locale", value: "fr-CA", url: "http://localhost:3000" }]);
+  await page.goto(`/applications/${row.id}`);
+  await expect(page.getByText("Chronologie", { exact: true })).toBeVisible();
+  await expect(page.getByText("Rappels", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Ajouter une entrevue" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Préparation d'entrevue/ })).toBeVisible();
+});

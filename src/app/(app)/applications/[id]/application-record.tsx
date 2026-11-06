@@ -8,23 +8,17 @@ import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { companySlug } from "@/lib/companies/match";
-import { formatDateOnly, formatDateTime, relativeDays, toLocalInput } from "@/lib/applications/format";
-import { describeMove, formatPay, STAGE_LABEL } from "@/lib/applications/stages";
+import { formatDateOnly, formatDateTime as formatDateTimeIn, relativeDays, toLocalInput } from "@/lib/applications/format";
+import { formatPay, isClosed, type Stage } from "@/lib/applications/stages";
+import { LocaleScope } from "@/components/locale-scope";
+import { getLocale, getT } from "@/lib/i18n/server";
+import type { MessageKey } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/server";
 import { ApplicationDetail, type DetailData } from "./detail";
 
 const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 
-const EVENT_LABEL: Record<string, string> = {
-  note: "Note",
-  response: "Response",
-  interview: "Interview",
-  reminder: "Reminder",
-  contact: "Contact",
-  document: "Document",
-  created: "Added",
-  migrated: "Added",
-};
+const EVENT_KINDS = ["note", "response", "interview", "reminder", "contact", "document", "created", "migrated"];
 
 export async function ApplicationRecord({ params }: Pick<PageProps<"/applications/[id]">, "params">) {
   const { id } = await params;
@@ -48,6 +42,10 @@ export async function ApplicationRecord({ params }: Pick<PageProps<"/application
   ]);
   const tz = settings?.timezone ?? "UTC";
   const now = new Date();
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  const stageName = (s: string) => t(`stage.${s}` as MessageKey);
+  const formatDateTime = (iso: string, zone: string) => formatDateTimeIn(iso, zone, locale);
+  const describeMove = (from: Stage | null, to: Stage) => (!from ? t("appRecord.addedAs", { stage: stageName(to) }) : isClosed(from) && !isClosed(to) ? t("appRecord.reopened", { from: stageName(from), to: stageName(to) }) : `${stageName(from)} → ${stageName(to)}`);
 
   // Document versions written for this job: every tailored resume, CV and cover letter.
   let tailored: { id: string; label: string }[] = [];
@@ -56,8 +54,8 @@ export async function ApplicationRecord({ params }: Pick<PageProps<"/application
     const matchIds = (matches ?? []).map((m) => m.id);
     if (matchIds.length) {
       const { data } = await supabase.from("tailored_documents").select("id, kind, label, created_at, edited").in("match_id", matchIds).is("deleted_at", null).order("created_at", { ascending: false });
-      const name = { resume: "Tailored resume", cover_letter: "Cover letter", cv: "Tailored CV" } as Record<string, string>;
-      tailored = (data ?? []).map((d) => ({ id: d.id, label: d.label ?? `${name[d.kind] ?? "Document"}, ${formatDateTime(d.created_at, tz)}${d.edited ? " (edited)" : ""}` }));
+      const name = { resume: t("appRecord.docTailoredResume"), cover_letter: t("appRecord.docCoverLetter"), cv: t("appRecord.docCv") } as Record<string, string>;
+      tailored = (data ?? []).map((d) => ({ id: d.id, label: d.label ?? `${name[d.kind] ?? t("appRecord.docOther")}, ${formatDateTime(d.created_at, tz)}${d.edited ? t("appRecord.edited") : ""}` }));
     }
   }
 
@@ -78,15 +76,15 @@ export async function ApplicationRecord({ params }: Pick<PageProps<"/application
     timeline: (events.data ?? []).map((e) => ({
       id: e.id,
       kind: e.kind,
-      label: e.kind === "stage" || e.kind === "reopened" ? describeMove(e.from_stage, e.to_stage!) : (EVENT_LABEL[e.kind] ?? e.kind),
-      detail: e.kind === "created" || e.kind === "migrated" ? [e.to_stage ? `As ${STAGE_LABEL[e.to_stage]}` : null, e.detail].filter(Boolean).join(". ") : e.detail,
+      label: e.kind === "stage" || e.kind === "reopened" ? describeMove(e.from_stage, e.to_stage!) : (EVENT_KINDS.includes(e.kind) ? t(`appRecord.ev_${e.kind}` as MessageKey) : e.kind),
+      detail: e.kind === "created" || e.kind === "migrated" ? [e.to_stage ? t("appRecord.asStage", { stage: stageName(e.to_stage) }) : null, e.detail].filter(Boolean).join(". ") : e.detail,
       when: formatDateTime(e.occurred_at, tz),
       removable: e.kind === "note" || e.kind === "response",
     })),
     interviews: (interviews.data ?? []).map((i) => ({
       id: i.id,
       when: formatDateTime(i.starts_at, tz),
-      relative: relativeDays(i.starts_at, tz, now),
+      relative: relativeDays(i.starts_at, tz, now, locale),
       past: Date.parse(i.starts_at) < now.getTime(),
       startsLocal: toLocalInput(i.starts_at, i.timezone),
       timezone: i.timezone,
@@ -96,15 +94,15 @@ export async function ApplicationRecord({ params }: Pick<PageProps<"/application
       notes: i.notes ?? "",
       scheduledIn: i.timezone === tz ? null : `${toLocalInput(i.starts_at, i.timezone).replace("T", " ")} ${i.timezone}`,
     })),
-    reminders: (reminders.data ?? []).map((r) => ({ id: r.id, text: r.text, when: formatDateTime(r.due_at, tz), relative: relativeDays(r.due_at, tz, now), overdue: !r.done_at && Date.parse(r.due_at) < now.getTime(), done: Boolean(r.done_at) })),
-    contacts: (contacts.data ?? []).map((c) => ({ personId: c.person_id, role: c.role, name: c.network_people?.full_name ?? "Unknown", title: [c.network_people?.current_title, c.network_people?.current_company].filter(Boolean).join(" · ") })),
+    reminders: (reminders.data ?? []).map((r) => ({ id: r.id, text: r.text, when: formatDateTime(r.due_at, tz), relative: relativeDays(r.due_at, tz, now, locale), overdue: !r.done_at && Date.parse(r.due_at) < now.getTime(), done: Boolean(r.done_at) })),
+    contacts: (contacts.data ?? []).map((c) => ({ personId: c.person_id, role: c.role, name: c.network_people?.full_name ?? t("appRecord.unknown"), title: [c.network_people?.current_title, c.network_people?.current_company].filter(Boolean).join(" · ") })),
     documents: (documents.data ?? []).map((d) => ({ id: d.id, label: d.label, linkedOn: formatDateTime(d.created_at, tz), sourceGone: !d.tailored_document_id && !d.resume_id })),
     options: {
       people: (people.data ?? []).map((p) => ({ id: p.id, label: p.current_company ? `${p.full_name} (${p.current_company})` : p.full_name })),
       tailored,
-      resumes: (resumes.data ?? []).map((r) => ({ id: r.id, label: `Resume: ${r.label}${r.is_active ? " (current)" : ""}` })),
+      resumes: (resumes.data ?? []).map((r) => ({ id: r.id, label: `${t("appRecord.resumeLabel", { label: r.label })}${r.is_active ? t("appRecord.current") : ""}` })),
     },
-    otherAttempts: (otherAttempts.data ?? []).map((o) => ({ id: o.id, label: `Attempt ${o.attempt}: ${STAGE_LABEL[o.stage as keyof typeof STAGE_LABEL] ?? o.stage}` })),
+    otherAttempts: (otherAttempts.data ?? []).map((o) => ({ id: o.id, label: t("appRecord.attemptStage", { n: o.attempt, stage: stageName(o.stage) }) })),
     nowLocal: toLocalInput(now.toISOString(), tz),
   };
   const pay = formatPay(app.offered_pay_amount, app.offered_pay_currency, app.offered_pay_period);
@@ -113,7 +111,7 @@ export async function ApplicationRecord({ params }: Pick<PageProps<"/application
   return (
     <div className="grid gap-6">
       <PageHeader
-        back={{ href: "/applications", label: "Applications" }}
+        back={{ href: "/applications", label: t("pages.backApplications") }}
         title={app.title}
         meta={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -123,22 +121,22 @@ export async function ApplicationRecord({ params }: Pick<PageProps<"/application
               </Link>
             ) : null}
             {app.location ? <span>{app.location}</span> : null}
-            <Badge variant="secondary">{STAGE_LABEL[app.stage]}</Badge>
-            {app.attempt > 1 ? <span>Attempt {app.attempt}</span> : null}
-            {app.applied_on ? <span>Applied {formatDateOnly(app.applied_on)}</span> : null}
-            {pay ? <span>Offered {pay}</span> : null}
+            <Badge variant="secondary">{stageName(app.stage)}</Badge>
+            {app.attempt > 1 ? <span>{t("appRecord.attempt", { n: app.attempt })}</span> : null}
+            {app.applied_on ? <span>{t("appRecord.appliedOn", { date: formatDateOnly(app.applied_on, locale) })}</span> : null}
+            {pay ? <span>{t("appRecord.offered", { pay })}</span> : null}
           </span>
         }
         actions={
           <div className="flex flex-wrap items-center gap-3">
             {["screening", "interviewing", "offer"].includes(app.stage) || data.interviews.length > 0 ? (
               <Link href={`/applications/${app.id}/prep`} className={buttonVariants({ size: "sm" })}>
-                <ClipboardList aria-hidden /> Interview prep
+                <ClipboardList aria-hidden /> {t("appRecord.prep")}
               </Link>
             ) : null}
             {app.job_id ? (
               <Link href={`/jobs/${app.job_id}`} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
-                View the job <ExternalLink aria-hidden className="size-3.5" />
+                {t("appRecord.viewJob")} <ExternalLink aria-hidden className="size-3.5" />
               </Link>
             ) : null}
           </div>
@@ -146,23 +144,25 @@ export async function ApplicationRecord({ params }: Pick<PageProps<"/application
       />
       {jobGone ? (
         <p role="status" className="rounded-lg border bg-muted/50 p-3 text-sm text-muted-foreground">
-          The original posting is no longer in Jobs. This application keeps the title, company and link it had when you tracked it.
+          {t("appRecord.jobGone")}
           {app.apply_url ? (
             <>
               {" "}
               <a href={app.apply_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                Last known link
-              </a>{" "}
-              (it may no longer work).
+                {t("appRecord.lastLink")}
+              </a>
+              {t("appRecord.mayNotWork")}
             </>
           ) : null}
         </p>
       ) : job.data?.closed_at || job.data?.verification_status === "expired" ? (
         <p role="status" className="rounded-lg border bg-muted/50 p-3 text-sm text-muted-foreground">
-          This posting has closed. Your application and its history are kept.
+          {t("appRecord.postingClosed")}
         </p>
       ) : null}
-      <ApplicationDetail data={data} />
+      <LocaleScope groups={["msg", "appRecord", "stage", "applicationsPage", "ui"]}>
+        <ApplicationDetail data={data} />
+      </LocaleScope>
       {app.company ? (
         <Suspense fallback={null}>
           <PeopleAtCompany company={app.company} applicationId={app.id} />

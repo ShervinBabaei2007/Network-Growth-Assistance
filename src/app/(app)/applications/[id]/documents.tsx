@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { AppSelect } from "@/components/app-select";
@@ -11,14 +12,15 @@ import { linkDocument, unlinkDocument } from "../actions";
 import type { DetailData } from "./detail-data";
 
 export function Documents({ data }: { data: DetailData }) {
+  const tr = useTr();
   const { pending, run } = useActionRunner();
   const [choice, setChoice] = useState("");
   const options = [...data.options.tailored.map((t) => ({ value: `t:${t.id}`, label: t.label })), ...data.options.resumes.map((r) => ({ value: `r:${r.id}`, label: r.label }))];
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Documents sent</CardTitle>
-        <CardDescription>Which version you sent.</CardDescription>
+        <CardTitle>{tr("msg.documentsSent43c9", tr("msg.documentsSent43c9", "Documents sent"))}</CardTitle>
+        <CardDescription>{tr("msg.whichVersionYouSent5a7b", tr("msg.whichVersionYouSent5a7b", "Which version you sent."))}</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
         {data.documents.length ? (
@@ -28,18 +30,18 @@ export function Documents({ data }: { data: DetailData }) {
                 <span className="min-w-0 break-words">
                   {d.label}
                   <span className="block text-xs text-muted-foreground">
-                    Linked {d.linkedOn}
-                    {d.sourceGone ? " · original deleted, copy kept" : ""}
+                    {tr("appRecord.linkedOn", "Linked {date}", { date: d.linkedOn })}
+                    {d.sourceGone ? tr("appRecord.originalDeleted", " · original deleted, copy kept") : ""}
                   </span>
                 </span>
-                <Button size="icon-xs" variant="ghost" aria-label={`Unlink ${d.label}`} title={`Unlink ${d.label}`} disabled={pending} onClick={() => run(() => unlinkDocument(d.id))}>
+                <Button size="icon-xs" variant="ghost" aria-label={tr("appRecord.unlinkName", "Unlink {name}", { name: d.label })} title={tr("appRecord.unlinkName", "Unlink {name}", { name: d.label })} disabled={pending} onClick={() => run(() => unlinkDocument(d.id))}>
                   <Trash2 aria-hidden />
                 </Button>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">No documents linked.</p>
+          <p className="text-sm text-muted-foreground">{tr("msg.noDocumentsLinkedfcb1", tr("msg.noDocumentsLinkedfcb1", "No documents linked."))}</p>
         )}
         {options.length ? (
           <form
@@ -51,9 +53,9 @@ export function Documents({ data }: { data: DetailData }) {
             }}
           >
             <div className="grid gap-1">
-              <Label htmlFor="doc-choice">Version</Label>
+              <Label htmlFor="doc-choice">{tr("msg.version34b6", tr("msg.version34b6", "Version"))}</Label>
               <AppSelect id="doc-choice" value={choice} onChange={(e) => setChoice(e.target.value)} required>
-                <option value="">Choose a document…</option>
+                <option value="">{tr("msg.chooseADocument5489", tr("msg.chooseADocument5489", "Choose a document…"))}</option>
                 {options.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -62,7 +64,7 @@ export function Documents({ data }: { data: DetailData }) {
               </AppSelect>
             </div>
             <Button type="submit" size="sm" variant="outline" className="justify-self-start" disabled={pending || !choice}>
-              Link document
+              {tr("msg.linkDocument05bd", tr("msg.linkDocument05bd", "Link document"))}
             </Button>
           </form>
         ) : null}

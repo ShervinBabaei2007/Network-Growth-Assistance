@@ -1,16 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DetailData } from "./detail-data";
+import { getT } from "@/lib/i18n/server";
 import { NoteForm, RemoveEntry } from "./timeline-islands";
 
 /**
  * The timeline is read-only markup, so it renders on the server and ships no JavaScript of its own. Only the
  * add-a-note form and each removable note's button are client components.
  */
-export function Timeline({ data }: { data: DetailData }) {
+export async function Timeline({ data }: { data: DetailData }) {
+  const t = await getT();
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Timeline</CardTitle>
+        <CardTitle>{t("msg.timeline3d1f")}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4">
         <NoteForm applicationId={data.id} />
@@ -29,7 +31,7 @@ export function Timeline({ data }: { data: DetailData }) {
             ))}
           </ol>
         ) : (
-          <p className="text-sm text-muted-foreground">Nothing on the timeline yet.</p>
+          <p className="text-sm text-muted-foreground">{t("msg.nothingOnTheTimeline7477")}</p>
         )}
       </CardContent>
     </Card>

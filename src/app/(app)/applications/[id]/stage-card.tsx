@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { useState } from "react";
 import Link from "next/link";
 import { AppSelect } from "@/components/app-select";
@@ -7,11 +8,13 @@ import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { isClosed, STAGE_HINT, STAGE_LABEL, STAGES, type Stage } from "@/lib/applications/stages";
+import { isClosed, STAGES, type Stage } from "@/lib/applications/stages";
+import { useStageText } from "../tracker-shared";
 import { applyAgain, moveStage } from "../actions";
 import type { DetailData } from "./detail-data";
 
 export function StageCard({ data }: { data: DetailData }) {
+  const { tr, label, hint } = useStageText();
   const { pending, run } = useActionRunner();
   const [to, setTo] = useState<Stage>(data.stage);
   const move = () => {
@@ -29,36 +32,36 @@ export function StageCard({ data }: { data: DetailData }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Stage</CardTitle>
+        <CardTitle>{tr("msg.stage64c6", tr("msg.stage64c6", "Stage"))}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
         <div className="flex flex-wrap items-end gap-2">
           <div className="grid min-w-48 flex-1 gap-1">
-            <Label htmlFor="stage">Stage</Label>
+            <Label htmlFor="stage">{tr("msg.stage64c6", tr("msg.stage64c6", "Stage"))}</Label>
             <AppSelect id="stage" value={to} onChange={(e) => setTo(e.target.value as Stage)} aria-describedby="stage-hint">
               {STAGES.map((s) => (
                 <option key={s} value={s}>
-                  {STAGE_LABEL[s]}
+                  {label(s)}
                 </option>
               ))}
             </AppSelect>
           </div>
           <Button size="sm" disabled={pending || to === data.stage} onClick={move}>
-            {isClosed(data.stage) && !isClosed(to) ? "Reopen" : "Move"}
+            {isClosed(data.stage) && !isClosed(to) ? tr("msg.reopenb824", "Reopen") : tr("msg.move6bc3", "Move")}
           </Button>
         </div>
         <p id="stage-hint" className="text-xs text-muted-foreground">
-          {STAGE_LABEL[to]}: {STAGE_HINT[to]}.
+          {label(to)} : {hint(to)}.
         </p>
         {isClosed(data.stage) && data.jobId ? (
           <div className="grid gap-2 border-t pt-3">
-            <p className="text-sm text-muted-foreground">Applying to this job again? Start a new attempt; this one keeps its history.</p>
+            <p className="text-sm text-muted-foreground">{tr("msg.applyingToThisJob6a47", tr("msg.applyingToThisJob6a47", "Applying to this job again? Start a new attempt; this one keeps its history."))}</p>
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" disabled={pending} onClick={() => run(() => applyAgain(data.id, "saved"))}>
-                New attempt (saved)
+                {tr("msg.newAttemptSavedb08f", tr("msg.newAttemptSavedb08f", "New attempt (saved)"))}
               </Button>
               <Button size="sm" variant="outline" disabled={pending} onClick={() => run(() => applyAgain(data.id, "applied"))}>
-                New attempt (applied)
+                {tr("msg.newAttemptApplied187c", tr("msg.newAttemptApplied187c", "New attempt (applied)"))}
               </Button>
             </div>
           </div>
