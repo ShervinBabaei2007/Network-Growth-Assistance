@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useId } from "react";
 import { AppSelect } from "@/components/app-select";
@@ -14,20 +15,21 @@ const hourLabel = (h: number) => new Date(Date.UTC(2026, 0, 1, h)).toLocaleTimeS
 /** Name, how often to alert, when (in the user's own time zone) and whether to email. */
 export function AlertFields({ value, onChange, emailAvailable, timeZone }: { value: AlertValue; onChange: (v: AlertValue) => void; emailAvailable: boolean; timeZone: string }) {
   const id = useId();
+  const tr = useTr();
   const set = <K extends keyof AlertValue>(k: K, v: AlertValue[K]) => onChange({ ...value, [k]: v });
   return (
     <div className="grid gap-3">
       <div className="grid gap-1">
-        <Label htmlFor={`${id}-name`}>Name</Label>
+        <Label htmlFor={`${id}-name`}>{tr("alertFields.name", "Name")}</Label>
         <Input id={`${id}-name`} required maxLength={120} value={value.name} onChange={(e) => set("name", e.target.value)} />
       </div>
       <div className="grid gap-2 sm:grid-cols-3">
         <div className="grid gap-1">
-          <Label htmlFor={`${id}-freq`}>Alert me</Label>
+          <Label htmlFor={`${id}-freq`}>{tr("alertFields.alertMe", "Alert me")}</Label>
           <AppSelect id={`${id}-freq`} value={value.frequency} onChange={(e) => set("frequency", e.target.value as AlertValue["frequency"])}>
-            <option value="off">Never</option>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
+            <option value="off">{tr("alertFields.never", "Never")}</option>
+            <option value="daily">{tr("alertFields.daily", "Daily")}</option>
+            <option value="weekly">{tr("alertFields.weekly", "Weekly")}</option>
           </AppSelect>
         </div>
         {value.frequency === "weekly" ? (
@@ -60,10 +62,10 @@ export function AlertFields({ value, onChange, emailAvailable, timeZone }: { val
         emailAvailable ? (
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={value.emailDigest} onCheckedChange={(on) => set("emailDigest", on)} />
-            Also email me (needs email turned on in Settings → Notifications)
+            {tr("alertFields.alsoEmail", "Also email me (needs email turned on in Settings → Notifications)")}
           </label>
         ) : (
-          <p className="text-xs text-muted-foreground">Email alerts aren&apos;t set up on this server; you&apos;ll get them in the app.</p>
+          <p className="text-xs text-muted-foreground">{tr("alertFields.noEmail", "Email alerts aren't set up on this server; you'll get them in the app.")}</p>
         )
       ) : null}
     </div>

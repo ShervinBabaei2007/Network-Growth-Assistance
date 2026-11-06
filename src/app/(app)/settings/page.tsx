@@ -71,7 +71,7 @@ async function SettingsContent() {
     targets?.find((row) => row.discipline === d && row.university === u)?.target_count ?? null;
 
   return (
-    <LocaleScope groups={["ui"]}>
+    <LocaleScope groups={["ui", "appearance"]}>
     <div className="grid gap-6 lg:grid-cols-2">
       <Section
         id="plan"

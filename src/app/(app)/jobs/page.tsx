@@ -202,7 +202,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
         </form>
         <div className="grid gap-2">
         <ExternalSearchRow t={t} what={searched[0] ?? ""} where={where || null} country={country} />
-        <LocaleScope groups={["msg", "ui", "searchesPage"]}><SaveSearch params={searchOnly(query).params as Record<string, string>} suggestedName={describeSearch(query, settings)} emailAvailable={emailConfigured()} timeZone={me?.timezone ?? "UTC"} /></LocaleScope>
+        <LocaleScope groups={["msg", "ui", "searchesPage", "alertFields"]}><SaveSearch params={searchOnly(query).params as Record<string, string>} suggestedName={describeSearch(query, settings)} emailAvailable={emailConfigured()} timeZone={me?.timezone ?? "UTC"} /></LocaleScope>
         </div>
       </div>
 
@@ -356,7 +356,9 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
         )}
 
         <PageNav current={current} pages={pages} href={(n) => href({ page: String(n) })} />
-        <CompareBar />
+        <LocaleScope groups={["compareBar"]}>
+          <CompareBar />
+        </LocaleScope>
       </section>
     </div>
   );

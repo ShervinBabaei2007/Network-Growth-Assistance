@@ -75,7 +75,7 @@ async function Searches() {
           {t("msg.untilYouTurnIt5e1f")}
         </p>
       ) : null}
-      <LocaleScope groups={["msg", "searchesPage", "ui"]}>
+      <LocaleScope groups={["msg", "searchesPage", "ui", "alertFields"]}>
         <SearchList items={items} emailAvailable={emailConfigured()} timeZone={tz} />
       </LocaleScope>
     </>

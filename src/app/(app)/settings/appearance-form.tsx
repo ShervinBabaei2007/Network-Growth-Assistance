@@ -1,5 +1,7 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
+import type { MessageKey } from "@/lib/i18n/core";
 import { useState } from "react";
 import { saveAppearance } from "@/app/(app)/actions";
 import { writeAppearanceCookie } from "@/components/appearance-sync";
@@ -51,6 +53,8 @@ const ITEM = "data-pressed:bg-primary data-pressed:text-primary-foreground data-
 
 /** Changes apply at once on this device and are saved for your other devices, with Undo. */
 export function AppearanceForm({ initial }: { initial: Appearance }) {
+  const tr = useTr();
+  const lab = (k: string) => tr(`appearance.${k}` as MessageKey, LABELS[k]);
   const [value, setValue] = useState(initial);
   const { run } = useActionRunner();
   const apply = (a: Appearance) => {
@@ -79,29 +83,29 @@ export function AppearanceForm({ initial }: { initial: Appearance }) {
     <div className="grid gap-5">
       {GROUPS.map((g) => (
         <fieldset key={g.key} className="grid gap-2">
-          <legend className="mb-1 text-sm font-medium">{g.legend}</legend>
-          <ToggleGroup variant="outline" value={[value[g.key]]} onValueChange={pick(g.key)} aria-label={g.legend} className="flex-wrap">
+          <legend className="mb-1 text-sm font-medium">{tr(`appearance.${g.key}Legend` as MessageKey, g.legend)}</legend>
+          <ToggleGroup variant="outline" value={[value[g.key]]} onValueChange={pick(g.key)} aria-label={tr(`appearance.${g.key}Legend` as MessageKey, g.legend)} className="flex-wrap">
             {g.options.map((o) => (
               <ToggleGroupItem key={o} value={o} className={ITEM}>
-                {LABELS[o]}
+                {lab(o)}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-          <p className="text-xs text-muted-foreground">{g.hint}</p>
+          <p className="text-xs text-muted-foreground">{tr(`appearance.${g.key}Hint` as MessageKey, g.hint)}</p>
         </fieldset>
       ))}
 
       <fieldset className="grid gap-2">
-        <legend className="mb-1 text-sm font-medium">Accent colour</legend>
-        <ToggleGroup variant="outline" value={[value.accent]} onValueChange={pick("accent")} aria-label="Accent colour" className="flex-wrap">
+        <legend className="mb-1 text-sm font-medium">{tr("appearance.accentLegend", "Accent colour")}</legend>
+        <ToggleGroup variant="outline" value={[value.accent]} onValueChange={pick("accent")} aria-label={tr("appearance.accentLegend", "Accent colour")} className="flex-wrap">
           {ACCENTS.map((a) => (
             <ToggleGroupItem key={a} value={a} className={ITEM}>
               <span aria-hidden className="size-3.5 rounded-full border border-background/60" style={{ background: SWATCH[a] }} />
-              {LABELS[a]}
+              {lab(a)}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-        <p className="text-xs text-muted-foreground">Used for buttons, links and the focus ring. Every colour is checked for readable contrast in light and dark.</p>
+        <p className="text-xs text-muted-foreground">{tr("appearance.accentHint", "Used for buttons, links and the focus ring. Every colour is checked for readable contrast in light and dark.")}</p>
       </fieldset>
 
       <Preview appearance={value} />
@@ -111,30 +115,38 @@ export function AppearanceForm({ initial }: { initial: Appearance }) {
 
 /** A small sample of the real components, so the effect of a choice is visible beside the control that made it. */
 function Preview({ appearance }: { appearance: Appearance }) {
+  const tr = useTr();
+  const lab = (k: string) => tr(`appearance.${k}` as MessageKey, LABELS[k]);
   return (
-    <Card size="sm" data-testid="appearance-preview" aria-label="Preview of your appearance choices" className={cn("max-w-md")}>
+    <Card size="sm" data-testid="appearance-preview" aria-label={tr("appearance.previewAria", "Preview of your appearance choices")} className={cn("max-w-md")}>
       <CardHeader>
-        <CardTitle>Preview</CardTitle>
+        <CardTitle>{tr("appearance.previewTitle", "Preview")}</CardTitle>
         <CardDescription>
-          {LABELS[appearance.theme]} theme, {LABELS[appearance.accent].toLowerCase()} accent, {appearance.contrast === "high" ? "high contrast" : "standard contrast"}, {LABELS[appearance.density].toLowerCase()} spacing, {LABELS[appearance.text].toLowerCase()} text.
+          {tr("appearance.previewSummary", "{theme} theme, {accent} accent, {contrast}, {density} spacing, {text} text.", {
+            theme: lab(appearance.theme),
+            accent: lab(appearance.accent).toLowerCase(),
+            contrast: appearance.contrast === "high" ? tr("appearance.contrastHigh", "high contrast") : tr("appearance.contrastStandard", "standard contrast"),
+            density: lab(appearance.density).toLowerCase(),
+            text: lab(appearance.text).toLowerCase(),
+          })}
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
         <div className="grid gap-1.5">
-          <Label htmlFor="preview-field">Sample field</Label>
-          <Input id="preview-field" placeholder="Type here to try the focus ring" />
+          <Label htmlFor="preview-field">{tr("appearance.sampleField", "Sample field")}</Label>
+          <Input id="preview-field" placeholder={tr("appearance.samplePlaceholder", "Type here to try the focus ring")} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" type="button">
-            Primary action
+            {tr("appearance.primary", "Primary action")}
           </Button>
           <Button size="sm" type="button" variant="outline">
-            Secondary
+            {tr("appearance.secondary", "Secondary")}
           </Button>
-          <Badge>New</Badge>
-          <Badge variant="outline">Saved</Badge>
+          <Badge>{tr("appearance.badgeNew", "New")}</Badge>
+          <Badge variant="outline">{tr("appearance.badgeSaved", "Saved")}</Badge>
           <a href="#preview-field" className="text-sm text-primary underline underline-offset-4">
-            A link
+            {tr("appearance.aLink", "A link")}
           </a>
         </div>
       </CardContent>

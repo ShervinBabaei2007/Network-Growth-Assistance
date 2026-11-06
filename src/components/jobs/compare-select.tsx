@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { Columns2 } from "lucide-react";
@@ -34,20 +35,21 @@ export function CompareToggle({ id, title }: { id: string; title: string }) {
 /** Appears once a job is ticked; Compare is offered from two. */
 export function CompareBar() {
   const selected = useSelection();
+  const tr = useTr();
   if (selected.length === 0) return null;
   const ready = selected.length >= 2;
   return (
-    <div role="region" aria-label="Compare jobs" className="sticky bottom-3 z-30 flex flex-wrap items-center gap-2 rounded-xl border bg-popover p-2 pl-3 text-sm shadow-lg" data-testid="compare-bar">
+    <div role="region" aria-label={tr("compareBar.region", "Compare jobs")} className="sticky bottom-3 z-30 flex flex-wrap items-center gap-2 rounded-xl border bg-popover p-2 pl-3 text-sm shadow-lg" data-testid="compare-bar">
       <p className="mr-auto font-medium" aria-live="polite">
-        {selected.length} of {MAX_COMPARE} selected{ready ? "" : ": pick at least one more"}
+        {tr("compareBar.count", "{n} of {max} selected", { n: selected.length, max: MAX_COMPARE })}{ready ? "" : tr("compareBar.pickMore", ": pick at least one more")}
       </p>
       {ready ? (
         <Link href={`/jobs/compare?ids=${selected.join(",")}`} className={buttonVariants({ size: "sm" })}>
-          <Columns2 aria-hidden /> Compare
+          <Columns2 aria-hidden /> {tr("compareBar.compare", "Compare")}
         </Link>
       ) : null}
       <Button size="sm" variant="ghost" onClick={() => store.clear()}>
-        Clear
+        {tr("compareBar.clear", "Clear")}
       </Button>
     </div>
   );
