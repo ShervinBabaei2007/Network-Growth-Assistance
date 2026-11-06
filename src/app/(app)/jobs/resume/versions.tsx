@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Download, GitCompare, RotateCcw, Trash2 } from "lucide-react";
@@ -31,6 +32,7 @@ export type Version = {
  * can be deleted (with Undo); the original can't, and can always be restored.
  */
 export function ResumeVersions({ resumeId, versions, canRestore }: { resumeId: string; versions: Version[]; canRestore: boolean }) {
+  const tr = useTr();
   const [left, setLeft] = useState(versions.find((v) => v.kind === "original")?.key ?? versions[0]?.key ?? "");
   const [right, setRight] = useState(versions.find((v) => v.kind === "tailored")?.key ?? versions.find((v) => v.kind === "current")?.key ?? "");
   const [comparing, setComparing] = useState(false);
@@ -48,7 +50,7 @@ export function ResumeVersions({ resumeId, versions, canRestore }: { resumeId: s
             <div className="grid gap-0.5">
               <span className="flex flex-wrap items-center gap-2 text-sm font-medium">
                 {v.label}
-                {v.kind === "original" ? <Badge variant="secondary">Never changed</Badge> : null}
+                {v.kind === "original" ? <Badge variant="secondary">{tr("msg.neverChangedc9da", "Never changed")}</Badge> : null}
               </span>
               <span className="text-xs text-muted-foreground">{v.detail}</span>
             </div>
@@ -60,11 +62,11 @@ export function ResumeVersions({ resumeId, versions, canRestore }: { resumeId: s
               ) : null}
               {v.href ? (
                 <Link href={v.href} className={buttonVariants({ size: "sm", variant: "ghost" })}>
-                  Open and edit
+                  {tr("msg.openAndEdit5dfe", "Open and edit")}
                 </Link>
               ) : null}
               {v.kind === "current" && canRestore ? (
-                <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => restoreOriginalProfile(resumeId), { progress: "Restoring…", undo: () => undoRestoreProfile(resumeId) })}>
+                <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => restoreOriginalProfile(resumeId), { progress: tr("msg.restoringb983", "Restoring…"), undo: () => undoRestoreProfile(resumeId) })}>
                   <RotateCcw aria-hidden /> Restore original
                 </Button>
               ) : null}
@@ -81,7 +83,7 @@ export function ResumeVersions({ resumeId, versions, canRestore }: { resumeId: s
       <div className="grid gap-3 rounded-lg border p-3">
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
           <div className="grid gap-1">
-            <Label htmlFor="compare-left">Compare</Label>
+            <Label htmlFor="compare-left">{tr("msg.compare7eec", "Compare")}</Label>
             <AppSelect id="compare-left" value={left} onChange={(e) => setLeft(e.target.value)}>
               {versions.map((v) => (
                 <option key={v.key} value={v.key}>
@@ -91,7 +93,7 @@ export function ResumeVersions({ resumeId, versions, canRestore }: { resumeId: s
             </AppSelect>
           </div>
           <div className="grid gap-1">
-            <Label htmlFor="compare-right">with</Label>
+            <Label htmlFor="compare-right">{tr("msg.with23a5", "with")}</Label>
             <AppSelect id="compare-right" value={right} onChange={(e) => setRight(e.target.value)}>
               {versions.map((v) => (
                 <option key={v.key} value={v.key}>
@@ -101,7 +103,7 @@ export function ResumeVersions({ resumeId, versions, canRestore }: { resumeId: s
             </AppSelect>
           </div>
           <Button variant="outline" onClick={() => setComparing(true)} disabled={!a || !b || left === right}>
-            <GitCompare aria-hidden /> Compare
+            <GitCompare aria-hidden /> {tr("msg.compare7eec", "Compare")}
           </Button>
         </div>
         {comparing && a && b ? (
@@ -109,13 +111,13 @@ export function ResumeVersions({ resumeId, versions, canRestore }: { resumeId: s
             <p className="text-sm text-muted-foreground" role="status">
               {stats.added || stats.removed ? `${stats.removed} line${stats.removed === 1 ? "" : "s"} only in “${a.label}”, ${stats.added} only in “${b.label}”.` : "These two versions have the same text."}
             </p>
-            <ol className="max-h-[32rem] overflow-auto rounded-md border bg-muted/30 p-2 font-mono text-xs leading-relaxed" aria-label="Differences">
+            <ol className="max-h-[32rem] overflow-auto rounded-md border bg-muted/30 p-2 font-mono text-xs leading-relaxed" aria-label={tr("msg.differencesa40c", "Differences")}>
               {ops.map((o, i) => (
                 <li
                   key={i}
                   className={cn("px-1.5 whitespace-pre-wrap", o.type === "add" && "bg-success-soft text-foreground", o.type === "del" && "bg-danger-soft text-foreground line-through decoration-destructive/40")}
                 >
-                  <span className="sr-only">{o.type === "add" ? "Only in the second: " : o.type === "del" ? "Only in the first: " : ""}</span>
+                  <span className="sr-only">{o.type === "add" ? tr("msg.onlyInTheSecond0617", "Only in the second: ") : o.type === "del" ? tr("msg.onlyInTheFirst6e83", "Only in the first: ") : ""}</span>
                   <span aria-hidden className="mr-1.5 inline-block w-2 text-muted-foreground">
                     {o.type === "add" ? "+" : o.type === "del" ? "−" : ""}
                   </span>

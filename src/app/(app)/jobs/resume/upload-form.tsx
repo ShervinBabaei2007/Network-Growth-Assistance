@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -14,19 +15,19 @@ import { MAX_TRACK_NAME, normalizeTrack } from "@/lib/job-postings/tracks";
 import { plural } from "@/lib/toast";
 
 const MAX_BYTES = 4 * 1024 * 1024;
-const UNREADABLE = "We couldn't read this resume. Try another PDF or DOCX file.";
 
 /** Specific "not found" messages for the fields people most often need to add themselves. */
-const MISSING_TOASTS: Record<string, string> = {
-  "contact.linkedin": "We couldn't find a LinkedIn profile in your resume. You can add it manually.",
-  email: "We couldn't find an email address in your resume. Please enter it manually.",
-};
+const missingToasts = (tr: ReturnType<typeof useTr>): Record<string, string> => ({
+  "contact.linkedin": tr("msg.weCouldnTFind2084", "We couldn't find a LinkedIn profile in your resume. You can add it manually."),
+  email: tr("msg.weCouldnTFindd564", "We couldn't find an email address in your resume. Please enter it manually."),
+});
 
 /**
  * Imports a resume from a PDF or Word file, or pasted text. The server keeps the original
  * unchanged and makes a new profile from it; what needs checking is marked on the page.
  */
 export function ResumeUpload({ hasResume, aiNote, track }: { hasResume: boolean; aiNote: { available: boolean; text: string }; track: string | null }) {
+  const tr = useTr();
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<"file" | "paste">("file");
@@ -43,7 +44,7 @@ export function ResumeUpload({ hasResume, aiNote, track }: { hasResume: boolean;
     let shown = 0;
     for (const m of r.missing) {
       if (shown >= 2) break;
-      const message = MISSING_TOASTS[m.path] ?? (m.path.endsWith(".graduation") ? "We couldn't identify your graduation date. Please enter it manually." : null);
+      const message = missingToasts(tr)[m.path] ?? (m.path.endsWith(".graduation") ? tr("msg.weCouldnTIdentify06bd", "We couldn't identify your graduation date. Please enter it manually.") : null);
       if (message) {
         toast.info(message, undefined, { key: `resume-missing-${m.path}` });
         shown++;
@@ -58,22 +59,22 @@ export function ResumeUpload({ hasResume, aiNote, track }: { hasResume: boolean;
     const body = new FormData();
     if (mode === "file") {
       const file = input.current?.files?.[0];
-      if (!file) return setError("Choose a PDF or DOCX file first.");
-      if (file.size > MAX_BYTES) return setError("Keep the file under 4 MB.");
+      if (!file) return setError(tr("msg.chooseAPdfOr3b1e", "Choose a PDF or DOCX file first."));
+      if (file.size > MAX_BYTES) return setError(tr("msg.keepTheFileUnderb21f", "Keep the file under 4 MB."));
       body.set("file", file);
     } else {
-      if (text.trim().length < 100) return setError("Paste your whole resume (it looks too short).");
+      if (text.trim().length < 100) return setError(tr("msg.pasteYourWholeResume585d", "Paste your whole resume (it looks too short)."));
       body.set("text", text);
     }
     if (useAi) body.set("useAi", "on");
     body.set("track", trackName);
     start(async () => {
-      toast.progress("Reading your resume…", "resume-import");
+      toast.progress(tr("msg.readingYourResume17a7", "Reading your resume…"), "resume-import");
       try {
         const res = await fetch("/api/jobs/resume", { method: "POST", body });
         const json = (await res.json().catch(() => ({}))) as Partial<ResumeImportResponse> & { error?: string };
         if (!res.ok || !json.id) {
-          const message = json.error ?? UNREADABLE;
+          const message = json.error ?? tr("msg.weCouldnTReadf78e", "We couldn't read this resume. Try another PDF or DOCX file.");
           setError(message);
           notify({ type: "error", title: message, key: "resume-import" });
           return;
@@ -85,7 +86,7 @@ export function ResumeUpload({ hasResume, aiNote, track }: { hasResume: boolean;
         router.push(`/jobs/resume?${imported ? `track=${encodeURIComponent(imported)}&` : ""}imported=${json.id}#import-summary`);
         router.refresh();
       } catch {
-        const message = "Couldn't reach the server. Check your connection and try again. Your resume wasn't changed.";
+        const message = tr("msg.couldnTReachThead1c", "Couldn't reach the server. Check your connection and try again. Your resume wasn't changed.");
         setError(message);
         notify({ type: "error", title: message, key: "resume-import" });
       }
@@ -93,12 +94,12 @@ export function ResumeUpload({ hasResume, aiNote, track }: { hasResume: boolean;
   };
 
   return (
-    <form onSubmit={submit} className="grid gap-3" aria-label="Import resume">
-      <div role="tablist" aria-label="How to import" className="inline-flex w-fit rounded-lg border bg-muted p-0.5 text-sm">
+    <form onSubmit={submit} className="grid gap-3" aria-label={tr("msg.importResume0be9", "Import resume")}>
+      <div role="tablist" aria-label={tr("msg.howToImporta819", "How to import")} className="inline-flex w-fit rounded-lg border bg-muted p-0.5 text-sm">
         {(
           [
-            ["file", "Upload a file", Upload],
-            ["paste", "Paste text", ClipboardPaste],
+            ["file", tr("msg.uploadAFiledc8f", "Upload a file"), Upload],
+            ["paste", tr("msg.pasteText5fe0", "Paste text"), ClipboardPaste],
           ] as const
         ).map(([key, label, Icon]) => (
           <button
@@ -116,7 +117,7 @@ export function ResumeUpload({ hasResume, aiNote, track }: { hasResume: boolean;
 
       {mode === "file" ? (
         <div className="grid gap-1.5">
-          <Label htmlFor="resumeFile">{hasResume ? "A new version (PDF or Word)" : "Your resume (PDF or Word)"}</Label>
+          <Label htmlFor="resumeFile">{hasResume ? tr("msg.aNewVersionPdffc73", "A new version (PDF or Word)") : tr("msg.yourResumePdfOr0cea", "Your resume (PDF or Word)")}</Label>
           <input
             ref={input}
             id="resumeFile"
@@ -125,19 +126,19 @@ export function ResumeUpload({ hasResume, aiNote, track }: { hasResume: boolean;
             accept="application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx"
             className="text-sm file:mr-3 file:rounded-md file:border file:bg-background file:px-3 file:py-1.5 file:text-sm file:hover:bg-muted"
           />
-          <p className="text-xs text-muted-foreground">PDF or DOCX under 4 MB, with selectable text.</p>
+          <p className="text-xs text-muted-foreground">{tr("msg.pdfOrDocxUnder3a9b", "PDF or DOCX under 4 MB, with selectable text.")}</p>
         </div>
       ) : (
         <div className="grid gap-1.5">
-          <Label htmlFor="resumeText">Your resume, as text</Label>
-          <Textarea id="resumeText" rows={10} value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste the whole resume, from your name to the last section." />
+          <Label htmlFor="resumeText">{tr("msg.yourResumeAsTextd99d", "Your resume, as text")}</Label>
+          <Textarea id="resumeText" rows={10} value={text} onChange={(e) => setText(e.target.value)} placeholder={tr("msg.pasteTheWholeResumee088", "Paste the whole resume, from your name to the last section.")} />
         </div>
       )}
 
       <div className="grid max-w-sm gap-1.5">
-        <Label htmlFor="resumeTrack">Track (optional)</Label>
-        <Input id="resumeTrack" value={trackName} maxLength={MAX_TRACK_NAME} onChange={(e) => setTrackName(e.target.value)} placeholder="Main resume" />
-        <p className="text-xs text-muted-foreground">Optional: one base resume per kind of role, such as Software or Data.</p>
+        <Label htmlFor="resumeTrack">{tr("msg.trackOptionalaa16", "Track (optional)")}</Label>
+        <Input id="resumeTrack" value={trackName} maxLength={MAX_TRACK_NAME} onChange={(e) => setTrackName(e.target.value)} placeholder={tr("msg.mainResume0afb", "Main resume")} />
+        <p className="text-xs text-muted-foreground">{tr("msg.optionalOneBaseResume353f", "Optional: one base resume per kind of role, such as Software or Data.")}</p>
       </div>
 
       <label className="flex items-start gap-2 text-sm">
@@ -149,9 +150,9 @@ export function ResumeUpload({ hasResume, aiNote, track }: { hasResume: boolean;
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending}>
-          <Upload aria-hidden /> {pending ? "Reading…" : hasResume ? "Import new version" : "Import resume"}
+          <Upload aria-hidden /> {pending ? tr("msg.readingc31f", "Reading…") : hasResume ? tr("msg.importNewVersion61c3", "Import new version") : tr("msg.importResume0be9", "Import resume")}
         </Button>
-        <p className="text-xs text-muted-foreground">Importing never changes an earlier resume; each import is kept as its own version.</p>
+        <p className="text-xs text-muted-foreground">{tr("msg.importingNeverChangesAn769b", "Importing never changes an earlier resume; each import is kept as its own version.")}</p>
       </div>
       {error ? (
         <p className="text-sm text-destructive" data-testid="import-error">

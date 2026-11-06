@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import type { ReactNode } from "react";
 import { AlertTriangle, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ export const fieldAnchor = (path: string) => `field-${path.replace(/\./g, "-")}`
 
 /**
  * One profile field with what the parser thinks of it. A field that needs review gets a
- * warning icon, an amber border, a "Needs review" badge and the reason, and stays marked
+ * warning icon, an amber border, a tr("msg.needsReview2826", "Needs review") badge and the reason, and stays marked
  * until the user changes it or says it's right. A field that wasn't found says so.
  */
 export function FieldShell({
@@ -39,6 +40,7 @@ export function FieldShell({
   children: (props: { "aria-describedby"?: string; "aria-invalid"?: boolean; className?: string }) => ReactNode;
   className?: string;
 }) {
+  const tr = useTr();
   const review = Boolean(meta?.needsReview) && !edited;
   const missing = Boolean(meta?.missing) && !edited;
   const helpId = `${inputId}-help`;
@@ -51,7 +53,7 @@ export function FieldShell({
           <>
             <AlertTriangle aria-hidden className="size-3.5 text-warning" />
             <Badge variant="outline" className="h-5 border-warning/60 px-1.5 text-[11px] text-warning" title={meta?.sourceText ? `Read from your resume: “${meta.sourceText}”` : undefined}>
-              Needs review
+              {tr("msg.needsReview2826", "Needs review")}
             </Badge>
           </>
         ) : null}
@@ -63,7 +65,7 @@ export function FieldShell({
       })}
       {showHelp ? (
         <p id={helpId} className={cn("text-xs", review ? "text-foreground" : "text-muted-foreground")}>
-          {meta?.reason ?? (missing ? "Not found in your resume." : "Please check this field.")}
+          {meta?.reason ?? (missing ? tr("msg.notFoundInYour7b81", "Not found in your resume.") : tr("msg.pleaseCheckThisFieldd403", "Please check this field."))}
           {review && meta?.sourceText ? <span className="text-muted-foreground"> Read from: “{meta.sourceText.slice(0, 120)}”.</span> : null}
         </p>
       ) : null}

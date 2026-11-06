@@ -1,3 +1,6 @@
+import { LocaleScope } from "@/components/locale-scope";
+import { getT } from "@/lib/i18n/server";
+import type { Translator } from "@/lib/i18n";
 import { Suspense } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -45,13 +48,16 @@ export default function ResumePage({ searchParams }: PageProps<"/jobs/resume">) 
         description="pages.resume.description"
       />
       <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
-        <ResumeContent searchParams={searchParams} />
+        <LocaleScope groups={["msg", "ui"]}>
+          <ResumeContent searchParams={searchParams} />
+        </LocaleScope>
       </Suspense>
     </div>
   );
 }
 
 async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/resume">["searchParams"] }) {
+  const t = await getT();
   const params = await searchParams;
   const supabase = await createClient();
   const { data: resumes, error } = await supabase
@@ -84,11 +90,11 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
           profile={profile.data}
           justImported={params.imported === active.id}
           factsForm={
-            <ActionForm action={saveResumeFacts} submitLabel="Save">
+            <ActionForm action={saveResumeFacts} submitLabel={t("msg.savec9cc")}>
               <input type="hidden" name="resumeId" value={active.id} />
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="grid gap-1.5">
-                  <Label htmlFor="workAuthorization">Work authorization in the country you search</Label>
+                  <Label htmlFor="workAuthorization">{t("msg.workAuthorizationInThef6fe")}</Label>
                   <AppSelect id="workAuthorization" name="workAuthorization" defaultValue={facts.workAuthorization}>
                     {WORK_AUTHORIZATION.map((w) => (
                       <option key={w} value={w}>
@@ -98,7 +104,7 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
                   </AppSelect>
                 </div>
                 <div className="grid gap-1.5">
-                  <Label htmlFor="yearsOverride">Years of experience (leave blank to count from your dates)</Label>
+                  <Label htmlFor="yearsOverride">{t("msg.yearsOfExperienceLeave3518")}</Label>
                   <Input id="yearsOverride" name="yearsOverride" type="number" min={0} max={50} step={0.5} defaultValue={facts.yearsOverride ?? ""} />
                 </div>
               </div>
@@ -108,7 +114,7 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox name="willingToRelocate" defaultChecked={facts.willingToRelocate} />
-                I&apos;m willing to relocate
+                {t("msg.iMWillingTo3328")}
               </label>
             </ActionForm>
           }
@@ -119,8 +125,8 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
 
       <Card>
         <CardHeader>
-          <CardTitle>{active ? "Import a new version" : track ? `Import your ${track} resume` : "Import your resume"}</CardTitle>
-          <CardDescription>Upload a PDF or Word file, or paste the text.</CardDescription>
+          <CardTitle>{active ? t("msg.importANewVersionf6d8") : track ? `Import your ${track} resume` : t("msg.importYourResumed988")}</CardTitle>
+          <CardDescription>{t("msg.uploadAPdfOr912a")}</CardDescription>
         </CardHeader>
         <CardContent>
           <ResumeUpload key={track ?? ""} hasResume={Boolean(active)} aiNote={aiNote} track={track} />
@@ -130,8 +136,8 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
       {resumes.length > 1 || (resumes.length === 1 && !active) ? (
         <Card>
           <CardHeader>
-            <CardTitle>All imported resumes</CardTitle>
-            <CardDescription>Each import is kept separately. One is used for fit checks and tailoring at a time.</CardDescription>
+            <CardTitle>{t("msg.allImportedResumes94f8")}</CardTitle>
+            <CardDescription>{t("msg.eachImportIsKeptd111")}</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="grid gap-2">
@@ -139,7 +145,7 @@ async function ResumeContent({ searchParams }: { searchParams: PageProps<"/jobs/
                 <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-3">
                   <span className="text-sm">
                     {r.label} <span className="text-muted-foreground">· {trackLabel(r.track)} · {SOURCE_LABELS[r.source_kind as keyof typeof SOURCE_LABELS] ?? "PDF"} · {timeAgo(r.created_at)}</span>{" "}
-                    {r.is_active ? <Badge>In use</Badge> : null}
+                    {r.is_active ? <Badge>{t("msg.inUsefb13")}</Badge> : null}
                   </span>
                   <ResumeListActions id={r.id} active={r.is_active} />
                 </li>
@@ -170,11 +176,12 @@ type ResumeRow = {
 };
 
 async function ActiveResume({ active, profile, justImported, factsForm }: { active: ResumeRow; profile: ResumeProfile; justImported: boolean; factsForm: React.ReactNode }) {
+  const t = await getT();
   const meta = FieldMetaMap.catch({}).parse(active.field_meta);
   const summary = importSummary(profile, meta);
   const showSummary = justImported || summary.needsReview.length > 0;
   const degree = highestDegree(profile);
-  const versions = await loadVersions(active, profile);
+  const versions = await loadVersions(active, profile, t);
   const original = ResumeProfile.safeParse(active.original_profile);
 
   return (
@@ -194,23 +201,23 @@ async function ActiveResume({ active, profile, justImported, factsForm }: { acti
 
       <Card>
         <CardHeader>
-          <CardTitle>What your resume shows</CardTitle>
+          <CardTitle>{t("msg.whatYourResumeShows6186")}</CardTitle>
           <CardDescription>
             {active.label} · {SOURCE_LABELS[active.source_kind as keyof typeof SOURCE_LABELS] ?? "PDF"} · imported {timeAgo(active.created_at)} · read{" "}
             {active.parsed_with === "ai" ? "with rules and a second AI read" : "with rules, without AI"}
           </CardDescription>
           <div className="flex flex-wrap gap-2 pt-1">
             <a href={`/api/jobs/resume/${active.id}/download?format=pdf`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              Download PDF
+              {t("msg.downloadPdf2607")}
             </a>
             <a href={`/api/jobs/resume/${active.id}/download?format=docx`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              Download Word
+              {t("msg.downloadWorde9ba")}
             </a>
           </div>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           <Badge variant="secondary">About {yearsOfExperience(profile)} years of work experience</Badge>
-          <Badge variant="secondary">{degree ? `${DEGREE_LABELS[degree]} level` : "Degree level not recognised"}</Badge>
+          <Badge variant="secondary">{degree ? `${DEGREE_LABELS[degree]} level` : t("msg.degreeLevelNotRecognisede99a")}</Badge>
           <Badge variant="secondary">{profile.skills.length} skills</Badge>
           <Badge variant="secondary">{profile.experience.length} jobs</Badge>
           <Badge variant="secondary">{profile.projects.length} projects</Badge>
@@ -220,16 +227,16 @@ async function ActiveResume({ active, profile, justImported, factsForm }: { acti
 
       <Card>
         <CardHeader>
-          <CardTitle>Your situation</CardTitle>
-          <CardDescription>Used only to check fit.</CardDescription>
+          <CardTitle>{t("msg.yourSituation3f2c")}</CardTitle>
+          <CardDescription>{t("msg.usedOnlyToCheck5b8a")}</CardDescription>
         </CardHeader>
         <CardContent>{factsForm}</CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Check your profile</CardTitle>
-          <CardDescription>Fix or confirm anything marked “Needs review”.</CardDescription>
+          <CardTitle>{t("msg.checkYourProfile91ef")}</CardTitle>
+          <CardDescription>{t("msg.fixOrConfirmAnything31ed")}</CardDescription>
         </CardHeader>
         <CardContent>
           <ProfileEditor key={`${active.id}-${active.updated_at}`} resumeId={active.id} initial={profile} meta={meta} />
@@ -238,8 +245,8 @@ async function ActiveResume({ active, profile, justImported, factsForm }: { acti
 
       <Card>
         <CardHeader>
-          <CardTitle>Versions</CardTitle>
-          <CardDescription>Your original, current profile and tailored versions.</CardDescription>
+          <CardTitle>{t("msg.versions9e69")}</CardTitle>
+          <CardDescription>{t("msg.yourOriginalCurrentProfilea866")}</CardDescription>
         </CardHeader>
         <CardContent>
           <ResumeVersions resumeId={active.id} versions={versions} canRestore={original.success} />
@@ -249,22 +256,22 @@ async function ActiveResume({ active, profile, justImported, factsForm }: { acti
   );
 }
 
-async function loadVersions(active: ResumeRow, profile: ResumeProfile): Promise<Version[]> {
+async function loadVersions(active: ResumeRow, profile: ResumeProfile, t: Translator): Promise<Version[]> {
   const original = ResumeProfile.safeParse(active.original_profile);
   const versions: Version[] = [
     {
       key: "original",
       kind: "original",
-      label: "Original resume",
+      label: t("msg.originalResume2461"),
       detail: `${SOURCE_LABELS[active.source_kind as keyof typeof SOURCE_LABELS] ?? "PDF"} as imported ${timeAgo(active.created_at)}${active.original_file_path ? "" : " (text only)"}`,
       text: active.raw_text,
       download: `/api/jobs/resume/${active.id}/original`,
     },
   ];
   if (active.original_profile && original.success) {
-    versions.push({ key: "parsed", kind: "parsed", label: "Parsed resume", detail: "As first read, before your edits", text: profileText(original.data) });
+    versions.push({ key: "parsed", kind: "parsed", label: t("msg.parsedResume992b"), detail: t("msg.asFirstReadBefore7753"), text: profileText(original.data) });
   }
-  versions.push({ key: "current", kind: "current", label: "Current profile", detail: `Your working profile, used for fit checks · updated ${timeAgo(active.updated_at)}`, text: profileText(profile) });
+  versions.push({ key: "current", kind: "current", label: t("msg.currentProfilec3db"), detail: `Your working profile, used for fit checks · updated ${timeAgo(active.updated_at)}`, text: profileText(profile) });
 
   const supabase = await createClient();
   const { data: matches } = await supabase.from("job_matches").select("id, job_id").eq("resume_id", active.id);
@@ -301,11 +308,12 @@ async function loadVersions(active: ResumeRow, profile: ResumeProfile): Promise<
 }
 
 /** The resume tracks you keep, plus a way to start a new one. Each track has its own current resume. */
-function TrackNav({ tracks, current }: { tracks: (string | null)[]; current: string | null }) {
+async function TrackNav({ tracks, current }: { tracks: (string | null)[]; current: string | null }) {
+  const t = await getT();
   if (tracks.length === 0) return null;
   const href = (t: string | null) => (t ? `/jobs/resume?track=${encodeURIComponent(t)}` : "/jobs/resume");
   return (
-    <nav aria-label="Resume tracks" className="flex flex-wrap items-center gap-2">
+    <nav aria-label={t("msg.resumeTracksd0d1")} className="flex flex-wrap items-center gap-2">
       {tracks.map((t) => (
         <Link
           key={t ?? "main"}
@@ -316,7 +324,7 @@ function TrackNav({ tracks, current }: { tracks: (string | null)[]; current: str
           {t ?? MAIN_TRACK_LABEL}
         </Link>
       ))}
-      <span className="text-xs text-muted-foreground">To add a track, import a resume with a new track name below.</span>
+      <span className="text-xs text-muted-foreground">{t("msg.toAddATrackab89")}</span>
     </nav>
   );
 }

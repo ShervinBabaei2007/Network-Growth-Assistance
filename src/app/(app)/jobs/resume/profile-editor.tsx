@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "@/components/toast/notify";
@@ -20,26 +21,27 @@ import { FieldShell, fieldAnchor } from "./field-status";
 
 type EntryKey = "experience" | "projects" | "education" | "awards" | "activities";
 type SectionConfig = { key: EntryKey; label: string; one: string; org: string; title: string; education?: boolean; dates: "range" | "single" };
-const SECTIONS: SectionConfig[] = [
-  { key: "experience", label: "Work experience", one: "Experience", org: "Employer", title: "Job title", dates: "range" },
-  { key: "education", label: "Education", one: "Education", org: "School", title: "Credential line (as written)", education: true, dates: "range" },
-  { key: "projects", label: "Projects", one: "Project", org: "Project name", title: "Role or tech line (optional)", dates: "range" },
-  { key: "awards", label: "Awards", one: "Award", org: "Award", title: "Given by (optional)", dates: "single" },
-  { key: "activities", label: "Extracurricular activities", one: "Activity", org: "Organization or club", title: "Role", dates: "range" },
+type Tr = ReturnType<typeof useTr>;
+const sectionsOf = (tr: Tr): SectionConfig[] => [
+  { key: "experience", label: tr("msg.workExperiencedad9", "Work experience"), one: tr("msg.experience4038", "Experience"), org: tr("msg.employer96e4", "Employer"), title: tr("msg.jobTitlef4a7", "Job title"), dates: "range" },
+  { key: "education", label: tr("msg.educationde7a", "Education"), one: tr("msg.educationde7a", "Education"), org: tr("msg.school955c", "School"), title: tr("msg.credentialLineAsWrittena5d5", "Credential line (as written)"), education: true, dates: "range" },
+  { key: "projects", label: tr("msg.projects54e1", "Projects"), one: tr("msg.project9e72", "Project"), org: tr("msg.projectName7ade", "Project name"), title: tr("msg.roleOrTechLine1dc7", "Role or tech line (optional)"), dates: "range" },
+  { key: "awards", label: tr("msg.awardsf66c", "Awards"), one: tr("msg.award4557", "Award"), org: tr("msg.award4557", "Award"), title: tr("msg.givenByOptional3fc0", "Given by (optional)"), dates: "single" },
+  { key: "activities", label: tr("msg.extracurricularActivities0939", "Extracurricular activities"), one: tr("msg.activityecfc", "Activity"), org: tr("msg.organizationOrClub5e2c", "Organization or club"), title: tr("msg.rolebbba", "Role"), dates: "range" },
 ];
 
 const blankEntry = (): ResumeEntry => ({ id: "", organization: "", title: null, start: null, end: null, location: null, bullets: [], degree: null, major: null, graduation: null });
 const lines = (s: string) => s.split("\n").map((l) => l.trim()).filter(Boolean);
 const nul = (s: string) => (s.trim() ? s : null);
 
-const CONTACT: [path: string, label: string, placeholder?: string][] = [
-  ["name", "Full name"],
-  ["email", "Email"],
-  ["phone", "Phone number"],
-  ["location", "Location", "Vancouver, BC"],
-  ["contact.linkedin", "LinkedIn URL", "linkedin.com/in/…"],
-  ["contact.github", "GitHub URL", "github.com/…"],
-  ["contact.website", "Portfolio website", "yourname.dev"],
+const contactOf = (tr: Tr): [path: string, label: string, placeholder?: string][] => [
+  ["name", tr("msg.fullNamef11b", "Full name")],
+  ["email", tr("msg.emailBase", "Email")],
+  ["phone", tr("msg.phoneNumber1f82", "Phone number")],
+  ["location", tr("msg.locationce5b", "Location"), "Vancouver, BC"],
+  ["contact.linkedin", tr("msg.linkedinUrled90", "LinkedIn URL"), "linkedin.com/in/…"],
+  ["contact.github", tr("msg.githubUrl3aa3", "GitHub URL"), "github.com/…"],
+  ["contact.website", tr("msg.portfolioWebsite75df", "Portfolio website"), "yourname.dev"],
 ];
 
 /**
@@ -48,6 +50,7 @@ const CONTACT: [path: string, label: string, placeholder?: string][] = [
  * here is the profile used for fit checks and tailoring. The original resume never changes.
  */
 export function ProfileEditor({ resumeId, initial, meta: initialMeta }: { resumeId: string; initial: ResumeProfile; meta: FieldMetaMap }) {
+  const tr = useTr();
   const [p, setP] = useState(initial);
   const [meta, setMeta] = useState(initialMeta);
   const { pending, run } = useActionRunner();
@@ -56,7 +59,7 @@ export function ProfileEditor({ resumeId, initial, meta: initialMeta }: { resume
 
   const edited = (path: string) => getAt(p, path) !== getAt(initial, path);
   const confirm = (path: string) =>
-    confirmRunner.run(() => confirmResumeField(resumeId, path), { onSuccess: () => setMeta((m) => ({ ...m, [path]: { confidence: 1, needsReview: false, reason: "Checked by you." } })) });
+    confirmRunner.run(() => confirmResumeField(resumeId, path), { onSuccess: () => setMeta((m) => ({ ...m, [path]: { confidence: 1, needsReview: false, reason: tr("msg.checkedByYou2712", "Checked by you.") } })) });
   const metaOf = (path: string) => meta[path];
 
   const setEntry = (key: EntryKey, i: number, patch: Partial<ResumeEntry>) => setP((prev) => ({ ...prev, [key]: prev[key].map((e, j) => (j === i ? { ...e, ...patch } : e)) }));
@@ -72,7 +75,7 @@ export function ProfileEditor({ resumeId, initial, meta: initialMeta }: { resume
     toast.info(`${s.one} added.`, "Fill it in, then save your profile.");
   };
 
-  const save = () => run(() => saveResumeProfile(resumeId, p), { progress: "Saving your profile…" });
+  const save = () => run(() => saveResumeProfile(resumeId, p), { progress: tr("msg.savingYourProfile6b9c", "Saving your profile…") });
   const groups = groupSkills(p.skills);
 
   return (
@@ -83,7 +86,7 @@ export function ProfileEditor({ resumeId, initial, meta: initialMeta }: { resume
           Contact
         </h3>
         <div className="grid gap-3 sm:grid-cols-2">
-          {CONTACT.map(([path, label, placeholder]) => {
+          {contactOf(tr).map(([path, label, placeholder]) => {
             const id = `p-${path.replace(".", "-")}`;
             return (
               <FieldShell
@@ -102,7 +105,7 @@ export function ProfileEditor({ resumeId, initial, meta: initialMeta }: { resume
             );
           })}
         </div>
-        <FieldShell path="summary" label="Professional summary" inputId="p-summary" meta={metaOf("summary")} edited={edited("summary")} onConfirm={p.summary ? () => confirm("summary") : undefined}>
+        <FieldShell path="summary" label={tr("msg.professionalSummaryabce", "Professional summary")} inputId="p-summary" meta={metaOf("summary")} edited={edited("summary")} onConfirm={p.summary ? () => confirm("summary") : undefined}>
           {(a) => <Textarea id="p-summary" rows={3} value={p.summary ?? ""} onChange={(e) => setP({ ...p, summary: nul(e.target.value) })} {...a} />}
         </FieldShell>
       </section>
@@ -111,7 +114,7 @@ export function ProfileEditor({ resumeId, initial, meta: initialMeta }: { resume
         <h3 id="skills-heading" className="font-medium">
           Skills
         </h3>
-        <FieldShell path="skills" label="Skills (comma-separated)" inputId="p-skills" meta={metaOf("skills")} edited={JSON.stringify(p.skills) !== JSON.stringify(initial.skills)} onConfirm={p.skills.length ? () => confirm("skills") : undefined}>
+        <FieldShell path="skills" label={tr("msg.skillsCommaSeparated4eb4", "Skills (comma-separated)")} inputId="p-skills" meta={metaOf("skills")} edited={JSON.stringify(p.skills) !== JSON.stringify(initial.skills)} onConfirm={p.skills.length ? () => confirm("skills") : undefined}>
           {(a) => (
             <Textarea
               id="p-skills"
@@ -123,7 +126,7 @@ export function ProfileEditor({ resumeId, initial, meta: initialMeta }: { resume
           )}
         </FieldShell>
         {p.skills.length ? (
-          <dl className="grid gap-1.5 text-sm sm:grid-cols-2" aria-label="Your skills by kind">
+          <dl className="grid gap-1.5 text-sm sm:grid-cols-2" aria-label={tr("msg.yourSkillsByKinde726", "Your skills by kind")}>
             {(Object.keys(SKILL_GROUP_LABELS) as SkillGroup[])
               .filter((g) => groups[g].length)
               .map((g) => (
@@ -140,17 +143,17 @@ export function ProfileEditor({ resumeId, initial, meta: initialMeta }: { resume
               ))}
           </dl>
         ) : null}
-        <FieldShell path="certifications" label="Certifications and licences (one per line)" inputId="p-certs" meta={metaOf("certifications")} edited={JSON.stringify(p.certifications) !== JSON.stringify(initial.certifications)}>
+        <FieldShell path="certifications" label={tr("msg.certificationsAndLicencesOne0b5f", "Certifications and licences (one per line)")} inputId="p-certs" meta={metaOf("certifications")} edited={JSON.stringify(p.certifications) !== JSON.stringify(initial.certifications)}>
           {(a) => <Textarea id="p-certs" rows={2} value={p.certifications.join("\n")} onChange={(e) => setP({ ...p, certifications: lines(e.target.value).slice(0, 30) })} {...a} />}
         </FieldShell>
       </section>
 
-      {SECTIONS.map((s) => (
+      {sectionsOf(tr).map((s) => (
         <fieldset key={s.key} className="grid gap-3">
           <legend className="mb-1 font-medium">{s.label}</legend>
           {p[s.key].length === 0 ? (
             <p className="text-sm text-muted-foreground" id={fieldAnchor(s.key)}>
-              {metaOf(s.key)?.missing ? (metaOf(s.key)?.reason ?? "Not found in your resume.") : "Nothing read here."}
+              {metaOf(s.key)?.missing ? (metaOf(s.key)?.reason ?? tr("msg.notFoundInYour7b81", "Not found in your resume.")) : tr("msg.nothingReadHere1692", "Nothing read here.")}
             </p>
           ) : null}
           {p[s.key].map((e, i) => (
@@ -175,9 +178,9 @@ export function ProfileEditor({ resumeId, initial, meta: initialMeta }: { resume
 
       <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-lg sm:border sm:px-3">
         <Button type="button" onClick={save} disabled={pending}>
-          {pending ? "Saving…" : "Save profile"}
+          {pending ? tr("msg.savingeedf", "Saving…") : tr("msg.saveProfile5d3d", "Save profile")}
         </Button>
-        <p className="text-xs text-muted-foreground">Saving changes your working profile only. Your original resume stays as it was.</p>
+        <p className="text-xs text-muted-foreground">{tr("msg.savingChangesYourWorking4a99", "Saving changes your working profile only. Your original resume stays as it was.")}</p>
       </div>
     </div>
   );
@@ -204,6 +207,7 @@ function EntryEditor({
   onConfirm: (path: string) => void;
   confirming: boolean;
 }) {
+  const tr = useTr();
   const base = `${s.key}-${i}`;
   const entryPath = `${s.key}.${e.id}`;
   const entryMeta = e.id ? meta[entryPath] : undefined;
@@ -217,11 +221,11 @@ function EntryEditor({
       {review ? (
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <Badge variant="outline" className="h-5 border-warning/60 px-1.5 text-[11px] text-warning">
-            Needs review
+            {tr("msg.needsReview2826", "Needs review")}
           </Badge>
           <span>{entryMeta?.reason}</span>
           <Button type="button" size="xs" variant="ghost" disabled={confirming} onClick={() => onConfirm(entryPath)}>
-            Looks right
+            {tr("msg.looksRight5943", "Looks right")}
           </Button>
         </div>
       ) : null}
@@ -239,7 +243,7 @@ function EntryEditor({
               <FieldShell
                 key={k}
                 path={field(k)}
-                label={k === "degree" ? "Degree or diploma" : k === "major" ? "Major or program" : "Graduation date"}
+                label={k === "degree" ? tr("msg.degreeOrDiplomaf972", "Degree or diploma") : k === "major" ? tr("msg.majorOrProgramb666", "Major or program") : tr("msg.graduationDate87ab", "Graduation date")}
                 inputId={`${base}-${k}`}
                 meta={e.id ? meta[field(k)] : undefined}
                 edited={(initial?.[k] ?? null) !== e[k]}
@@ -247,36 +251,36 @@ function EntryEditor({
                 onConfirm={e[k] && e.id ? () => onConfirm(field(k)) : undefined}
                 confirming={confirming}
               >
-                {(a) => <Input id={`${base}-${k}`} value={e[k] ?? ""} placeholder={k === "graduation" ? "Apr 2027 or Expected 2027" : undefined} onChange={(ev) => onChange({ [k]: nul(ev.target.value) })} {...a} />}
+                {(a) => <Input id={`${base}-${k}`} value={e[k] ?? ""} placeholder={k === "graduation" ? tr("msg.apr2027OrExpected704e", "Apr 2027 or Expected 2027") : undefined} onChange={(ev) => onChange({ [k]: nul(ev.target.value) })} {...a} />}
               </FieldShell>
             ))
           : null}
         {s.dates === "range" ? (
           <>
             <div className="grid gap-1">
-              <Label htmlFor={`${base}-start`}>Start</Label>
-              <Input id={`${base}-start`} value={e.start ?? ""} placeholder="May 2024" onChange={(ev) => onChange({ start: nul(ev.target.value) })} />
+              <Label htmlFor={`${base}-start`}>{tr("msg.starta612", "Start")}</Label>
+              <Input id={`${base}-start`} value={e.start ?? ""} placeholder={tr("msg.may20245b44", "May 2024")} onChange={(ev) => onChange({ start: nul(ev.target.value) })} />
             </div>
             <div className="grid gap-1">
-              <Label htmlFor={`${base}-end`}>End</Label>
-              <Input id={`${base}-end`} value={e.end ?? ""} placeholder="Present" onChange={(ev) => onChange({ end: nul(ev.target.value) })} />
+              <Label htmlFor={`${base}-end`}>{tr("msg.end8755", "End")}</Label>
+              <Input id={`${base}-end`} value={e.end ?? ""} placeholder={tr("msg.presentdd05", "Present")} onChange={(ev) => onChange({ end: nul(ev.target.value) })} />
             </div>
           </>
         ) : (
           <div className="grid gap-1">
-            <Label htmlFor={`${base}-end`}>Date</Label>
+            <Label htmlFor={`${base}-end`}>{tr("msg.date4474", "Date")}</Label>
             <Input id={`${base}-end`} value={e.end ?? ""} placeholder="2025" onChange={(ev) => onChange({ end: nul(ev.target.value) })} />
           </div>
         )}
         {s.key === "experience" || s.key === "education" ? (
           <div className="grid gap-1">
-            <Label htmlFor={`${base}-location`}>Location</Label>
+            <Label htmlFor={`${base}-location`}>{tr("msg.locationce5b", "Location")}</Label>
             <Input id={`${base}-location`} value={e.location ?? ""} onChange={(ev) => onChange({ location: nul(ev.target.value) })} />
           </div>
         ) : null}
       </div>
       <div className="grid gap-1">
-        <Label htmlFor={`${base}-bullets`}>{s.key === "experience" ? "Responsibilities and accomplishments (one per line)" : "Details (one per line)"}</Label>
+        <Label htmlFor={`${base}-bullets`}>{s.key === "experience" ? tr("msg.responsibilitiesAndAccomplishmentsOne07c7", "Responsibilities and accomplishments (one per line)") : tr("msg.detailsOnePerLine2f8d", "Details (one per line)")}</Label>
         <Textarea
           id={`${base}-bullets`}
           rows={Math.max(2, e.bullets.length + 1)}
@@ -302,12 +306,13 @@ function EntryEditor({
 }
 
 export function ResumeListActions({ id, active }: { id: string; active: boolean }) {
+  const tr = useTr();
   const { pending, run } = useActionRunner();
   return (
     <div className="flex flex-wrap items-center gap-2">
       {!active ? (
         <Button size="sm" variant="outline" disabled={pending} onClick={() => run(() => setActiveResume(id))}>
-          Use this one
+          {tr("msg.useThisOne67eb", "Use this one")}
         </Button>
       ) : null}
       <Button
@@ -315,7 +320,7 @@ export function ResumeListActions({ id, active }: { id: string; active: boolean 
         variant="ghost"
         disabled={pending}
         onClick={() => {
-          if (confirm("Delete this resume, its original file, its fit checks and its tailored documents? This can't be undone.")) run(() => deleteResume(id), { progress: "Deleting…" });
+          if (confirm("Delete this resume, its original file, its fit checks and its tailored documents? This can't be undone.")) run(() => deleteResume(id), { progress: tr("msg.deleting8349", "Deleting…") });
         }}
       >
         <Trash2 aria-hidden /> Delete
