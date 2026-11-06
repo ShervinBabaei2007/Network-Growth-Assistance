@@ -10,8 +10,11 @@ import { formatDateOnly } from "@/lib/applications/format";
 import { loadCatalog } from "@/lib/data/catalog";
 import { localDate } from "@/lib/dates";
 import { disciplineName, universityName } from "@/lib/domain";
-import { draftFollowUp, dueState, FOLLOW_UP_LABELS, isDue, type FollowUpKind } from "@/lib/follow-ups/templates";
+import { draftFollowUp, dueState, isDue, type FollowUpKind } from "@/lib/follow-ups/templates";
 import { createClient } from "@/lib/supabase/server";
+import { LocaleScope } from "@/components/locale-scope";
+import { getT } from "@/lib/i18n/server";
+import type { MessageKey } from "@/lib/i18n";
 import { FollowUpItem, type FollowUpView } from "./follow-up-item";
 
 export const metadata = { title: "Follow-ups · Network Growth" };
@@ -43,6 +46,8 @@ async function FollowUps() {
     loadCatalog(supabase).catch(() => null),
   ]);
   if (error || !catalog) return <LoadError what="your follow-ups" />;
+  const t = await getT();
+  const KIND_TITLE: Record<FollowUpKind, MessageKey> = { thank_you: "followUps.kindThankYou", coffee_chat: "followUps.kindCoffeeChat", check_in_30: "followUps.kindCheckIn30", check_in_90: "followUps.kindCheckIn90" };
 
   const today = localDate(new Date(), settings?.timezone ?? "UTC");
   const items: FollowUpView[] = data.flatMap((row) => {
@@ -57,7 +62,7 @@ async function FollowUps() {
         candidateId: row.candidate_id,
         name: c.full_name,
         detail: [c.role, program, school].filter(Boolean).join(" · "),
-        title: FOLLOW_UP_LABELS[kind].title,
+        title: t(KIND_TITLE[kind]),
         dueOn: row.due_on,
         dueLabel: formatDateOnly(row.due_on),
         dueState: dueState(row.due_on, today),
@@ -70,11 +75,11 @@ async function FollowUps() {
     return (
       <EmptyState
         icon={<MessageCircleHeart aria-hidden />}
-        title="No follow-ups waiting"
-        description="When someone accepts an invitation you sent, their next touches appear here. Record acceptances on Candidates or import your connections."
+        title={t("followUps.emptyTitle")}
+        description={t("followUps.emptyDesc")}
       >
         <Link href="/candidates" className={buttonVariants({ variant: "outline" })}>
-          Go to Candidates
+          {t("followUps.goCandidates")}
         </Link>
       </EmptyState>
     );
@@ -83,17 +88,18 @@ async function FollowUps() {
   const due = items.filter((i) => isDue(i.dueOn, today));
   const later = items.filter((i) => !isDue(i.dueOn, today));
   return (
+    <LocaleScope groups={["followUps"]}>
     <div className="grid gap-8">
       <section aria-labelledby="due" className="grid gap-3">
         <h2 id="due" className="text-lg font-semibold">
-          Due now <span className="text-muted-foreground">({due.length})</span>
+          {t("followUps.dueNow")} <span className="text-muted-foreground">({due.length})</span>
         </h2>
-        {due.length ? due.map((i) => <FollowUpItem key={i.id} item={i} />) : <p className="text-sm text-muted-foreground">Nothing is due today. You are up to date.</p>}
+        {due.length ? due.map((i) => <FollowUpItem key={i.id} item={i} />) : <p className="text-sm text-muted-foreground">{t("followUps.upToDate")}</p>}
       </section>
       {later.length ? (
         <section aria-labelledby="later" className="grid gap-3">
           <h2 id="later" className="text-lg font-semibold">
-            Coming up <span className="text-muted-foreground">({later.length})</span>
+            {t("followUps.comingUp")} <span className="text-muted-foreground">({later.length})</span>
           </h2>
           {later.map((i) => (
             <FollowUpItem key={i.id} item={i} />
@@ -101,5 +107,6 @@ async function FollowUps() {
         </section>
       ) : null}
     </div>
+    </LocaleScope>
   );
 }

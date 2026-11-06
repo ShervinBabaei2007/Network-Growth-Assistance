@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { getT } from "@/lib/i18n/server";
 import { MeterLegend } from "@/components/meter-legend";
 import { ringArcs, sparkline, type FunnelStep, type HeatGrid } from "@/lib/visuals";
 import { cn } from "@/lib/utils";
@@ -16,20 +17,21 @@ const HATCH = "repeating-linear-gradient(135deg, transparent 0 2px, rgb(255 255 
 // ------------------------------------------------------------------ funnel
 
 /** Discovered → approved → invited → accepted, with how many dropped out at each step. */
-export function Funnel({ steps }: { steps: FunnelStep[] }) {
+export async function Funnel({ steps }: { steps: FunnelStep[] }) {
+  const t = await getT();
   return (
     <div className="grid gap-3">
-      <ol className="grid gap-3" aria-label="Outreach funnel">
+      <ol className="grid gap-3" aria-label={t("visuals.funnelAria")}>
         {steps.map((s) => {
           const waitingShare = s.value > 0 ? Math.round((s.pending / s.value) * 100) : 0;
           return (
             <li key={s.key} className="grid gap-1" data-testid={`funnel-${s.key}`}>
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
-                <span className="font-medium">{s.label}</span>
+                <span className="font-medium">{t(`funnel.${s.key}`)}</span>
                 <span className="tabular-nums text-muted-foreground">
                   {s.value.toLocaleString("en-CA")}
-                  {s.pending ? ` · ${s.pending.toLocaleString("en-CA")} waiting for an answer, not counted as accepted` : ""}
-                  {s.dropOffPercent !== null ? ` · ${s.dropOffPercent}% didn’t continue` : ""}
+                  {s.pending ? ` · ${s.pending.toLocaleString("en-CA")} ${t("visuals.waiting")}` : ""}
+                  {s.dropOffPercent !== null ? ` · ${t("visuals.didntContinue", { percent: s.dropOffPercent })}` : ""}
                 </span>
               </div>
               <div className="h-3 rounded-full bg-meter-track" aria-hidden>
@@ -52,8 +54,9 @@ export function Funnel({ steps }: { steps: FunnelStep[] }) {
 const LEVEL_MIX = [0, 28, 52, 76, 100] as const;
 
 /** Activity per day over the period: columns are weeks, rows are Monday to Sunday. */
-export function ActivityHeatmap({ grid, label }: { grid: HeatGrid; label: string }) {
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+export async function ActivityHeatmap({ grid, label }: { grid: HeatGrid; label: string }) {
+  const t = await getT();
+  const days = [t("visuals.mon"), t("visuals.tue"), t("visuals.wed"), t("visuals.thu"), t("visuals.fri"), t("visuals.sat"), t("visuals.sun")];
   return (
     <div className="grid gap-2">
       <div role="img" aria-label={label} className="flex items-start gap-2 overflow-x-auto pb-1">
@@ -84,11 +87,11 @@ export function ActivityHeatmap({ grid, label }: { grid: HeatGrid; label: string
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground" aria-hidden>
-        Less
+        {t("visuals.less")}
         {LEVEL_MIX.map((m) => (
           <span key={m} className="size-3.5 rounded-[3px] border border-border/80" style={{ background: `color-mix(in oklab, var(--meter-fill) ${m}%, var(--meter-track))` }} />
         ))}
-        More · busiest day {grid.max}
+        {t("visuals.moreBusiest", { max: grid.max })}
       </div>
     </div>
   );

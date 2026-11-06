@@ -154,7 +154,7 @@ async function SettingsContent() {
           Open Help
         </Link>
       </Section>
-      <Section id="language" title="Language" description="The language of the menu, sign-in, welcome and search. Other pages are English for now. It follows you to every device you sign in on.">
+      <Section id="language" title="Language" description="The language of the menu, sign-in, welcome, search, page titles, the Overview and alert emails. The rest of each page is still in English. It follows you to every device you sign in on.">
         <Suspense fallback={null}>
           <LanguageSwitchServer />
         </Suspense>

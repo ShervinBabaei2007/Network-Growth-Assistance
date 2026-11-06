@@ -19,6 +19,8 @@ import { disciplineName, universityName, type Discipline } from "@/lib/domain";
 import { computeTodaysPlan } from "@/lib/jobs/daily-queue";
 import { MIN_RESOLVED_FOR_RATE, type Shortfall } from "@/lib/prioritize";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/i18n/server";
+import type { Translator } from "@/lib/i18n";
 import { markQueueItemSent, rebuildQueue, skipQueueItem } from "./actions";
 import { NoteField } from "./note-field";
 
@@ -66,6 +68,7 @@ async function QueueContent() {
   }
 
   const { plan, progress, items, settings, notesUsed } = data;
+  const t = await getT();
   const notesLeft = settings.monthly_note_allowance === null ? null : Math.max(0, settings.monthly_note_allowance - notesUsed);
   const aiEnabled = aiNotesEnabled();
   const tz = settings.timezone;
@@ -78,49 +81,48 @@ async function QueueContent() {
     <>
       <Card>
         <CardHeader>
-          <CardDescription>Today, {progress.today}</CardDescription>
+          <CardDescription>{t("queue.today", { date: progress.today })}</CardDescription>
           <CardTitle>
             {settings.daily_invite_target === null
-              ? "Set a daily invitation target to get a queue"
-              : `${sentToday} of ${settings.daily_invite_target} planned invitations sent`}
+              ? t("queue.setTarget")
+              : t("queue.sentOf", { sent: sentToday, target: settings.daily_invite_target })}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm">
           {settings.weekly_invite_cap !== null ? (
             <p className="text-muted-foreground">
-              This week: {progress.activity.sentThisWeek} of your {settings.weekly_invite_cap} weekly cap.
+              {t("queue.weekCap", { sent: progress.activity.sentThisWeek, cap: settings.weekly_invite_cap })}
             </p>
           ) : null}
-          <BlockedNotice blocked={plan.blocked} />
+          <BlockedNotice blocked={plan.blocked} t={t} />
           <p className="text-xs text-muted-foreground">
-            <Term term="pending">Pending</Term> invitations are discounted at a{" "}
+            {t("queue.discountBefore")}<Term term="pending">{t("queue.termPending")}</Term>
             {plan.rateIsMeasured
-              ? `measured ${Math.round(plan.acceptanceRate * 100)}% acceptance rate`
-              : `default ${Math.round(plan.acceptanceRate * 100)}% acceptance rate (measured once ${MIN_RESOLVED_FOR_RATE} invitations have an outcome)`}{" "}
-            so categories with many outstanding invites aren&apos;t over-contacted.
+              ? t("queue.discountMeasured", { rate: Math.round(plan.acceptanceRate * 100) })
+              : t("queue.discountDefault", { rate: Math.round(plan.acceptanceRate * 100), min: MIN_RESOLVED_FOR_RATE })}
           </p>
-          <ActionForm action={rebuildQueue} submitLabel={items.length ? "Refresh today's queue" : "Build today's queue"} variant={items.length ? "outline" : "default"} size="sm" />
+          <ActionForm action={rebuildQueue} submitLabel={items.length ? t("queue.refresh") : t("queue.build")} variant={items.length ? "outline" : "default"} size="sm" />
         </CardContent>
       </Card>
 
       {open.length > 0 ? (
         <section aria-labelledby="todo" className="grid gap-3">
           <h2 id="todo" className="font-medium">
-            To send ({open.length})
+            {t("queue.toSend", { count: open.length })}
           </h2>
           {open.map((item) => {
             const c = item.candidates;
             return (
               <SwipeActions
                 key={item.id}
-                label={`Quick actions for ${c.full_name}`}
+                label={t("queue.quickActions", { name: c.full_name })}
                 actions={
                   <>
                     <button type="submit" form={`skip-${item.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-                      Skip today
+                      {t("queue.skipToday")}
                     </button>
                     <button type="submit" form={`sent-${item.id}`} className={buttonVariants({ size: "sm" })}>
-                      Mark sent
+                      {t("queue.markSent")}
                     </button>
                   </>
                 }
@@ -134,7 +136,7 @@ async function QueueContent() {
                         <Link href={`/candidates/${item.candidate_id}`} className="underline-offset-4 hover:underline">
                           {c.full_name}
                         </Link>{" "}
-                        {item.is_alternate ? <Badge variant="outline">Alternate</Badge> : null}
+                        {item.is_alternate ? <Badge variant="outline">{t("queue.alternate")}</Badge> : null}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {c.university ? universityName(progress.catalog, c.university) : "?"} · {c.discipline ? disciplineName(progress.catalog, c.discipline) : "?"}
@@ -148,12 +150,12 @@ async function QueueContent() {
                       rel="noopener noreferrer"
                       className={buttonVariants({ variant: "outline", size: "sm" })}
                     >
-                      Open on LinkedIn <ExternalLink aria-hidden />
+                      {t("queue.openLinkedIn")} <ExternalLink aria-hidden />
                     </a>
                   </div>
-                  {c.notes ? <p className="text-sm">Your notes: {c.notes}</p> : null}
+                  {c.notes ? <p className="text-sm">{t("queue.yourNotes", { notes: c.notes })}</p> : null}
                   <div className="flex flex-wrap items-end gap-3">
-                    <ActionForm id={`sent-${item.id}`} action={markQueueItemSent} submitLabel="Mark sent" size="sm" className="min-w-0 flex-1">
+                    <ActionForm id={`sent-${item.id}`} action={markQueueItemSent} submitLabel={t("queue.markSent")} size="sm" className="min-w-0 flex-1">
                       <input type="hidden" name="queueId" value={item.id} />
                       <input type="hidden" name="candidateId" value={item.candidate_id} />
                       <NoteField
@@ -165,7 +167,7 @@ async function QueueContent() {
                         notesLeft={notesLeft}
                       />
                     </ActionForm>
-                    <ActionForm id={`skip-${item.id}`} action={skipQueueItem} submitLabel="Skip today" variant="outline" size="sm">
+                    <ActionForm id={`skip-${item.id}`} action={skipQueueItem} submitLabel={t("queue.skipToday")} variant="outline" size="sm">
                       <input type="hidden" name="queueId" value={item.id} />
                       <input type="hidden" name="candidateId" value={item.candidate_id} />
                     </ActionForm>
@@ -177,18 +179,18 @@ async function QueueContent() {
           })}
         </section>
       ) : items.length > 0 ? (
-        <p className="rounded-lg border bg-card p-4 text-sm">Today&apos;s queue is done. Nice work.</p>
+        <p className="rounded-lg border bg-card p-4 text-sm">{t("queue.allDone")}</p>
       ) : null}
 
       {done.length > 0 ? (
         <section aria-labelledby="done" className="grid gap-2">
           <h2 id="done" className="font-medium">
-            Done today
+            {t("queue.doneToday")}
           </h2>
           <ul className="grid gap-1 text-sm">
             {done.map((item) => (
               <li key={item.id} className="flex gap-2">
-                <Badge variant={item.state === "sent" ? "secondary" : "outline"}>{item.state === "sent" ? "Sent" : "Skipped"}</Badge>
+                <Badge variant={item.state === "sent" ? "secondary" : "outline"}>{item.state === "sent" ? t("queue.sent") : t("queue.skipped")}</Badge>
                 <Link href={`/candidates/${item.candidate_id}`} className="underline-offset-4 hover:underline">
                   {item.candidates.full_name}
                 </Link>
@@ -201,11 +203,8 @@ async function QueueContent() {
       {plan.shortfalls.length > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Categories short of candidates</CardTitle>
-            <CardDescription>
-              Approved candidates waiting vs. invitations still needed. The queue never fills a
-              gap with people outside the target schools and programs.
-            </CardDescription>
+            <CardTitle>{t("queue.shortTitle")}</CardTitle>
+            <CardDescription>{t("queue.shortDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
             {groupByDiscipline(plan.shortfalls).map(([discipline, list], i) => (
@@ -213,8 +212,8 @@ async function QueueContent() {
                 <ul className="grid gap-2">
                   {list.map((s) => (
                     <li key={`${s.discipline}-${s.university}`}>
-                      <span className="font-medium">{s.university ? universityName(progress.catalog, s.university) : "All your schools"}</span>:{" "}
-                      {s.available} ready for about {s.invitesWanted} invitations still needed. {s.suggestion}
+                      <span className="font-medium">{s.university ? universityName(progress.catalog, s.university) : t("queue.allSchools")}</span>:{" "}
+                      {t("queue.shortLine", { available: s.available, wanted: s.invitesWanted, suggestion: s.suggestion })}
                     </li>
                   ))}
                 </ul>
@@ -227,11 +226,8 @@ async function QueueContent() {
       {stale.length > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Pending for over {settings.stale_pending_days} days ({stale.length})</CardTitle>
-            <CardDescription>
-              Consider withdrawing these on LinkedIn (My Network → Manage → Sent), then mark them
-              withdrawn here. Too many old pending invitations can count against your account.
-            </CardDescription>
+            <CardTitle>{t("queue.staleTitle", { days: settings.stale_pending_days, count: stale.length })}</CardTitle>
+            <CardDescription>{t("queue.staleDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="grid gap-1 text-sm">
@@ -240,7 +236,7 @@ async function QueueContent() {
                   <Link href={`/candidates/${s.candidate_id}`} className="underline-offset-4 hover:underline">
                     {s.candidates.full_name}
                   </Link>{" "}
-                  <span className="text-muted-foreground">sent {localDate(s.sent_at, tz)}</span>
+                  <span className="text-muted-foreground">{t("queue.sentOn", { date: localDate(s.sent_at, tz) })}</span>
                 </li>
               ))}
             </ul>
@@ -280,12 +276,12 @@ function loadStalePending(supabase: Awaited<ReturnType<typeof createClient>>, da
     .limit(200);
 }
 
-function BlockedNotice({ blocked }: { blocked: string | null }) {
+function BlockedNotice({ blocked, t }: { blocked: string | null; t: Translator }) {
   const messages: Record<string, { text: string; href?: string; link?: string }> = {
-    paused: { text: "Outreach is paused while you review a LinkedIn warning. No queue is built until you resume.", href: "/settings", link: "Settings" },
-    "no-daily-target": { text: "Enter how many invitations you plan to send per day. Nothing is assumed about LinkedIn's limits.", href: "/settings", link: "Set it in Settings" },
-    "capacity-reached": { text: "You've reached today's planned number of invitations. Come back tomorrow." },
-    "all-targets-met": { text: "Every discipline target is met." },
+    paused: { text: t("queue.blockedPaused"), href: "/settings", link: t("queue.settings") },
+    "no-daily-target": { text: t("queue.blockedNoTarget"), href: "/settings", link: t("queue.setInSettings") },
+    "capacity-reached": { text: t("queue.blockedCapacity") },
+    "all-targets-met": { text: t("queue.blockedAllMet") },
   };
   const m = blocked ? messages[blocked] : null;
   if (!m) return null;

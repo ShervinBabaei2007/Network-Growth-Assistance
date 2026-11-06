@@ -1,4 +1,6 @@
 import { Tx } from "@/components/tx";
+import { formatters } from "@/lib/i18n";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { unstable_rethrow } from "next/navigation";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
@@ -36,6 +38,8 @@ async function DisciplineCards() {
     unstable_rethrow(e); // let Next.js postpone/redirect signals through
     return <LoadError what="discipline progress" />;
   }
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  const fmt = formatters(locale);
 
   return (
     <>
@@ -47,32 +51,31 @@ async function DisciplineCards() {
           return (
             <Card key={d.discipline} className={d.isFocus ? "border-primary/40" : undefined}>
               <CardHeader>
-                <CardDescription>Priority {d.rank}</CardDescription>
+                <CardDescription>{t("disciplinesPage.priority", { rank: d.rank })}</CardDescription>
                 <CardTitle className="flex flex-wrap items-center gap-2">
                   {name}
-                  {d.isFocus ? <Badge>Focus</Badge> : null}
-                  {d.complete ? <Badge variant="secondary">Target met</Badge> : null}
+                  {d.isFocus ? <Badge>{t("disciplinesPage.focus")}</Badge> : null}
+                  {d.complete ? <Badge variant="secondary">{t("disciplinesPage.targetMet")}</Badge> : null}
                 </CardTitle>
               </CardHeader>
               <CardContent className="grid gap-4">
                 <div className="grid gap-1.5">
-                  <ProgressMeter label={`${name} progress`} accepted={d.accepted} pending={d.pending} target={d.target} />
+                  <ProgressMeter label={t("disciplinesPage.progressOf", { name })} accepted={d.accepted} pending={d.pending} target={d.target} valueText={d.pending ? t("meter.valueTextPending", { accepted: d.accepted, target: d.target, pending: d.pending }) : t("meter.valueText", { accepted: d.accepted, target: d.target })} />
                   <p className="text-sm text-muted-foreground">
-                    {d.accepted} of {d.target} accepted ({d.percent}%)
+                    {t("disciplinesPage.acceptedOf", { accepted: d.accepted, target: d.target, percent: d.percent })}
                   </p>
                 </div>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
-                  <Fact label="Remaining" value={d.remaining} />
-                  <Fact label="Pending" value={d.pending} />
-                  <Fact label="Ready for outreach" value={d.available} />
-                  <Fact label={`From ${targetUniversities(progress.catalog).map((u) => u.name).join(" + ") || "schools with targets"}`} value={d.acceptedPrimary} />
-                  {poolUniversities(progress.catalog).length ? <Fact label={`From ${poolUniversities(progress.catalog).map((u) => u.name).join(" + ")}`} value={d.acceptedAdditional} /> : null}
+                  <Fact label={t("disciplinesPage.remaining")} value={fmt.number(d.remaining)} />
+                  <Fact label={t("disciplinesPage.pending")} value={fmt.number(d.pending)} />
+                  <Fact label={t("disciplinesPage.ready")} value={fmt.number(d.available)} />
+                  <Fact label={t("disciplinesPage.fromSchools", { schools: targetUniversities(progress.catalog).map((u) => u.name).join(" + ") || t("disciplinesPage.fromSchoolsFallback") })} value={fmt.number(d.acceptedPrimary)} />
+                  {poolUniversities(progress.catalog).length ? <Fact label={t("disciplinesPage.fromSchools", { schools: poolUniversities(progress.catalog).map((u) => u.name).join(" + ") })} value={fmt.number(d.acceptedAdditional)} /> : null}
                 </dl>
                 {shortOfCandidates ? (
                   <p className="text-sm">
-                    <Badge variant="outline">Low candidate pool</Badge> {d.available} approved
-                    candidate{d.available === 1 ? "" : "s"} for {d.remaining} remaining. Add more
-                    before this discipline becomes the focus.
+                    <Badge variant="outline">{t("disciplinesPage.lowPool")}</Badge>{" "}
+                    {d.available === 1 ? t("disciplinesPage.lowPoolOne", { remaining: d.remaining }) : t("disciplinesPage.lowPoolMany", { available: d.available, remaining: d.remaining })}
                   </p>
                 ) : null}
               </CardContent>
@@ -84,11 +87,11 @@ async function DisciplineCards() {
   );
 }
 
-function Fact({ label, value }: { label: string; value: number }) {
+function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="font-medium">{value.toLocaleString("en-CA")}</dd>
+      <dd className="font-medium">{value}</dd>
     </div>
   );
 }

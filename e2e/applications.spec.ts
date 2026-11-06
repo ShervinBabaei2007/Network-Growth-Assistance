@@ -43,9 +43,11 @@ test("track an application from save to offer", async ({ page, context }) => {
   await page.goto("/applications");
   const board = page.getByRole("region", { name: "Applied" });
   await expect(board.getByRole("link", { name: "Junior Software Developer" })).toHaveCount(1);
-  await expect(page.getByText("1 application, 1 open")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "View" }).getByText("1 application, 1 open")).toBeVisible();
 
   // 3. Move it by keyboard: the stage control is a labelled select.
+  // On a cold development server the board can still be hydrating; focus set before then is lost.
+  await page.waitForLoadState("networkidle");
   const stage = page.getByLabel("Stage of Junior Software Developer");
   await stage.focus();
   await expect(stage).toBeFocused();

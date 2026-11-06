@@ -1,4 +1,5 @@
 import { Tx } from "@/components/tx";
+import { getT } from "@/lib/i18n/server";
 import { unstable_rethrow } from "next/navigation";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
@@ -40,17 +41,18 @@ async function UniversityProgress() {
     return <LoadError what="school progress" />;
   }
   const { disciplines, catalog } = progress;
+  const t = await getT();
   const withTargets = targetUniversities(catalog);
   const pools = poolUniversities(catalog);
 
   if (!catalog.universities.length || !catalog.disciplines.length) {
     return (
       <p className="rounded-lg border border-dashed bg-card p-4 text-sm text-muted-foreground">
-        Add the schools and disciplines you want to connect with in{" "}
+        {t("schoolsPage.emptyBefore")}
         <Link href="/settings#plan" className="underline underline-offset-4">
-          Settings → Your networking plan
+          {t("schoolsPage.emptyLink")}
         </Link>
-        . Progress for each school appears here.
+        {t("schoolsPage.emptyAfter")}
       </p>
     );
   }
@@ -60,8 +62,8 @@ async function UniversityProgress() {
       {withTargets.length ? (
         <Card>
           <CardHeader>
-            <CardTitle>Schools with their own targets</CardTitle>
-            <CardDescription>Accepted connections toward each school&apos;s target, per discipline.</CardDescription>
+            <CardTitle>{t("schoolsPage.ownTargetsTitle")}</CardTitle>
+            <CardDescription>{t("schoolsPage.ownTargetsDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-5">
             <div className="grid gap-5 md:grid-cols-2">
@@ -75,7 +77,7 @@ async function UniversityProgress() {
                       <div key={d.discipline} className="grid gap-1">
                         <div className="flex justify-between gap-2 text-sm">
                           <span>{name}</span>
-                          <span className="text-muted-foreground">{c.target === null ? "No target" : `${c.accepted} / ${c.target}`}</span>
+                          <span className="text-muted-foreground">{c.target === null ? t("schoolsPage.noTarget") : `${c.accepted} / ${c.target}`}</span>
                         </div>
                         {c.target !== null ? <ProgressMeter label={`${u.name} ${name}`} accepted={c.accepted} pending={c.pending} target={c.target} /> : null}
                       </div>
@@ -89,13 +91,13 @@ async function UniversityProgress() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Discipline</TableHead>
-                  <TableHead>School</TableHead>
-                  <TableHead className="text-right">Accepted</TableHead>
-                  <TableHead className="text-right">Target</TableHead>
-                  <TableHead className="text-right">Remaining</TableHead>
-                  <TableHead className="text-right">Pending</TableHead>
-                  <TableHead className="text-right">Ready</TableHead>
+                  <TableHead>{t("schoolsPage.discipline")}</TableHead>
+                  <TableHead>{t("schoolsPage.school")}</TableHead>
+                  <TableHead className="text-right">{t("schoolsPage.accepted")}</TableHead>
+                  <TableHead className="text-right">{t("schoolsPage.target")}</TableHead>
+                  <TableHead className="text-right">{t("schoolsPage.remaining")}</TableHead>
+                  <TableHead className="text-right">{t("schoolsPage.pending")}</TableHead>
+                  <TableHead className="text-right">{t("schoolsPage.ready")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="tabular-nums">
@@ -121,17 +123,14 @@ async function UniversityProgress() {
       {pools.length ? (
         <Card>
           <CardHeader>
-            <CardTitle>Extra candidate pools</CardTitle>
-            <CardDescription>
-              Schools without their own targets ({pools.map((u) => u.name).join(", ")}). They help fill gaps when the schools with targets run short, and count
-              toward each discipline&apos;s total.
-            </CardDescription>
+            <CardTitle>{t("schoolsPage.poolsTitle")}</CardTitle>
+            <CardDescription>{t("schoolsPage.poolsDesc", { schools: pools.map((u) => u.name).join(", ") })}</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Discipline</TableHead>
+                  <TableHead>{t("schoolsPage.discipline")}</TableHead>
                   {pools.map((u) => (
                     <TableHead key={u.id} colSpan={2} className="text-center">
                       {u.name}
@@ -141,7 +140,7 @@ async function UniversityProgress() {
                 <TableRow>
                   <TableHead />
                   {pools.map((u) => (
-                    <FragmentHeads key={u.id} />
+                    <FragmentHeads key={u.id} identified={t("schoolsPage.identified")} accepted={t("schoolsPage.accepted")} />
                   ))}
                 </TableRow>
               </TableHeader>
@@ -162,7 +161,7 @@ async function UniversityProgress() {
               </TableBody>
             </Table>
             <p className="mt-2 text-xs text-muted-foreground">
-              “Identified” counts candidates with a confirmed school and discipline, excluding those marked not a match or do not contact.
+              {t("schoolsPage.identifiedNote")}
             </p>
           </CardContent>
         </Card>
@@ -171,11 +170,11 @@ async function UniversityProgress() {
   );
 }
 
-function FragmentHeads() {
+function FragmentHeads({ identified, accepted }: { identified: string; accepted: string }) {
   return (
     <>
-      <TableHead className="text-right">Identified</TableHead>
-      <TableHead className="text-right">Accepted</TableHead>
+      <TableHead className="text-right">{identified}</TableHead>
+      <TableHead className="text-right">{accepted}</TableHead>
     </>
   );
 }

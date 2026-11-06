@@ -116,3 +116,15 @@ test("the Overview body is in French, and the starting-count form saves in Frenc
   await expect(page.getByText("Next recommended action")).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Configurer mon plan/ })).toBeVisible();
 });
+
+test("the Queue and Analytics bodies are in French", async ({ page, context }) => {
+  test.setTimeout(120_000);
+  await signIn(page, uniqueEmail("fr-queue"));
+  await context.addCookies([{ name: "locale", value: "fr-CA", url: "http://localhost:3000" }]);
+  await page.goto("/queue");
+  await expect(page.getByText("Définissez un objectif quotidien d'invitations pour obtenir une file")).toBeVisible();
+  await page.goto("/analytics");
+  await expect(page.getByRole("heading", { name: "Acceptation" })).toBeVisible();
+  await expect(page.getByText("Taux d'acceptation")).toBeVisible();
+  await expect(page.getByText("Weekly activity")).toHaveCount(0);
+});

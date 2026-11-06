@@ -104,7 +104,9 @@ test.describe("wide screen", () => {
     await expect(page.getByRole("complementary", { name: "Selected record" }).getByRole("heading", { name: "Alpha Role" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Beta Role", exact: true })).toBeVisible();
 
-    // From the board there is no room for a pane: the record replaces the board.
+    // From the board there is no room for a pane: the record replaces the board. The list view just visited is
+    // remembered and would be restored on a plain /applications visit, so forget it first.
+    await page.evaluate(() => localStorage.removeItem("applications:last-view"));
     await page.goto("/applications");
     // The board has the full width: no empty "choose an application" pane is reserved beside it.
     await expect(page.getByText("Choose an application")).toBeHidden();

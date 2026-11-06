@@ -18,7 +18,8 @@ describe("translations stay in step with English", () => {
     });
     it(`${locale} has no empty text and keeps every placeholder`, () => {
       for (const [key, text] of Object.entries(messages)) {
-        expect(text.length, key).toBeGreaterThan(0);
+        // An empty English string is deliberate (text that only French needs, such as a lead-in word).
+        if (english[key] !== "") expect(text.length, key).toBeGreaterThan(0);
         expect(placeholders(text), key).toEqual(placeholders(english[key]!));
       }
     });
@@ -26,7 +27,7 @@ describe("translations stay in step with English", () => {
 
   it("French is actually translated, apart from names that stay the same", () => {
     const fr = flatten(frCA);
-    const sameAllowed = new Set(["common.appName", "auth.title", "nav.notifications", "nav.disciplines", "welcome.title0", "pages.disciplines.title", "pages.notifications.title", "overview.disciplines", "actions.dateLabel"]);
+    const sameAllowed = new Set(["common.appName", "auth.title", "nav.notifications", "nav.disciplines", "welcome.title0", "pages.disciplines.title", "pages.notifications.title", "overview.disciplines", "actions.dateLabel", "analytics.disciplineCol", "analytics.totalCol", "analytics.dateCol", "schoolsPage.discipline", "queue.discountBefore"]);
     const untranslated = Object.keys(fr).filter((k) => fr[k] === english[k] && !sameAllowed.has(k));
     expect(untranslated).toEqual([]);
   });

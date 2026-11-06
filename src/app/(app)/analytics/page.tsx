@@ -18,6 +18,8 @@ import { disciplineName, poolUniversities, targetUniversities, universityName, t
 import { computeTodaysPlan } from "@/lib/jobs/daily-queue";
 import { createClient } from "@/lib/supabase/server";
 import { buildFunnel, buildHeatGrid } from "@/lib/visuals";
+import { formatters } from "@/lib/i18n";
+import { getLocale, getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Analytics · Network Growth" };
 
@@ -109,75 +111,74 @@ async function AnalyticsContent() {
   const { analytics: a, plan, progress, funnel } = data;
   const heat = buildHeatGrid(a.daily.map((d) => ({ date: d.date, count: d.sent + d.accepted })));
   const acc = a.acceptance;
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  const fmt = formatters(locale);
 
   return (
     <>
       <section aria-labelledby="acceptance" className="grid gap-2">
         <h2 id="acceptance" className="font-medium">
-          Acceptance
+          {t("analytics.acceptance")}
         </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatTile
-            label="Acceptance rate"
-            value={acc.rate === null ? "Not enough data" : `${Math.round(acc.rate * 100)}%`}
-            hint={acc.rate === null ? `Shown once ${acc.minResolved} invitations have an outcome (${acc.resolved} so far)` : `${acc.accepted} of ${acc.resolved} with a known outcome`}
+            label={t("analytics.rate")}
+            value={acc.rate === null ? t("analytics.notEnough") : `${Math.round(acc.rate * 100)} %`}
+            hint={acc.rate === null ? t("analytics.shownOnce", { min: acc.minResolved, resolved: acc.resolved }) : t("analytics.ofKnown", { accepted: acc.accepted, resolved: acc.resolved })}
           />
-          <StatTile label={<Term term="pending" />} value={acc.pending} hint="Not in the rate until they resolve" />
-          <StatTile label="Declined or withdrawn" value={acc.declined + acc.withdrawn} />
-          <StatTile label="Ready for outreach" value={progress.overall.readyForOutreach} hint="Approved, not yet invited" />
-          <StatTile label={`Sent, last ${DAYS} days`} value={a.daily.reduce((n, d) => n + d.sent, 0)} hint="Invitations you recorded" trend={a.daily.map((d) => d.sent)} />
-          <StatTile label={`Accepted, last ${DAYS} days`} value={a.daily.reduce((n, d) => n + d.accepted, 0)} hint="Connections that said yes" trend={a.daily.map((d) => d.accepted)} />
+          <StatTile label={<Term term="pending" />} value={acc.pending} hint={t("analytics.pendingHint")} />
+          <StatTile label={t("analytics.declined")} value={acc.declined + acc.withdrawn} />
+          <StatTile label={t("analytics.ready")} value={progress.overall.readyForOutreach} hint={t("analytics.approvedNotInvited")} />
+          <StatTile label={t("analytics.sentLast", { days: DAYS })} value={a.daily.reduce((n, d) => n + d.sent, 0)} hint={t("analytics.recorded")} trend={a.daily.map((d) => d.sent)} />
+          <StatTile label={t("analytics.acceptedLast", { days: DAYS })} value={a.daily.reduce((n, d) => n + d.accepted, 0)} hint={t("analytics.saidYes")} trend={a.daily.map((d) => d.accepted)} />
         </div>
         <p className="text-xs text-muted-foreground">
-          The rate is accepted ÷ (accepted + declined + withdrawn). <Term term="pending">Pending</Term> invitations are left out
-          because their outcome isn&apos;t known yet; counting them as “not accepted” would understate it,
-          especially right after a busy week. LinkedIn rarely tells you about declines, so the rate
-          may read a little high.
+          {t("analytics.rateNoteBefore")}<Term term="pending">{t("analytics.termPending")}</Term>{t("analytics.rateNoteAfter")}
         </p>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <ChartCard title={`Invitations sent · last ${DAYS} days`} empty={!a.hasActivity} table={<DailyTable rows={a.daily} />}>
-          <LazyDailyBars data={a.daily} dataKey="sent" unit="sent" label={`Invitations sent per day over the last ${DAYS} days`} />
+        <ChartCard title={t("analytics.sentTitle", { days: DAYS })} empty={!a.hasActivity} table={<DailyTable rows={a.daily} />}>
+          <LazyDailyBars data={a.daily} dataKey="sent" unit={t("analytics.unitSent")} label={t("analytics.sentLabel", { days: DAYS })} />
         </ChartCard>
-        <ChartCard title={`Connections accepted · last ${DAYS} days`} empty={!a.hasActivity} table={<DailyTable rows={a.daily} />}>
-          <LazyDailyBars data={a.daily} dataKey="accepted" unit="accepted" label={`Connections accepted per day over the last ${DAYS} days`} />
+        <ChartCard title={t("analytics.acceptedTitle", { days: DAYS })} empty={!a.hasActivity} table={<DailyTable rows={a.daily} />}>
+          <LazyDailyBars data={a.daily} dataKey="accepted" unit={t("analytics.unitAccepted")} label={t("analytics.acceptedLabel", { days: DAYS })} />
         </ChartCard>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ChartCard
-          title="Outreach funnel"
-          description="Where the people you found are now. Waiting invitations are hatched and never counted as accepted."
+          title={t("analytics.funnelTitle")}
+          description={t("analytics.funnelDesc")}
           empty={!funnel}
-          emptyText="Nobody has been added yet. The funnel appears once you have candidates."
+          emptyText={t("analytics.funnelEmpty")}
           table={funnel ? <FunnelTable steps={funnel} /> : null}
         >
           {funnel ? <Funnel steps={funnel} /> : null}
         </ChartCard>
         <ChartCard
-          title={`Activity · last ${DAYS} days`}
-          description="Invitations sent plus connections accepted, per day."
+          title={t("analytics.activityTitle", { days: DAYS })}
+          description={t("analytics.activityDesc")}
           empty={!heat}
           table={<DailyTable rows={a.daily} />}
         >
-          {heat ? <ActivityHeatmap grid={heat} label={`Activity per day over the last ${DAYS} days: ${heat.total} in total, busiest day ${heat.max}. A table follows.`} /> : null}
+          {heat ? <ActivityHeatmap grid={heat} label={t("analytics.heatLabel", { days: DAYS, total: heat.total, max: heat.max })} /> : null}
         </ChartCard>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Weekly activity</CardTitle>
-          <CardDescription>Weeks start on Monday. Acceptances are counted in the week they happened.</CardDescription>
+          <CardTitle>{t("analytics.weeklyTitle")}</CardTitle>
+          <CardDescription>{t("analytics.weeklyDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Week of</TableHead>
-                <TableHead className="text-right">Sent</TableHead>
-                <TableHead className="text-right">Accepted</TableHead>
-                <TableHead className="text-right">Declined / withdrawn</TableHead>
+                <TableHead>{t("analytics.weekOf")}</TableHead>
+                <TableHead className="text-right">{t("analytics.sentCol")}</TableHead>
+                <TableHead className="text-right">{t("analytics.acceptedCol")}</TableHead>
+                <TableHead className="text-right">{t("analytics.declinedWithdrawn")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="tabular-nums">
@@ -195,44 +196,44 @@ async function AnalyticsContent() {
       </Card>
 
       <ChartCard
-        title="Network total over time"
-        description="From the counts you record on the Overview and from LinkedIn exports."
+        title={t("analytics.networkTitle")}
+        description={t("analytics.networkDesc")}
         empty={a.networkHistory.length < 2}
-        emptyText={a.networkHistory.length === 1 ? "Only one count recorded so far. Record another to see a trend." : "No connection counts recorded yet."}
+        emptyText={a.networkHistory.length === 1 ? t("analytics.onlyOne") : t("analytics.noCounts")}
         table={
           <ul className="grid gap-1 text-sm tabular-nums">
             {a.networkHistory.map((p) => (
               <li key={p.date}>
-                {p.date}: {p.total.toLocaleString("en-CA")}
+                {p.date}: {fmt.number(p.total)}
               </li>
             ))}
           </ul>
         }
       >
-        <LazyNetworkLine data={a.networkHistory} label="Recorded network total by date" />
+        <LazyNetworkLine data={a.networkHistory} label={t("analytics.networkLabel")} />
       </ChartCard>
 
       <Card>
         <CardHeader>
-          <CardTitle>Progress by discipline and university</CardTitle>
+          <CardTitle>{t("analytics.progressTitle")}</CardTitle>
           <CardDescription>
-            Accepted connections toward each target. Full detail on the{" "}
+            {t("analytics.progressDescA")}
             <Link href="/disciplines" className="underline underline-offset-4">
-              Disciplines
-            </Link>{" "}
-            and{" "}
+              {t("pages.disciplines.title")}
+            </Link>
+            {t("analytics.progressAnd")}
             <Link href="/universities" className="underline underline-offset-4">
-              Universities
-            </Link>{" "}
-            pages.
+              {t("analytics.universitiesLink")}
+            </Link>
+            {t("analytics.progressDescB")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Discipline</TableHead>
-                <TableHead className="text-right">Total</TableHead>
+                <TableHead>{t("analytics.disciplineCol")}</TableHead>
+                <TableHead className="text-right">{t("analytics.totalCol")}</TableHead>
                 {targetUniversities(progress.catalog).map((u) => (
                   <TableHead key={u.id} className="text-right">
                     {u.name}
@@ -263,19 +264,19 @@ async function AnalyticsContent() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Categories with too few candidates</CardTitle>
-          <CardDescription>Approved candidates waiting compared with the invitations still needed.</CardDescription>
+          <CardTitle>{t("analytics.shortTitle")}</CardTitle>
+          <CardDescription>{t("analytics.shortDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           {plan.shortfalls.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Every active category has enough approved candidates.</p>
+            <p className="text-sm text-muted-foreground">{t("analytics.shortNone")}</p>
           ) : (
             <ul className="grid gap-1 text-sm">
               {plan.shortfalls
                 .filter((s) => s.university !== null)
                 .map((s) => (
                   <li key={`${s.discipline}-${s.university}`}>
-                    {disciplineName(progress.catalog, s.discipline)} · {universityName(progress.catalog, s.university)}: {s.available} ready, about {s.invitesWanted} needed
+                    {t("analytics.shortLine", { discipline: disciplineName(progress.catalog, s.discipline), university: universityName(progress.catalog, s.university), available: s.available, wanted: s.invitesWanted })}
                   </li>
                 ))}
             </ul>
@@ -286,11 +287,11 @@ async function AnalyticsContent() {
   );
 }
 
-function ChartCard({
+async function ChartCard({
   title,
   description,
   empty,
-  emptyText = "No activity recorded in this period yet.",
+  emptyText,
   table,
   children,
 }: {
@@ -301,6 +302,7 @@ function ChartCard({
   table: ReactNode;
   children: ReactNode;
 }) {
+  const t = await getT();
   return (
     <Card>
       <CardHeader>
@@ -309,11 +311,11 @@ function ChartCard({
       </CardHeader>
       <CardContent className="grid gap-2">
         {empty ? (
-          <p className="rounded-md bg-muted px-3 py-6 text-center text-sm text-muted-foreground">{emptyText}</p>
+          <p className="rounded-md bg-muted px-3 py-6 text-center text-sm text-muted-foreground">{emptyText ?? t("analytics.noActivity")}</p>
         ) : (
           <>
             {children}
-            <Disclosure variant="plain" summary="Show as table">
+            <Disclosure variant="plain" summary={t("analytics.showTable")}>
               {table}
             </Disclosure>
           </>
@@ -323,24 +325,25 @@ function ChartCard({
   );
 }
 
-function FunnelTable({ steps }: { steps: NonNullable<Awaited<ReturnType<typeof loadFunnel>>> }) {
+async function FunnelTable({ steps }: { steps: NonNullable<Awaited<ReturnType<typeof loadFunnel>>> }) {
+  const t = await getT();
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Step</TableHead>
-          <TableHead className="text-right">People</TableHead>
-          <TableHead className="text-right">Waiting for an answer</TableHead>
-          <TableHead className="text-right">Didn&apos;t continue</TableHead>
+          <TableHead>{t("analytics.stepCol")}</TableHead>
+          <TableHead className="text-right">{t("analytics.peopleCol")}</TableHead>
+          <TableHead className="text-right">{t("analytics.waitingCol")}</TableHead>
+          <TableHead className="text-right">{t("analytics.dropCol")}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody className="tabular-nums">
         {steps.map((s) => (
           <TableRow key={s.key}>
-            <TableCell>{s.label}</TableCell>
+            <TableCell>{t(`funnel.${s.key}`)}</TableCell>
             <TableCell className="text-right">{s.value}</TableCell>
             <TableCell className="text-right">{s.pending || "—"}</TableCell>
-            <TableCell className="text-right">{s.dropOffPercent === null ? "—" : `${s.dropOffPercent}%`}</TableCell>
+            <TableCell className="text-right">{s.dropOffPercent === null ? "—" : `${s.dropOffPercent} %`}</TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -348,14 +351,15 @@ function FunnelTable({ steps }: { steps: NonNullable<Awaited<ReturnType<typeof l
   );
 }
 
-function DailyTable({ rows }: { rows: { date: string; sent: number; accepted: number }[] }) {
+async function DailyTable({ rows }: { rows: { date: string; sent: number; accepted: number }[] }) {
+  const t = await getT();
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Date</TableHead>
-          <TableHead className="text-right">Sent</TableHead>
-          <TableHead className="text-right">Accepted</TableHead>
+          <TableHead>{t("analytics.dateCol")}</TableHead>
+          <TableHead className="text-right">{t("analytics.sentCol")}</TableHead>
+          <TableHead className="text-right">{t("analytics.acceptedCol")}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody className="tabular-nums">

@@ -9,16 +9,18 @@ import { rewriteNoteWithAI } from "@/lib/notes/ai-rewrite";
 import { buildTodaysQueue } from "@/lib/jobs/daily-queue";
 import { actionContext, logActivity } from "@/lib/server/action-context";
 import { getUserLLM } from "@/lib/ai";
+import { getT } from "@/lib/i18n/server";
 
 export async function rebuildQueue(): Promise<FormState> {
   const ctx = await actionContext();
+  const t = await getT();
   try {
     const { queued, plan } = await buildTodaysQueue(ctx.supabase, ctx.userId);
     await logActivity(ctx, "queue.built", { queued, blocked: plan.blocked });
     refresh();
-    return saved(queued ? `Queued ${queued} candidate${queued === 1 ? "" : "s"}.` : "Nothing to queue right now.");
+    return saved(queued ? (queued === 1 ? t("queue.queuedOne") : t("queue.queuedMany", { count: queued })) : t("queue.nothingToQueue"));
   } catch {
-    return failed("Couldn't build the queue. Try again.");
+    return failed(t("queue.buildFailed"));
   }
 }
 
@@ -27,9 +29,9 @@ const itemSchema = z.object({ queueId: z.uuid(), candidateId: z.uuid(), note: z.
 /** The person sent the invitation on LinkedIn; record it and close the queue item. */
 export async function markQueueItemSent(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = itemSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failed("We couldn't find that queue item. Reload the page and try again.");
+  if (!parsed.success) return failed((await getT())("queue.itemNotFound"));
   const ctx = await actionContext();
-  if (ctx.settings.paused) return failed("Outreach is paused. Resume it in Settings first.");
+  if (ctx.settings.paused) return failed((await getT())("queue.pausedFirst"));
 
   const { error } = await ctx.supabase.rpc("record_invitation_sent", {
     p_candidate_id: parsed.data.candidateId,
@@ -37,24 +39,24 @@ export async function markQueueItemSent(_: FormState, formData: FormData): Promi
   });
   if (error) {
     const known = ["P0001", "P0002", "23505"].includes(error.code ?? "");
-    return failed(known ? error.message : "Couldn't record the invitation.");
+    return failed(known ? error.message : (await getT())("queue.recordFailed"));
   }
   await ctx.supabase.from("daily_queue").update({ state: "sent", note_draft: parsed.data.note || null }).eq("id", parsed.data.queueId);
 
   await logActivity(ctx, "invitation.sent", { candidate: parsed.data.candidateId, via: "queue", note: Boolean(parsed.data.note) });
   refresh();
-  return saved("Recorded as sent.");
+  return saved((await getT())("queue.recordedSent"));
 }
 
 export async function skipQueueItem(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = itemSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failed("We couldn't find that queue item. Reload the page and try again.");
+  if (!parsed.success) return failed((await getT())("queue.itemNotFound"));
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("daily_queue").update({ state: "skipped" }).eq("id", parsed.data.queueId).eq("state", "queued");
-  if (error) return failed("Couldn't skip. Try again.");
+  if (error) return failed((await getT())("queue.skipFailed"));
   await logActivity(ctx, "queue.skipped", { candidate: parsed.data.candidateId });
   refresh();
-  return saved("Skipped for today.");
+  return saved((await getT())("queue.skippedToday"));
 }
 
 export type RewriteResponse = { ok: true; text: string } | { ok: false; message: string };
