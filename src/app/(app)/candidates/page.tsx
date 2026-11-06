@@ -1,3 +1,4 @@
+import { Tx } from "@/components/tx";
 import { unstable_rethrow } from "next/navigation";
 import { Disclosure } from "@/components/disclosure";
 import { cn } from "@/lib/utils";
@@ -23,10 +24,9 @@ export default function CandidatesPage({ searchParams }: PageProps<"/candidates"
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="grid gap-1">
-          <h1 className="text-xl font-semibold">Candidates</h1>
+          <h1 className="text-xl font-semibold"><Tx k="pages.candidates.title" /></h1>
           <p className="max-w-prose text-sm text-muted-foreground">
-            LinkedIn search results you paste in, tracked from review to invitation to acceptance. Accepted candidates count toward your targets.
-            Looking for people to research instead? Try Discover.
+            <Tx k="pages.candidates.description" />
           </p>
         </div>
         <Link href="/candidates/import" className={buttonVariants({ variant: "outline", size: "sm" })}>
@@ -54,7 +54,7 @@ export default function CandidatesPage({ searchParams }: PageProps<"/candidates"
         <RememberLastView page="candidates" />
       </Suspense>
 
-      <Suspense fallback={<PageSkeleton label="Loading candidates…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.candidates" />}>
         <CandidateList searchParams={searchParams} />
       </Suspense>
     </div>

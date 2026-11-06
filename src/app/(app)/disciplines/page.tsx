@@ -1,8 +1,10 @@
+import { Tx } from "@/components/tx";
 import { unstable_rethrow } from "next/navigation";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
 import { LoadError } from "@/components/load-error";
-import { MeterLegend, ProgressMeter } from "@/components/progress-meter";
+import { MeterLegend } from "@/components/meter-legend";
+import { ProgressMeter } from "@/components/progress-meter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadMyProgress } from "@/lib/data/dashboard";
@@ -14,12 +16,12 @@ export default function DisciplinesPage() {
   return (
     <div className="grid gap-6">
       <div>
-        <h1 className="text-xl font-semibold">Disciplines</h1>
+        <h1 className="text-xl font-semibold"><Tx k="pages.disciplines.title" /></h1>
         <p className="text-sm text-muted-foreground">
-          Attention goes to the highest-priority discipline whose target isn&apos;t met yet.
+          <Tx k="pages.disciplines.description" />
         </p>
       </div>
-      <Suspense fallback={<PageSkeleton label="Loading…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
         <DisciplineCards />
       </Suspense>
     </div>

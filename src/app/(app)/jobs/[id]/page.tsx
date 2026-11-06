@@ -46,7 +46,7 @@ export const maxDuration = 60;
 
 export default function JobPage({ params }: PageProps<"/jobs/[id]">) {
   return (
-    <Suspense fallback={<PageSkeleton label="Loading…" />}>
+    <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
       <Job params={params} />
     </Suspense>
   );

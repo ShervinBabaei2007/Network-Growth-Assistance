@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { RestartGuide } from "@/components/onboarding/restart-guide";
-import { PageHeader } from "@/components/page-header";
+import { PageHeaderT } from "@/components/tx";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { getOnboarding } from "@/lib/onboarding/read";
@@ -13,8 +13,8 @@ export const metadata = { title: "Help · Network Growth" };
 export default function HelpPage() {
   return (
     <div className="grid gap-6">
-      <PageHeader title="Help" description="Replay the introduction, or see how the parts of the app fit together." />
-      <Suspense fallback={<PageSkeleton label="Loading…" />}>
+      <PageHeaderT title="pages.help.title" description="pages.help.description" />
+      <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
         <Guide />
       </Suspense>
       <Card>

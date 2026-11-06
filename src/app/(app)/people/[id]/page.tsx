@@ -19,7 +19,7 @@ export default function PersonPage({ params, searchParams }: PageProps<"/people/
     <div data-record-page className={`${SPLIT_GRID} xl:group-data-[pane-open]/md:block`}>
       <PaneSignal kind="record" />
       <div className="min-w-0 max-xl:hidden">
-        <Suspense fallback={<PageSkeleton label="Loading…" />}>
+        <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
           <PeopleList searchParams={searchParams} />
         </Suspense>
       </div>
@@ -27,7 +27,7 @@ export default function PersonPage({ params, searchParams }: PageProps<"/people/
         <Link href="/people" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="size-4" aria-hidden /> People
         </Link>
-        <Suspense fallback={<PageSkeleton label="Loading…" />}>
+        <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
           <PersonRecord params={params} />
         </Suspense>
       </div>

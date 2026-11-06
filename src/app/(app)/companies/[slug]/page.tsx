@@ -16,7 +16,7 @@ export const metadata = { title: "Company · Network Growth" };
 
 export default function CompanyPage({ params }: PageProps<"/companies/[slug]">) {
   return (
-    <Suspense fallback={<PageSkeleton label="Loading…" />}>
+    <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
       <Company params={params} />
     </Suspense>
   );

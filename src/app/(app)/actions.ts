@@ -21,14 +21,17 @@ import { normalizeAppearance, type Appearance } from "@/lib/appearance";
 import { onboardingInputSchema, onboardingPatchSchema, parseOnboarding } from "@/lib/onboarding/state";
 import type { OnboardingState } from "@/lib/onboarding/steps";
 import { actionContext as context, logActivity as log } from "@/lib/server/action-context";
+import { getT } from "@/lib/i18n/server";
+import { getLocale } from "@/lib/i18n/server";
+import { formatters, type Translator } from "@/lib/i18n";
 
 // LinkedIn caps a member's network at 30,000 connections.
 const MAX_CONNECTIONS = 30_000;
 
 /** A snapshot time for a chosen local date: now for today, local noon for past dates. */
-function snapshotInstant(date: string, timeZone: string): string | FormState {
+function snapshotInstant(date: string, timeZone: string, t: Translator): string | FormState {
   const today = localDate(new Date(), timeZone);
-  if (date > today) return failed("The date can't be in the future.");
+  if (date > today) return failed(t("actions.dateFuture"));
   if (date === today) return new Date().toISOString();
   return new Date(startOfLocalDay(date, timeZone).getTime() + 12 * 3600_000).toISOString();
 }
@@ -45,7 +48,8 @@ export async function setBaseline(_: FormState, formData: FormData): Promise<For
   if (!parsed.success) return failed(firstIssue(parsed.error));
   const ctx = await context();
 
-  const recordedAt = snapshotInstant(parsed.data.startDate, ctx.settings.timezone);
+  const t = await getT();
+  const recordedAt = snapshotInstant(parsed.data.startDate, ctx.settings.timezone, t);
   if (typeof recordedAt !== "string") return recordedAt;
 
   const { error } = await ctx.supabase
@@ -55,7 +59,7 @@ export async function setBaseline(_: FormState, formData: FormData): Promise<For
       project_start_date: parsed.data.startDate,
     })
     .eq("user_id", ctx.userId);
-  if (error) return failed("Couldn't save the starting count. Try again.");
+  if (error) return failed(t("actions.baselineSaveFailed"));
 
   // The starting count is also the first real data point for the network total.
   const snap = await ctx.supabase.from("connection_snapshots").insert({
@@ -63,11 +67,11 @@ export async function setBaseline(_: FormState, formData: FormData): Promise<For
     total_connections: parsed.data.baseline,
     recorded_at: recordedAt,
   });
-  if (snap.error) return failed("Saved the baseline, but couldn't record the snapshot.");
+  if (snap.error) return failed(t("actions.baselineSnapshotFailed"));
 
   await log(ctx, "baseline.set", { baseline: parsed.data.baseline, start: parsed.data.startDate });
   refresh();
-  return saved("Starting count saved.");
+  return saved(t("actions.baselineSaved"));
 }
 
 const snapshotSchema = z.object({
@@ -80,7 +84,8 @@ export async function recordSnapshot(_: FormState, formData: FormData): Promise<
   if (!parsed.success) return failed(firstIssue(parsed.error));
   const ctx = await context();
 
-  const recordedAt = snapshotInstant(parsed.data.date, ctx.settings.timezone);
+  const t = await getT();
+  const recordedAt = snapshotInstant(parsed.data.date, ctx.settings.timezone, t);
   if (typeof recordedAt !== "string") return recordedAt;
 
   const { error } = await ctx.supabase.from("connection_snapshots").insert({
@@ -88,11 +93,11 @@ export async function recordSnapshot(_: FormState, formData: FormData): Promise<
     total_connections: parsed.data.total,
     recorded_at: recordedAt,
   });
-  if (error) return failed("Couldn't record the count. Try again.");
+  if (error) return failed(t("actions.countSaveFailed"));
 
   await log(ctx, "snapshot.recorded", { total: parsed.data.total, date: parsed.data.date });
   refresh();
-  return saved(`Recorded ${parsed.data.total.toLocaleString("en-CA")} connections.`);
+  return saved(t("actions.countRecorded", { total: formatters(await getLocale()).number(parsed.data.total) }));
 }
 
 // ---------------------------------------------------------------- settings

@@ -28,7 +28,7 @@ export default function SearchPage({ params, searchParams }: PageProps<"/discove
       <Link href="/discover" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" aria-hidden /> Discover
       </Link>
-      <Suspense fallback={<PageSkeleton label="Loading…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
         <SearchBody params={params} searchParams={searchParams} />
       </Suspense>
     </div>

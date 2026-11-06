@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
-import { PageHeader } from "@/components/page-header";
+import { PageHeaderT } from "@/components/tx";
 import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
 import { Badge } from "@/components/ui/badge";
@@ -25,10 +25,10 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) 
 export default function EmployersPage({ searchParams }: PageProps<"/jobs/employers">) {
   return (
     <div className="grid gap-6">
-      <PageHeader
-        back={{ href: "/jobs", label: "Jobs" }}
-        title="Employers"
-        description="Jobs come from these employers' own job boards. Add one and everyone sees its jobs."
+      <PageHeaderT
+        back={{ href: "/jobs", label: "pages.backJobs" }}
+        title="pages.employers.title"
+        description="pages.employers.description"
       />
       <Card>
         <CardHeader>
@@ -55,7 +55,7 @@ export default function EmployersPage({ searchParams }: PageProps<"/jobs/employe
           </ActionForm>
         </CardContent>
       </Card>
-      <Suspense fallback={<PageSkeleton label="Loading employers…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.employers" />}>
         <Directory searchParams={searchParams} />
       </Suspense>
     </div>

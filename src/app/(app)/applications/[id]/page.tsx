@@ -9,7 +9,7 @@ export default function ApplicationPage({ params }: PageProps<"/applications/[id
   return (
     <div data-record-page>
       <PaneSignal kind="record" />
-      <Suspense fallback={<PageSkeleton label="Loading the application…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.application" />}>
         <ApplicationRecord params={params} />
       </Suspense>
     </div>

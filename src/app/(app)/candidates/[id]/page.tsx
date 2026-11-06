@@ -19,7 +19,7 @@ export default function CandidatePage({ params, searchParams }: PageProps<"/cand
     <div data-record-page className={`${SPLIT_GRID} xl:group-data-[pane-open]/md:block`}>
       <PaneSignal kind="record" />
       <div className="min-w-0 max-xl:hidden">
-        <Suspense fallback={<PageSkeleton label="Loading…" />}>
+        <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
           <CandidateList searchParams={searchParams} />
         </Suspense>
       </div>
@@ -27,7 +27,7 @@ export default function CandidatePage({ params, searchParams }: PageProps<"/cand
         <Link href="/candidates" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="size-4" aria-hidden /> Candidates
         </Link>
-        <Suspense fallback={<PageSkeleton label="Loading…" />}>
+        <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
           <CandidateRecord params={params} />
         </Suspense>
       </div>

@@ -1,4 +1,5 @@
 import { disciplineName, targetUniversities } from "@/lib/domain";
+import { translator, type Translator } from "@/lib/i18n";
 import type { Progress } from "./index";
 
 export type NextAction = {
@@ -18,82 +19,65 @@ export type NextAction = {
   cta: string;
 };
 
-/** The single most useful thing to do now, so it is clear without navigating around. */
-export function nextAction(progress: Progress, paused: boolean): NextAction {
+/** The single most useful thing to do now, so it is clear without navigating around. Text is in the language of `t`. */
+export function nextAction(progress: Progress, paused: boolean, t: Translator = translator("en")): NextAction {
   const { overall, focus } = progress;
 
   if (paused) {
-    return {
-      kind: "paused",
-      title: "Review the LinkedIn warning before doing anything else",
-      detail: "Outreach is paused. Resume it in Settings once your account is in good standing.",
-      href: "/settings",
-      cta: "Open Settings",
-    };
+    return { kind: "paused", title: t("nextAction.pausedTitle"), detail: t("nextAction.pausedDetail"), href: "/settings", cta: t("nextAction.pausedCta") };
   }
   if (!progress.catalog.disciplines.length || !progress.catalog.universities.length || overall.target === null) {
-    return {
-      kind: "set-up",
-      title: "Set up your networking plan",
-      detail: "Add the schools and disciplines you want to connect with, and your connection goal. Nothing is assumed until you do.",
-      href: "/settings#plan",
-      cta: "Set up my plan",
-    };
+    return { kind: "set-up", title: t("nextAction.setUpTitle"), detail: t("nextAction.setUpDetail"), href: "/settings#plan", cta: t("nextAction.setUpCta") };
   }
   if (overall.baseline === null) {
-    return {
-      kind: "set-baseline",
-      title: "Record your starting connection count",
-      detail: "Growth toward the overall target is measured from this number.",
-      href: "/overview#starting-point",
-      cta: "Record my starting count",
-    };
+    return { kind: "set-baseline", title: t("nextAction.baselineTitle"), detail: t("nextAction.baselineDetail"), href: "/overview#starting-point", cta: t("nextAction.baselineCta") };
   }
   if (overall.acceptedNeedsClassification > 0) {
+    const n = overall.acceptedNeedsClassification;
     return {
       kind: "classify-accepted",
-      title: `Confirm the school and program for ${overall.acceptedNeedsClassification} accepted connection${overall.acceptedNeedsClassification === 1 ? "" : "s"}`,
-      detail: "They don't count toward any target until both are confirmed.",
+      title: n === 1 ? t("nextAction.classifyOne") : t("nextAction.classifyMany", { count: n }),
+      detail: t("nextAction.classifyDetail"),
       href: "/candidates?status=connected&review=1",
-      cta: "Confirm these connections",
+      cta: t("nextAction.classifyCta"),
     };
   }
   if (!focus) {
-    return {
-      kind: "goal-met",
-      title: "Every discipline target is met",
-      detail: "Raise targets in Settings if you want to keep growing.",
-      href: "/settings",
-      cta: "Raise my targets",
-    };
+    return { kind: "goal-met", title: t("nextAction.goalMetTitle"), detail: t("nextAction.goalMetDetail"), href: "/settings", cta: t("nextAction.goalMetCta") };
   }
 
   const name = disciplineName(progress.catalog, focus.discipline);
   const schools = targetUniversities(progress.catalog).map((u) => u.name);
-  const where = schools.length ? ` at ${schools.length > 2 ? `${schools.slice(0, 2).join(", ")} and others` : schools.join(" and ")}` : "";
+  const where = !schools.length
+    ? ""
+    : schools.length > 2
+      ? t("nextAction.whereOthers", { schools: schools.slice(0, 2).join(", ") })
+      : t("nextAction.whereTwo", { schools: schools.join(` ${t("nextAction.and")} `) });
   if (overall.readyForOutreach > 0) {
+    const n = overall.readyForOutreach;
     return {
       kind: "send-invitations",
-      title: `Send invitations, starting with ${name}`,
-      detail: `${overall.readyForOutreach} approved candidate${overall.readyForOutreach === 1 ? " is" : "s are"} ready.`,
+      title: t("nextAction.sendTitle", { name }),
+      detail: n === 1 ? t("nextAction.sendDetailOne") : t("nextAction.sendDetailMany", { count: n }),
       href: "/queue",
-      cta: "Open the queue",
+      cta: t("nextAction.sendCta"),
     };
   }
   if (overall.awaitingReview > 0) {
+    const n = overall.awaitingReview;
     return {
       kind: "review-candidates",
-      title: `Review ${overall.awaitingReview} candidate${overall.awaitingReview === 1 ? "" : "s"}`,
-      detail: "Approve the ones who fit before they can be queued.",
+      title: n === 1 ? t("nextAction.reviewOne") : t("nextAction.reviewMany", { count: n }),
+      detail: t("nextAction.reviewDetail"),
       href: "/candidates?status=awaiting_review",
-      cta: "Review candidates",
+      cta: t("nextAction.reviewCta"),
     };
   }
   return {
     kind: "find-candidates",
-    title: `Find ${name} candidates${where}`,
-    detail: `${focus.remaining} accepted connections still needed in ${name}. Add profiles you find through LinkedIn search.`,
+    title: t("nextAction.findTitle", { name, where }),
+    detail: t("nextAction.findDetail", { remaining: focus.remaining, name }),
     href: "/candidates",
-    cta: "Add candidates",
+    cta: t("nextAction.findCta"),
   };
 }

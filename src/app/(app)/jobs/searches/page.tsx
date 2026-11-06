@@ -4,7 +4,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { LoadError } from "@/components/load-error";
-import { PageHeader } from "@/components/page-header";
+import { PageHeaderT } from "@/components/tx";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/applications/format";
 import { emailConfigured } from "@/lib/email/mailer";
@@ -17,12 +17,12 @@ export const metadata = { title: "Saved searches · Network Growth" };
 export default function SavedSearchesPage() {
   return (
     <div className="grid gap-6">
-      <PageHeader
-        back={{ href: "/jobs", label: "Jobs" }}
-        title="Saved searches"
-        description="Searches you come back to, with optional alerts when new matching jobs appear. Save one from the Jobs page."
+      <PageHeaderT
+        back={{ href: "/jobs", label: "pages.backJobs" }}
+        title="pages.searches.title"
+        description="pages.searches.description"
       />
-      <Suspense fallback={<PageSkeleton label="Loading saved searches…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.savedSearches" />}>
         <Searches />
       </Suspense>
     </div>

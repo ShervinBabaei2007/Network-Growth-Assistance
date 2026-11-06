@@ -1,3 +1,4 @@
+import { Tx } from "@/components/tx";
 import { Suspense, type ReactNode } from "react";
 import { Field as FieldBox, FieldLabel } from "@/components/ui/field";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -42,9 +43,9 @@ export const metadata = { title: "Settings · Network Growth" };
 export default function SettingsPage() {
   return (
     <div className="grid gap-6">
-      <h1 className="text-xl font-semibold">Settings</h1>
+      <h1 className="text-xl font-semibold"><Tx k="pages.settings.title" /></h1>
       {/* One boundary for the whole page, so the AI-key card can't appear under the skeleton and then be pushed down. */}
-      <Suspense fallback={<PageSkeleton label="Loading…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
         <SettingsContent />
         <AiKeySection />
       </Suspense>

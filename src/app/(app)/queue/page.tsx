@@ -1,3 +1,4 @@
+import { Tx } from "@/components/tx";
 import { Term } from "@/components/term";
 import { unstable_rethrow } from "next/navigation";
 import { Disclosure } from "@/components/disclosure";
@@ -27,12 +28,12 @@ export default function QueuePage() {
   return (
     <div className="grid gap-6">
       <div>
-        <h1 className="text-xl font-semibold">Daily Queue</h1>
+        <h1 className="text-xl font-semibold"><Tx k="pages.queue.title" /></h1>
         <p className="text-sm text-muted-foreground">
-          Open each profile, send the invitation on LinkedIn yourself, then record it here.
+          <Tx k="pages.queue.description" />
         </p>
       </div>
-      <Suspense fallback={<PageSkeleton label="Loading today&apos;s queue…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.queue" />}>
         <QueueContent />
       </Suspense>
     </div>

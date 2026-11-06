@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { clearDraft, loadDraft, parseFields, saveDraft, serializeFields } from "@/lib/drafts";
 import type { FormState } from "@/lib/form-state";
+import { useT } from "@/lib/i18n/client";
+import type { MessageKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /** The form's text fields by name. Passwords, files, buttons and hidden fields are never read, so no secret lands in a draft. */
@@ -66,6 +68,12 @@ export function ActionForm({
   /** Lets a button elsewhere on the page submit this form (a button's `form` attribute), e.g. a swipe action. */
   id?: string;
 }) {
+  const t = useT();
+  // Without a language provider around the form the key comes back; the English text is the fallback.
+  const tr = (key: MessageKey, fallback: string) => {
+    const text = t(key);
+    return text === key ? fallback : text;
+  };
   const [state, formAction, pending] = useActionState(action, { status: "idle" });
   const formRef = useRef<HTMLFormElement>(null);
   const allowReset = useRef(false);
@@ -78,7 +86,8 @@ export function ActionForm({
 
   useEffect(() => {
     if (state.status === "idle") return;
-    notify(state.toast ?? (state.status === "saved" ? { type: "success", title: state.message ?? "Saved." } : { type: "error", title: state.message ?? "Couldn't save. Try again." }));
+    notify(state.toast ?? (state.status === "saved" ? { type: "success", title: state.message ?? tr("ui.saved", "Saved.") } : { type: "error", title: state.message ?? tr("ui.saveFailed", "Couldn't save. Try again.") }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- announce only a new result
   }, [state]);
 
   // React resets uncontrolled fields after every action, even a failed one. Block
@@ -128,7 +137,7 @@ export function ActionForm({
 
   const link = state.href ? (
     <Link href={state.href} className="underline underline-offset-4">
-      {state.hrefLabel ?? "Open"}
+      {state.hrefLabel ?? tr("ui.open", "Open")}
     </Link>
   ) : null;
 
@@ -159,12 +168,12 @@ export function ActionForm({
       {children}
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending} variant={variant} size={size}>
-          {pending ? "Saving…" : submitLabel}
+          {pending ? tr("ui.saving", "Saving…") : submitLabel}
         </Button>
         {/* Not a live region: the toast announces it. This copy stays for reading later. */}
         {state.status === "saved" ? (
           <p data-testid="form-status" className="text-sm text-muted-foreground">
-            {state.message ?? "Saved."} {link}
+            {state.message ?? tr("ui.saved", "Saved.")} {link}
           </p>
         ) : null}
         {state.status === "error" ? (

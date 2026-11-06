@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { PageHeader } from "@/components/page-header";
+import { PageHeaderT } from "@/components/tx";
 import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
 import { AppSelect } from "@/components/app-select";
@@ -39,12 +39,12 @@ const SOURCE_LABELS = { pdf: "PDF", docx: "Word document", paste: "Pasted text" 
 export default function ResumePage({ searchParams }: PageProps<"/jobs/resume">) {
   return (
     <div className="grid gap-6">
-      <PageHeader
-        back={{ href: "/jobs", label: "Jobs" }}
-        title="Your resume"
-        description="Postings are checked against this profile. Anything uncertain is marked for review."
+      <PageHeaderT
+        back={{ href: "/jobs", label: "pages.backJobs" }}
+        title="pages.resume.title"
+        description="pages.resume.description"
       />
-      <Suspense fallback={<PageSkeleton label="Loading…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
         <ResumeContent searchParams={searchParams} />
       </Suspense>
     </div>

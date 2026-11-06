@@ -1,14 +1,16 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Tx } from "@/components/tx";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { MessageKey } from "@/lib/i18n";
 
 /**
  * What shows while a page's data loads: card-shaped blocks where the content will be, so the page looks like it is
  * arriving rather than missing. Announced once to screen readers through the hidden label.
  */
-export function PageSkeleton({ label = "Loading…", rows = 3 }: { label?: string; rows?: number }) {
+export function PageSkeleton({ label = "Loading…", labelKey, rows = 3 }: { label?: string; labelKey?: MessageKey; rows?: number }) {
   return (
     <div role="status" className="grid gap-4">
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{labelKey ? <Tx k={labelKey} /> : label}</span>
       {Array.from({ length: rows }, (_, i) => (
         <Card key={i} aria-hidden className="motion-reduce:*:animate-none">
           <CardHeader className="gap-2">

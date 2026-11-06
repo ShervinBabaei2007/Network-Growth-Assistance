@@ -19,7 +19,7 @@ const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-
 
 export default function PrepPage({ params }: PageProps<"/applications/[id]/prep">) {
   return (
-    <Suspense fallback={<PageSkeleton label="Building your prep pack…" />}>
+    <Suspense fallback={<PageSkeleton labelKey="loading.prep" />}>
       <Prep params={params} />
     </Suspense>
   );

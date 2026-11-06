@@ -5,7 +5,7 @@ import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { LoadError } from "@/components/load-error";
 import { Disclosure } from "@/components/disclosure";
-import { PageHeader } from "@/components/page-header";
+import { PageHeaderT } from "@/components/tx";
 import { RememberLastView, ViewsMenu, type SavedView } from "@/components/views-menu";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDateOnly, formatDay, formatDateTime } from "@/lib/applications/format";
@@ -22,16 +22,16 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) 
 export default function ApplicationsPage({ searchParams }: PageProps<"/applications">) {
   return (
     <div className="grid gap-6">
-      <PageHeader
-        title="Applications"
-        description="Every job you're pursuing, from saved to offer."
+      <PageHeaderT
+        title="pages.applications.title"
+        description="pages.applications.description"
         actions={
           <Link href="/jobs" className={buttonVariants({ variant: "outline", size: "sm" })}>
             Find jobs
           </Link>
         }
       />
-      <Suspense fallback={<PageSkeleton label="Loading applications…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.applications" />}>
         <ApplicationsView searchParams={searchParams} />
       </Suspense>
     </div>

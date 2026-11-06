@@ -5,6 +5,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getOnboarding } from "@/lib/onboarding/read";
 import { buildChecklist, checklistComplete, type ChecklistFacts } from "@/lib/onboarding/steps";
 import { createClient } from "@/lib/supabase/server";
+import { LocaleScope } from "@/components/locale-scope";
+import { getT } from "@/lib/i18n/server";
+import type { MessageKey } from "@/lib/i18n";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -42,15 +45,18 @@ export async function GettingStartedCard({ hasPlan, hasBaseline }: { hasPlan: bo
   const items = buildChecklist(state.goal, facts);
   if (checklistComplete(items)) return null;
   const done = items.filter((i) => i.done).length;
+  const t = await getT();
 
   return (
     <Card aria-labelledby="getting-started" data-testid="getting-started" size="sm">
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <h2 id="getting-started" className="font-medium">
-            Getting started <span className="font-normal text-muted-foreground">· {done} of {items.length} done</span>
+            {t("checklist.heading")} <span className="font-normal text-muted-foreground">{t("checklist.progress", { done, total: items.length })}</span>
           </h2>
-          <ChecklistDismiss />
+          <LocaleScope groups={["ui", "checklist"]}>
+            <ChecklistDismiss />
+          </LocaleScope>
         </div>
       </CardHeader>
       <CardContent>
@@ -60,13 +66,13 @@ export async function GettingStartedCard({ hasPlan, hasBaseline }: { hasPlan: bo
               {item.done ? (
                 <span className="flex items-center gap-2 py-1 text-muted-foreground">
                   <Check className="size-4 text-success" aria-hidden />
-                  <span className="line-through">{item.label}</span>
-                  <span className="sr-only">(done)</span>
+                  <span className="line-through">{t(`checklist.${item.id}` as MessageKey)}</span>
+                  <span className="sr-only">{t("checklist.done")}</span>
                 </span>
               ) : (
                 <Link href={item.href} className="flex min-h-9 items-center gap-2 rounded-md py-1 underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
                   <Circle className="size-4 text-muted-foreground" aria-hidden />
-                  {item.label}
+                  {t(`checklist.${item.id}` as MessageKey)}
                 </Link>
               )}
             </li>

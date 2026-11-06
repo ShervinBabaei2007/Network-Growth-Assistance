@@ -1,6 +1,7 @@
 import { unstable_rethrow } from "next/navigation";
 import { Disclosure } from "@/components/disclosure";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { PageHeaderT } from "@/components/tx";
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -8,9 +9,9 @@ import { JobSearchSummary } from "@/components/applications/job-search-summary";
 import { BaselineForm, SnapshotForm } from "@/components/connection-forms";
 import { LoadError } from "@/components/load-error";
 import { GettingStartedCard } from "@/components/onboarding/checklist";
-import { PageHeader } from "@/components/page-header";
 import { GoalRing } from "@/components/progress-visuals";
-import { MeterLegend, ProgressMeter } from "@/components/progress-meter";
+import { MeterLegend } from "@/components/meter-legend";
+import { ProgressMeter } from "@/components/progress-meter";
 import { StatTile } from "@/components/stat-tile";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -20,14 +21,16 @@ import { countDueFollowUps } from "@/lib/data/follow-ups";
 import { disciplineName } from "@/lib/domain";
 import { nextAction } from "@/lib/progress/next-action";
 import { getSettings } from "@/lib/data/settings";
+import { formatters } from "@/lib/i18n";
+import { getLocale, getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Overview · Network Growth" };
 
 export default function OverviewPage() {
   return (
     <div className="grid gap-6">
-      <PageHeader title="Overview" description="Your next step first, then where you stand." />
-      <Suspense fallback={<PageSkeleton label="Loading your progress…" />}>
+      <PageHeaderT title="pages.overview.title" description="pages.overview.description" />
+      <Suspense fallback={<PageSkeleton labelKey="loading.progress" />}>
         <OverviewContent />
       </Suspense>
     </div>
@@ -49,12 +52,14 @@ async function OverviewContent() {
   }
 
   const { overall, activity, disciplines, today } = progress;
-  const action = nextAction(progress, paused);
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  const fmt = formatters(locale);
+  const action = nextAction(progress, paused, t);
   const planSet = progress.catalog.disciplines.length > 0 && progress.catalog.universities.length > 0 && overall.target !== null;
   const todayLinks = [
-    overall.readyForOutreach > 0 ? { href: "/queue", label: `${overall.readyForOutreach} ready to send` } : null,
-    overall.awaitingReview > 0 ? { href: "/candidates?status=awaiting_review", label: `${overall.awaitingReview} awaiting review` } : null,
-    followUpsDue > 0 ? { href: "/follow-ups", label: `${followUpsDue} follow-up${followUpsDue === 1 ? "" : "s"} due` } : null,
+    overall.readyForOutreach > 0 ? { href: "/queue", label: t("overview.readyToSend", { count: overall.readyForOutreach }) } : null,
+    overall.awaitingReview > 0 ? { href: "/candidates?status=awaiting_review", label: t("overview.awaitingReview", { count: overall.awaitingReview }) } : null,
+    followUpsDue > 0 ? { href: "/follow-ups", label: followUpsDue === 1 ? t("overview.followUpOne") : t("overview.followUpMany", { count: followUpsDue }) } : null,
   ].filter((t): t is { href: string; label: string } => t !== null);
   // An empty dashboard of zeros is noise: keep the breakdown folded until there is something to show.
   const hasActivity = overall.trackedAccepted + overall.pending + overall.awaitingReview + overall.readyForOutreach + activity.discoveredThisWeek + activity.sentThisWeek > 0;
@@ -63,7 +68,7 @@ async function OverviewContent() {
     <>
       <Card className="border-primary/30" data-tour="primary-action">
         <CardHeader>
-          <CardDescription>Next recommended action</CardDescription>
+          <CardDescription>{t("overview.nextLabel")}</CardDescription>
           <h2 className="font-heading text-lg leading-snug font-medium">{action.title}</h2>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center justify-between gap-3">
@@ -79,7 +84,7 @@ async function OverviewContent() {
       </Suspense>
 
       {todayLinks.length ? (
-        <nav aria-label="Today" className="flex flex-wrap gap-2" data-tour="today">
+        <nav aria-label={t("overview.today")} className="flex flex-wrap gap-2" data-tour="today">
           {todayLinks.map((t) => (
             <Link key={t.href} href={t.href} className={buttonVariants({ variant: "outline", size: "sm" })}>
               {t.label}
@@ -95,11 +100,8 @@ async function OverviewContent() {
       {overall.baseline === null ? (
         <Card id="starting-point">
           <CardHeader>
-            <CardTitle>Starting point</CardTitle>
-            <CardDescription>
-              Enter your connection count when this project began. Only real numbers you enter
-              are shown here.
-            </CardDescription>
+            <CardTitle>{t("overview.startingPoint")}</CardTitle>
+            <CardDescription>{t("overview.startingPointHelp")}</CardDescription>
           </CardHeader>
           <CardContent>
             <BaselineForm today={today} />
@@ -108,15 +110,15 @@ async function OverviewContent() {
       ) : (
         <Card>
           <CardHeader>
-            <CardDescription>Network total</CardDescription>
+            <CardDescription>{t("overview.networkTotal")}</CardDescription>
             {overall.current === null ? (
-              <CardTitle>No connection count recorded yet</CardTitle>
+              <CardTitle>{t("overview.noCountYet")}</CardTitle>
             ) : (
               <p className="text-5xl font-semibold">
-                {overall.current.toLocaleString("en-CA")}
+                {fmt.number(overall.current)}
                 <span className="text-lg font-normal text-muted-foreground">
                   {" "}
-                  {overall.target === null ? " · no goal set" : ` / ${overall.target.toLocaleString("en-CA")}`}
+                  {overall.target === null ? t("overview.noGoal") : ` / ${fmt.number(overall.target)}`}
                 </span>
               </p>
             )}
@@ -124,31 +126,32 @@ async function OverviewContent() {
           <CardContent className="grid gap-4">
             {overall.additionalSinceStart !== null && overall.growthGoal !== null ? (
               <div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
-                {overall.growthGoal > 0 ? <GoalRing accepted={Math.max(0, overall.additionalSinceStart)} pending={overall.pending} target={overall.growthGoal} label="Progress toward the growth goal" /> : null}
+                {overall.growthGoal > 0 ? <GoalRing accepted={Math.max(0, overall.additionalSinceStart)} pending={overall.pending} target={overall.growthGoal} label={t("overview.ringLabel")} /> : null}
                 <div className="grid gap-1.5">
                 <ProgressMeter
-                  label="Growth toward the overall target"
+                  label={t("overview.meterLabel")}
                   accepted={Math.max(0, overall.additionalSinceStart)}
                   target={overall.growthGoal}
+                  valueText={t("meter.valueText", { accepted: Math.max(0, overall.additionalSinceStart), target: overall.growthGoal })}
                 />
                 <p className="text-sm text-muted-foreground">
-                  {formatSigned(overall.additionalSinceStart)} since you started at{" "}
-                  {overall.baseline.toLocaleString("en-CA")} · {overall.percent}% of the{" "}
-                  {overall.growthGoal.toLocaleString("en-CA")} new connections needed ·{" "}
-                  {overall.remaining?.toLocaleString("en-CA")} to go
+                  {t("overview.growthLine", {
+                    signed: formatSigned(overall.additionalSinceStart, fmt.number),
+                    baseline: fmt.number(overall.baseline),
+                    percent: overall.percent ?? 0,
+                    goal: fmt.number(overall.growthGoal),
+                    remaining: overall.remaining === null || overall.remaining === undefined ? "" : fmt.number(overall.remaining),
+                  })}
                 </p>
                 </div>
               </div>
             ) : null}
             <p className="text-xs text-muted-foreground">
-              The network total comes from counts you record
-              {overall.snapshotAt
-                ? ` (last on ${new Date(overall.snapshotAt).toLocaleDateString("en-CA")})`
-                : ""}
-              . It can differ from tracked acceptances because it also includes people who invited
-              you, connections you didn&apos;t log here, and removals.
+              {t("overview.totalNote", {
+                last: overall.snapshotAt ? t("overview.lastOn", { date: fmt.date(overall.snapshotAt, { dateStyle: "short" }) }) : "",
+              })}
             </p>
-            <Disclosure variant="plain" summary="Update connection count" className="font-medium">
+            <Disclosure variant="plain" summary={t("overview.updateCount")} className="font-medium">
               <SnapshotForm today={today} />
             </Disclosure>
           </CardContent>
@@ -162,57 +165,55 @@ async function OverviewContent() {
         className="font-medium"
         summary={
           <>
-            Detailed breakdown
-            <span className="font-normal text-muted-foreground"> · pipeline, activity and disciplines</span>
+            {t("overview.breakdown")}
+            <span className="font-normal text-muted-foreground">{t("overview.breakdownSub")}</span>
           </>
         }
       >
         <div className="grid gap-6">
       <section aria-labelledby="pipeline" className="grid gap-2">
         <h2 id="pipeline" className="font-medium">
-          Pipeline
+          {t("overview.pipeline")}
         </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           <StatTile
-            label="Tracked accepted"
+            label={t("overview.trackedAccepted")}
             value={overall.trackedAccepted}
-            hint={overall.fromExport ? `Count toward targets · ${overall.fromExport} via LinkedIn export` : "Count toward targets"}
+            hint={overall.fromExport ? t("overview.countTowardExport", { count: overall.fromExport }) : t("overview.countToward")}
           />
-          <StatTile label="Invitations pending" value={overall.pending} hint="Not counted until accepted" />
-          <StatTile label="Awaiting review" value={overall.awaitingReview} />
-          <StatTile label="Ready for outreach" value={overall.readyForOutreach} hint="Approved, not invited" />
+          <StatTile label={t("overview.invitationsPending")} value={overall.pending} hint={t("overview.notCountedUntil")} />
+          <StatTile label={t("overview.awaitingReviewTile")} value={overall.awaitingReview} />
+          <StatTile label={t("overview.readyForOutreach")} value={overall.readyForOutreach} hint={t("overview.approvedNotInvited")} />
           <StatTile
-            label="Discovered this week"
+            label={t("overview.discoveredWeek")}
             value={activity.discoveredThisWeek}
-            hint={`${activity.discoveredToday} today`}
+            hint={t("overview.discoveredToday", { count: activity.discoveredToday })}
           />
         </div>
         {overall.acceptedNeedsClassification > 0 ? (
           <p className="text-sm">
-            <Badge variant="outline">Needs classification</Badge>{" "}
-            {overall.acceptedNeedsClassification} accepted connection
-            {overall.acceptedNeedsClassification === 1 ? " isn't" : "s aren't"} counted until the
-            school and program are confirmed.
+            <Badge variant="outline">{t("overview.needsClassification")}</Badge>{" "}
+            {overall.acceptedNeedsClassification === 1 ? t("overview.classifyOne") : t("overview.classifyMany", { count: overall.acceptedNeedsClassification })}
           </p>
         ) : null}
       </section>
 
       <section aria-labelledby="activity" className="grid gap-2">
         <h2 id="activity" className="font-medium">
-          Activity
+          {t("overview.activity")}
         </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatTile label="Invitations sent today" value={activity.sentToday} />
-          <StatTile label="Invitations sent this week" value={activity.sentThisWeek} hint="Week starts Monday" />
-          <StatTile label="Accepted today" value={activity.acceptedToday} />
-          <StatTile label="Accepted this week" value={activity.acceptedThisWeek} />
+          <StatTile label={t("overview.sentToday")} value={activity.sentToday} />
+          <StatTile label={t("overview.sentWeek")} value={activity.sentThisWeek} hint={t("overview.weekStarts")} />
+          <StatTile label={t("overview.acceptedToday")} value={activity.acceptedToday} />
+          <StatTile label={t("overview.acceptedWeek")} value={activity.acceptedThisWeek} />
         </div>
       </section>
 
       <Card>
         <CardHeader>
-          <CardTitle>Disciplines</CardTitle>
-          <CardDescription>New accepted connections, in priority order.</CardDescription>
+          <CardTitle>{t("overview.disciplines")}</CardTitle>
+          <CardDescription>{t("overview.disciplinesSub")}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           {disciplines.map((d) => (
@@ -220,25 +221,26 @@ async function OverviewContent() {
               <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
                 <span className="font-medium">
                   {d.rank}. {disciplineName(progress.catalog, d.discipline)}{" "}
-                  {d.isFocus ? <Badge>Focus</Badge> : null}
-                  {d.complete ? <Badge variant="secondary">Complete</Badge> : null}
+                  {d.isFocus ? <Badge>{t("overview.focus")}</Badge> : null}
+                  {d.complete ? <Badge variant="secondary">{t("overview.complete")}</Badge> : null}
                 </span>
                 <span className="text-muted-foreground">
                   {d.accepted} / {d.target}
-                  {d.pending ? ` · ${d.pending} pending` : ""}
+                  {d.pending ? t("overview.pendingCount", { count: d.pending }) : ""}
                 </span>
               </div>
               <ProgressMeter
-                label={`${disciplineName(progress.catalog, d.discipline)} progress`}
+                label={t("overview.progressOf", { name: disciplineName(progress.catalog, d.discipline) })}
                 accepted={d.accepted}
                 pending={d.pending}
                 target={d.target}
+                valueText={d.pending ? t("meter.valueTextPending", { accepted: d.accepted, target: d.target, pending: d.pending }) : t("meter.valueText", { accepted: d.accepted, target: d.target })}
               />
             </div>
           ))}
           <MeterLegend />
           <Link href="/disciplines" className="text-sm underline underline-offset-4">
-            Discipline details
+            {t("overview.disciplineDetails")}
           </Link>
         </CardContent>
       </Card>
@@ -248,6 +250,6 @@ async function OverviewContent() {
   );
 }
 
-function formatSigned(n: number) {
-  return `${n >= 0 ? "+" : "−"}${Math.abs(n).toLocaleString("en-CA")}`;
+function formatSigned(n: number, format: (n: number) => string) {
+  return `${n >= 0 ? "+" : "−"}${format(Math.abs(n))}`;
 }

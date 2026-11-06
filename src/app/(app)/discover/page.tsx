@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Disclosure } from "@/components/disclosure";
-import { PageHeader } from "@/components/page-header";
+import { PageHeaderT } from "@/components/tx";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { ActionForm } from "@/components/action-form";
@@ -23,13 +23,13 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) 
 export default function DiscoverPage({ searchParams }: PageProps<"/discover">) {
   return (
     <div className="grid gap-6">
-      <PageHeader title="Network discovery" description="Describe who you'd like to meet and get matches from public sources, each with a reason." />
+      <PageHeaderT title="pages.discover.title" description="pages.discover.description" />
 
       <Suspense fallback={null}>
         <RequestCard searchParams={searchParams} />
       </Suspense>
 
-      <Suspense fallback={<PageSkeleton label="Loading your searches…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.searches" />}>
         <History />
       </Suspense>
     </div>

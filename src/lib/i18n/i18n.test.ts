@@ -26,7 +26,7 @@ describe("translations stay in step with English", () => {
 
   it("French is actually translated, apart from names that stay the same", () => {
     const fr = flatten(frCA);
-    const sameAllowed = new Set(["common.appName", "auth.title", "nav.notifications", "nav.disciplines", "welcome.title0"]);
+    const sameAllowed = new Set(["common.appName", "auth.title", "nav.notifications", "nav.disciplines", "welcome.title0", "pages.disciplines.title", "pages.notifications.title", "overview.disciplines", "actions.dateLabel"]);
     const untranslated = Object.keys(fr).filter((k) => fr[k] === english[k] && !sameAllowed.has(k));
     expect(untranslated).toEqual([]);
   });

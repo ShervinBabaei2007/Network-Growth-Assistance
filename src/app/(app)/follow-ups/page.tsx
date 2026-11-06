@@ -3,7 +3,7 @@ import Link from "next/link";
 import { MessageCircleHeart } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { LoadError } from "@/components/load-error";
-import { PageHeader } from "@/components/page-header";
+import { PageHeaderT } from "@/components/tx";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDateOnly } from "@/lib/applications/format";
@@ -19,11 +19,11 @@ export const metadata = { title: "Follow-ups · Network Growth" };
 export default function FollowUpsPage() {
   return (
     <div className="grid gap-6">
-      <PageHeader
-        title="Follow-ups"
-        description="Next steps after someone accepts your invitation, with drafts ready to send."
+      <PageHeaderT
+        title="pages.followUps.title"
+        description="pages.followUps.description"
       />
-      <Suspense fallback={<PageSkeleton label="Loading your follow-ups…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.followUps" />}>
         <FollowUps />
       </Suspense>
     </div>

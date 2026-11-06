@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { FitChip, type TierKey } from "@/components/jobs/job-visuals";
 import { LoadError } from "@/components/load-error";
-import { PageHeader } from "@/components/page-header";
+import { PageHeaderT } from "@/components/tx";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { buildColumn, COMPARE_ROWS, parseCompareIds, type CompareColumn, type CompareJob } from "@/lib/job-postings/compare-jobs";
 import { explainFit } from "@/lib/job-postings/fit";
@@ -17,8 +17,8 @@ export const metadata = { title: "Compare jobs · Network Growth" };
 export default function ComparePage({ searchParams }: PageProps<"/jobs/compare">) {
   return (
     <div className="grid gap-6">
-      <PageHeader back={{ href: "/jobs", label: "Jobs" }} title="Compare jobs" description="Stored details side by side. Nothing is guessed: a missing detail reads “Not stated”." />
-      <Suspense fallback={<PageSkeleton label="Loading comparison…" />}>
+      <PageHeaderT back={{ href: "/jobs", label: "pages.backJobs" }} title="pages.compare.title" description="pages.compare.description" />
+      <Suspense fallback={<PageSkeleton labelKey="loading.comparison" />}>
         <Compare searchParams={searchParams} />
       </Suspense>
     </div>

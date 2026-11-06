@@ -1,3 +1,4 @@
+import { Tx } from "@/components/tx";
 import { unstable_rethrow } from "next/navigation";
 import { Disclosure } from "@/components/disclosure";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -28,10 +29,10 @@ export default function AnalyticsPage() {
   return (
     <div className="grid gap-6">
       <div>
-        <h1 className="text-xl font-semibold">Analytics</h1>
-        <p className="text-sm text-muted-foreground">Built only from what you&apos;ve recorded here or imported from LinkedIn&apos;s export.</p>
+        <h1 className="text-xl font-semibold"><Tx k="pages.analytics.title" /></h1>
+        <p className="text-sm text-muted-foreground"><Tx k="pages.analytics.description" /></p>
       </div>
-      <Suspense fallback={<PageSkeleton label="Loading analytics…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.analytics" />}>
         <AnalyticsContent />
       </Suspense>
     </div>

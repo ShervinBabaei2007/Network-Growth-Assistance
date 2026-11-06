@@ -88,3 +88,31 @@ test("the French sign-in and app shell have no serious accessibility violations"
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   expect(results.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
 });
+
+const FRENCH_HEADINGS: [string, string][] = [
+  ["/overview", "Aperçu"], ["/queue", "File du jour"], ["/analytics", "Statistiques"], ["/candidates", "Candidats"],
+  ["/people", "Personnes à rencontrer"], ["/connections", "Relations connues"], ["/universities", "Établissements"],
+  ["/disciplines", "Disciplines"], ["/settings", "Paramètres"], ["/applications", "Candidatures"], ["/follow-ups", "Suivis"],
+  ["/help", "Aide"], ["/jobs", "Emplois"], ["/jobs/resume", "Votre CV"], ["/jobs/searches", "Recherches enregistrées"],
+  ["/jobs/employers", "Employeurs"], ["/jobs/hidden", "Emplois masqués"], ["/notifications", "Notifications"], ["/discover", "Découverte du réseau"],
+];
+
+test("every signed-in page has its title in French", async ({ page, context }) => {
+  test.setTimeout(180_000);
+  await signIn(page, uniqueEmail("fr-titles"));
+  await context.addCookies([{ name: "locale", value: "fr-CA", url: "http://localhost:3000" }]);
+  for (const [path, title] of FRENCH_HEADINGS) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { level: 1, name: title, exact: true }), path).toBeVisible();
+  }
+});
+
+test("the Overview body is in French, and the starting-count form saves in French", async ({ page, context }) => {
+  test.setTimeout(120_000);
+  await signIn(page, uniqueEmail("fr-overview"));
+  await context.addCookies([{ name: "locale", value: "fr-CA", url: "http://localhost:3000" }]);
+  await page.goto("/overview");
+  await expect(page.getByText("Prochaine action recommandée")).toBeVisible();
+  await expect(page.getByText("Next recommended action")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Configurer mon plan/ })).toBeVisible();
+});

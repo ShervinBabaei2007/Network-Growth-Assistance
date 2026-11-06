@@ -3,7 +3,7 @@ import { Bell } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { LoadError } from "@/components/load-error";
-import { PageHeader } from "@/components/page-header";
+import { PageHeaderT } from "@/components/tx";
 import { formatDateTime, formatDay } from "@/lib/applications/format";
 import { localDate } from "@/lib/dates";
 import { chunk } from "@/lib/job-postings/service";
@@ -17,11 +17,11 @@ const LIMIT = 100;
 export default function NotificationsPage() {
   return (
     <div className="grid gap-6">
-      <PageHeader
-        title="Notifications"
-        description="Job alerts, reminders, interviews and job board problems."
+      <PageHeaderT
+        title="pages.notifications.title"
+        description="pages.notifications.description"
       />
-      <Suspense fallback={<PageSkeleton label="Loading notifications…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.notifications" />}>
         <Notifications />
       </Suspense>
     </div>

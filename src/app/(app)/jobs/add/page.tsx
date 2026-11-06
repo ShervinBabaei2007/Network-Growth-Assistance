@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "@/components/page-header";
+import { PageHeaderT } from "@/components/tx";
 import { ActionForm } from "@/components/action-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,10 +20,10 @@ export const maxDuration = 60;
 export default function AddPostingPage() {
   return (
     <div className="mx-auto grid w-full max-w-3xl gap-6">
-      <PageHeader
-        back={{ href: "/jobs", label: "Jobs" }}
-        title="Paste a posting"
-        description="Paste a job page to fill the form, then check it and add the link."
+      <PageHeaderT
+        back={{ href: "/jobs", label: "pages.backJobs" }}
+        title="pages.jobsAdd.title"
+        description="pages.jobsAdd.description"
       />
       <Card>
         <CardHeader>

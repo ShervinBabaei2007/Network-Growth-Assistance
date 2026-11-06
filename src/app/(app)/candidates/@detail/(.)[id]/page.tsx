@@ -6,7 +6,7 @@ import { CandidateRecord } from "../../[id]/candidate-record";
 export default function Pane({ params }: { params: Promise<{ id: string }> }) {
   return (
     <DetailPane backHref="/candidates" backLabel="Candidates">
-      <Suspense fallback={<PageSkeleton label="Loading…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
         <CandidateRecord params={params} />
       </Suspense>
     </DetailPane>

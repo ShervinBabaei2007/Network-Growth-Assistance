@@ -18,7 +18,7 @@ import { JobCard } from "@/components/jobs/job-card";
 import { ActionForm } from "@/components/action-form";
 import { LoadError } from "@/components/load-error";
 import { AppSelect } from "@/components/app-select";
-import { PageHeader } from "@/components/page-header";
+import { PageHeaderT } from "@/components/tx";
 import { ToastOnMount } from "@/components/toast/toast-on-mount";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,9 +64,9 @@ const PAGE = FEED_PAGE_SIZE;
 export default function JobsPage({ searchParams }: PageProps<"/jobs">) {
   return (
     <div className="grid gap-6">
-      <PageHeader
-        title="Jobs"
-        description="Real, recent postings, each checked against your resume. Every listing shows where it came from."
+      <PageHeaderT
+        title="pages.jobs.title"
+        description="pages.jobs.description"
         actions={
           <>
             <Link href="/jobs/hidden" className={buttonVariants({ variant: "ghost", size: "sm" })}>

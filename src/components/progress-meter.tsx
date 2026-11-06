@@ -12,12 +12,15 @@ export function ProgressMeter({
   accepted,
   pending = 0,
   target,
+  valueText,
   className,
 }: {
   label: string;
   accepted: number;
   pending?: number;
   target: number;
+  /** The reading for screen readers, in the page's language. Defaults to English. */
+  valueText?: string;
   className?: string;
 }) {
   const acceptedPct = pct(accepted, target);
@@ -31,7 +34,7 @@ export function ProgressMeter({
       aria-valuemin={0}
       aria-valuemax={target}
       aria-valuenow={Math.min(accepted, target)}
-      aria-valuetext={`${accepted} of ${target} accepted${pendingText}`}
+      aria-valuetext={valueText ?? `${accepted} of ${target} accepted${pendingText}`}
       className={cn("flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-meter-track", className)}
     >
       {acceptedPct > 0 ? (
@@ -41,18 +44,5 @@ export function ProgressMeter({
         <div className="h-full rounded-full bg-meter-pending bg-(image:--meter-stripes)" style={{ width: `${pendingPct}%` }} />
       ) : null}
     </div>
-  );
-}
-
-export function MeterLegend({ className }: { className?: string }) {
-  return (
-    <p className={cn("flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground", className)}>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="size-2.5 rounded-full bg-meter-fill" aria-hidden /> Accepted
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="size-2.5 rounded-full bg-meter-pending bg-(image:--meter-stripes)" aria-hidden /> Pending (not counted)
-      </span>
-    </p>
   );
 }

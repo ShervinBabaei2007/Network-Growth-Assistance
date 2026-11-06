@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { MeterLegend } from "@/components/progress-meter";
+import { MeterLegend } from "@/components/meter-legend";
 import { ringArcs, sparkline, type FunnelStep, type HeatGrid } from "@/lib/visuals";
 import { cn } from "@/lib/utils";
 

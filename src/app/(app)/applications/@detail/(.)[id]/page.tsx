@@ -7,7 +7,7 @@ import { ApplicationRecord } from "../../[id]/application-record";
 export default function Pane({ params }: { params: Promise<{ id: string }> }) {
   return (
     <DetailPane>
-      <Suspense fallback={<PageSkeleton label="Loading the application…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.application" />}>
         <ApplicationRecord params={params} />
       </Suspense>
     </DetailPane>

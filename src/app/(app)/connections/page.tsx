@@ -1,3 +1,4 @@
+import { Tx } from "@/components/tx";
 import { Suspense } from "react";
 import { PageNav } from "@/components/page-nav";
 import { Disclosure } from "@/components/disclosure";
@@ -24,10 +25,9 @@ export default function ConnectionsPage({ searchParams }: PageProps<"/connection
   return (
     <div className="grid gap-6">
       <div className="grid gap-1">
-        <h1 className="text-xl font-semibold">Known connections</h1>
+        <h1 className="text-xl font-semibold"><Tx k="pages.connections.title" /></h1>
         <p className="max-w-prose text-sm text-muted-foreground">
-          The people you&apos;re already connected with. Discover uses this private list to leave them out of research results. It&apos;s
-          only what you import or type here: the app never reads your LinkedIn network.
+          <Tx k="pages.connections.description" />
         </p>
       </div>
 
@@ -50,7 +50,7 @@ export default function ConnectionsPage({ searchParams }: PageProps<"/connection
             </ActionForm>
       </Disclosure>
 
-      <Suspense fallback={<PageSkeleton label="Loading connections…" />}>
+      <Suspense fallback={<PageSkeleton labelKey="loading.connections" />}>
         <ConnectionList searchParams={searchParams} />
       </Suspense>
     </div>

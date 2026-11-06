@@ -1,9 +1,11 @@
+import { Tx } from "@/components/tx";
 import { unstable_rethrow } from "next/navigation";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
 import { LoadError } from "@/components/load-error";
-import { MeterLegend, ProgressMeter } from "@/components/progress-meter";
+import { MeterLegend } from "@/components/meter-legend";
+import { ProgressMeter } from "@/components/progress-meter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -21,8 +23,8 @@ export const metadata = { title: "Schools · Network Growth" };
 export default function UniversitiesPage() {
   return (
     <div className="grid gap-6">
-      <h1 className="text-xl font-semibold">Schools</h1>
-      <Suspense fallback={<PageSkeleton label="Loading…" />}>
+      <h1 className="text-xl font-semibold"><Tx k="pages.universities.title" /></h1>
+      <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
         <UniversityProgress />
       </Suspense>
     </div>
