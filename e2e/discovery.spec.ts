@@ -24,6 +24,8 @@ test("import connections, research people, review evidence and track one", async
 
   // 1. Import known connections, with a preview first.
   await page.goto("/connections");
+  // The import form hydrates after the page streams in; a file chosen before then is not noticed.
+  await page.waitForLoadState("networkidle");
   await page.getByLabel("Connections CSV").setInputFiles({ name: "Connections.csv", mimeType: "text/csv", buffer: Buffer.from(CONNECTIONS_CSV) });
   await page.getByRole("button", { name: "Preview" }).click();
   await expect(page.getByText("2 new known connection(s) to add")).toBeVisible();

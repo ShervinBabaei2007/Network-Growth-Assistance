@@ -158,3 +158,17 @@ test("People and Applications lists are in French", async ({ page, context }) =>
   await expect(page.getByRole("navigation", { name: "Affichage" }).getByText("1 candidature, 1 ouvertes")).toBeVisible();
   await expect(page.getByLabel("Étape de Alpha Role")).toBeVisible();
 });
+
+test("Settings, Connections and Help are in French", async ({ page, context }) => {
+  test.setTimeout(120_000);
+  await signIn(page, uniqueEmail("fr-settings"));
+  await context.addCookies([{ name: "locale", value: "fr-CA", url: "http://localhost:3000" }]);
+  await page.goto("/settings");
+  await expect(page.getByText("Votre plan de réseautage").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Enregistrer l'objectif" })).toBeVisible();
+  await expect(page.getByText("Planification quotidienne")).toBeVisible();
+  await page.goto("/connections");
+  await expect(page.getByText("Importer un fichier de relations")).toBeVisible();
+  await page.goto("/help");
+  await expect(page.getByText("À quoi sert chaque page?")).toBeVisible();
+});

@@ -1,5 +1,6 @@
 "use server";
 
+import { getT } from "@/lib/i18n/server";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { CONNECTION_FIELDS, parseConnections, type ColumnMapping } from "@/lib/connections/csv";
@@ -39,8 +40,8 @@ function mappingFrom(formData: FormData): Partial<ColumnMapping> | undefined {
  */
 export async function importConnections(_: ConnectionImportState, formData: FormData): Promise<ConnectionImportState> {
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { status: "error", message: "Choose a CSV file." };
-  if (file.size > MAX_BYTES) return { status: "error", message: "The file is larger than 4 MB." };
+  if (!(file instanceof File) || file.size === 0) return { status: "error", message: (await getT())("connectionsPage.chooseFile") };
+  if (file.size > MAX_BYTES) return { status: "error", message: (await getT())("connectionsPage.tooLarge") };
 
   const parsed = parseConnections(await file.text(), mappingFrom(formData));
   if (parsed.error) return { status: "error", message: parsed.error, header: parsed.header, mapping: parsed.mapping, sample: parsed.sample };
@@ -65,8 +66,8 @@ export async function importConnections(_: ConnectionImportState, formData: Form
     ...view,
     failures,
     message: failures
-      ? `Imported, but ${failures} row${failures === 1 ? "" : "s"} couldn't be saved. Importing the same file again is safe.`
-      : `${total.toLocaleString("en-CA")} known connection${total === 1 ? "" : "s"} imported (${plan.insert.length.toLocaleString("en-CA")} new).`,
+      ? (await getT())("connectionsPage.importedPartial", { count: failures })
+      : (await getT())(total === 1 ? "connectionsPage.importedOne" : "connectionsPage.importedMany", { total: total.toLocaleString("en-CA"), added: plan.insert.length.toLocaleString("en-CA") }),
   };
 }
 
@@ -85,15 +86,15 @@ export async function addKnownConnection(_: FormState, formData: FormData): Prom
     if (!url.ok) return failed(url.reason);
   }
   const [row] = await new ManualConnectionSource(parsed.data).importConnections();
-  if (!row) return failed("Enter a name.");
+  if (!row) return failed((await getT())("connectionsPage.enterName"));
   const ctx = await actionContext();
   const plan = await planImport(ctx.supabase, [row]);
-  if (!plan.insert.length && !plan.update.length) return failed("This connection is already in your list.");
+  if (!plan.insert.length && !plan.update.length) return failed((await getT())("connectionsPage.alreadyInList"));
   const failures = await applyConnectionImport(ctx.supabase, ctx.userId, plan, "manual");
-  if (failures) return failed("Couldn't save. Try again.");
+  if (failures) return failed((await getT())("connectionsPage.saveFailed"));
   await logActivity(ctx, "connections.added", {});
   refresh();
-  return saved(plan.insert.length ? "Added." : "Updated the existing record.");
+  return saved(plan.insert.length ? (await getT())("connectionsPage.addedOk") : (await getT())("connectionsPage.updatedExisting"));
 }
 
 export async function updateKnownConnection(_: FormState, formData: FormData): Promise<FormState> {
@@ -103,7 +104,7 @@ export async function updateKnownConnection(_: FormState, formData: FormData): P
   const url = d.linkedinUrl ? normalizeProfileUrl(d.linkedinUrl) : null;
   if (url && !url.ok) return failed(url.reason);
   const normalized = normalizeName(d.fullName);
-  if (!normalized) return failed("Enter a name.");
+  if (!normalized) return failed((await getT())("connectionsPage.enterName"));
   const split = splitName(d.fullName);
   const ctx = await actionContext();
   const { error } = await ctx.supabase
@@ -119,28 +120,28 @@ export async function updateKnownConnection(_: FormState, formData: FormData): P
       linkedin_key: url?.ok ? url.key : null,
     })
     .eq("id", d.id);
-  if (error) return failed(error.code === "23505" ? "Another connection already has that LinkedIn link." : "Couldn't save. Try again.");
+  if (error) return failed(error.code === "23505" ? (await getT())("connectionsPage.dupLink") : (await getT())("connectionsPage.saveFailed"));
   refresh();
   return saved();
 }
 
 export async function deleteKnownConnection(_: FormState, formData: FormData): Promise<FormState> {
   const id = z.uuid().safeParse(formData.get("id"));
-  if (!id.success) return failed("We couldn't find that connection. Reload the page and try again.");
+  if (!id.success) return failed((await getT())("connectionsPage.notFound"));
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("known_connections").delete().eq("id", id.data);
-  if (error) return failed("Couldn't delete. Try again.");
+  if (error) return failed((await getT())("connectionsPage.deleteFailed"));
   refresh();
-  return saved("Deleted.");
+  return saved((await getT())("connectionsPage.deletedOk"));
 }
 
 /** Removes every imported connection. People found by research are kept. */
 export async function deleteAllKnownConnections(_: FormState, formData: FormData): Promise<FormState> {
-  if (formData.get("confirm") !== "DELETE") return failed("Type DELETE to confirm.");
+  if (formData.get("confirm") !== "DELETE") return failed((await getT())("connectionsPage.typeDeleteMsg"));
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("known_connections").delete().eq("user_id", ctx.userId);
-  if (error) return failed("Couldn't delete. Try again.");
+  if (error) return failed((await getT())("connectionsPage.deleteFailed"));
   await logActivity(ctx, "connections.deleted_all", {});
   refresh();
-  return saved("All known connections deleted.");
+  return saved((await getT())("connectionsPage.allDeleted"));
 }

@@ -1,6 +1,7 @@
 import { Tx } from "@/components/tx";
 import { Suspense } from "react";
 import { PageNav } from "@/components/page-nav";
+import type { Translator } from "@/lib/i18n";
 import { Disclosure } from "@/components/disclosure";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
@@ -14,6 +15,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { createClient } from "@/lib/supabase/server";
+import { LocaleScope } from "@/components/locale-scope";
+import { formatters } from "@/lib/i18n";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { addKnownConnection, deleteAllKnownConnections, deleteKnownConnection, updateKnownConnection } from "./actions";
 import { ConnectionsImport } from "./connections-import";
 
@@ -33,21 +37,24 @@ export default function ConnectionsPage({ searchParams }: PageProps<"/connection
 
       <Card>
         <CardHeader>
-          <CardTitle>Import a connections file</CardTitle>
+          <CardTitle><Tx k="connectionsPage.importTitle" /></CardTitle>
           <CardDescription>
-            On LinkedIn: Settings → Data privacy → Get a copy of your data → Connections. Upload the Connections.csv from the download. You see what
-            will change before anything is saved, and importing the same file twice is safe.
+            <Tx k="connectionsPage.importDesc" />
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ConnectionsImport />
+          <Suspense fallback={null}>
+            <LocaleScope groups={["connectionsPage"]}>
+              <ConnectionsImport />
+            </LocaleScope>
+          </Suspense>
         </CardContent>
       </Card>
 
-      <Disclosure summary="Add one connection by hand">
-            <ActionForm action={addKnownConnection} submitLabel="Add" resetOnSuccess>
-              <ConnectionFields />
-            </ActionForm>
+      <Disclosure summary={<Tx k="connectionsPage.addByHand" />}>
+        <Suspense fallback={null}>
+          <AddConnection />
+        </Suspense>
       </Disclosure>
 
       <Suspense fallback={<PageSkeleton labelKey="loading.connections" />}>
@@ -57,23 +64,34 @@ export default function ConnectionsPage({ searchParams }: PageProps<"/connection
   );
 }
 
-function ConnectionFields({ values, idPrefix = "new" }: { values?: { fullName: string; company: string | null; position: string | null; linkedinUrl: string | null }; idPrefix?: string }) {
+async function AddConnection() {
+  const t = await getT();
+  return (
+    <LocaleScope groups={["ui"]}>
+      <ActionForm action={addKnownConnection} submitLabel={t("connectionsPage.add")} resetOnSuccess>
+        <ConnectionFields t={t} />
+      </ActionForm>
+    </LocaleScope>
+  );
+}
+
+function ConnectionFields({ t, values, idPrefix = "new" }: { t: Translator; values?: { fullName: string; company: string | null; position: string | null; linkedinUrl: string | null }; idPrefix?: string }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <div className="grid gap-1.5">
-        <Label htmlFor={`${idPrefix}-name`}>Name</Label>
+        <Label htmlFor={`${idPrefix}-name`}>{t("connectionsPage.name")}</Label>
         <Input id={`${idPrefix}-name`} name="fullName" required maxLength={200} defaultValue={values?.fullName} />
       </div>
       <div className="grid gap-1.5">
-        <Label htmlFor={`${idPrefix}-company`}>Company</Label>
+        <Label htmlFor={`${idPrefix}-company`}>{t("connectionsPage.company")}</Label>
         <Input id={`${idPrefix}-company`} name="company" maxLength={200} defaultValue={values?.company ?? ""} />
       </div>
       <div className="grid gap-1.5">
-        <Label htmlFor={`${idPrefix}-position`}>Position</Label>
+        <Label htmlFor={`${idPrefix}-position`}>{t("connectionsPage.position")}</Label>
         <Input id={`${idPrefix}-position`} name="position" maxLength={300} defaultValue={values?.position ?? ""} />
       </div>
       <div className="grid gap-1.5">
-        <Label htmlFor={`${idPrefix}-url`}>LinkedIn URL (optional)</Label>
+        <Label htmlFor={`${idPrefix}-url`}>{t("connectionsPage.url")}</Label>
         <Input id={`${idPrefix}-url`} name="linkedinUrl" maxLength={500} defaultValue={values?.linkedinUrl ?? ""} placeholder="linkedin.com/in/…" />
       </div>
     </div>
@@ -96,38 +114,40 @@ async function ConnectionList({ searchParams }: Pick<PageProps<"/connections">, 
   if (term) query = query.or(["full_name", "company", "position"].map((c) => `${c}.ilike.*${term}*`).join(","));
   const { data, count, error } = await query;
   if (error) return <LoadError what="connections" />;
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   const total = count ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const href = (p: number) => `/connections?${new URLSearchParams({ ...(q ? { q } : {}), ...(p > 1 ? { page: String(p) } : {}) })}`;
 
   return (
+    <LocaleScope groups={["ui"]}>
     <section aria-labelledby="known-heading" className="grid gap-3">
       <h2 id="known-heading" className="text-base font-semibold">
-        Your list
+        {t("connectionsPage.yourList")}
       </h2>
       <form role="search" className="flex flex-wrap items-end gap-2">
         <div className="grid min-w-56 flex-1 gap-1.5">
-          <Label htmlFor="q">Search</Label>
-          <Input id="q" name="q" defaultValue={q} placeholder="Name, company, position" />
+          <Label htmlFor="q">{t("connectionsPage.search")}</Label>
+          <Input id="q" name="q" defaultValue={q} placeholder={t("connectionsPage.searchPlaceholder")} />
         </div>
         <Button type="submit" size="sm">
-          Search
+          {t("connectionsPage.search")}
         </Button>
       </form>
       <p className="text-sm text-muted-foreground" aria-live="polite">
-        {total.toLocaleString("en-CA")} known connection{total === 1 ? "" : "s"}
-        {total > PAGE_SIZE ? ` · page ${page} of ${pages}` : ""}
+        {total === 1 ? t("connectionsPage.countOne") : t("connectionsPage.countMany", { count: formatters(locale).number(total) })}
+        {total > PAGE_SIZE ? t("list.pageOf", { page, pages }) : ""}
       </p>
 
       {data.length === 0 ? (
         <EmptyState
           icon={<Users aria-hidden />}
-          title={q ? "No connections match" : "No known connections yet"}
-          description={q ? "Try a different name or company." : "Import your Connections.csv above so Discover can skip people you already know. You see what will change before anything is saved."}
+          title={q ? t("connectionsPage.noMatchTitle") : t("connectionsPage.emptyTitle")}
+          description={q ? t("connectionsPage.noMatchDesc") : t("connectionsPage.emptyDesc")}
         >
           {q ? (
             <Link href="/connections" className={buttonVariants({ size: "sm", variant: "outline" })}>
-              Clear search
+              {t("connectionsPage.clearSearch")}
             </Link>
           ) : null}
         </EmptyState>
@@ -135,11 +155,11 @@ async function ConnectionList({ searchParams }: Pick<PageProps<"/connections">, 
         <Table stack>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead className="hidden sm:table-cell">Company · position</TableHead>
-              <TableHead className="hidden md:table-cell">Source</TableHead>
+              <TableHead>{t("connectionsPage.name")}</TableHead>
+              <TableHead className="hidden sm:table-cell">{t("connectionsPage.companyPosition")}</TableHead>
+              <TableHead className="hidden md:table-cell">{t("connectionsPage.source")}</TableHead>
               <TableHead>
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">{t("connectionsPage.actions")}</span>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -149,24 +169,24 @@ async function ConnectionList({ searchParams }: Pick<PageProps<"/connections">, 
                 <TableCell className="max-w-48 truncate font-medium">
                   {k.full_name}
                   {k.linkedin_url ? (
-                    <a href={k.linkedin_url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${k.full_name} on LinkedIn`} title={`Open ${k.full_name} on LinkedIn`} className="ml-1 inline-flex align-middle text-muted-foreground hover:text-foreground">
+                    <a href={k.linkedin_url} target="_blank" rel="noopener noreferrer" aria-label={t("list.openOnLinkedIn", { name: k.full_name })} title={t("list.openOnLinkedIn", { name: k.full_name })} className="ml-1 inline-flex align-middle text-muted-foreground hover:text-foreground">
                       <ExternalLink className="size-3.5" />
                     </a>
                   ) : null}
                 </TableCell>
-                <TableCell label="Company · position" className="hidden max-w-72 truncate whitespace-normal text-muted-foreground sm:table-cell">
+                <TableCell label={t("connectionsPage.companyPosition")} className="hidden max-w-72 truncate whitespace-normal text-muted-foreground sm:table-cell">
                   {[k.company, k.position].filter(Boolean).join(" · ")}
                 </TableCell>
-                <TableCell label="Source" className="hidden text-muted-foreground md:table-cell">{k.source === "linkedin_export" ? "LinkedIn export" : k.source === "csv" ? "CSV" : "Added by hand"}</TableCell>
+                <TableCell label={t("connectionsPage.source")} className="hidden text-muted-foreground md:table-cell">{k.source === "linkedin_export" ? t("connectionsPage.sourceExport") : k.source === "csv" ? t("connectionsPage.sourceCsv") : t("connectionsPage.sourceHand")}</TableCell>
                 <TableCell className="text-right">
                   <details className="inline-block text-left">
-                    <summary className={buttonVariants({ variant: "ghost", size: "sm" })}>Edit</summary>
+                    <summary className={buttonVariants({ variant: "ghost", size: "sm" })}>{t("connectionsPage.edit")}</summary>
                     <div className="mt-2 grid w-[min(90vw,32rem)] gap-3 rounded-lg border bg-background p-3">
-                      <ActionForm action={updateKnownConnection} submitLabel="Save" size="sm">
+                      <ActionForm action={updateKnownConnection} submitLabel={t("connectionsPage.save")} size="sm">
                         <input type="hidden" name="id" value={k.id} />
-                        <ConnectionFields idPrefix={k.id} values={{ fullName: k.full_name, company: k.company, position: k.position, linkedinUrl: k.linkedin_url }} />
+                        <ConnectionFields t={t} idPrefix={k.id} values={{ fullName: k.full_name, company: k.company, position: k.position, linkedinUrl: k.linkedin_url }} />
                       </ActionForm>
-                      <ActionForm action={deleteKnownConnection} submitLabel="Delete" variant="destructive" size="sm">
+                      <ActionForm action={deleteKnownConnection} submitLabel={t("connectionsPage.delete")} variant="destructive" size="sm">
                         <input type="hidden" name="id" value={k.id} />
                       </ActionForm>
                     </div>
@@ -181,16 +201,17 @@ async function ConnectionList({ searchParams }: Pick<PageProps<"/connections">, 
       <PageNav current={page} pages={pages} href={href} />
 
       {total > 0 ? (
-        <Disclosure summary="Delete all known connections">
+        <Disclosure summary={t("connectionsPage.deleteAll")}>
           <div className="grid gap-2">
-            <p className="text-muted-foreground">Removes the whole imported list from this app. People you saved from research are kept.</p>
-            <ActionForm action={deleteAllKnownConnections} submitLabel="Delete all" variant="destructive" size="sm">
-              <Label htmlFor="confirmDelete">Type DELETE to confirm</Label>
+            <p className="text-muted-foreground">{t("connectionsPage.deleteAllNote")}</p>
+            <ActionForm action={deleteAllKnownConnections} submitLabel={t("connectionsPage.deleteAllButton")} variant="destructive" size="sm">
+              <Label htmlFor="confirmDelete">{t("connectionsPage.typeDelete")}</Label>
               <Input id="confirmDelete" name="confirm" autoComplete="off" className="max-w-40" />
             </ActionForm>
           </div>
         </Disclosure>
       ) : null}
     </section>
+    </LocaleScope>
   );
 }

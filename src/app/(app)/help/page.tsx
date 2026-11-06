@@ -2,7 +2,9 @@ import { Suspense } from "react";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { RestartGuide } from "@/components/onboarding/restart-guide";
-import { PageHeaderT } from "@/components/tx";
+import { PageHeaderT, Tx } from "@/components/tx";
+import { LocaleScope } from "@/components/locale-scope";
+import { getT } from "@/lib/i18n/server";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { getOnboarding } from "@/lib/onboarding/read";
@@ -19,38 +21,50 @@ export default function HelpPage() {
       </Suspense>
       <Card>
         <CardHeader>
-          <h2 className="font-medium">Which page is for what?</h2>
-          <CardDescription>Four pages deal with people. They are different on purpose.</CardDescription>
+          <h2 className="font-medium"><Tx k="helpPage.whichTitle" /></h2>
+          <CardDescription><Tx k="helpPage.whichDesc" /></CardDescription>
         </CardHeader>
         <CardContent>
-          <dl className="grid gap-3 text-sm">
-            <Term name="Discover" to="/discover">A search. Describe who you&apos;d like to meet and it looks for real, verifiable matches. Saved results end up in People.</Term>
-            <Term name="People" to="/people">Your personal list of people worth meeting, with status, notes and reminders.</Term>
-            <Term name="Candidates" to="/candidates">LinkedIn search results you paste in and track through review, invitation and acceptance. Accepted candidates count toward your targets.</Term>
-            <Term name="Connections" to="/connections">An import of the people you already know. It is only used to keep Discover from suggesting them again.</Term>
-            <Term name="Daily Queue" to="/queue">Approved candidates to invite today, in order.</Term>
-            <Term name="Jobs and Applications" to="/jobs">Jobs is where you search postings. Applications tracks the ones you save or apply to.</Term>
-          </dl>
+          <Suspense fallback={null}>
+            <WhichPage />
+          </Suspense>
         </CardContent>
       </Card>
     </div>
   );
 }
 
+async function WhichPage() {
+  const t = await getT();
+  return (
+    <dl className="grid gap-3 text-sm">
+      <Term name={t("helpPage.discover")} to="/discover">{t("helpPage.discoverText")}</Term>
+      <Term name={t("helpPage.people")} to="/people">{t("helpPage.peopleText")}</Term>
+      <Term name={t("helpPage.candidates")} to="/candidates">{t("helpPage.candidatesText")}</Term>
+      <Term name={t("helpPage.connections")} to="/connections">{t("helpPage.connectionsText")}</Term>
+      <Term name={t("helpPage.queue")} to="/queue">{t("helpPage.queueText")}</Term>
+      <Term name={t("helpPage.jobs")} to="/jobs">{t("helpPage.jobsText")}</Term>
+    </dl>
+  );
+}
+
 async function Guide() {
   const state = (await getOnboarding())?.state ?? parseOnboarding(undefined);
   const resumable = !state.tourDone && state.tourStep > 0;
+  const t = await getT();
   return (
     <Card data-tour="help-guide">
       <CardHeader>
-        <h2 className="font-medium">Getting started</h2>
-        <CardDescription>None of this changes your data. It only shows you around.</CardDescription>
+        <h2 className="font-medium">{t("helpPage.gettingStarted")}</h2>
+        <CardDescription>{t("helpPage.gettingStartedDesc")}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-2">
         <Link href="/overview?tour=1" className={buttonVariants()}>
-          {resumable ? "Resume the tour" : "Take the tour"}
+          {resumable ? t("helpPage.resumeTour") : t("helpPage.takeTour")}
         </Link>
-        <RestartGuide state={state} />
+        <LocaleScope groups={["helpPage"]}>
+          <RestartGuide state={state} />
+        </LocaleScope>
       </CardContent>
     </Card>
   );

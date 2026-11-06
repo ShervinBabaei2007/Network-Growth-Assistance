@@ -112,9 +112,9 @@ export async function updateGoal(_: FormState, formData: FormData): Promise<Form
   const parsed = goalSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return failed(firstIssue(parsed.error));
   const { overallTarget, baseline, startDate } = parsed.data;
-  if (overallTarget !== null && overallTarget < 1) return failed("Set a goal of at least 1 connection, or leave it empty.");
+  if (overallTarget !== null && overallTarget < 1) return failed((await getT())("settingsPage.goalMin"));
   if (baseline !== null && overallTarget !== null && baseline >= overallTarget) {
-    return failed("The goal must be higher than your starting count.");
+    return failed((await getT())("settingsPage.goalAbove"));
   }
   const ctx = await context();
 
@@ -126,7 +126,7 @@ export async function updateGoal(_: FormState, formData: FormData): Promise<Form
       project_start_date: startDate,
     })
     .eq("user_id", ctx.userId);
-  if (error) return failed("Couldn't save the goal. Try again.");
+  if (error) return failed((await getT())("settingsPage.goalFailed"));
 
   await log(ctx, "settings.goal", { overallTarget, baseline, startDate });
   refresh();
@@ -164,7 +164,7 @@ export async function updatePlanning(_: FormState, formData: FormData): Promise<
       auto_approve: d.autoApprove,
     })
     .eq("user_id", ctx.userId);
-  if (error) return failed("Couldn't save planning settings. Try again.");
+  if (error) return failed((await getT())("settingsPage.planningFailed"));
 
   await log(ctx, "settings.planning", d);
   refresh();
@@ -195,13 +195,13 @@ export async function updateTargets(_: FormState, formData: FormData): Promise<F
 
   if (set.length) {
     const { error } = await ctx.supabase.from("targets").upsert(set.map((r) => ({ ...r, user_id: ctx.userId })), { onConflict: "user_id,discipline,university" });
-    if (error) return failed("Couldn't save the targets. Reload and check the values.");
+    if (error) return failed((await getT())("settingsPage.targetsFailed"));
   }
   for (const c of cleared) {
     let q = ctx.supabase.from("targets").delete().eq("user_id", ctx.userId).eq("discipline", c.discipline);
     q = c.university ? q.eq("university", c.university) : q.is("university", null);
     const { error } = await q;
-    if (error) return failed("Couldn't clear every target. Reload and check the values.");
+    if (error) return failed((await getT())("settingsPage.targetsClearFailed"));
   }
 
   await log(ctx, "settings.targets", { set: set.length, cleared: cleared.length });
@@ -212,7 +212,7 @@ export async function updateTargets(_: FormState, formData: FormData): Promise<F
     const cells = set.filter((r) => r.discipline === d.id && r.university !== null).reduce((n, r) => n + r.target_count, 0);
     return total !== undefined && cells > total;
   });
-  return saved(over.length ? `Saved. Note: the school targets add up to more than the total for ${over.map((d) => d.name).join(", ")}.` : undefined);
+  return saved(over.length ? (await getT())("settingsPage.targetsOver", { names: over.map((d) => d.name).join(", ") }) : undefined);
 }
 
 // ---------------------------------------------------------------- your schools and disciplines
@@ -291,13 +291,14 @@ export async function saveCategory(_: FormState, formData: FormData): Promise<Fo
     }
   }
   const what = kind === "university" ? "school" : "discipline";
-  if (error?.code === "23505") return failed(`You already have a ${what} named “${name}”.`);
-  if (error) return failed("Couldn't save. Try again.");
+  if (error?.code === "23505") return failed((await getT())("settingsPage.categoryExists", { what: (await getT())(kind === "university" ? "settingsPage.schools" : "settingsPage.disciplines").toLowerCase(), name }));
+  if (error) return failed((await getT())("settingsPage.saveFailed"));
 
   const sorted = await sortUnconfirmed(ctx);
   await log(ctx, `settings.${kind}.${id ? "updated" : "added"}`, { sorted });
   refresh();
-  return saved(`${id ? "Saved" : "Added"} “${name}”.${sorted ? ` ${sorted} candidate${sorted === 1 ? " was" : "s were"} matched to your lists.` : ""}`);
+  const tc = await getT();
+  return saved(`${id ? tc("settingsPage.categorySaved", { name }) : tc("settingsPage.categoryAdded", { name })}${sorted ? tc("settingsPage.categoryMatched", { count: sorted }) : ""}`);
 }
 
 /** Removes a school or discipline. Its candidates go back to review and its targets are removed. */
@@ -351,11 +352,11 @@ export async function pauseOutreach(_: FormState, formData: FormData): Promise<F
     .from("settings")
     .update({ paused: true, pause_reason: parsed.data.reason || null, paused_at: new Date().toISOString() })
     .eq("user_id", ctx.userId);
-  if (error) return failed("Couldn't pause outreach. Try again.");
+  if (error) return failed((await getT())("settingsPage.pauseFailed"));
 
   await log(ctx, "outreach.paused");
   refresh();
-  return saved("Outreach paused.");
+  return saved((await getT())("settingsPage.paused"));
 }
 
 export async function resumeOutreach(): Promise<FormState> {
@@ -364,11 +365,11 @@ export async function resumeOutreach(): Promise<FormState> {
     .from("settings")
     .update({ paused: false, pause_reason: null, paused_at: null })
     .eq("user_id", ctx.userId);
-  if (error) return failed("Couldn't resume outreach. Try again.");
+  if (error) return failed((await getT())("settingsPage.resumeFailed"));
 
   await log(ctx, "outreach.resumed");
   refresh();
-  return saved("Outreach resumed.");
+  return saved((await getT())("settingsPage.resumed"));
 }
 
 /** Runs the daily job now for the signed-in user only (same code as the scheduled run). */
@@ -380,12 +381,12 @@ export async function runDailyJobNow(): Promise<FormState> {
     // The user id comes from the verified session, never from the form.
     const r = await runDailyJobForUser(createAdminClient(), ctx.userId, { force: true });
     refresh();
-    if (r.status === "failed") return failed("The job failed. Details are in the run history below.");
-    if (r.status === "skipped") return saved("A run is already in progress.");
+    if (r.status === "failed") return failed((await getT())("settingsPage.jobFailed"));
+    if (r.status === "skipped") return saved((await getT())("settingsPage.jobRunning"));
     const st = r.stats!;
-    return saved(`Done: ${st.queued} queued, ${st.reclassified} classified, ${st.markedPending} marked pending.`);
+    return saved((await getT())("settingsPage.jobDone", { queued: st.queued, reclassified: st.reclassified, markedPending: st.markedPending }));
   } catch {
-    return failed("Couldn't run the job. Try again.");
+    return failed((await getT())("settingsPage.jobRunFailed"));
   }
 }
 
@@ -411,7 +412,7 @@ export async function updateNoteProfile(_: FormState, formData: FormData): Promi
   if (error) return failed("Couldn't save. Try again.");
   await log(ctx, "settings.profile");
   refresh();
-  return saved("Saved. New queue items will use it; refresh today's queue to update existing ones.");
+  return saved((await getT())("settingsPage.noteProfileSaved"));
 }
 
 // ---------------------------------------------------------------- appearance and tracker
@@ -484,7 +485,7 @@ export async function updateTrackerSettings(_: FormState, formData: FormData): P
  * auth user with ON DELETE CASCADE, so all of their data goes with it.
  */
 export async function deleteAccount(_: FormState, formData: FormData): Promise<FormState> {
-  if (formData.get("confirm") !== "DELETE") return failed("Type DELETE to confirm.");
+  if (formData.get("confirm") !== "DELETE") return failed((await getT())("settingsPage.typeDeleteMsg"));
   const ctx = await context();
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const admin = createAdminClient();
@@ -493,13 +494,13 @@ export async function deleteAccount(_: FormState, formData: FormData): Promise<F
   // Removing a page shifts the listing, so read the first page again until it's empty.
   for (let page = 0; page < 100; page++) {
     const { data: files, error: listError } = await admin.storage.from("resumes").list(ctx.userId, { limit: 100 });
-    if (listError) return failed("Couldn't delete your stored files. Nothing was deleted; try again.");
+    if (listError) return failed((await getT())("settingsPage.filesListFailed"));
     if (!files.length) break;
     const { error: removeError } = await admin.storage.from("resumes").remove(files.map((f) => `${ctx.userId}/${f.name}`));
-    if (removeError) return failed("Couldn't delete your stored files. Your account wasn't deleted; try again.");
+    if (removeError) return failed((await getT())("settingsPage.filesRemoveFailed"));
   }
   const { error } = await admin.auth.admin.deleteUser(ctx.userId);
-  if (error) return failed("Couldn't delete the account. Try again.");
+  if (error) return failed((await getT())("settingsPage.accountFailed"));
   await ctx.supabase.auth.signOut();
   redirect("/login");
 }

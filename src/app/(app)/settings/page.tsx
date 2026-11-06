@@ -1,4 +1,7 @@
 import { Tx } from "@/components/tx";
+import { LocaleScope } from "@/components/locale-scope";
+import { formatters, type Translator } from "@/lib/i18n";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { Suspense, type ReactNode } from "react";
 import { Field as FieldBox, FieldLabel } from "@/components/ui/field";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -62,28 +65,30 @@ async function SettingsContent() {
     loadCatalog(supabase),
   ]);
   if (error || !s) return <LoadError what="your settings" />;
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
 
   const targetValue = (d: string, u: string | null) =>
-    targets?.find((t) => t.discipline === d && t.university === u)?.target_count ?? null;
+    targets?.find((row) => row.discipline === d && row.university === u)?.target_count ?? null;
 
   return (
+    <LocaleScope groups={["ui"]}>
     <div className="grid gap-6 lg:grid-cols-2">
       <Section
         id="plan"
-        title="Your networking plan"
-        description="The schools and disciplines you want to connect with, in your own words, and your goals. Nothing is built in: candidates are sorted only into what you add here."
+        title={t("settingsPage.planTitle")}
+        description={t("settingsPage.planDesc")}
         className="lg:col-span-2"
       >
         <div className="grid gap-6">
-          <ActionForm action={updateGoal} protect submitLabel="Save goal">
+          <ActionForm action={updateGoal} protect submitLabel={t("settingsPage.saveGoal")}>
             <div className="grid gap-3 sm:grid-cols-3">
-              <Field id="overallTarget" label="Connection goal (total)">
-                <Input id="overallTarget" name="overallTarget" type="number" min={1} max={30000} defaultValue={s.overall_target ?? ""} placeholder="Not set" />
+              <Field id="overallTarget" label={t("settingsPage.goalTotal")}>
+                <Input id="overallTarget" name="overallTarget" type="number" min={1} max={30000} defaultValue={s.overall_target ?? ""} placeholder={t("settingsPage.notSet")} />
               </Field>
-              <Field id="baselineSetting" label="Starting count">
+              <Field id="baselineSetting" label={t("settingsPage.startingCount")}>
                 <Input id="baselineSetting" name="baseline" type="number" min={0} max={30000} defaultValue={s.baseline_connections ?? ""} />
               </Field>
-              <Field id="startDateSetting" label="Start date">
+              <Field id="startDateSetting" label={t("settingsPage.startDate")}>
                 <Input id="startDateSetting" name="startDate" type="date" defaultValue={s.project_start_date} required />
               </Field>
             </div>
@@ -91,52 +96,47 @@ async function SettingsContent() {
 
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="grid content-start gap-3">
-              <h2 className="text-sm font-semibold">Schools</h2>
-              <p className="text-xs text-muted-foreground">
-                Universities, colleges or any institution. List the other ways people write it (short forms, campuses) so profiles are matched to it.
-                Schools with their own targets get a share of each discipline&apos;s goal; the others add extra candidates.
-              </p>
+              <h2 className="text-sm font-semibold">{t("settingsPage.schools")}</h2>
+              <p className="text-xs text-muted-foreground">{t("settingsPage.schoolsHelp")}</p>
               {catalog.universities.length ? (
                 <ul className="grid gap-2">
                   {catalog.universities.map((u) => (
-                    <CategoryRow key={u.id} kind="university" entry={u} hasTargets={u.hasTargets} />
+                    <CategoryRow key={u.id} t={t} kind="university" entry={u} hasTargets={u.hasTargets} />
                   ))}
                 </ul>
               ) : (
-                <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">No schools yet. Add the first one below.</p>
+                <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">{t("settingsPage.noSchools")}</p>
               )}
-              <CategoryForm kind="university" />
+              <CategoryForm t={t} kind="university" />
             </div>
             <div className="grid content-start gap-3">
-              <h2 className="text-sm font-semibold">Disciplines, in priority order</h2>
-              <p className="text-xs text-muted-foreground">
-                Any field of study or work: nursing, law, finance, software, design, trades… Attention moves down this list as each target is met.
-              </p>
+              <h2 className="text-sm font-semibold">{t("settingsPage.disciplines")}</h2>
+              <p className="text-xs text-muted-foreground">{t("settingsPage.disciplinesHelp")}</p>
               {catalog.disciplines.length ? (
                 <ol className="grid gap-2">
                   {catalog.disciplines.map((d, i) => (
-                    <CategoryRow key={d.id} kind="discipline" entry={d} rank={i + 1} first={i === 0} last={i === catalog.disciplines.length - 1} />
+                    <CategoryRow key={d.id} t={t} kind="discipline" entry={d} rank={i + 1} first={i === 0} last={i === catalog.disciplines.length - 1} />
                   ))}
                 </ol>
               ) : (
-                <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">No disciplines yet. Add the first one below.</p>
+                <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">{t("settingsPage.noDisciplines")}</p>
               )}
-              <CategoryForm kind="discipline" />
+              <CategoryForm t={t} kind="discipline" />
             </div>
           </div>
 
           <div className="grid gap-3">
-            <h2 className="text-sm font-semibold">Targets</h2>
+            <h2 className="text-sm font-semibold">{t("settingsPage.targets")}</h2>
             {catalog.disciplines.length ? (
-              <ActionForm action={updateTargets} protect submitLabel="Save targets">
-                <p className="text-xs text-muted-foreground">Per discipline, and the share from each school. Leave empty for no target.</p>
+              <ActionForm action={updateTargets} protect submitLabel={t("settingsPage.saveTargets")}>
+                <p className="text-xs text-muted-foreground">{t("settingsPage.targetsHelp")}</p>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {catalog.disciplines.map((d) => (
                     <fieldset key={d.id} className="grid gap-2 rounded-md border p-3">
                       <legend className="px-1 text-sm font-medium">{d.name}</legend>
-                      {[{ key: "total", id: null as string | null, label: "Total" }, ...targetUniversities(catalog).map((u) => ({ key: u.id, id: u.id as string | null, label: u.name }))].map((t) => (
-                        <Field key={t.key} id={`${d.id}.${t.key}`} label={t.label} inline>
-                          <Input id={`${d.id}.${t.key}`} name={`${d.id}.${t.key}`} type="number" min={0} max={30000} defaultValue={targetValue(d.id, t.id) ?? ""} placeholder="—" className="w-24" />
+                      {[{ key: "total", id: null as string | null, label: t("settingsPage.total") }, ...targetUniversities(catalog).map((u) => ({ key: u.id, id: u.id as string | null, label: u.name }))].map((tg) => (
+                        <Field key={tg.key} id={`${d.id}.${tg.key}`} label={tg.label} inline>
+                          <Input id={`${d.id}.${tg.key}`} name={`${d.id}.${tg.key}`} type="number" min={0} max={30000} defaultValue={targetValue(d.id, tg.id) ?? ""} placeholder="—" className="w-24" />
                         </Field>
                       ))}
                     </fieldset>
@@ -144,69 +144,67 @@ async function SettingsContent() {
                 </div>
               </ActionForm>
             ) : (
-              <p className="text-sm text-muted-foreground">Add a discipline first; then set how many new connections you want in it.</p>
+              <p className="text-sm text-muted-foreground">{t("settingsPage.targetsNeedDiscipline")}</p>
             )}
           </div>
         </div>
       </Section>
-      <Section title="Help and setup guide" description="Replay the introduction or the tour, or see which page is for what.">
+      <Section title={t("settingsPage.helpTitle")} description={t("settingsPage.helpDesc")}>
         <Link href="/help" className={buttonVariants({ variant: "outline" })}>
-          Open Help
+          {t("settingsPage.openHelp")}
         </Link>
       </Section>
-      <Section id="language" title="Language" description="The language of the menu, sign-in, welcome, search, page titles, the Overview and alert emails. The rest of each page is still in English. It follows you to every device you sign in on.">
+      <Section id="language" title={t("settingsPage.languageTitle")} description={t("settingsPage.languageDesc")}>
         <Suspense fallback={null}>
           <LanguageSwitchServer />
         </Suspense>
       </Section>
 
-      <Section title="Appearance" description="How the app looks on every device you sign in on.">
+      <Section title={t("settingsPage.appearanceTitle")} description={t("settingsPage.appearanceDesc")}>
         <LazyAppearanceForm initial={normalizeAppearance({ theme: s.theme, density: s.density, text: s.text_size, accent: s.accent, contrast: s.contrast })} />
       </Section>
-      <Section title="Applications" description="When to suggest marking an application “No response”. Nothing is changed automatically.">
-        <ActionForm action={updateTrackerSettings} protect submitLabel="Save">
-          <Field id="noResponseDays" label="Suggest after this many days without a reply">
+      <Section title={t("settingsPage.applicationsTitle")} description={t("settingsPage.applicationsDesc")}>
+        <ActionForm action={updateTrackerSettings} protect submitLabel={t("settingsPage.save")}>
+          <Field id="noResponseDays" label={t("settingsPage.noResponseAfter")}>
             <Input id="noResponseDays" name="noResponseDays" type="number" min={1} max={365} defaultValue={s.no_response_days} required className="w-28" />
           </Field>
         </ActionForm>
       </Section>
-      <Section id="notifications" title="Notifications" description="What appears in your notifications (the bell at the top). Saved-search alerts are set on each search.">
-        <ActionForm action={updateNotificationSettings} protect submitLabel="Save">
+      <Section id="notifications" title={t("settingsPage.notificationsTitle")} description={t("settingsPage.notificationsDesc")}>
+        <ActionForm action={updateNotificationSettings} protect submitLabel={t("settingsPage.save")}>
           <div className="grid gap-2 text-sm">
             <label className="flex items-center gap-2">
-              <Checkbox name="notifyReminders" defaultChecked={s.notify_reminders} /> Reminders when they&apos;re due
+              <Checkbox name="notifyReminders" defaultChecked={s.notify_reminders} /> {t("settingsPage.notifyReminders")}
             </label>
             <label className="flex items-center gap-2">
-              <Checkbox name="notifyInterviews" defaultChecked={s.notify_interviews} /> Interviews in the next 24 hours
+              <Checkbox name="notifyInterviews" defaultChecked={s.notify_interviews} /> {t("settingsPage.notifyInterviews")}
             </label>
             <label className="flex items-center gap-2">
-              <Checkbox name="weeklySummary" defaultChecked={s.weekly_summary} /> A summary of my job search every Monday
+              <Checkbox name="weeklySummary" defaultChecked={s.weekly_summary} /> {t("settingsPage.weeklySummary")}
             </label>
             {emailConfigured() ? (
               <label className="flex items-center gap-2">
-                <Checkbox name="emailNotifications" defaultChecked={s.email_notifications} /> Allow alert emails (each saved search also has its own email switch)
+                <Checkbox name="emailNotifications" defaultChecked={s.email_notifications} /> {t("settingsPage.allowEmail")}
               </label>
             ) : (
-              <p className="text-xs text-muted-foreground">Email isn&apos;t set up on this server, so alerts appear only in the app.</p>
+              <p className="text-xs text-muted-foreground">{t("settingsPage.emailNotSetUp")}</p>
             )}
-            <p className="text-xs text-muted-foreground">
-              Emails list job titles, companies and links only, with no tracking. Every email has a one-click unsubscribe link. Read notifications are deleted after 90 days.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("settingsPage.emailNote")}</p>
           </div>
         </ActionForm>
       </Section>
-      <Section title="Pause outreach" description="Use this if LinkedIn shows a warning, a restriction or an invitation limit.">
+      <Section title={t("settingsPage.pauseTitle")} description={t("settingsPage.pauseDesc")}>
         {s.paused ? (
           <div className="grid gap-3">
             <p className="text-sm">
-              Paused since {s.paused_at ? new Date(s.paused_at).toLocaleString("en-CA") : "—"}.
-              {s.pause_reason ? ` Reason: ${s.pause_reason}` : ""}
+              {t("settingsPage.pausedSince", { date: s.paused_at ? formatters(locale).date(s.paused_at, { dateStyle: "medium", timeStyle: "short" }) : "—" })}
+              {s.pause_reason ? t("settingsPage.pausedReason", { reason: s.pause_reason }) : ""}
             </p>
-            <ActionForm action={resumeOutreach} submitLabel="Resume outreach" variant="outline" />
+            <ActionForm action={resumeOutreach} submitLabel={t("settingsPage.resume")} variant="outline" />
           </div>
         ) : (
-          <ActionForm action={pauseOutreach} submitLabel="Pause outreach" variant="destructive">
-            <Field id="reason" label="What did LinkedIn show? (optional)">
+          <ActionForm action={pauseOutreach} submitLabel={t("settingsPage.pause")} variant="destructive">
+            <Field id="reason" label={t("settingsPage.pauseReasonLabel")}>
               <Textarea id="reason" name="reason" maxLength={500} rows={2} />
             </Field>
           </ActionForm>
@@ -214,62 +212,60 @@ async function SettingsContent() {
       </Section>
 
       <Section
-        title="Daily planning"
-        description="LinkedIn's limits vary by account and change over time, so nothing is assumed. Enter what you plan to do and any limits LinkedIn has shown you."
+        title={t("settingsPage.planningTitle")}
+        description={t("settingsPage.planningDesc")}
       >
-        <ActionForm action={updatePlanning} protect submitLabel="Save planning">
+        <ActionForm action={updatePlanning} protect submitLabel={t("settingsPage.savePlanning")}>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field id="dailyInviteTarget" label="Invitations you plan to send per day">
-              <Input id="dailyInviteTarget" name="dailyInviteTarget" type="number" min={0} max={1000} defaultValue={s.daily_invite_target ?? ""} placeholder="Not set" />
+            <Field id="dailyInviteTarget" label={t("settingsPage.dailyInvites")}>
+              <Input id="dailyInviteTarget" name="dailyInviteTarget" type="number" min={0} max={1000} defaultValue={s.daily_invite_target ?? ""} placeholder={t("settingsPage.notSet")} />
             </Field>
-            <Field id="weeklyInviteCap" label="Weekly invitation cap (optional)">
-              <Input id="weeklyInviteCap" name="weeklyInviteCap" type="number" min={0} max={5000} defaultValue={s.weekly_invite_cap ?? ""} placeholder="None" />
+            <Field id="weeklyInviteCap" label={t("settingsPage.weeklyCap")}>
+              <Input id="weeklyInviteCap" name="weeklyInviteCap" type="number" min={0} max={5000} defaultValue={s.weekly_invite_cap ?? ""} placeholder={t("settingsPage.none")} />
             </Field>
-            <Field id="monthlyNoteAllowance" label="Personalized notes per month (optional)">
-              <Input id="monthlyNoteAllowance" name="monthlyNoteAllowance" type="number" min={0} max={1000} defaultValue={s.monthly_note_allowance ?? ""} placeholder="Unknown" />
+            <Field id="monthlyNoteAllowance" label={t("settingsPage.monthlyNotes")}>
+              <Input id="monthlyNoteAllowance" name="monthlyNoteAllowance" type="number" min={0} max={1000} defaultValue={s.monthly_note_allowance ?? ""} placeholder={t("settingsPage.unknown")} />
             </Field>
-            <Field id="noteCharLimit" label="Note length limit (characters)">
+            <Field id="noteCharLimit" label={t("settingsPage.noteLimit")}>
               <Input id="noteCharLimit" name="noteCharLimit" type="number" min={1} max={1000} defaultValue={s.note_char_limit} required />
             </Field>
-            <Field id="stalePendingDays" label="Flag pending invitations after (days)">
+            <Field id="stalePendingDays" label={t("settingsPage.staleAfter")}>
               <Input id="stalePendingDays" name="stalePendingDays" type="number" min={1} max={365} defaultValue={s.stale_pending_days} required />
             </Field>
-            <Field id="timezone" label="Time zone">
+            <Field id="timezone" label={t("settingsPage.timeZone")}>
               <TimeZoneInput id="timezone" defaultValue={s.timezone} />
             </Field>
           </div>
           <label className="flex items-start gap-2 text-sm">
             <Checkbox name="autoApprove" defaultChecked={s.auto_approve} className="mt-0.5" />
             <span>
-              Approve automatically when school and program are recognised
-              <span className="block text-xs text-muted-foreground">
-                Skips the review step for clear matches. Unclear ones still wait for you.
-              </span>
+              {t("settingsPage.autoApprove")}
+              <span className="block text-xs text-muted-foreground">{t("settingsPage.autoApproveNote")}</span>
             </span>
           </label>
         </ActionForm>
       </Section>
 
       <Section
-        title="About you (for connection notes)"
-        description="Suggested notes only mention what you enter here and what's on the candidate's record. Nothing is invented."
+        title={t("settingsPage.aboutTitle")}
+        description={t("settingsPage.aboutDesc")}
       >
-        <ActionForm action={updateNoteProfile} protect submitLabel="Save">
-          <Field id="mySchool" label="Your school">
-            <Input id="mySchool" name="mySchool" maxLength={200} defaultValue={s.my_school_text ?? ""} placeholder="Your school, college or employer" />
+        <ActionForm action={updateNoteProfile} protect submitLabel={t("settingsPage.save")}>
+          <Field id="mySchool" label={t("settingsPage.yourSchool")}>
+            <Input id="mySchool" name="mySchool" maxLength={200} defaultValue={s.my_school_text ?? ""} placeholder={t("settingsPage.yourSchoolPlaceholder")} />
           </Field>
-          <Field id="myProgram" label="Your program">
-            <Input id="myProgram" name="myProgram" maxLength={200} defaultValue={s.my_program_text ?? ""} placeholder="Your program or field" />
+          <Field id="myProgram" label={t("settingsPage.yourProgram")}>
+            <Input id="myProgram" name="myProgram" maxLength={200} defaultValue={s.my_program_text ?? ""} placeholder={t("settingsPage.yourProgramPlaceholder")} />
           </Field>
-          <Field id="myInterests" label="Interests to mention (optional)">
-            <Input id="myInterests" name="myInterests" maxLength={300} defaultValue={s.my_interests ?? ""} placeholder="Topics you care about" />
+          <Field id="myInterests" label={t("settingsPage.interests")}>
+            <Input id="myInterests" name="myInterests" maxLength={300} defaultValue={s.my_interests ?? ""} placeholder={t("settingsPage.interestsPlaceholder")} />
           </Field>
         </ActionForm>
       </Section>
 
       <Section
-        title="Daily job"
-        description="Runs once a day on the server: classifies new candidates, marks older invitations as pending, rebuilds the queue and checks for shortfalls. It never contacts LinkedIn."
+        title={t("settingsPage.dailyJobTitle")}
+        description={t("settingsPage.dailyJobDesc")}
       >
         <div className="grid gap-3 text-sm">
           {runs && runs.length > 0 ? (
@@ -279,29 +275,29 @@ async function SettingsContent() {
                 return (
                   <li key={r.run_date}>
                     <span className="font-medium">{r.run_date}</span> · {r.status}
-                    {r.status === "succeeded" && st ? ` · ${st.queued ?? 0} queued, ${st.reclassified ?? 0} classified` : ""}
+                    {r.status === "succeeded" && st ? t("settingsPage.runSummary", { queued: st.queued ?? 0, classified: st.reclassified ?? 0 }) : ""}
                     {r.status === "failed" && r.error ? ` · ${r.error}` : ""}
                   </li>
                 );
               })}
             </ul>
           ) : (
-            <p className="text-muted-foreground">No runs yet.</p>
+            <p className="text-muted-foreground">{t("settingsPage.noRuns")}</p>
           )}
-          <ActionForm action={runDailyJobNow} submitLabel="Run now" variant="outline" size="sm" />
+          <ActionForm action={runDailyJobNow} submitLabel={t("settingsPage.runNow")} variant="outline" size="sm" />
         </div>
       </Section>
 
       <Section
-        title="Your data"
-        description="Everything is stored only for your account. Your LinkedIn password, cookies and export email addresses are never stored."
+        title={t("settingsPage.dataTitle")}
+        description={t("settingsPage.dataDesc")}
       >
         <div className="grid gap-4 text-sm">
           <a href="/api/export" className="underline underline-offset-4" download>
-            Download all my data (JSON)
+            {t("settingsPage.download")}
           </a>
-          <ActionForm action={deleteAccount} submitLabel="Delete my account and data" variant="destructive">
-            <Field id="confirmDelete" label="Type DELETE to permanently remove your account and every record">
+          <ActionForm action={deleteAccount} submitLabel={t("settingsPage.deleteAccount")} variant="destructive">
+            <Field id="confirmDelete" label={t("settingsPage.typeDeleteAccount")}>
               <Input id="confirmDelete" name="confirm" autoComplete="off" />
             </Field>
           </ActionForm>
@@ -309,15 +305,18 @@ async function SettingsContent() {
       </Section>
 
     </div>
+    </LocaleScope>
   );
 }
 
 function MoveButton({
+  t,
   discipline,
   name,
   direction,
   disabled,
 }: {
+  t: Translator;
   discipline: string;
   name: string;
   direction: "up" | "down";
@@ -333,8 +332,8 @@ function MoveButton({
         variant="ghost"
         size="icon-sm"
         disabled={disabled}
-        aria-label={`Move ${name} ${direction}`}
-        title={`Move ${name} ${direction}`}
+        aria-label={direction === "up" ? t("settingsPage.moveUp", { name }) : t("settingsPage.moveDown", { name })}
+        title={direction === "up" ? t("settingsPage.moveUp", { name }) : t("settingsPage.moveDown", { name })}
       >
         <Icon />
       </Button>
@@ -389,6 +388,7 @@ function Field({
 
 /** One of the user's schools or disciplines: its name and spellings, editable in place. */
 function CategoryRow({
+  t,
   kind,
   entry,
   hasTargets,
@@ -396,6 +396,7 @@ function CategoryRow({
   first,
   last,
 }: {
+  t: Translator;
   kind: "university" | "discipline";
   entry: { id: string; name: string; aliases: string[] };
   hasTargets?: boolean;
@@ -409,44 +410,43 @@ function CategoryRow({
         <span className="min-w-0">
           {rank ? `${rank}. ` : ""}
           <span className="font-medium">{entry.name}</span>
-          {kind === "university" ? <span className="text-xs text-muted-foreground"> · {hasTargets ? "own targets" : "extra pool"}</span> : null}
-          {entry.aliases.length ? <span className="block truncate text-xs text-muted-foreground">Also: {entry.aliases.join(", ")}</span> : null}
+          {kind === "university" ? <span className="text-xs text-muted-foreground"> · {hasTargets ? t("settingsPage.ownTargets") : t("settingsPage.extraPool")}</span> : null}
+          {entry.aliases.length ? <span className="block truncate text-xs text-muted-foreground">{t("settingsPage.also", { aliases: entry.aliases.join(", ") })}</span> : null}
         </span>
         <span className="flex items-center gap-1">
           {kind === "discipline" ? (
             <>
-              <MoveButton discipline={entry.id} name={entry.name} direction="up" disabled={Boolean(first)} />
-              <MoveButton discipline={entry.id} name={entry.name} direction="down" disabled={Boolean(last)} />
+              <MoveButton t={t} discipline={entry.id} name={entry.name} direction="up" disabled={Boolean(first)} />
+              <MoveButton t={t} discipline={entry.id} name={entry.name} direction="down" disabled={Boolean(last)} />
             </>
           ) : null}
           <DeleteCategoryButton kind={kind} id={entry.id} name={entry.name} />
         </span>
       </div>
       <LazyEdit>
-        <CategoryForm kind={kind} entry={entry} hasTargets={hasTargets} />
+        <CategoryForm t={t} kind={kind} entry={entry} hasTargets={hasTargets} />
       </LazyEdit>
     </li>
   );
 }
 
 /** Adds a school or discipline, or edits one (with `entry`). */
-function CategoryForm({ kind, entry, hasTargets = true }: { kind: "university" | "discipline"; entry?: { id: string; name: string; aliases: string[] }; hasTargets?: boolean }) {
+function CategoryForm({ t, kind, entry, hasTargets = true }: { t: Translator; kind: "university" | "discipline"; entry?: { id: string; name: string; aliases: string[] }; hasTargets?: boolean }) {
   const prefix = `${kind}-${entry?.id ?? "new"}`;
-  const noun = kind === "university" ? "school" : "discipline";
   return (
-    <ActionForm action={saveCategory} submitLabel={entry ? "Save" : `Add ${noun}`} size="sm" variant={entry ? "default" : "outline"} resetOnSuccess={!entry}>
+    <ActionForm action={saveCategory} submitLabel={entry ? t("settingsPage.save") : kind === "university" ? t("settingsPage.addSchool") : t("settingsPage.addDiscipline")} size="sm" variant={entry ? "default" : "outline"} resetOnSuccess={!entry}>
       <input type="hidden" name="kind" value={kind} />
       {entry ? <input type="hidden" name="id" value={entry.id} /> : null}
-      <Field id={`${prefix}-name`} label={entry ? "Name" : `New ${noun}`}>
-        <Input id={`${prefix}-name`} name="name" maxLength={200} defaultValue={entry?.name ?? ""} required placeholder={kind === "university" ? "School name" : "Discipline name"} />
+      <Field id={`${prefix}-name`} label={entry ? t("settingsPage.name") : kind === "university" ? t("settingsPage.newSchool") : t("settingsPage.newDiscipline")}>
+        <Input id={`${prefix}-name`} name="name" maxLength={200} defaultValue={entry?.name ?? ""} required placeholder={kind === "university" ? t("settingsPage.schoolName") : t("settingsPage.disciplineName")} />
       </Field>
-      <Field id={`${prefix}-aliases`} label="Other ways it's written (optional, comma-separated)">
-        <Input id={`${prefix}-aliases`} name="aliases" maxLength={2000} defaultValue={entry?.aliases.join(", ") ?? ""} placeholder="Short forms, abbreviations, campuses" />
+      <Field id={`${prefix}-aliases`} label={t("settingsPage.aliases")}>
+        <Input id={`${prefix}-aliases`} name="aliases" maxLength={2000} defaultValue={entry?.aliases.join(", ") ?? ""} placeholder={t("settingsPage.aliasesPlaceholder")} />
       </Field>
       {kind === "university" ? (
         <label className="flex items-center gap-2 text-sm">
           <Checkbox name="hasTargets" defaultChecked={hasTargets} />
-          Give this school its own targets
+          {t("settingsPage.ownTargetsCheck")}
         </label>
       ) : null}
     </ActionForm>
