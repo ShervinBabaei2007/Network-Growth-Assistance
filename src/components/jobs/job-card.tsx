@@ -98,8 +98,8 @@ export async function JobCard({
       {/* Plain text, no icons: 25 cards of small SVGs added hundreds of nodes to a page that is mostly this list. */}
       <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
         {j.company ? <span className="font-medium text-foreground">{j.company}</span> : null}
-        <span>{placeLabel(j)}</span>
-        <span title={formatters(locale).date(j.posted_at, { dateStyle: "medium", timeStyle: "short" })}>{postedLabel(j)}</span>
+        <span>{placeLabel(j, locale)}</span>
+        <span title={formatters(locale).date(j.posted_at, { dateStyle: "medium", timeStyle: "short" })}>{postedLabel(j, Date.now(), locale)}</span>
         {j.salary ? <span className="font-medium text-foreground">{j.salary}</span> : null}
       </p>
       {strong.length || missing.length ? (
