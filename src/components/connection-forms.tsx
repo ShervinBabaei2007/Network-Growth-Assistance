@@ -1,3 +1,4 @@
+import { Term } from "@/components/term";
 import { recordSnapshot, setBaseline } from "@/app/(app)/actions";
 import { ActionForm } from "@/components/action-form";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ export function BaselineForm({ today }: { today: string }) {
         </div>
       </div>
       <p className="text-xs text-muted-foreground">
-        Use the number on your LinkedIn profile or the “My Network” page.
+        This is your <Term term="baseline">starting count</Term>. Use the number on your LinkedIn profile or the “My Network” page.
       </p>
     </ActionForm>
   );

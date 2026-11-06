@@ -9,7 +9,7 @@ export function StatTile({
   trend,
   className,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: number | string | null;
   hint?: string;
   /** A daily series drawn as a small line beside the number. The number and hint still say everything. */

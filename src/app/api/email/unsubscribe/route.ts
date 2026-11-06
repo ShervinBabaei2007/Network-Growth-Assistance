@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   const { error } = scope.searchId
     ? await admin.from("saved_searches").update({ email_digest: false }).eq("id", scope.searchId).eq("user_id", scope.userId)
     : await admin.from("settings").update({ email_notifications: false }).eq("user_id", scope.userId);
-  if (error) return page("Something went wrong", "<p>Nothing was changed. Try again, or turn emails off in Settings → Notifications.</p>", 500);
+  if (error) return page("We could not turn the emails off", "<p>Nothing was changed. Try the link again in a minute, or sign in and turn emails off in Settings → Notifications.</p>", 500);
   // Emails already queued are skipped too: the sender re-checks these settings before each one.
   return page("Done", `<p>${scope.searchId ? "Emails for that saved search are off." : "All emails are off."} You can turn them back on in Settings → Notifications.</p>`);
 }

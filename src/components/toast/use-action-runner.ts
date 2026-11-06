@@ -33,7 +33,7 @@ export function useActionRunner() {
       try {
         r = await fn();
       } catch {
-        r = { ok: false, error: "Something went wrong. Nothing was changed; try again." };
+        r = { ok: false, error: "That did not save, and nothing was changed. Check your connection and try again." };
       }
       setLast(r.ok ? (r.message ? { ok: true, text: r.message } : null) : { ok: false, text: r.error });
       const spec = r.toast ?? (r.ok ? (r.message ? { type: "success" as const, title: r.message } : null) : { type: "error" as const, title: r.error });

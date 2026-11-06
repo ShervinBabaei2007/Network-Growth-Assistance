@@ -1,3 +1,4 @@
+import { Term } from "@/components/term";
 import { unstable_rethrow } from "next/navigation";
 import { Disclosure } from "@/components/disclosure";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -91,7 +92,7 @@ async function QueueContent() {
           ) : null}
           <BlockedNotice blocked={plan.blocked} />
           <p className="text-xs text-muted-foreground">
-            Pending invitations are discounted at a{" "}
+            <Term term="pending">Pending</Term> invitations are discounted at a{" "}
             {plan.rateIsMeasured
               ? `measured ${Math.round(plan.acceptanceRate * 100)}% acceptance rate`
               : `default ${Math.round(plan.acceptanceRate * 100)}% acceptance rate (measured once ${MIN_RESOLVED_FOR_RATE} invitations have an outcome)`}{" "}

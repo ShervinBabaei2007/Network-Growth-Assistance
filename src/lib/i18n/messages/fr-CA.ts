@@ -148,6 +148,18 @@ export const frCA: Messages = {
     actionDiscoverBothWhy: "Décrivez les personnes que vous aimeriez rencontrer, et l'application cherche des correspondances réelles et vérifiables. Les emplois sont à un clic dans le menu.",
     saveFailed: "Impossible d'enregistrer votre progression. Réessayez, ou choisissez de nouveau pour continuer quand même; l'accueil pourrait s'afficher à nouveau la prochaine fois.",
   },
+  glossary: {
+    explain: "Que signifie « {term} » ?",
+    pending: { label: "En attente", definition: "Vous avez envoyé l'invitation et LinkedIn n'a pas encore montré de réponse. Elle est exclue de votre taux d'acceptation jusqu'à ce qu'elle soit acceptée, refusée ou retirée." },
+    confirmed: { label: "Confirmé", definition: "Vous avez vérifié ce détail vous-même, ou une source fiable le confirme. Ce que nous ne pouvons pas appuyer n'est jamais présenté comme confirmé." },
+    needsReview: { label: "À vérifier", definition: "Nous avons trouvé ceci, mais nous ne sommes pas certains que ce soit exact. Ouvrez-le, vérifiez-le, puis confirmez-le ou corrigez-le avant de vous y fier." },
+    baseline: { label: "Compte de départ", definition: "Le nombre de relations que vous aviez au début. Votre progression est mesurée à partir de ce nombre : indiquez-le une fois et gardez-le." },
+  },
+  pageErrors: {
+    pageTitle: "Cette page n'a pas pu se charger.",
+    pageBody: "Rien de ce que vous avez saisi n'a été perdu. Appuyez sur Réessayer. Si cela échoue encore, ouvrez une autre page depuis le menu et revenez plus tard, ou déconnectez-vous puis reconnectez-vous.",
+    retry: "Réessayer",
+  },
   palette: {
     placeholder: "Aller à une page ou rechercher…",
     description: "Tapez pour aller à une page ou trouver une personne, un candidat, une candidature ou un emploi. Utilisez les flèches et Entrée.",

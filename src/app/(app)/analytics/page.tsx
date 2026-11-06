@@ -6,6 +6,7 @@ import Link from "next/link";
 import { LazyDailyBars, LazyNetworkLine } from "@/components/lazy-chart";
 import { ActivityHeatmap, Funnel } from "@/components/progress-visuals";
 import { LoadError } from "@/components/load-error";
+import { Term } from "@/components/term";
 import { StatTile } from "@/components/stat-tile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -120,14 +121,14 @@ async function AnalyticsContent() {
             value={acc.rate === null ? "Not enough data" : `${Math.round(acc.rate * 100)}%`}
             hint={acc.rate === null ? `Shown once ${acc.minResolved} invitations have an outcome (${acc.resolved} so far)` : `${acc.accepted} of ${acc.resolved} with a known outcome`}
           />
-          <StatTile label="Pending" value={acc.pending} hint="Not in the rate until they resolve" />
+          <StatTile label={<Term term="pending" />} value={acc.pending} hint="Not in the rate until they resolve" />
           <StatTile label="Declined or withdrawn" value={acc.declined + acc.withdrawn} />
           <StatTile label="Ready for outreach" value={progress.overall.readyForOutreach} hint="Approved, not yet invited" />
           <StatTile label={`Sent, last ${DAYS} days`} value={a.daily.reduce((n, d) => n + d.sent, 0)} hint="Invitations you recorded" trend={a.daily.map((d) => d.sent)} />
           <StatTile label={`Accepted, last ${DAYS} days`} value={a.daily.reduce((n, d) => n + d.accepted, 0)} hint="Connections that said yes" trend={a.daily.map((d) => d.accepted)} />
         </div>
         <p className="text-xs text-muted-foreground">
-          The rate is accepted ÷ (accepted + declined + withdrawn). Pending invitations are left out
+          The rate is accepted ÷ (accepted + declined + withdrawn). <Term term="pending">Pending</Term> invitations are left out
           because their outcome isn&apos;t known yet; counting them as “not accepted” would understate it,
           especially right after a busy week. LinkedIn rarely tells you about declines, so the rate
           may read a little high.

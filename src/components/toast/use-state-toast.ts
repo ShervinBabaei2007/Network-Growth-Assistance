@@ -9,7 +9,7 @@ import { notify } from "./notify";
  */
 export function useStateToast(state: { status: string; message?: string }, done: string[] = ["imported", "saved"]) {
   useEffect(() => {
-    if (state.status === "error") notify({ type: "error", title: state.message ?? "Something went wrong. Nothing was changed." });
+    if (state.status === "error") notify({ type: "error", title: state.message ?? "That did not save, and nothing was changed. Check your connection and try again." });
     else if (done.includes(state.status) && state.message) notify({ type: "success", title: state.message });
     // Only a new result should announce; `done` is a constant list.
     // eslint-disable-next-line react-hooks/exhaustive-deps

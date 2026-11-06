@@ -150,6 +150,18 @@ export const en = {
     actionDiscoverBothWhy: "Describe who you'd like to meet and the app looks for real, verifiable matches. Jobs are one click away in the menu.",
     saveFailed: "Couldn't save your progress. Try again, or choose it a second time to continue anyway; the welcome may show again next time.",
   },
+  glossary: {
+    explain: "What does “{term}” mean?",
+    pending: { label: "Pending", definition: "You sent the invitation and LinkedIn has not shown a reply yet. It is left out of your acceptance rate until it is accepted, declined or withdrawn." },
+    confirmed: { label: "Confirmed", definition: "You checked this detail yourself, or a trusted source backs it up. Anything we could not back up is not shown as confirmed." },
+    needsReview: { label: "Needs review", definition: "We found this but are not sure it is right. Open it, check it, then confirm or fix it before you rely on it." },
+    baseline: { label: "Starting count", definition: "How many connections you had when you began. Progress is measured from this number, so set it once and keep it." },
+  },
+  pageErrors: {
+    pageTitle: "This page could not load.",
+    pageBody: "Nothing you entered was lost. Press Try again. If it fails again, open another page from the menu and come back later, or sign out and back in.",
+    retry: "Try again",
+  },
   palette: {
     placeholder: "Jump to a page or search…",
     description: "Type to jump to a page or find a person, candidate, application or job. Use the arrow keys and Enter.",

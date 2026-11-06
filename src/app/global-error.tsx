@@ -12,8 +12,8 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   return (
     <html lang="en">
       <body style={{ fontFamily: "system-ui, sans-serif", padding: "2rem", maxWidth: "32rem", margin: "0 auto" }}>
-        <h1 style={{ fontSize: "1.25rem" }}>Something went wrong.</h1>
-        <p>Nothing you entered was lost. Try again; if it keeps happening, reload the page.</p>
+        <h1 style={{ fontSize: "1.25rem" }}>This page could not load.</h1>
+        <p>Nothing you entered was lost. Press Try again. If it fails again, reload the page or come back in a few minutes.</p>
         <button type="button" onClick={reset} style={{ padding: "0.5rem 1rem" }}>
           Try again
         </button>
