@@ -20,7 +20,7 @@ export default function PeoplePage({ searchParams }: PageProps<"/people">) {
           </p>
         </div>
         <Link href="/discover" className={buttonVariants({ variant: "outline", size: "sm" })}>
-          Discover more
+          <Tx k="peoplePage.discoverMore" />
         </Link>
       </div>
       <Suspense fallback={null}>

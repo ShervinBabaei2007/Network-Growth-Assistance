@@ -9,14 +9,15 @@ import { RowSelect } from "@/components/bulk/bulk-select";
 import { notify } from "@/components/toast/notify";
 import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Badge } from "@/components/ui/badge";
-import { columnLabel, dragAnnouncement, dropOutcome } from "@/lib/applications/drop";
-import { STAGE_LABEL, type Stage } from "@/lib/applications/stages";
+import { dropOutcome } from "@/lib/applications/drop";
+import { type Stage } from "@/lib/applications/stages";
 import { cn } from "@/lib/utils";
 import { moveStage } from "./actions";
-import { AppFacts, COLUMNS, MoveSelect, SCOPE, type MoveFn, type TrackerApp } from "./tracker-shared";
+import { AppFacts, COLUMNS, MoveSelect, SCOPE, useStageText, type MoveFn, type TrackerApp } from "./tracker-shared";
 
 /** A card's drag handle. Pointer, touch and keyboard (Space to lift, arrows to move, Space to drop) all start here. */
 function DragHandle({ id, title }: { id: string; title: string }) {
+  const { tr } = useStageText();
   const { attributes, listeners, setNodeRef, setActivatorNodeRef } = useDraggable({ id });
   return (
     <button
@@ -28,7 +29,7 @@ function DragHandle({ id, title }: { id: string; title: string }) {
       }}
       {...attributes}
       {...listeners}
-      aria-label={`Move ${title} to another stage`}
+      aria-label={tr("applicationsPage.moveCardLabel", "Move {title} to another stage", { title })}
       className="-ml-1 mt-0.5 hidden shrink-0 cursor-grab touch-none rounded p-0.5 text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none active:cursor-grabbing md:block"
     >
       <GripVertical aria-hidden className="size-4" />
@@ -37,6 +38,7 @@ function DragHandle({ id, title }: { id: string; title: string }) {
 }
 
 function BoardCard({ app, closed, pending, move, dragging }: { app: TrackerApp; closed: boolean; pending: boolean; move: MoveFn; dragging: boolean }) {
+  const { tr, label } = useStageText();
   return (
     <li data-testid="board-card" className={cn("grid gap-2 rounded-lg border bg-card p-2.5 text-sm", dragging && "opacity-40")}>
       <div className="grid gap-0.5">
@@ -50,10 +52,10 @@ function BoardCard({ app, closed, pending, move, dragging }: { app: TrackerApp; 
         {app.company ? <span className="text-xs break-words text-muted-foreground">{app.company}</span> : null}
         {closed ? (
           <Badge variant={app.stage === "accepted" ? "default" : "secondary"} className="mt-1">
-            {STAGE_LABEL[app.stage]}
+            {label(app.stage)}
           </Badge>
         ) : null}
-        {app.attempt > 1 ? <span className="text-xs text-muted-foreground">Attempt {app.attempt}</span> : null}
+        {app.attempt > 1 ? <span className="text-xs text-muted-foreground">{tr("applicationsPage.attempt", "Attempt {n}", { n: app.attempt })}</span> : null}
       </div>
       <AppFacts app={app} />
       <MoveSelect app={app} pending={pending} move={move} />
@@ -105,6 +107,7 @@ export function Board({ apps, pending, move }: { apps: TrackerApp[]; pending: bo
   const [optimistic, setOptimistic] = useState<Record<string, { stage: Stage; version: number }>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const { run } = useActionRunner();
+  const { tr, label, hint } = useStageText();
   const [prevApps, setPrevApps] = useState(apps);
   if (prevApps !== apps) {
     setPrevApps(apps);
@@ -113,7 +116,7 @@ export function Board({ apps, pending, move }: { apps: TrackerApp[]; pending: bo
   const shown = apps.map((a) => (optimistic[a.id] ? { ...a, ...optimistic[a.id] } : a));
   const byId = new Map(shown.map((a) => [a.id, a]));
 
-  const columns = COLUMNS.map((c) => ({ ...c, apps: shown.filter((a) => c.stages.includes(a.stage)) }));
+  const columns = COLUMNS.map((c) => ({ ...c, label: label(c.key as Stage | "closed"), hint: hint(c.key as Stage | "closed"), apps: shown.filter((a) => c.stages.includes(a.stage)) }));
   const [shownColumn, setShownColumn] = useState(() => columns.find((c) => c.apps.length)?.key ?? "saved");
 
   const sensors = useSensors(
@@ -128,7 +131,7 @@ export function Board({ apps, pending, move }: { apps: TrackerApp[]; pending: bo
     if (!app || !e.over) return;
     const outcome = dropOutcome(String(e.over.id), app.stage);
     if (outcome.kind === "hint") {
-      notify({ type: "info", title: outcome.message });
+      notify({ type: "info", title: tr("applicationsPage.closedHint", outcome.message) });
       return;
     }
     if (outcome.kind !== "move") return;
@@ -156,15 +159,22 @@ export function Board({ apps, pending, move }: { apps: TrackerApp[]; pending: bo
     );
   };
 
-  const titleOf = (id: string | number) => byId.get(String(id))?.title ?? "card";
+  const titleOf = (id: string | number) => byId.get(String(id))?.title ?? tr("applicationsPage.card", "card");
+  const columnName = (column: string) => label(column as Stage | "closed");
   const announcements: Announcements = {
-    onDragStart: ({ active }) => `Picked up ${titleOf(active.id)}.`,
+    onDragStart: ({ active }) => tr("applicationsPage.pickedUp", "Picked up {title}.", { title: titleOf(active.id) }),
     onDragOver: ({ active, over }) => {
       const a = byId.get(String(active.id));
-      return a ? dragAnnouncement(a.title, a.stage, over ? String(over.id) : null) : undefined;
+      if (!a) return undefined;
+      return over
+        ? tr("applicationsPage.overColumn", "{title} is over {column}.", { title: a.title, column: columnName(String(over.id)) })
+        : tr("applicationsPage.notOverColumn", "{title}, {stage}, is not over a column.", { title: a.title, stage: label(a.stage) });
     },
-    onDragEnd: ({ active, over }) => (over ? `${titleOf(active.id)} was dropped on ${columnLabel(String(over.id))}.` : `${titleOf(active.id)} was dropped. Nothing changed.`),
-    onDragCancel: ({ active }) => `Moving ${titleOf(active.id)} was cancelled.`,
+    onDragEnd: ({ active, over }) =>
+      over
+        ? tr("applicationsPage.dropped", "{title} was dropped on {column}.", { title: titleOf(active.id), column: columnName(String(over.id)) })
+        : tr("applicationsPage.droppedNothing", "{title} was dropped. Nothing changed.", { title: titleOf(active.id) }),
+    onDragCancel: ({ active }) => tr("applicationsPage.cancelled", "Moving {title} was cancelled.", { title: titleOf(active.id) }),
   };
 
   return (
@@ -172,7 +182,7 @@ export function Board({ apps, pending, move }: { apps: TrackerApp[]; pending: bo
       {/* On a phone, one column at a time. */}
       <div className="grid gap-1 md:hidden">
         <label htmlFor="board-column" className="text-sm font-medium">
-          Stage
+          {tr("applicationsPage.stageLabel", "Stage")}
         </label>
         <AppSelect id="board-column" value={shownColumn} onChange={(e) => setShownColumn(e.target.value)}>
           {columns.map((c) => (
@@ -182,7 +192,7 @@ export function Board({ apps, pending, move }: { apps: TrackerApp[]; pending: bo
           ))}
         </AppSelect>
       </div>
-      <p className="hidden text-xs text-muted-foreground md:block">Drag a card by its grip to another column, or use the stage menu on the card.</p>
+      <p className="hidden text-xs text-muted-foreground md:block">{tr("applicationsPage.dragHint", "Drag a card by its grip to another column, or use the stage menu on the card.")}</p>
       <DndContext
         // A fixed id keeps dnd-kit's generated aria ids the same on the server and the client.
         id="applications-board"
@@ -190,7 +200,7 @@ export function Board({ apps, pending, move }: { apps: TrackerApp[]; pending: bo
         collisionDetection={collide}
         accessibility={{
           announcements,
-          screenReaderInstructions: { draggable: "To pick up a card, press Space. Use the arrow keys to move it to another column, then press Space to drop it, or Escape to cancel." },
+          screenReaderInstructions: { draggable: tr("applicationsPage.dragInstructions", "To pick up a card, press Space. Use the arrow keys to move it to another column, then press Space to drop it, or Escape to cancel.") },
         }}
         onDragStart={(e) => setActiveId(String(e.active.id))}
         onDragEnd={drop}
@@ -212,7 +222,7 @@ export function Board({ apps, pending, move }: { apps: TrackerApp[]; pending: bo
                   ))}
                 </ul>
               ) : (
-                <p className="px-1 py-3 text-xs text-muted-foreground">Nothing here.</p>
+                <p className="px-1 py-3 text-xs text-muted-foreground">{tr("applicationsPage.nothingHere", "Nothing here.")}</p>
               )}
             </DropColumn>
           ))}

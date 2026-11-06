@@ -4,6 +4,18 @@ import { Bell, CalendarClock } from "lucide-react";
 import { AppSelect } from "@/components/app-select";
 import type { ApplicationSummary } from "@/lib/applications/load";
 import { CLOSED_STAGES, OPEN_STAGES, STAGE_HINT, STAGE_LABEL, STAGES, type Stage } from "@/lib/applications/stages";
+import { useTr } from "@/lib/i18n/client";
+import type { MessageKey } from "@/lib/i18n";
+
+/** Stage names and hints in the person's language (English where no provider is present). */
+export function useStageText() {
+  const tr = useTr();
+  return {
+    tr,
+    label: (s: Stage | "closed") => tr(`stage.${s}` as MessageKey, s === "closed" ? "Closed" : STAGE_LABEL[s]),
+    hint: (s: Stage | "closed") => tr(`stage.hint_${s}` as MessageKey, s === "closed" ? "Accepted, rejected, withdrawn or no response" : STAGE_HINT[s]),
+  };
+}
 
 export type TrackerApp = ApplicationSummary & { changedLabel: string; appliedLabel: string | null; nextInterviewLabel: string | null };
 export type Quiet = { id: string; title: string; company: string | null; days: number; stage: Stage; version: number };
@@ -21,9 +33,10 @@ export const SCOPE = "applications";
 
 /** A keyboard-friendly way to move a card: a labelled native select. */
 export function MoveSelect({ app, pending, move }: { app: TrackerApp | Quiet; pending: boolean; move: MoveFn }) {
+  const { tr, label } = useStageText();
   return (
     <AppSelect
-      aria-label={`Stage of ${app.title}`}
+      aria-label={tr("applicationsPage.stageOf", "Stage of {title}", { title: app.title })}
       value={app.stage}
       disabled={pending}
       onChange={(e) => move(app, e.target.value as Stage)}
@@ -31,7 +44,7 @@ export function MoveSelect({ app, pending, move }: { app: TrackerApp | Quiet; pe
     >
       {STAGES.map((s) => (
         <option key={s} value={s}>
-          {STAGE_LABEL[s]}
+          {label(s)}
         </option>
       ))}
     </AppSelect>
@@ -39,9 +52,10 @@ export function MoveSelect({ app, pending, move }: { app: TrackerApp | Quiet; pe
 }
 
 export function AppFacts({ app }: { app: TrackerApp }) {
+  const { tr } = useStageText();
   return (
     <div className="grid gap-1 text-xs text-muted-foreground">
-      {app.appliedLabel ? <span>Applied {app.appliedLabel}</span> : null}
+      {app.appliedLabel ? <span>{tr("applicationsPage.appliedOn", "Applied {date}", { date: app.appliedLabel })}</span> : null}
       {app.nextInterviewLabel ? (
         <span className="flex items-center gap-1 text-foreground">
           <CalendarClock aria-hidden className="size-3.5" /> {app.nextInterviewLabel}
@@ -49,7 +63,7 @@ export function AppFacts({ app }: { app: TrackerApp }) {
       ) : null}
       {app.openReminders ? (
         <span className="flex items-center gap-1">
-          <Bell aria-hidden className="size-3.5" /> {app.openReminders} reminder{app.openReminders === 1 ? "" : "s"}
+          <Bell aria-hidden className="size-3.5" /> {app.openReminders === 1 ? tr("applicationsPage.reminderOne", "1 reminder") : tr("applicationsPage.reminderMany", "{count} reminders", { count: app.openReminders })}
         </span>
       ) : null}
     </div>

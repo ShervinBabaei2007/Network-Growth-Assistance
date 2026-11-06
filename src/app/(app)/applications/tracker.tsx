@@ -9,11 +9,11 @@ import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { SortDir, SortKey } from "@/lib/applications/sort";
-import { isClosed, STAGE_LABEL, STAGES, type Stage } from "@/lib/applications/stages";
+import { isClosed, STAGES, type Stage } from "@/lib/applications/stages";
 import { cn } from "@/lib/utils";
 import { moveStage } from "./actions";
 import { bulkMoveStage, bulkSnoozeReminders, undoBulkMoveStage, undoBulkSnoozeReminders, type ApplicationsMove, type ReminderSnooze } from "./bulk-actions";
-import { AppFacts, MoveSelect, SCOPE, type MoveFn, type Quiet, type TrackerApp } from "./tracker-shared";
+import { AppFacts, MoveSelect, SCOPE, useStageText, type MoveFn, type Quiet, type TrackerApp } from "./tracker-shared";
 import dynamic from "next/dynamic";
 import { ListKeyNav } from "@/components/list-key-nav";
 import { PaneSignal } from "@/components/master-detail";
@@ -43,17 +43,19 @@ function useMove() {
 
 export function Tracker({ apps, view, sort, quiet, afterDays }: { apps: TrackerApp[]; view: "board" | "list"; sort: { key: SortKey; dir: SortDir }; quiet: Quiet[]; afterDays: number }) {
   const { pending, move } = useMove();
+  const { tr } = useStageText();
+  const open = apps.filter((a) => !isClosed(a.stage)).length;
   return (
     <div className="grid gap-5" data-board-view={view === "board" ? "" : undefined}>
-      <nav aria-label="View" className="flex flex-wrap items-center gap-2">
+      <nav aria-label={tr("applicationsPage.view", "View")} className="flex flex-wrap items-center gap-2">
         <ViewLink href="/applications" active={view === "board"}>
-          Board
+          {tr("applicationsPage.board", "Board")}
         </ViewLink>
         <ViewLink href={`/applications?view=list&sort=${sort.key}&dir=${sort.dir}`} active={view === "list"}>
-          List
+          {tr("applicationsPage.list", "List")}
         </ViewLink>
         <span className="ml-auto text-sm text-muted-foreground">
-          {apps.length} application{apps.length === 1 ? "" : "s"}, {apps.filter((a) => !isClosed(a.stage)).length} open
+          {apps.length === 1 ? tr("applicationsPage.countOne", "1 application, {open} open", { open }) : tr("applicationsPage.countMany", "{count} applications, {open} open", { count: apps.length, open })}
         </span>
       </nav>
 
@@ -70,6 +72,7 @@ export function Tracker({ apps, view, sort, quiet, afterDays }: { apps: TrackerA
 function ApplicationsBulkBar({ apps }: { apps: TrackerApp[] }) {
   const { selected, store } = useBulkSelection(SCOPE);
   const { pending, run } = useActionRunner();
+  const { tr, label } = useStageText();
   const [to, setTo] = useState<Stage>("applied");
   const last = useRef<ApplicationsMove | null>(null);
   const lastSnooze = useRef<ReminderSnooze | null>(null);
@@ -79,12 +82,12 @@ function ApplicationsBulkBar({ apps }: { apps: TrackerApp[] }) {
   return (
     <BulkBarFrame scope={SCOPE}>
       <label htmlFor="bulk-stage" className="text-muted-foreground">
-        Move to
+        {tr("applicationsPage.moveTo", "Move to")}
       </label>
       <AppSelect id="bulk-stage" value={to} onChange={(e) => setTo(e.target.value as Stage)} className="h-8 w-40 text-sm">
         {STAGES.map((s) => (
           <option key={s} value={s}>
-            {STAGE_LABEL[s]}
+            {label(s)}
           </option>
         ))}
       </AppSelect>
@@ -105,7 +108,7 @@ function ApplicationsBulkBar({ apps }: { apps: TrackerApp[] }) {
           )
         }
       >
-        Move {selected.length}
+        {tr("applicationsPage.moveCount", "Move {count}", { count: selected.length })}
       </Button>
       <Button
         size="sm"
@@ -125,10 +128,10 @@ function ApplicationsBulkBar({ apps }: { apps: TrackerApp[] }) {
           )
         }
       >
-        <BellOff aria-hidden /> Snooze reminders 7 days
+        <BellOff aria-hidden /> {tr("applicationsPage.snoozeReminders", "Snooze reminders 7 days")}
       </Button>
       <Button size="sm" variant="ghost" onClick={() => store.clear()}>
-        Clear
+        {tr("list.clearSelection", "Clear")}
       </Button>
     </BulkBarFrame>
   );
@@ -148,18 +151,19 @@ function ViewLink({ href, active, children }: { href: string; active: boolean; c
 
 function NoResponseSuggestions({ quiet, afterDays, pending, move }: { quiet: Quiet[]; afterDays: number; pending: boolean; move: MoveFn }) {
   const [open, setOpen] = useState(false);
+  const { tr } = useStageText();
   return (
     <section aria-labelledby="quiet-title" className="grid gap-2 rounded-xl border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="quiet-title" className="flex items-center gap-2 text-sm font-medium">
           <Clock aria-hidden className="size-4 text-muted-foreground" />
-          {quiet.length} application{quiet.length === 1 ? " has" : "s have"} had no reply for {afterDays}+ days
+          {quiet.length === 1 ? tr("applicationsPage.quietOne", "1 application has had no reply for {days}+ days", { days: afterDays }) : tr("applicationsPage.quietMany", "{count} applications have had no reply for {days}+ days", { count: quiet.length, days: afterDays })}
         </h2>
         <Button size="sm" variant="ghost" aria-expanded={open} onClick={() => setOpen(!open)}>
-          {open ? "Hide" : "Review"}
+          {open ? tr("applicationsPage.hide", "Hide") : tr("applicationsPage.review", "Review")}
         </Button>
       </div>
-      <p className="text-sm text-muted-foreground">Nothing changes unless you choose. You can set the number of days in Settings.</p>
+      <p className="text-sm text-muted-foreground">{tr("applicationsPage.quietNote", "Nothing changes unless you choose. You can set the number of days in Settings.")}</p>
       {open ? (
         <ul className="grid gap-2">
           {quiet.map((q) => (
@@ -169,9 +173,9 @@ function NoResponseSuggestions({ quiet, afterDays, pending, move }: { quiet: Qui
                 {q.company ? <span className="font-normal text-muted-foreground"> · {q.company}</span> : null}
               </Link>
               <span className="flex items-center gap-2">
-                <span className="text-muted-foreground">{q.days} days</span>
+                <span className="text-muted-foreground">{tr("applicationsPage.daysShort", "{days} days", { days: q.days })}</span>
                 <Button size="sm" variant="outline" disabled={pending} onClick={() => move(q, "no_response")}>
-                  Mark no response
+                  {tr("applicationsPage.markNoResponse", "Mark no response")}
                 </Button>
               </span>
             </li>
@@ -182,22 +186,23 @@ function NoResponseSuggestions({ quiet, afterDays, pending, move }: { quiet: Qui
   );
 }
 
-const HEADINGS: { key: SortKey; label: string }[] = [
-  { key: "title", label: "Role" },
-  { key: "company", label: "Company" },
-  { key: "stage", label: "Stage" },
-  { key: "applied", label: "Applied" },
-  { key: "updated", label: "Last change" },
+const HEADINGS: { key: SortKey; id: "role" | "company" | "stageCol" | "applied" | "lastChange"; label: string }[] = [
+  { key: "title", id: "role", label: "Role" },
+  { key: "company", id: "company", label: "Company" },
+  { key: "stage", id: "stageCol", label: "Stage" },
+  { key: "applied", id: "applied", label: "Applied" },
+  { key: "updated", id: "lastChange", label: "Last change" },
 ];
 
 function List({ apps, sort, pending, move }: { apps: TrackerApp[]; sort: { key: SortKey; dir: SortDir }; pending: boolean; move: MoveFn }) {
+  const { tr } = useStageText();
   return (
     <ListKeyNav className="overflow-x-auto rounded-xl border">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="w-10">
-              <SelectAll scope={SCOPE} ids={apps.map((a) => a.id)} label="Select every application" />
+              <SelectAll scope={SCOPE} ids={apps.map((a) => a.id)} label={tr("applicationsPage.selectAll", "Select every application")} />
             </TableHead>
             {HEADINGS.map((h) => {
               const active = sort.key === h.key;
@@ -205,14 +210,14 @@ function List({ apps, sort, pending, move }: { apps: TrackerApp[]; sort: { key: 
               return (
                 <TableHead key={h.key} aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}>
                   <Link href={`/applications?view=list&sort=${h.key}&dir=${next}`} className="inline-flex items-center gap-1 hover:text-foreground">
-                    {h.label}
+                    {tr(`applicationsPage.${h.id}`, h.label)}
                     {active ? sort.dir === "asc" ? <ArrowUp aria-hidden className="size-3.5" /> : <ArrowDown aria-hidden className="size-3.5" /> : null}
-                    <span className="sr-only">{active ? `, sorted ${sort.dir === "asc" ? "ascending" : "descending"}` : ", sort"}</span>
+                    <span className="sr-only">{active ? (sort.dir === "asc" ? tr("applicationsPage.sortedAsc", ", sorted ascending") : tr("applicationsPage.sortedDesc", ", sorted descending")) : tr("applicationsPage.sortHint", ", sort")}</span>
                   </Link>
                 </TableHead>
               );
             })}
-            <TableHead>Next</TableHead>
+            <TableHead>{tr("applicationsPage.next", "Next")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -225,7 +230,7 @@ function List({ apps, sort, pending, move }: { apps: TrackerApp[]; sort: { key: 
                 <Link href={`/applications/${a.id}`} data-row-link className="font-medium hover:underline">
                   {a.title}
                 </Link>
-                {a.attempt > 1 ? <span className="block text-xs text-muted-foreground">Attempt {a.attempt}</span> : null}
+                {a.attempt > 1 ? <span className="block text-xs text-muted-foreground">{tr("applicationsPage.attempt", "Attempt {n}", { n: a.attempt })}</span> : null}
               </TableCell>
               <TableCell className="max-w-48 whitespace-normal">{a.company ?? <span className="text-muted-foreground">—</span>}</TableCell>
               <TableCell className="min-w-36">

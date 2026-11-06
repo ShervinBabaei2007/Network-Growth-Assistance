@@ -6,6 +6,7 @@ import { BulkBarFrame, useBulkSelection } from "@/components/bulk/bulk-select";
 import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useTr } from "@/lib/i18n/client";
 import {
   bulkAddPersonTag,
   bulkDeletePeople,
@@ -25,6 +26,7 @@ const SCOPE = "people";
 export function PeopleBulkBar() {
   const { selected, store } = useBulkSelection(SCOPE);
   const { pending, run } = useActionRunner();
+  const tr = useTr();
   const [mode, setMode] = useState<"actions" | "tag" | "delete">("actions");
   const [tag, setTag] = useState("");
   // What the last change did, so Undo restores exactly those people.
@@ -80,7 +82,9 @@ export function PeopleBulkBar() {
       {mode === "delete" ? (
         <>
           <span className="text-destructive">
-            Delete {selected.length} {selected.length === 1 ? "person" : "people"} and their notes? This can&apos;t be undone.
+            {selected.length === 1
+              ? tr("peoplePage.confirmDeleteOne", "Delete 1 person and their notes? This can't be undone.")
+              : tr("peoplePage.confirmDeleteMany", "Delete {count} people and their notes? This can't be undone.", { count: selected.length })}
           </span>
           <Button
             size="sm"
@@ -95,10 +99,10 @@ export function PeopleBulkBar() {
               })
             }
           >
-            Delete
+            {tr("list.delete", "Delete")}
           </Button>
           <Button size="sm" variant="outline" onClick={() => setMode("actions")}>
-            Cancel
+            {tr("list.cancel", "Cancel")}
           </Button>
         </>
       ) : mode === "tag" ? (
@@ -109,33 +113,33 @@ export function PeopleBulkBar() {
             addTag();
           }}
         >
-          <Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="Tag to add" maxLength={40} aria-label="Tag to add" className="h-8 w-40" autoFocus />
+          <Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder={tr("peoplePage.tagToAdd", "Tag to add")} maxLength={40} aria-label={tr("peoplePage.tagToAdd", "Tag to add")} className="h-8 w-40" autoFocus />
           <Button type="submit" size="sm" disabled={pending || !tag.trim()}>
-            Add tag
+            {tr("peoplePage.addTag", "Add tag")}
           </Button>
           <Button type="button" size="sm" variant="outline" onClick={() => setMode("actions")}>
-            Cancel
+            {tr("list.cancel", "Cancel")}
           </Button>
         </form>
       ) : (
         <>
           <Button size="sm" variant="outline" disabled={pending} onClick={() => setStatus("ready_to_connect")}>
-            <Check aria-hidden /> Ready to connect
+            <Check aria-hidden /> {tr("peoplePage.readyToConnect", "Ready to connect")}
           </Button>
           <Button size="sm" variant="outline" disabled={pending} onClick={() => setStatus("connection_sent_manually")}>
-            <Send aria-hidden /> Mark sent
+            <Send aria-hidden /> {tr("peoplePage.markSent", "Mark sent")}
           </Button>
           <Button size="sm" variant="outline" disabled={pending} onClick={() => setMode("tag")}>
-            <Tag aria-hidden /> Add tag…
+            <Tag aria-hidden /> {tr("peoplePage.addTagEllipsis", "Add tag…")}
           </Button>
           <Button size="sm" variant="outline" disabled={pending} onClick={snooze}>
-            <BellOff aria-hidden /> Snooze 7 days
+            <BellOff aria-hidden /> {tr("peoplePage.snooze", "Snooze 7 days")}
           </Button>
           <Button size="sm" variant="outline" disabled={pending} onClick={() => setMode("delete")}>
-            <Trash2 aria-hidden /> Delete…
+            <Trash2 aria-hidden /> {tr("list.deleteEllipsis", "Delete…")}
           </Button>
           <Button size="sm" variant="ghost" onClick={() => store.clear()}>
-            Clear
+            {tr("list.clearSelection", "Clear")}
           </Button>
         </>
       )}

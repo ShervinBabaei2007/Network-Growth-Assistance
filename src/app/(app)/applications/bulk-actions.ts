@@ -4,9 +4,10 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { err, ok, type ActionResult } from "@/lib/action-result";
 import { shiftReminder } from "@/lib/applications/snooze";
-import { STAGE_LABEL, STAGES, type Stage } from "@/lib/applications/stages";
+import { STAGES, type Stage } from "@/lib/applications/stages";
 import { MAX_SELECTION } from "@/lib/selection";
 import { actionContext, logActivity } from "@/lib/server/action-context";
+import { getT } from "@/lib/i18n/server";
 
 /**
  * Moves many applications to one stage. Each row goes through set_application_stage with the version the page
@@ -21,13 +22,13 @@ export type ApplicationsMove = { to: Stage; changed: { id: string; from: Stage; 
 
 export async function bulkMoveStage(items: { id: string; version: number }[], to: Stage): Promise<ActionResult<ApplicationsMove>> {
   const parsed = z.array(item).min(1, "Select at least one application.").max(MAX_SELECTION, `Select up to ${MAX_SELECTION} applications at a time.`).safeParse(items);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Select at least one application.");
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? (await getT())("applicationsPage.selectAtLeast"));
   const target = stage.safeParse(to);
-  if (!target.success) return err("Unknown stage.");
+  if (!target.success) return err((await getT())("applicationsPage.unknownStage"));
   const ctx = await actionContext();
 
   const { data: rows, error } = await ctx.supabase.from("applications").select("id, stage").in("id", parsed.data.map((i) => i.id));
-  if (error) return err("Couldn't move the applications you selected. Try again.");
+  if (error) return err((await getT())("applicationsPage.moveFailed"));
   const before = new Map(rows.map((r) => [r.id, r.stage as Stage]));
 
   const changed: ApplicationsMove["changed"] = [];
@@ -45,11 +46,12 @@ export async function bulkMoveStage(items: { id: string; version: number }[], to
     }
     changed.push({ id, from, version: next });
   }
-  if (changed.length === 0) return err("None of these could be moved. They may already be in that stage, or changed in another tab. Reload and try again.");
+  if (changed.length === 0) return err((await getT())("applicationsPage.noneMoved"));
 
   await logActivity(ctx, "applications.bulk_stage", { count: changed.length, to: target.data });
   refresh();
-  return ok(`${changed.length} moved to ${STAGE_LABEL[target.data]}${skipped ? `. ${skipped} skipped.` : "."}`, { data: { to: target.data, changed, skipped } });
+  const t = await getT();
+  return ok(`${t("applicationsPage.movedTo", { count: changed.length, stage: t(`stage.${target.data}`) })}${skipped ? t("applicationsPage.movedSkipped", { count: skipped }) : "."}`, { data: { to: target.data, changed, skipped } });
 }
 
 /** Moves the same rows back to the stage they were in, skipping any that changed since. */
@@ -57,7 +59,7 @@ export async function undoBulkMoveStage(move: ApplicationsMove): Promise<ActionR
   const parsed = z
     .object({ to: stage, changed: z.array(z.object({ id: z.uuid(), from: stage, version: z.number().int().min(0) })).min(1).max(MAX_SELECTION), skipped: z.number() })
     .safeParse(move);
-  if (!parsed.success) return err("Couldn't undo that. It may already have changed; reload the page to see where things stand.");
+  if (!parsed.success) return err((await getT())("applicationsPage.undoFailed"));
   const ctx = await actionContext();
   let restored = 0;
   for (const c of parsed.data.changed) {
@@ -65,9 +67,9 @@ export async function undoBulkMoveStage(move: ApplicationsMove): Promise<ActionR
     if (!error && next !== null) restored++;
   }
   refresh();
-  if (restored === 0) return err("Couldn't undo that. The applications changed since.");
+  if (restored === 0) return err((await getT())("applicationsPage.undoChanged"));
   const left = parsed.data.changed.length - restored;
-  return ok(`${restored} moved back${left ? `. ${left} had changed since and were left alone.` : "."}`);
+  return ok(`${(await getT())("applicationsPage.movedBack", { count: restored })}${left ? (await getT())("applicationsPage.movedBackLeft", { count: left }) : "."}`);
 }
 
 // ---------------------------------------------------------------- snooze reminders
@@ -81,8 +83,8 @@ export type ReminderSnooze = { days: number; applications: number; changed: { id
 export async function bulkSnoozeReminders(rawIds: string[], days: number): Promise<ActionResult<ReminderSnooze>> {
   const parsed = z.array(z.uuid()).min(1, "Select at least one application.").max(MAX_SELECTION, `Select up to ${MAX_SELECTION} applications at a time.`).safeParse(rawIds);
   const parsedDays = z.number().int().min(1).max(90).safeParse(days);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Select at least one application.");
-  if (!parsedDays.success) return err("Choose between 1 and 90 days.");
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? (await getT())("applicationsPage.selectAtLeast"));
+  if (!parsedDays.success) return err((await getT())("applicationsPage.daysRange"));
   const ctx = await actionContext();
 
   const { data: rows, error } = await ctx.supabase
@@ -91,18 +93,21 @@ export async function bulkSnoozeReminders(rawIds: string[], days: number): Promi
     .in("application_id", parsed.data)
     .is("done_at", null)
     .limit(1000);
-  if (error) return err("Couldn't snooze the reminders. Try again.");
-  if (rows.length === 0) return err("None of these applications have an open reminder.");
+  if (error) return err((await getT())("applicationsPage.snoozeFailed"));
+  if (rows.length === 0) return err((await getT())("applicationsPage.noReminders"));
 
   const changed = rows.map((r) => ({ id: r.id, previous: r.due_at, next: shiftReminder(r.due_at, parsedDays.data, ctx.settings.timezone).toISOString() }));
   for (let i = 0; i < changed.length; i += 25) {
     const results = await Promise.all(changed.slice(i, i + 25).map((c) => ctx.supabase.from("application_reminders").update({ due_at: c.next }).eq("id", c.id).eq("due_at", c.previous)));
-    if (results.some((r) => r.error)) return err("Couldn't snooze every reminder. Some may have moved; check the applications.");
+    if (results.some((r) => r.error)) return err((await getT())("applicationsPage.snoozeEvery"));
   }
   await logActivity(ctx, "applications.bulk_snooze", { reminders: changed.length, applications: new Set(rows.map((r) => r.application_id)).size, days: parsedDays.data });
   refresh();
   const applications = new Set(rows.map((r) => r.application_id)).size;
-  return ok(`${changed.length} reminder${changed.length === 1 ? "" : "s"} on ${applications} application${applications === 1 ? "" : "s"} moved ${parsedDays.data} days later.`, {
+  const t = await getT();
+  const reminders = changed.length === 1 ? t("applicationsPage.reminderWord1") : t("applicationsPage.reminderWordN", { count: changed.length });
+  const apps = applications === 1 ? t("applicationsPage.applicationWord1") : t("applicationsPage.applicationWordN", { count: applications });
+  return ok(t("applicationsPage.snoozedMany", { reminders, applications: apps, days: parsedDays.data }), {
     data: { days: parsedDays.data, applications, changed },
   });
 }
@@ -112,7 +117,7 @@ export async function undoBulkSnoozeReminders(snooze: ReminderSnooze): Promise<A
   const parsed = z
     .object({ days: z.number(), applications: z.number(), changed: z.array(z.object({ id: z.uuid(), previous: z.string(), next: z.string() })).min(1).max(1000) })
     .safeParse(snooze);
-  if (!parsed.success) return err("Couldn't undo that. It may already have changed; reload the page to see where things stand.");
+  if (!parsed.success) return err((await getT())("applicationsPage.undoFailed"));
   const ctx = await actionContext();
   let restored = 0;
   for (let i = 0; i < parsed.data.changed.length; i += 25) {
@@ -124,6 +129,6 @@ export async function undoBulkSnoozeReminders(snooze: ReminderSnooze): Promise<A
     for (const r of results) if (!r.error && r.data.length) restored++;
   }
   refresh();
-  if (restored === 0) return err("Couldn't undo that. The reminders changed since.");
-  return ok(`${restored} reminder${restored === 1 ? "" : "s"} moved back.`);
+  if (restored === 0) return err((await getT())("applicationsPage.snoozeUndoFailed"));
+  return ok((await getT())("applicationsPage.remindersBack", { count: restored }));
 }

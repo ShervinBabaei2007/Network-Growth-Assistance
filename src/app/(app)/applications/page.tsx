@@ -5,7 +5,7 @@ import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { LoadError } from "@/components/load-error";
 import { Disclosure } from "@/components/disclosure";
-import { PageHeaderT } from "@/components/tx";
+import { PageHeaderT, Tx } from "@/components/tx";
 import { RememberLastView, type SavedView } from "@/components/views-menu";
 import { SavedViews } from "@/components/saved-views";
 import { buttonVariants } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import { LIST_LIMIT, loadApplications } from "@/lib/applications/load";
 import { suggestNoResponse } from "@/lib/applications/no-response";
 import { parseSort, sortApplications } from "@/lib/applications/sort";
 import { createClient } from "@/lib/supabase/server";
+import { LocaleScope } from "@/components/locale-scope";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { Tracker, type TrackerApp } from "./tracker";
 
 export const metadata = { title: "Applications · Network Growth" };
@@ -28,7 +30,7 @@ export default function ApplicationsPage({ searchParams }: PageProps<"/applicati
         description="pages.applications.description"
         actions={
           <Link href="/jobs" className={buttonVariants({ variant: "outline", size: "sm" })}>
-            Find jobs
+            <Tx k="applicationsPage.findJobs" />
           </Link>
         }
       />
@@ -52,6 +54,7 @@ async function ApplicationsView({ searchParams }: Pick<PageProps<"/applications"
   ]);
   const views: SavedView[] = viewRows ?? [];
   if (!loaded) return <LoadError what="your applications" />;
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   const tz = settings?.timezone ?? "UTC";
   const afterDays = settings?.no_response_days ?? 21;
   const now = new Date();
@@ -60,11 +63,11 @@ async function ApplicationsView({ searchParams }: Pick<PageProps<"/applications"
     return (
       <EmptyState
         icon={<ClipboardList aria-hidden />}
-        title="No applications yet"
-        description="Save a job or mark it as applied from Jobs, and it appears here. You can then move it through screening, interviews and offers, and keep notes, reminders and the documents you sent."
+        title={t("applicationsPage.emptyTitle")}
+        description={t("applicationsPage.emptyDesc")}
       >
         <Link href="/jobs" className={buttonVariants({ size: "sm" })}>
-          Browse jobs
+          {t("applicationsPage.browseJobs")}
         </Link>
       </EmptyState>
     );
@@ -72,9 +75,9 @@ async function ApplicationsView({ searchParams }: Pick<PageProps<"/applications"
 
   const apps: TrackerApp[] = sortApplications(loaded.apps, sort.key, sort.dir).map((a) => ({
     ...a,
-    changedLabel: formatDay(a.stageChangedAt, tz),
-    appliedLabel: a.appliedOn ? formatDateOnly(a.appliedOn) : null,
-    nextInterviewLabel: a.nextInterviewAt ? formatDateTime(a.nextInterviewAt, tz) : null,
+    changedLabel: formatDay(a.stageChangedAt, tz, locale),
+    appliedLabel: a.appliedOn ? formatDateOnly(a.appliedOn, locale) : null,
+    nextInterviewLabel: a.nextInterviewAt ? formatDateTime(a.nextInterviewAt, tz, locale) : null,
   }));
   const quiet = suggestNoResponse(loaded.apps, afterDays, now).map((a) => ({ id: a.id, title: a.title, company: a.company, days: a.days, stage: a.stage, version: a.version }));
 
@@ -83,11 +86,13 @@ async function ApplicationsView({ searchParams }: Pick<PageProps<"/applications"
       <RememberLastView page="applications" />
       {loaded.truncated ? (
         <p role="status" className="text-sm text-muted-foreground">
-          Showing your {LIST_LIMIT} most recently changed applications.
+          {t("applicationsPage.truncated", { limit: LIST_LIMIT })}
         </p>
       ) : null}
-      <Tracker apps={apps} view={view} sort={sort} quiet={quiet} afterDays={afterDays} />
-      <Disclosure id="views" summary={`Saved views${views.length ? ` (${views.length})` : ""}`}>
+      <LocaleScope groups={["list", "stage", "applicationsPage"]}>
+        <Tracker apps={apps} view={view} sort={sort} quiet={quiet} afterDays={afterDays} />
+      </LocaleScope>
+      <Disclosure id="views" summary={views.length ? t("list.savedViewsCount", { count: views.length }) : t("list.savedViews")}>
         <SavedViews page="applications" views={views} />
       </Disclosure>
     </>

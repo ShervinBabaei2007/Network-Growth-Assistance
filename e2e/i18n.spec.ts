@@ -143,3 +143,18 @@ test("the Candidates list and its shared pieces are in French", async ({ page, c
   await page.goto("/follow-ups");
   await expect(page.getByRole("heading", { name: "Aucun suivi en attente" })).toBeVisible();
 });
+
+test("People and Applications lists are in French", async ({ page, context }) => {
+  test.setTimeout(120_000);
+  const email = uniqueEmail("fr-lists");
+  await signIn(page, email);
+  const id = await userIdFor(email);
+  await adminRest("POST", "applications", [{ user_id: id, title: "Alpha Role", company: "Co", stage: "applied" }]);
+  await context.addCookies([{ name: "locale", value: "fr-CA", url: "http://localhost:3000" }]);
+  await page.goto("/people");
+  await expect(page.getByRole("heading", { name: "Aucune personne enregistrée pour l'instant" })).toBeVisible();
+  await page.goto("/applications");
+  await expect(page.getByRole("heading", { name: "Postulée", level: 2 })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Affichage" }).getByText("1 candidature, 1 ouvertes")).toBeVisible();
+  await expect(page.getByLabel("Étape de Alpha Role")).toBeVisible();
+});
