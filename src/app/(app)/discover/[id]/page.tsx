@@ -16,6 +16,8 @@ import { PROXIMITY_LABELS } from "@/lib/discovery/labels";
 import { loadSearchResults, type PersonCard as Card, type ResultFilters, type SearchResults } from "@/lib/discovery/results";
 import { loadSearchView, type SearchView } from "@/lib/discovery/service";
 import { createClient } from "@/lib/supabase/server";
+import { Tx } from "@/components/tx";
+import { getT } from "@/lib/i18n/server";
 import { runSearchAgain } from "../../people/actions";
 
 export const metadata = { title: "Research results · Network Growth" };
@@ -26,7 +28,7 @@ export default function SearchPage({ params, searchParams }: PageProps<"/discove
   return (
     <div className="grid gap-6">
       <Link href="/discover" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" aria-hidden /> Discover
+        <ArrowLeft className="size-4" aria-hidden /> <Tx k="pages.discover.title" />
       </Link>
       <Suspense fallback={<PageSkeleton labelKey="loading.generic" />}>
         <SearchBody params={params} searchParams={searchParams} />
@@ -36,6 +38,7 @@ export default function SearchPage({ params, searchParams }: PageProps<"/discove
 }
 
 async function SearchBody({ params, searchParams }: PageProps<"/discover/[id]">) {
+  const t = await getT();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const sp = await searchParams;
@@ -64,19 +67,19 @@ async function SearchBody({ params, searchParams }: PageProps<"/discover/[id]">)
         <div className="grid min-w-0 gap-1">
           <h1 className="text-xl font-semibold">{view.query}</h1>
           {view.criteria ? <p className="text-sm text-muted-foreground">{describeCriteria(view.criteria)}</p> : null}
-          {view.parseNote ? <p className="text-xs text-muted-foreground">Request read with the built-in parser ({view.parseNote}).</p> : null}
+          {view.parseNote ? <p className="text-xs text-muted-foreground">{t("researchPage.parser", { note: view.parseNote })}</p> : null}
         </div>
         {!running ? (
           <div className="flex flex-wrap gap-2">
             <form action={runSearchAgain}>
               <input type="hidden" name="id" value={view.id} />
               <Button type="submit" variant="outline" size="sm">
-                Run again
+                {t("discoverPage.runAgain")}
               </Button>
             </form>
             {view.criteria ? (
               <Link href={`/discover?from=${view.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-                Modify search
+                {t("discoverPage.modifyTitle")}
               </Link>
             ) : null}
           </div>
@@ -92,7 +95,8 @@ async function SearchBody({ params, searchParams }: PageProps<"/discover/[id]">)
   );
 }
 
-function Filters({ sp }: { sp: Record<string, string | string[] | undefined> }) {
+async function Filters({ sp }: { sp: Record<string, string | string[] | undefined> }) {
+  const t = await getT();
   const text = (id: string, label: string, placeholder?: string) => (
     <div className="grid gap-1.5">
       <Label htmlFor={`f-${id}`}>{label}</Label>
@@ -100,43 +104,43 @@ function Filters({ sp }: { sp: Record<string, string | string[] | undefined> }) 
     </div>
   );
   return (
-    <Disclosure summary="Filter results" open={["institution", "program", "company", "role", "location", "gradYear", "minScore", "connection", "confidence"].some((k) => one(sp[k]))}>
+    <Disclosure summary={t("researchPage.filterResults")} open={["institution", "program", "company", "role", "location", "gradYear", "minScore", "connection", "confidence"].some((k) => one(sp[k]))}>
       <form role="search" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {text("institution", "Institution")}
-        {text("program", "Program")}
-        {text("company", "Company")}
-        {text("role", "Role")}
-        {text("location", "Location")}
-        {text("gradYear", "Graduation year", "e.g. 2023")}
+        {text("institution", t("researchPage.institution"))}
+        {text("program", t("researchPage.program"))}
+        {text("company", t("connectionsPage.company"))}
+        {text("role", t("list.role"))}
+        {text("location", t("researchPage.location"))}
+        {text("gradYear", t("candidatesPage.gradYear"), t("researchPage.gradExample"))}
         <div className="grid gap-1.5">
-          <Label htmlFor="f-minScore">Minimum score</Label>
+          <Label htmlFor="f-minScore">{t("researchPage.minScore")}</Label>
           <Input id="f-minScore" name="minScore" type="number" min={0} max={100} defaultValue={one(sp.minScore)} />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="f-connection">Connection status</Label>
+          <Label htmlFor="f-connection">{t("researchPage.connectionStatus")}</Label>
           <AppSelect id="f-connection" name="connection" defaultValue={one(sp.connection)}>
-            <option value="">All</option>
-            {Object.entries(PROXIMITY_LABELS).map(([v, l]) => (
+            <option value="">{t("list.all")}</option>
+            {Object.keys(PROXIMITY_LABELS).map((v) => (
               <option key={v} value={v}>
-                {l}
+                {t(`proximity.${v}` as "proximity.unknown")}
               </option>
             ))}
           </AppSelect>
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="f-confidence">Evidence confidence</Label>
+          <Label htmlFor="f-confidence">{t("researchPage.confidence")}</Label>
           <AppSelect id="f-confidence" name="confidence" defaultValue={one(sp.confidence)}>
-            <option value="">Any</option>
-            <option value="high">High</option>
-            <option value="medium">Medium or better</option>
+            <option value="">{t("researchPage.any")}</option>
+            <option value="high">{t("researchPage.high")}</option>
+            <option value="medium">{t("researchPage.mediumPlus")}</option>
           </AppSelect>
         </div>
         <div className="flex items-end gap-2">
           <Button type="submit" size="sm">
-            Apply
+            {t("researchPage.apply")}
           </Button>
           <Link href="?" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-            Clear
+            {t("list.clear")}
           </Link>
         </div>
       </form>
@@ -166,7 +170,8 @@ function Group({ title, count, children, open = false, hint }: { title: string; 
   );
 }
 
-function Results({ view, results, filtering }: { view: SearchView; results: SearchResults; filtering: boolean }) {
+async function Results({ view, results, filtering }: { view: SearchView; results: SearchResults; filtering: boolean }) {
+  const t = await getT();
   const running = view.status === "queued" || view.status === "running";
   const finished = !running;
   const { verified, possible, review, hidden, rejected } = results;
@@ -174,24 +179,23 @@ function Results({ view, results, filtering }: { view: SearchView; results: Sear
   return (
     <section aria-labelledby="results-heading" className="grid gap-4">
       <h2 id="results-heading" className="text-base font-semibold">
-        {verified.length} verified match{verified.length === 1 ? "" : "es"}
-        {possible.length ? ` · ${possible.length} possible` : ""}
+        {verified.length === 1 ? t("researchPage.verifiedOne") : t("researchPage.verifiedMany", { count: verified.length })}
+        {possible.length ? t("researchPage.possibleCount", { count: possible.length }) : ""}
         {finished && verified.length < view.targetCount && verified.length > 0 ? (
           <span className="block text-sm font-normal text-muted-foreground">
-            You asked for {view.targetCount}. Verified means every part of your request is stated in a public source we quote. Check before you contact.
+            {t("researchPage.askedFor", { count: view.targetCount })}
           </span>
         ) : null}
       </h2>
 
       {finished && verified.length === 0 ? (
         <div className="grid gap-2 rounded-lg border bg-card p-6 text-sm">
-          <p className="font-medium">{filtering ? "No verified matches with these filters." : "No strong matches yet."}</p>
+          <p className="font-medium">{filtering ? t("researchPage.noneFiltered") : t("researchPage.noneYet")}</p>
           {!filtering ? (
             <>
               <p className="text-muted-foreground">
-                The research found {results.total} {results.total === 1 ? "person" : "people"}
-                {view.criteria?.education.institution ? ` linked to ${view.criteria.education.institution}` : ""}, but couldn&apos;t confidently verify every criterion
-                for any of them.
+                {t(results.total === 1 ? "researchPage.foundOne" : "researchPage.foundMany", { count: results.total })}
+                {view.criteria?.education.institution ? t("researchPage.linkedTo", { institution: view.criteria.education.institution }) : ""}{t("researchPage.couldntVerify")}
               </p>
               <ul className="list-disc pl-5 text-muted-foreground">
                 {emptyAdvice(view.criteria, [...results.rejected, ...results.possible], results.possible.length).map((a) => (
@@ -206,35 +210,35 @@ function Results({ view, results, filtering }: { view: SearchView; results: Sear
       {verified.length ? <CardList people={verified} searchId={view.id} /> : null}
 
       <Group
-        title="Possibly already connected: please review"
+        title={t("researchPage.reviewTitle")}
         count={review.length}
         open
-        hint="These people look like someone in your known connections, but not certainly. Your answer is remembered for future searches."
+        hint={t("researchPage.reviewHint")}
       >
         <CardList people={review} searchId={view.id} review />
       </Group>
 
       <Group
-        title="Include lower-confidence matches"
+        title={t("researchPage.lowerTitle")}
         count={possible.length}
         open={verified.length === 0 && finished}
-        hint="Some criteria are backed only by weaker evidence (for example only a short form of the school, or no public mention of their current role). Check the evidence before reaching out."
+        hint={t("researchPage.lowerHint")}
       >
         <CardList people={possible} searchId={view.id} />
       </Group>
 
-      <Group title="Hidden: likely already in your connections" count={hidden.length} hint="Matched your imported 1st-degree connections with high confidence.">
+      <Group title={t("researchPage.hiddenTitle")} count={hidden.length} hint={t("researchPage.hiddenHint")}>
         <ul className="grid gap-1 text-sm">
           {hidden.map((p) => (
             <li key={p.personId}>
               {p.fullName}
-              {p.knownConnectionName ? <span className="text-muted-foreground"> · matches {p.knownConnectionName}</span> : null}
+              {p.knownConnectionName ? <span className="text-muted-foreground">{t("researchPage.matches", { name: p.knownConnectionName })}</span> : null}
             </li>
           ))}
         </ul>
       </Group>
 
-      <Group title="Found but didn't qualify" count={rejected.length} hint="Shown for transparency: the evidence didn't support the request, or you marked them not relevant.">
+      <Group title={t("researchPage.rejectedTitle")} count={rejected.length} hint={t("researchPage.rejectedHint")}>
         <ul className="grid gap-1 text-sm">
           {rejected.map((p) => (
             <li key={p.personId}>
