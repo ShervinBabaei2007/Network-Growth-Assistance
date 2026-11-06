@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { useMemo, useState, type ReactNode } from "react";
 import { toast } from "@/components/toast/notify";
 import { useActionRunner } from "@/components/toast/use-action-runner";
@@ -45,6 +46,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 /** The full research record for one person, with every action the user can take. */
 export function PersonDetailView({ detail, searchId, onChange }: { detail: PersonDetail; searchId?: string; onChange: () => void }) {
+  const tr = useTr();
   const p = detail.person;
   const runner = useActionRunner();
   const { pending, last: message } = runner;
@@ -70,10 +72,10 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
           <ExternalLinks person={{ personId: p.id, fullName: p.full_name, personalWebsite: p.personal_website, githubUrl: p.github_url, linkedinUrl: p.linkedin_url, linkedinSearchUrl: detail.linkedinSearchUrl }} />
         </div>
         {!p.linkedin_url ? (
-          <ActionForm action={async (state, formData) => { const r = await saveLinkedInUrl(state, formData); if (r.status === "saved") onChange(); return r; }} submitLabel="Save link" size="sm" variant="outline" className="mt-2">
+          <ActionForm action={async (state, formData) => { const r = await saveLinkedInUrl(state, formData); if (r.status === "saved") onChange(); return r; }} submitLabel={tr("msg.saveLinkb767", "Save link")} size="sm" variant="outline" className="mt-2">
             <input type="hidden" name="id" value={p.id} />
             <div className="grid gap-1.5">
-              <Label htmlFor={`quick-li-${p.id}`}>Found them on LinkedIn? Paste their profile link</Label>
+              <Label htmlFor={`quick-li-${p.id}`}>{tr("msg.foundThemOnLinkedined0e", "Found them on LinkedIn? Paste their profile link")}</Label>
               <Input id={`quick-li-${p.id}`} name="linkedinUrl" placeholder="linkedin.com/in/…" required />
             </div>
           </ActionForm>
@@ -87,14 +89,14 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
       ) : null}
 
       {/* Status */}
-      <Section title="Networking status">
+      <Section title={tr("msg.networkingStatus8baa", "Networking status")}>
         <div className="flex flex-wrap items-end gap-2">
           <div className="grid gap-1.5">
-            <Label htmlFor={`status-${p.id}`}>Status</Label>
+            <Label htmlFor={`status-${p.id}`}>{tr("msg.statusec53", "Status")}</Label>
             <AppSelect id={`status-${p.id}`} value={p.crm_status} disabled={pending} onChange={(e) => run(() => setPersonStatus(p.id, e.target.value))} className="w-56">
               {Object.entries(CRM_STATUS_LABELS).map(([v, l]) => (
                 <option key={v} value={v}>
-                  {l}
+                  {tr(`crm.${v}` as "crm.discovered", l)}
                 </option>
               ))}
             </AppSelect>
@@ -109,23 +111,23 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
           <p className="text-muted-foreground">
             In your{" "}
             <Link href={`/candidates/${p.candidate_id}`} className="underline underline-offset-4">
-              Candidates list
+              {tr("msg.candidatesList5851", "Candidates list")}
             </Link>
             .
           </p>
         ) : (
           <div className="flex flex-wrap items-center gap-2">
             <Button size="sm" variant="outline" disabled={pending || !p.linkedin_url} onClick={() => run(() => sendToCandidates(p.id))}>
-              Add to Candidates &amp; Daily Queue
+              {tr("msg.addToCandidatesDailyfbd5", "Add to Candidates & Daily Queue")}
             </Button>
-            {!p.linkedin_url ? <span className="text-xs text-muted-foreground">Needs their LinkedIn link (add it under Notes below).</span> : null}
+            {!p.linkedin_url ? <span className="text-xs text-muted-foreground">{tr("msg.needsTheirLinkedinLink8768", "Needs their LinkedIn link (add it under Notes below).")}</span> : null}
           </div>
         )}
       </Section>
 
       {/* Connection */}
-      <Section title="Connection">
-        <p>{PROXIMITY_LABELS[p.proximity]}</p>
+      <Section title={tr("msg.connectionc2cc", "Connection")}>
+        <p>{tr(`proximity.${p.proximity}` as "proximity.unknown", PROXIMITY_LABELS[p.proximity])}</p>
         {p.known_match_state === "needs_review" ? (
           <div className="grid gap-2 rounded-md bg-muted p-3">
             <p>
@@ -135,10 +137,10 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
             </p>
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" disabled={pending} onClick={() => run(() => resolveKnownMatch(p.id, true))}>
-                Yes, already connected
+                {tr("msg.yesAlreadyConnected7780", "Yes, already connected")}
               </Button>
               <Button size="sm" variant="outline" disabled={pending} onClick={() => run(() => resolveKnownMatch(p.id, false))}>
-                No, different person
+                {tr("msg.noDifferentPersonfa55", "No, different person")}
               </Button>
             </div>
           </div>
@@ -165,11 +167,11 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
       {search ? (
         <Section title={`Why they match · ${search.relevance ?? 0} / 100`}>
           <p className="text-muted-foreground">
-            {TIER_LABELS[search.tier]}
+            {tr(`discTier.${search.tier}` as "discTier.verified", TIER_LABELS[search.tier])}
             {search.tierReason ? `: ${search.tierReason}` : ""}
           </p>
           <table className="w-full text-left">
-            <caption className="sr-only">Score breakdown</caption>
+            <caption className="sr-only">{tr("msg.scoreBreakdown3782", "Score breakdown")}</caption>
             <tbody>
               {search.breakdown.map((l) => (
                 <tr key={l.key} className="border-b last:border-0">
@@ -189,21 +191,21 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
       ) : null}
 
       {p.reason_for_connecting ? (
-        <Section title="Why connect">
+        <Section title={tr("msg.whyConnect7e49", "Why connect")}>
           <p>{p.reason_for_connecting}</p>
           {p.conversation_angle ? <p className="text-muted-foreground">Conversation idea: {p.conversation_angle}</p> : null}
-          <p className="text-xs text-muted-foreground">Written by AI from the evidence below only.</p>
+          <p className="text-xs text-muted-foreground">{tr("msg.writtenByAiFrom4f50", "Written by AI from the evidence below only.")}</p>
         </Section>
       ) : null}
 
-      <Section title="Education and career">
+      <Section title={tr("msg.educationAndCareer7afb", "Education and career")}>
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
           {["institution", "program", "degree", "grad_year", "role", "company", "location"].map((f) => {
             const values = fieldValues(f);
             return (
               <div key={f} className="contents">
                 <dt className="text-muted-foreground">{FIELD_LABELS[f]}</dt>
-                <dd>{values.length ? values.join("; ") : <span className="text-muted-foreground">? Unknown</span>}</dd>
+                <dd>{values.length ? values.join("; ") : <span className="text-muted-foreground">{tr("msg.unknown4da2", "? Unknown")}</span>}</dd>
               </div>
             );
           })}
@@ -238,7 +240,7 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
       </Section>
 
       {detail.searches.length ? (
-        <Section title="Discovered via">
+        <Section title={tr("msg.discoveredVia10d2", "Discovered via")}>
           <ul className="grid gap-1">
             {detail.searches.map((s) => (
               <li key={s.searchId}>
@@ -254,7 +256,7 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
 
       <IntroAssistant personId={p.id} initial={detail.suggestedIntro} />
 
-      <Section title="Feedback">
+      <Section title={tr("msg.feedbackbea4", "Feedback")}>
         <div className="flex flex-wrap gap-2">
           {(Object.keys(FEEDBACK_LABELS) as (keyof typeof FEEDBACK_LABELS)[]).map((k) => {
             const given = detail.feedback.includes(k);
@@ -267,60 +269,60 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
                 disabled={pending}
                 onClick={() => run(() => (given ? undoPersonFeedback(p.id, k) : givePersonFeedback(p.id, k, searchId)))}
               >
-                {FEEDBACK_LABELS[k]}
+                {tr(`discFeedback.${k}` as "discFeedback.great_match", FEEDBACK_LABELS[k])}
               </Button>
             );
           })}
         </div>
-        <p className="text-xs text-muted-foreground">Feedback adjusts this person&apos;s ranking now and in future searches.</p>
+        <p className="text-xs text-muted-foreground">{tr("msg.feedbackAdjustsThisPerson1d0c", "Feedback adjusts this person's ranking now and in future searches.")}</p>
       </Section>
 
-      <Section title="Notes and follow-up">
-        <ActionForm action={updatePersonCrm} submitLabel="Save" size="sm" protect draftKey={draftKey("person-notes", p.id)}>
+      <Section title={tr("msg.notesAndFollowUp0ac3", "Notes and follow-up")}>
+        <ActionForm action={updatePersonCrm} submitLabel={tr("msg.savec9cc", "Save")} size="sm" protect draftKey={draftKey("person-notes", p.id)}>
           <input type="hidden" name="id" value={p.id} />
           <div className="grid gap-1.5">
-            <Label htmlFor={`notes-${p.id}`}>Notes (private)</Label>
+            <Label htmlFor={`notes-${p.id}`}>{tr("msg.notesPrivate5de9", "Notes (private)")}</Label>
             <Textarea id={`notes-${p.id}`} name="notes" maxLength={5000} defaultValue={p.notes ?? ""} rows={3} />
           </div>
           <div className="grid gap-3 @@3xl:grid-cols-2">
             <div className="grid gap-1.5">
-              <Label htmlFor={`tags-${p.id}`}>Tags</Label>
-              <Input id={`tags-${p.id}`} name="tags" defaultValue={p.tags.join(", ")} placeholder="Comma-separated, e.g. school, field, follow up" />
+              <Label htmlFor={`tags-${p.id}`}>{tr("msg.tags189f", "Tags")}</Label>
+              <Input id={`tags-${p.id}`} name="tags" defaultValue={p.tags.join(", ")} placeholder={tr("msg.commaSeparatedEG742a", "Comma-separated, e.g. school, field, follow up")} />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor={`category-${p.id}`}>Category</Label>
-              <Input id={`category-${p.id}`} name="category" maxLength={60} defaultValue={p.category ?? ""} placeholder="e.g. Alumni" />
+              <Label htmlFor={`category-${p.id}`}>{tr("msg.category3adb", "Category")}</Label>
+              <Input id={`category-${p.id}`} name="category" maxLength={60} defaultValue={p.category ?? ""} placeholder={tr("msg.eGAlumni013b", "e.g. Alumni")} />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor={`reminder-${p.id}`}>Reminder</Label>
+              <Label htmlFor={`reminder-${p.id}`}>{tr("msg.reminder92a9", "Reminder")}</Label>
               <Input id={`reminder-${p.id}`} name="reminder" type="date" defaultValue={p.reminder_at ?? ""} />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor={`li-${p.id}`}>LinkedIn profile link</Label>
-              <Input id={`li-${p.id}`} name="linkedinUrl" defaultValue={p.linkedin_url ?? ""} placeholder="Paste after opening their profile yourself" />
+              <Label htmlFor={`li-${p.id}`}>{tr("msg.linkedinProfileLink6c70", "LinkedIn profile link")}</Label>
+              <Input id={`li-${p.id}`} name="linkedinUrl" defaultValue={p.linkedin_url ?? ""} placeholder={tr("msg.pasteAfterOpeningTheir8a38", "Paste after opening their profile yourself")} />
             </div>
           </div>
         </ActionForm>
       </Section>
 
-      <Section title="History">
+      <Section title={tr("msg.history16d2", "History")}>
         <ActionForm action={logPersonInteraction} submitLabel="Add" size="sm" resetOnSuccess>
           <input type="hidden" name="id" value={p.id} />
           <div className="grid gap-3 @@3xl:grid-cols-[10rem_1fr_9rem]">
             <div className="grid gap-1.5">
-              <Label htmlFor={`kind-${p.id}`}>Type</Label>
+              <Label htmlFor={`kind-${p.id}`}>{tr("msg.typea1fa", "Type")}</Label>
               <AppSelect id={`kind-${p.id}`} name="kind" defaultValue="note">
-                <option value="note">Note</option>
-                <option value="replied">They replied</option>
-                <option value="follow_up">Follow-up</option>
+                <option value="note">{tr("msg.note3b06", "Note")}</option>
+                <option value="replied">{tr("msg.theyRepliedfbd8", "They replied")}</option>
+                <option value="follow_up">{tr("msg.followUpb9c2", "Follow-up")}</option>
               </AppSelect>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor={`body-${p.id}`}>What happened</Label>
+              <Label htmlFor={`body-${p.id}`}>{tr("msg.whatHappenedf3e7", "What happened")}</Label>
               <Input id={`body-${p.id}`} name="body" maxLength={2000} required />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor={`date-${p.id}`}>Date</Label>
+              <Label htmlFor={`date-${p.id}`}>{tr("msg.date4474", "Date")}</Label>
               <Input id={`date-${p.id}`} name="date" type="date" />
             </div>
           </div>
@@ -335,14 +337,14 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
                 <span>
                   {INTERACTION_LABELS[i.kind] ?? i.kind}
                   {i.body && i.kind !== "status_change" && i.kind !== "proximity" ? `: ${i.body}` : ""}
-                  {i.kind === "status_change" && i.body ? `: ${CRM_STATUS_LABELS[i.body as keyof typeof CRM_STATUS_LABELS] ?? i.body}` : ""}
-                  {i.kind === "proximity" && i.body ? `: ${PROXIMITY_LABELS[i.body as keyof typeof PROXIMITY_LABELS] ?? i.body}` : ""}
+                  {i.kind === "status_change" && i.body ? `: ${tr(`crm.${i.body}` as "crm.discovered", CRM_STATUS_LABELS[i.body as keyof typeof CRM_STATUS_LABELS] ?? i.body)}` : ""}
+                  {i.kind === "proximity" && i.body ? `: ${tr(`proximity.${i.body}` as "proximity.unknown", PROXIMITY_LABELS[i.body as keyof typeof PROXIMITY_LABELS] ?? i.body)}` : ""}
                 </span>
               </li>
             ))}
           </ol>
         ) : (
-          <p className="text-muted-foreground">Nothing yet.</p>
+          <p className="text-muted-foreground">{tr("msg.nothingYet7c77", "Nothing yet.")}</p>
         )}
       </Section>
     </div>
@@ -351,12 +353,13 @@ export function PersonDetailView({ detail, searchId, onChange }: { detail: Perso
 
 /** Suggested intro from verified facts. Copy it into LinkedIn yourself; the app never sends it. */
 function IntroAssistant({ personId, initial }: { personId: string; initial: string }) {
+  const tr = useTr();
   const [text, setText] = useState(initial);
   const { pending, run } = useActionRunner();
 
   const polish = () =>
     run(() => generateIntro(personId, true), {
-      progress: "Polishing your intro…",
+      progress: tr("msg.polishingYourIntrodaab", "Polishing your intro…"),
       onSuccess: (r) => {
         if ("text" in r && typeof r.text === "string" && r.text) setText(r.text);
       },
@@ -365,32 +368,32 @@ function IntroAssistant({ personId, initial }: { personId: string; initial: stri
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(text);
-      toast.success("Intro copied.", "Paste it into LinkedIn yourself if you decide to connect.");
+      toast.success(tr("msg.introCopied60e2", "Intro copied."), tr("msg.pasteItIntoLinkedin176e", "Paste it into LinkedIn yourself if you decide to connect."));
       void recordPersonEvent(personId, "message_copied");
     } catch {
-      toast.warning("Couldn't copy automatically.", "Select the text and copy it.");
+      toast.warning(tr("msg.couldnTCopyAutomatically6d85", "Couldn't copy automatically."), tr("msg.selectTheTextAndae7c", "Select the text and copy it."));
     }
   };
 
   return (
     <section className="grid gap-2 border-t pt-4">
-      <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Suggested intro (optional)</h3>
+      <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{tr("msg.suggestedIntroOptional159a", "Suggested intro (optional)")}</h3>
       <Label htmlFor={`intro-${personId}`} className="sr-only">
-        Intro message
+        {tr("msg.introMessage1616", "Intro message")}
       </Label>
       <Textarea id={`intro-${personId}`} value={text} onChange={(e) => setText(e.target.value)} rows={4} maxLength={INTRO_LIMIT} aria-describedby={`intro-count-${personId}`} />
       <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" onClick={copy}>
-          Copy message
+          {tr("msg.copyMessagef101", "Copy message")}
         </Button>
         <Button size="sm" variant="outline" onClick={polish} disabled={pending}>
-          {pending ? "Polishing…" : "Polish with AI"}
+          {pending ? tr("msg.polishingd423", "Polishing…") : tr("msg.polishWithAi5e9e", "Polish with AI")}
         </Button>
         <span id={`intro-count-${personId}`} className="text-xs text-muted-foreground tabular-nums">
           {text.length}/{INTRO_LIMIT}
         </span>
       </div>
-      <p className="text-xs text-muted-foreground">Uses only verified facts and your Settings. Nothing is sent from this app.</p>
+      <p className="text-xs text-muted-foreground">{tr("msg.usesOnlyVerifiedFacts57b7", "Uses only verified facts and your Settings. Nothing is sent from this app.")}</p>
     </section>
   );
 }

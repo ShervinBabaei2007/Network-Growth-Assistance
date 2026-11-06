@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { Disclosure } from "@/components/disclosure";
 import { FormError } from "@/components/form-error";
 import { useEffect, useRef, useState } from "react";
@@ -19,6 +20,7 @@ const POLL_MS = 1500;
  * bounded research step, so these stages are real, not timers.
  */
 export function SearchProgress({ initial }: { initial: SearchView }) {
+  const tr = useTr();
   const router = useRouter();
   const [view, setView] = useState(initial);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
           router.refresh();
         }
       } catch {
-        if (!stop) setError("Lost contact with the server; retrying…");
+        if (!stop) setError(tr("msg.lostContactWithThe711a", "Lost contact with the server; retrying…"));
       }
       if (!stop) timer = setTimeout(poll, POLL_MS);
     };
@@ -66,17 +68,17 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
 
   const c = view.counters;
   const m = view.metrics;
-  // Finished with nobody found: say why, instead of "Research complete" over a row of ticks.
+  // Finished with nobody found: say why, instead of tr("msg.researchComplete4f90", "Research complete") over a row of ticks.
   const empty = !running && view.status === "completed" && (c.verified ?? 0) + (c.possible ?? 0) === 0;
   const emptyNote = !empty
     ? null
     : !m.queries
       ? view.parseNote
-        ? "The service that reads your request was unavailable, so details such as your school may have been missed. Try again in a minute."
-        : "No searches could be run for this request. Add a school, a city or a company and try again."
+        ? tr("msg.theServiceThatReads0331", "The service that reads your request was unavailable, so details such as your school may have been missed. Try again in a minute.")
+        : tr("msg.noSearchesCouldBe0070", "No searches could be run for this request. Add a school, a city or a company and try again.")
       : m.providerFailures
-        ? "Some sources were busy or unavailable. Try again in a little while."
-        : "Nothing in the public sources matched. Try fewer requirements, or name a school, city or company.";
+        ? tr("msg.someSourcesWereBusy648b", "Some sources were busy or unavailable. Try again in a little while.")
+        : tr("msg.nothingInThePublicd001", "Nothing in the public sources matched. Try fewer requirements, or name a school, city or company.");
   // The narrowest ORCID search says how many people the public registry holds for this request.
   const narrowest = [...(m.coverage ?? [])].sort((a, b) => a.total - b.total || b.label.length - a.label.length)[0];
   const coverageNote = !running && narrowest ? `ORCID lists ${narrowest.total.toLocaleString("en-CA")} ${narrowest.total === 1 ? "person" : "people"} matching ${narrowest.label}.` : null;
@@ -86,11 +88,11 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
     <section aria-labelledby="progress-heading" className="grid gap-3 rounded-lg border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="progress-heading" className="text-sm font-semibold">
-          {running ? "Researching…" : view.status === "completed" ? (empty ? "No matches found" : "Research complete") : view.status === "cancelled" ? "Search cancelled" : "Search stopped"}
+          {running ? tr("msg.researching08bd", "Researching…") : view.status === "completed" ? (empty ? tr("msg.noMatchesFoundd132", "No matches found") : tr("msg.researchComplete4f90", "Research complete")) : view.status === "cancelled" ? tr("msg.searchCancelledc33e", "Search cancelled") : tr("msg.searchStoppedb329", "Search stopped")}
         </h2>
         {running ? (
           <Button variant="outline" size="sm" onClick={cancel} disabled={cancelling}>
-            {cancelling ? "Cancelling…" : "Cancel"}
+            {cancelling ? tr("msg.cancelling9bdc", "Cancelling…") : tr("msg.cancelea47", "Cancel")}
           </Button>
         ) : null}
       </div>
@@ -125,7 +127,7 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
         <p className="text-xs text-muted-foreground">
           AI wasn&apos;t used for this search, so matches are scored from the evidence alone.{" "}
           <Link href="/settings" className="underline underline-offset-4">
-            Add your own free AI key
+            {tr("msg.addYourOwnFreeef51", "Add your own free AI key")}
           </Link>{" "}
           for written reasons.
         </p>
@@ -138,22 +140,22 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
       ) : null}
       {error ? <p className="text-xs text-muted-foreground">{error}</p> : null}
 
-      <Disclosure variant="plain" summary="Research details" className="text-xs">
+      <Disclosure variant="plain" summary={tr("msg.researchDetails34c7", "Research details")} className="text-xs">
         <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground sm:grid-cols-4">
           {[
-            ["Queries run", m.queries],
-            ["Results read", m.results],
-            ["Pages processed", m.pages],
-            ["Profiles read (GitHub, ORCID)", m.profiles],
-            ["AI calls", m.llmCalls],
-            ["Tokens in / out", m.inputTokens !== undefined ? `${m.inputTokens} / ${m.outputTokens}` : undefined],
-            ["Cache hits", m.cacheHits],
-            ["Provider failures", m.providerFailures],
-            ["Unsupported facts dropped", m.factsDropped],
-            ["LinkedIn results not opened", m.linkedinResultsSkipped],
-            ["People considered", m.candidatesConsidered],
-            ["Duration", m.durationMs !== undefined ? `${Math.round((m.durationMs ?? 0) / 1000)} s` : undefined],
-            ["Request read by", view.usedAi ? "AI" : "built-in parser"],
+            [tr("msg.queriesRunaec9", "Queries run"), m.queries],
+            [tr("msg.resultsReadd30f", "Results read"), m.results],
+            [tr("msg.pagesProcessed1aba", "Pages processed"), m.pages],
+            [tr("msg.profilesReadGithubOrcid7b7e", "Profiles read (GitHub, ORCID)"), m.profiles],
+            [tr("msg.aiCalls6aa1", "AI calls"), m.llmCalls],
+            [tr("msg.tokensInOut84a5", "Tokens in / out"), m.inputTokens !== undefined ? `${m.inputTokens} / ${m.outputTokens}` : undefined],
+            [tr("msg.cacheHits9c93", "Cache hits"), m.cacheHits],
+            [tr("msg.providerFailuresde20", "Provider failures"), m.providerFailures],
+            [tr("msg.unsupportedFactsDropped586d", "Unsupported facts dropped"), m.factsDropped],
+            [tr("msg.linkedinResultsNotOpenedaf97", "LinkedIn results not opened"), m.linkedinResultsSkipped],
+            [tr("msg.peopleConsidered8f96", "People considered"), m.candidatesConsidered],
+            [tr("msg.duratione02d", "Duration"), m.durationMs !== undefined ? `${Math.round((m.durationMs ?? 0) / 1000)} s` : undefined],
+            [tr("msg.requestReadByc258", "Request read by"), view.usedAi ? tr("msg.ai0a40", "AI") : tr("msg.builtInParser2f8c", "built-in parser")],
           ].map(([label, value]) => (
             <div key={String(label)} className="flex justify-between gap-2 sm:block">
               <dt>{label}</dt>

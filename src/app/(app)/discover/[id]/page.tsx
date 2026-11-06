@@ -1,3 +1,4 @@
+import { LocaleScope } from "@/components/locale-scope";
 import { Suspense, type ReactNode } from "react";
 import { Disclosure } from "@/components/disclosure";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -86,11 +87,13 @@ async function SearchBody({ params, searchParams }: PageProps<"/discover/[id]">)
         ) : null}
       </div>
 
-      <SearchProgress key={view.status === "completed" ? "done" : "live"} initial={view} />
+      <LocaleScope groups={["msg", "ui", "crm", "proximity"]}>
+        <SearchProgress key={view.status === "completed" ? "done" : "live"} initial={view} />
 
-      {results.total > 0 ? <Filters sp={sp} /> : null}
+        {results.total > 0 ? <Filters sp={sp} /> : null}
 
-      <Results view={view} results={results} filtering={filtering} />
+        <Results view={view} results={results} filtering={filtering} />
+      </LocaleScope>
     </>
   );
 }

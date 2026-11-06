@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { FormError } from "@/components/form-error";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { PersonDetailView } from "./person-detail";
 
 /** Opens the full research record for one person: evidence, scoring, history and actions. */
 export function PersonDrawer({ personId, name, searchId }: { personId: string; name: string; searchId?: string }) {
+  const tr = useTr();
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<PersonDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +22,7 @@ export function PersonDrawer({ personId, name, searchId }: { personId: string; n
       setDetail((await res.json()) as PersonDetail);
       setError(null);
     } catch {
-      setError("Couldn't load this person. Try again.");
+      setError(tr("msg.couldnTLoadThisf5bf", "Couldn't load this person. Try again."));
     }
   }, [personId]);
 
@@ -32,11 +34,11 @@ export function PersonDrawer({ personId, name, searchId }: { personId: string; n
         if (next) void load();
       }}
     >
-      <SheetTrigger render={<Button size="sm" variant="outline" />}>View evidence</SheetTrigger>
+      <SheetTrigger render={<Button size="sm" variant="outline" />}>{tr("msg.viewEvidenceb23e", "View evidence")}</SheetTrigger>
       <SheetContent side="right" className="w-full overflow-y-auto data-[side=right]:sm:max-w-xl">
         <SheetHeader>
           <SheetTitle>{name}</SheetTitle>
-          <SheetDescription>Everything the research found, with sources.</SheetDescription>
+          <SheetDescription>{tr("msg.everythingTheResearchFoundbfc5", "Everything the research found, with sources.")}</SheetDescription>
         </SheetHeader>
         <div className="px-4 pb-6">
           {error ? (
@@ -46,7 +48,7 @@ export function PersonDrawer({ personId, name, searchId }: { personId: string; n
           ) : detail ? (
             <PersonDetailView detail={detail} searchId={searchId} onChange={load} />
           ) : (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <p className="text-sm text-muted-foreground">{tr("msg.loading5f02", "Loading…")}</p>
           )}
         </div>
       </SheetContent>

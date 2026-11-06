@@ -206,7 +206,7 @@ test("the interview prep pack is in French", async ({ page, context }) => {
   await context.addCookies([{ name: "locale", value: "fr-CA", url: "http://localhost:3000" }]);
   await page.goto(`/applications/${row.id}/prep`);
   await expect(page.getByRole("heading", { name: "Préparation d'entrevue", level: 1 })).toBeVisible();
-  await expect(page.getByText("Parlez-moi d'un problème difficile que vous avez résolu.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Parlez-moi d'un problème difficile que vous avez résolu." })).toBeVisible();
   await expect(page.getByText("Liste de vérification pour le jour J")).toBeVisible();
 });
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { ExternalLink, Search, UserRound } from "lucide-react";
 import { givePersonFeedback, recordPersonEvent, resolveKnownMatch, savePerson, undoPersonFeedback } from "@/app/(app)/people/actions";
 import { useActionRunner } from "@/components/toast/use-action-runner";
@@ -12,6 +13,7 @@ import { PersonDrawer } from "./person-drawer";
  * LinkedIn: their own profile when they published it, otherwise a people search for them.
  */
 export function ExternalLinks({ person: p }: { person: Pick<PersonCard, "personId" | "fullName" | "personalWebsite" | "githubUrl" | "linkedinUrl" | "linkedinSearchUrl"> }) {
+  const tr = useTr();
   const opened = () => void recordPersonEvent(p.personId, "linkedin_opened");
   return (
     <>
@@ -23,9 +25,9 @@ export function ExternalLinks({ person: p }: { person: Pick<PersonCard, "personI
           onClick={opened}
           className={buttonVariants({ size: "sm" })}
           aria-label={`Open ${p.fullName}'s LinkedIn profile in a new tab`}
-          title="Their own profile link, published on their GitHub, ORCID or website"
+          title={tr("msg.theirOwnProfileLinke61b", "Their own profile link, published on their GitHub, ORCID or website")}
         >
-          <UserRound aria-hidden /> LinkedIn profile <ExternalLink aria-hidden />
+          <UserRound aria-hidden /> {tr("msg.linkedinProfile6be0", "LinkedIn profile")} <ExternalLink aria-hidden />
         </a>
       ) : (
         <a
@@ -35,9 +37,9 @@ export function ExternalLinks({ person: p }: { person: Pick<PersonCard, "personI
           onClick={opened}
           className={buttonVariants({ variant: "outline", size: "sm" })}
           aria-label={`Search LinkedIn for ${p.fullName} in a new tab`}
-          title="Opens LinkedIn's people search for this name. Check it's the same person, then save their profile link in Notes."
+          title={tr("msg.opensLinkedinSPeople0353", "Opens LinkedIn's people search for this name. Check it's the same person, then save their profile link in Notes.")}
         >
-          <Search aria-hidden /> Find on LinkedIn <ExternalLink aria-hidden />
+          <Search aria-hidden /> {tr("msg.findOnLinkedin06b5", "Find on LinkedIn")} <ExternalLink aria-hidden />
         </a>
       )}
       {p.personalWebsite ? (
@@ -55,6 +57,7 @@ export function ExternalLinks({ person: p }: { person: Pick<PersonCard, "personI
 }
 
 export function CardActions({ person: p, searchId }: { person: PersonCard; searchId: string }) {
+  const tr = useTr();
   const { pending, run } = useActionRunner();
   return (
     <div className="grid gap-2">
@@ -72,7 +75,7 @@ export function CardActions({ person: p, searchId }: { person: PersonCard; searc
           disabled={pending}
           onClick={() => run(() => givePersonFeedback(p.personId, "not_relevant", searchId), { undo: () => undoPersonFeedback(p.personId, "not_relevant") })}
         >
-          Not relevant
+          {tr("msg.notRelevant7de5", "Not relevant")}
         </Button>
       </div>
     </div>
@@ -81,6 +84,7 @@ export function CardActions({ person: p, searchId }: { person: PersonCard; searc
 
 /** "Is this one of your connections?" The answer is stored and reused by later searches. */
 export function KnownMatchReview({ personId, name, confidence }: { personId: string; name: string | null; confidence: number | null }) {
+  const tr = useTr();
   const { pending, run } = useActionRunner();
   return (
     <div className="grid gap-2 rounded-md bg-muted p-3 text-sm">
@@ -90,10 +94,10 @@ export function KnownMatchReview({ personId, name, confidence }: { personId: str
       </p>
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant="outline" disabled={pending} onClick={() => run(() => resolveKnownMatch(personId, true))}>
-          Yes, already connected
+          {tr("msg.yesAlreadyConnected7780", "Yes, already connected")}
         </Button>
         <Button size="sm" variant="outline" disabled={pending} onClick={() => run(() => resolveKnownMatch(personId, false))}>
-          No, different person
+          {tr("msg.noDifferentPersonfa55", "No, different person")}
         </Button>
       </div>
     </div>
