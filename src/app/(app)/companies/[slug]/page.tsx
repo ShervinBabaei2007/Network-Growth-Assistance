@@ -1,3 +1,4 @@
+import { getLocale, getT } from "@/lib/i18n/server";
 import { Suspense } from "react";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
@@ -47,6 +48,7 @@ async function Company({ params }: Pick<PageProps<"/companies/[slug]">, "params"
       .limit(300),
   ]);
   const tz = settings?.timezone ?? "UTC";
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   const same = (name: string | null) => Boolean(name) && counts(matchCompany(key, name, decisions));
   const myApps = (apps ?? []).filter((a) => same(a.company));
   const openJobs = (jobs ?? []).filter((j) => same(j.company));
@@ -61,13 +63,13 @@ async function Company({ params }: Pick<PageProps<"/companies/[slug]">, "params"
 
   return (
     <div className="grid gap-6">
-      <PageHeader back={{ href: "/applications", label: "Applications" }} title={display} description="Your applications, open jobs and the people you know here, in one place." />
+      <PageHeader back={{ href: "/applications", label: t("msg.applications1ddf") }} title={display} description={t("msg.yourApplicationsOpenJobsf628")} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="grid content-start gap-6">
           <Card size="sm">
             <CardHeader>
-              <CardTitle>Your applications</CardTitle>
-              <CardDescription>Every attempt, including closed ones.</CardDescription>
+              <CardTitle>{t("msg.yourApplications6dab")}</CardTitle>
+              <CardDescription>{t("msg.everyAttemptIncludingClosed28ba")}</CardDescription>
             </CardHeader>
             <CardContent>
               {myApps.length ? (
@@ -76,25 +78,25 @@ async function Company({ params }: Pick<PageProps<"/companies/[slug]">, "params"
                     <li key={a.id} className="flex flex-wrap items-center justify-between gap-2">
                       <Link href={`/applications/${a.id}`} className="font-medium hover:underline">
                         {a.title}
-                        {a.attempt > 1 ? <span className="font-normal text-muted-foreground"> (attempt {a.attempt})</span> : null}
+                        {a.attempt > 1 ? <span className="font-normal text-muted-foreground"> {t("jobDetail.attemptSuffix", { n: a.attempt }).trim()}</span> : null}
                       </Link>
                       <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Badge variant="secondary">{STAGE_LABEL[a.stage]}</Badge>
-                        {formatDay(a.stage_changed_at, tz)}
+                        <Badge variant="secondary">{t(`stage.${a.stage}` as "stage.saved")}</Badge>
+                        {formatDay(a.stage_changed_at, tz, locale)}
                       </span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">You haven&apos;t saved or applied to a job here yet.</p>
+                <p className="text-sm text-muted-foreground">{t("msg.youHavenTSaved0faa")}</p>
               )}
             </CardContent>
           </Card>
 
           <Card size="sm">
             <CardHeader>
-              <CardTitle>Open jobs</CardTitle>
-              <CardDescription>Verified listings currently in Jobs, newest first.</CardDescription>
+              <CardTitle>{t("msg.openJobs08d9")}</CardTitle>
+              <CardDescription>{t("msg.verifiedListingsCurrentlyIn75e4")}</CardDescription>
             </CardHeader>
             <CardContent>
               {openJobs.length ? (
@@ -105,21 +107,21 @@ async function Company({ params }: Pick<PageProps<"/companies/[slug]">, "params"
                         {j.title}
                       </Link>
                       <span className="text-xs text-muted-foreground">
-                        {[j.location_text, `posted ${formatDay(j.posted_at, tz)}`].filter(Boolean).join(" · ")}
+                        {[j.location_text, t("companyPage.posted", { date: formatDay(j.posted_at, tz, locale) })].filter(Boolean).join(" · ")}
                       </span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">No verified open jobs here right now.</p>
+                <p className="text-sm text-muted-foreground">{t("msg.noVerifiedOpenJobs9306")}</p>
               )}
             </CardContent>
           </Card>
 
           <Card size="sm">
             <CardHeader>
-              <CardTitle>Referrals</CardTitle>
-              <CardDescription>What you recorded on your applications here.</CardDescription>
+              <CardTitle>{t("msg.referrals14ea")}</CardTitle>
+              <CardDescription>{t("msg.whatYouRecordedOn2896")}</CardDescription>
             </CardHeader>
             <CardContent>
               {referrals?.length ? (
@@ -127,12 +129,12 @@ async function Company({ params }: Pick<PageProps<"/companies/[slug]">, "params"
                   {referrals.map((r) => (
                     <li key={r.id}>
                       <span className="font-medium">{r.detail}</span>
-                      <span className="text-muted-foreground"> · {titleOf.get(r.application_id)} · {formatDateTime(r.occurred_at, tz)}</span>
+                      <span className="text-muted-foreground"> · {titleOf.get(r.application_id)} · {formatDateTime(r.occurred_at, tz, locale)}</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">No referrals recorded.</p>
+                <p className="text-sm text-muted-foreground">{t("msg.noReferralsRecorded6372")}</p>
               )}
             </CardContent>
           </Card>
