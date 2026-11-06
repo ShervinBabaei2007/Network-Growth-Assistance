@@ -5,6 +5,15 @@
  * one that came from the saved posting. Pure, so the rules are unit-tested.
  */
 
+import type { Locale, MessageKey, Params, Translator } from "@/lib/i18n/core";
+
+/** English text with {placeholders}, or the same text from a translator when one is given. */
+type Say = (key: MessageKey, english: string, params?: Params) => string;
+const sayWith =
+  (t?: Translator): Say =>
+  (key, english, params) =>
+    t ? t(key, params) : params ? english.replace(/\{(\w+)\}/g, (m, name: string) => (name in params ? String(params[name]) : m)) : english;
+
 export type PrepRequirement = { text: string; kind: "must" | "nice"; category: string };
 export type PrepBullet = { id: string; text: string; source: string };
 export type PrepInterview = { startsAt: string; timezone: string; kind: string; location: string | null; durationMinutes: number };
@@ -44,6 +53,7 @@ export function significantWords(text: string): string[] {
 }
 
 type Theme = { question: string; why: string; words: RegExp; numbers?: boolean };
+const THEME_KEYS = [0, 1, 2, 3, 4, 5] as const;
 
 /** The questions almost every interview asks, and the words in a bullet that make it a fit. */
 const THEMES: Theme[] = [
@@ -85,31 +95,34 @@ export function bulletsForRequirement(requirement: string, bullets: PrepBullet[]
 const CATEGORY_LABEL: Record<string, string> = { skill: "Skills and tools", education: "Education", experience: "Experience", certification: "Certifications", language: "Languages", other: "Other" };
 const categoryLabel = (c: string) => CATEGORY_LABEL[c] ?? c.charAt(0).toUpperCase() + c.slice(1);
 
-export function formatInterviewTime(i: PrepInterview): string {
-  const when = new Intl.DateTimeFormat("en-CA", { timeZone: i.timezone, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(i.startsAt));
-  return `${when}, ${i.durationMinutes} min, ${i.kind}${i.location ? ` (${i.location})` : ""}`;
+export function formatInterviewTime(i: PrepInterview, locale: Locale = "en", say: Say = sayWith()): string {
+  const when = new Intl.DateTimeFormat(locale === "fr-CA" ? "fr-CA" : "en-CA", { timeZone: i.timezone, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(i.startsAt));
+  const kind = say(`appRecord.kind_${i.kind}` as MessageKey, i.kind);
+  return say("prep.timeLine", "{when}, {minutes} min, {kind}{place}", { when, minutes: i.durationMinutes, kind: locale === "fr-CA" ? kind.toLowerCase() : i.kind, place: i.location ? ` (${i.location})` : "" });
 }
 
-export function buildPrepPack(input: PrepInput, now = new Date()): PrepPack {
-  const where = input.company ? `${input.title} at ${input.company}` : input.title;
+export function buildPrepPack(input: PrepInput, now = new Date(), opts: { t?: Translator; locale?: Locale } = {}): PrepPack {
+  const say = sayWith(opts.t);
+  const locale = opts.locale ?? "en";
+  const where = input.company ? say("prep.at", "{title} at {company}", { title: input.title, company: input.company }) : input.title;
   const used = new Set<string>();
 
-  const behavioural: QuestionPrep[] = THEMES.map((t) => ({
-    question: t.question,
-    why: t.why,
-    stories: storiesFor(t, input.bullets, used).map((bullet) => ({ bullet })),
+  const behavioural: QuestionPrep[] = THEMES.map((theme, n) => ({
+    question: say(`prep.q${THEME_KEYS[n]}` as MessageKey, theme.question),
+    why: say(`prep.w${THEME_KEYS[n]}` as MessageKey, theme.why),
+    stories: storiesFor(theme, input.bullets, used).map((bullet) => ({ bullet })),
     empty: input.bullets.length
-      ? "None of your resume lines clearly fits this. Think of an example from school, work or a project, and write it down before the interview."
-      : "Add your resume to see which of your own lines fit. Until then, think of an example from school, work or a project.",
+      ? say("prep.emptyWithResume", "None of your resume lines clearly fits this. Think of an example from school, work or a project, and write it down before the interview.")
+      : say("prep.emptyNoResume", "Add your resume to see which of your own lines fit. Until then, think of an example from school, work or a project."),
   }));
 
   // One technical question per requirement the posting insists on, matched to the user's own words.
   const musts = input.requirements.filter((r) => r.kind === "must").slice(0, 6);
   const technical: QuestionPrep[] = musts.map((r) => ({
-    question: `Tell me about your experience with: ${r.text}`,
-    why: "The posting lists this as required.",
+    question: say("prep.techQuestion", "Tell me about your experience with: {text}", { text: r.text }),
+    why: say("prep.techWhy", "The posting lists this as required."),
     stories: bulletsForRequirement(r.text, input.bullets).map((bullet) => ({ bullet })),
-    empty: "No line in your resume mentions this. If you have used it, be ready with a specific example; if not, say what you have done that is closest, and be honest about the gap.",
+    empty: say("prep.techEmpty", "No line in your resume mentions this. If you have used it, be ready with a specific example; if not, say what you have done that is closest, and be honest about the gap."),
   }));
 
   const byCategory = new Map<string, PrepPack["topics"][number]["items"]>();
@@ -121,47 +134,48 @@ export function buildPrepPack(input: PrepInput, now = new Date()): PrepPack {
 
   const next = input.interviews.filter((i) => Date.parse(i.startsAt) >= now.getTime()).sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))[0];
   const checklist = [
-    next ? `Confirm the time: ${formatInterviewTime(next)}.` : "Add the interview time to this application so it appears in your calendar.",
-    next?.kind === "video" || next?.kind === "phone" ? "Test your microphone, camera and connection the day before. Find a quiet place." : "Plan how you will get there and how long it takes. Aim to arrive 10 minutes early.",
-    "Re-read the posting and the requirements above.",
-    "Choose three stories (from the list below) and say each one out loud once, in about two minutes.",
-    "Choose three questions to ask them.",
-    "Have your resume and a pen and paper ready.",
-    "Afterwards, write down what was asked while you remember it, and send a short thank-you the same day.",
+    next ? say("prep.confirmTime", "Confirm the time: {when}.", { when: formatInterviewTime(next, locale, say) }) : say("prep.addTime", "Add the interview time to this application so it appears in your calendar."),
+    next?.kind === "video" || next?.kind === "phone" ? say("prep.testTech", "Test your microphone, camera and connection the day before. Find a quiet place.") : say("prep.planTravel", "Plan how you will get there and how long it takes. Aim to arrive 10 minutes early."),
+    say("prep.reread", "Re-read the posting and the requirements above."),
+    say("prep.stories", "Choose three stories (from the list below) and say each one out loud once, in about two minutes."),
+    say("prep.threeQuestions", "Choose three questions to ask them."),
+    say("prep.bring", "Have your resume and a pen and paper ready."),
+    say("prep.after", "Afterwards, write down what was asked while you remember it, and send a short thank-you the same day."),
   ];
 
   const sources: PrepPack["sources"] = [];
-  if (input.postingUrl) sources.push({ label: `The posting you saved for ${where}`, href: input.postingUrl });
+  if (input.postingUrl) sources.push({ label: say("prep.postingSource", "The posting you saved for {where}", { where }), href: input.postingUrl });
 
   return {
-    heading: `Interview prep: ${where}`,
-    topics: [...byCategory.entries()].map(([category, items]) => ({ category: categoryLabel(category), items })),
+    heading: say("prep.heading", "Interview prep: {where}", { where }),
+    topics: [...byCategory.entries()].map(([category, items]) => ({ category: opts.t && category in CATEGORY_LABEL ? say(`prep.cat_${category}` as MessageKey, categoryLabel(category)) : categoryLabel(category), items })),
     behavioural,
     technical,
     askThem: [
-      `What would success look like in the first 90 days of the ${input.title} role?`,
-      "How does the team work day to day, and who would I work with most?",
-      "What are the biggest challenges the team is facing right now?",
-      "How are people in this role supported to learn and grow?",
-      "What happens next in the process, and when should I expect to hear back?",
+      say("prep.ask0", "What would success look like in the first 90 days of the {title} role?", { title: input.title }),
+      say("prep.ask1", "How does the team work day to day, and who would I work with most?"),
+      say("prep.ask2", "What are the biggest challenges the team is facing right now?"),
+      say("prep.ask3", "How are people in this role supported to learn and grow?"),
+      say("prep.ask4", "What happens next in the process, and when should I expect to hear back?"),
     ],
     checklist,
     sources,
     notes: [
-      "Everything above comes from your posting and your own resume. Nothing was added about the company: read its website and recent news yourself and note the source.",
-      "Stories are your own resume lines, matched by simple word rules. Check each one is accurate and add the details only you know.",
+      say("prep.note0", "Everything above comes from your posting and your own resume. Nothing was added about the company: read its website and recent news yourself and note the source."),
+      say("prep.note1", "Stories are your own resume lines, matched by simple word rules. Check each one is accurate and add the details only you know."),
     ],
   };
 }
 
 // ------------------------------------------------------------------ export
 
-export function packToMarkdown(pack: PrepPack): string {
+export function packToMarkdown(pack: PrepPack, t?: Translator): string {
+  const say = sayWith(t);
   const lines: string[] = [`# ${pack.heading}`, ""];
-  if (pack.sources.length) lines.push("## Sources", ...pack.sources.map((s) => `- [${s.label}](${s.href})`), "");
+  if (pack.sources.length) lines.push(`## ${say("prep.mdSources", "Sources")}`, ...pack.sources.map((s) => `- [${s.label}](${s.href})`), "");
   if (pack.topics.length) {
-    lines.push("## Likely topics (from the posting)");
-    for (const t of pack.topics) lines.push(`### ${t.category}`, ...t.items.map((i) => `- ${i.text}${i.kind === "must" ? " (required)" : ""}`));
+    lines.push(`## ${say("prep.mdTopics", "Likely topics (from the posting)")}`);
+    for (const t of pack.topics) lines.push(`### ${t.category}`, ...t.items.map((i) => `- ${i.text}${i.kind === "must" ? say("prep.mdRequired", " (required)") : ""}`));
     lines.push("");
   }
   const questions = (title: string, list: QuestionPrep[]) => {
@@ -169,13 +183,13 @@ export function packToMarkdown(pack: PrepPack): string {
     lines.push(`## ${title}`);
     for (const q of list) {
       lines.push(`### ${q.question}`, `_${q.why}_`);
-      if (q.stories.length) lines.push(...q.stories.map((s) => `- From your resume (${s.bullet.source}): ${s.bullet.text}`));
+      if (q.stories.length) lines.push(...q.stories.map((s) => `- ${say("prep.mdFromResume", "From your resume ({source}): {text}", { source: s.bullet.source, text: s.bullet.text })}`));
       else lines.push(`- ${q.empty}`);
     }
     lines.push("");
   };
-  questions("Questions they are likely to ask", pack.behavioural);
-  questions("Questions about the role's requirements", pack.technical);
-  lines.push("## Questions to ask them", ...pack.askThem.map((q) => `- ${q}`), "", "## Checklist", ...pack.checklist.map((c) => `- [ ] ${c}`), "", "## Notes", ...pack.notes.map((n) => `- ${n}`), "");
+  questions(say("prep.mdLikely", "Questions they are likely to ask"), pack.behavioural);
+  questions(say("prep.mdRole", "Questions about the role's requirements"), pack.technical);
+  lines.push(`## ${say("prep.mdAsk", "Questions to ask them")}`, ...pack.askThem.map((q) => `- ${q}`), "", `## ${say("prep.mdChecklist", "Checklist")}`, ...pack.checklist.map((c) => `- [ ] ${c}`), "", `## ${say("prep.mdNotes", "Notes")}`, ...pack.notes.map((n) => `- ${n}`), "");
   return lines.join("\n");
 }

@@ -8,9 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/applications/format";
 import { STAGE_LABEL } from "@/lib/applications/stages";
-import { buildPrepPack, type PrepBullet, type QuestionPrep } from "@/lib/interview-prep/prep";
+import { buildPrepPack, packToMarkdown, type PrepBullet, type QuestionPrep } from "@/lib/interview-prep/prep";
 import { loadActiveResume, loadResumeForJob } from "@/lib/job-postings/service";
 import { createClient } from "@/lib/supabase/server";
+import { LocaleScope } from "@/components/locale-scope";
+import { getLocale, getT } from "@/lib/i18n/server";
+import type { MessageKey, Translator } from "@/lib/i18n";
 import { PrepExport } from "./export-buttons";
 
 export const metadata = { title: "Interview prep · Network Growth" };
@@ -42,6 +45,7 @@ async function Prep({ params }: Pick<PageProps<"/applications/[id]/prep">, "para
     supabase.from("interview_preps").select("id, created_at").eq("application_id", id).order("created_at", { ascending: false }).limit(10),
   ]);
   const tz = settings?.timezone ?? "UTC";
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
 
   // The user's own accomplishment lines, with where each came from. Skills and the summary are not stories.
   const bullets: PrepBullet[] = [];
@@ -60,65 +64,70 @@ async function Prep({ params }: Pick<PageProps<"/applications/[id]/prep">, "para
     requirements: (requirements.data ?? []).map((r) => ({ text: r.text, kind: r.kind === "must" ? "must" : "nice", category: r.category })),
     bullets,
     interviews: (interviews.data ?? []).map((i) => ({ startsAt: i.starts_at, timezone: i.timezone, kind: i.kind, location: i.location, durationMinutes: i.duration_minutes })),
-  });
+  }, new Date(), { t, locale });
+  const markdown = packToMarkdown(pack, t);
   const fileName = `interview-prep-${(app.company ?? app.title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.md`;
 
   return (
     <div className="grid gap-6">
       <PageHeader
         back={{ href: `/applications/${app.id}`, label: app.title }}
-        title="Interview prep"
-        description={`${app.title}${app.company ? ` at ${app.company}` : ""}. Built from your saved posting and your own resume. Nothing is invented.`}
-        meta={<Badge variant="secondary">{STAGE_LABEL[app.stage]}</Badge>}
-        actions={<PrepExport applicationId={app.id} pack={pack} fileName={fileName} />}
+        title={t("prepPage.title")}
+        description={t("prepPage.description", { what: app.company ? t("prep.at", { title: app.title, company: app.company }) : app.title })}
+        meta={<Badge variant="secondary">{t(`stage.${app.stage}` as MessageKey)}</Badge>}
+        actions={
+          <LocaleScope groups={["prepPage", "msg", "ui"]}>
+            <PrepExport applicationId={app.id} pack={pack} markdown={markdown} fileName={fileName} />
+          </LocaleScope>
+        }
       />
 
       {!app.job_id ? (
         <p role="status" className="rounded-lg border bg-muted/50 p-3 text-sm text-muted-foreground">
-          This application isn&apos;t linked to a saved posting, so there are no likely topics. The questions below still apply.
+          {t("prepPage.notLinked")}
         </p>
       ) : null}
       {!resume ? (
         <p role="status" className="rounded-lg border bg-muted/50 p-3 text-sm text-muted-foreground">
-          You haven&apos;t added a resume, so there are no stories matched to the questions yet.{" "}
-          <Link href="/jobs/resume" className="underline underline-offset-4">Add your resume</Link>.
+          {t("prepPage.noResume")}
+          <Link href="/jobs/resume" className="underline underline-offset-4">{t("prepPage.addResume")}</Link>.
         </p>
       ) : null}
 
-      <Section title="Likely topics" hint="The posting's own requirements, required ones first.">
+      <Section title={t("prepPage.topicsTitle")} hint={t("prepPage.topicsHint")}>
         {pack.topics.length ? (
-          pack.topics.map((t) => (
-            <div key={t.category} className="grid gap-1">
-              <h3 className="text-sm font-medium">{t.category}</h3>
+          pack.topics.map((topic) => (
+            <div key={topic.category} className="grid gap-1">
+              <h3 className="text-sm font-medium">{topic.category}</h3>
               <ul className="list-disc pl-5 text-sm">
-                {t.items.map((i) => (
+                {topic.items.map((i) => (
                   <li key={i.text}>
-                    {i.text} {i.kind === "must" ? <span className="text-muted-foreground">(required)</span> : null}
+                    {i.text} {i.kind === "must" ? <span className="text-muted-foreground">{t("prepPage.required")}</span> : null}
                   </li>
                 ))}
               </ul>
             </div>
           ))
         ) : (
-          <p className="text-sm text-muted-foreground">No requirements were read from a posting.</p>
+          <p className="text-sm text-muted-foreground">{t("prepPage.noRequirements")}</p>
         )}
       </Section>
 
-      <Section title="Questions they are likely to ask" hint="Your own resume lines that fit each one. Check they are accurate and add the details only you know.">
+      <Section title={t("prepPage.likelyTitle")} hint={t("prepPage.likelyHint")}>
         {pack.behavioural.map((q) => (
-          <Question key={q.question} q={q} />
+          <Question key={q.question} q={q} t={t} />
         ))}
       </Section>
 
       {pack.technical.length ? (
-        <Section title="About the role's requirements" hint="One question for each thing the posting requires.">
+        <Section title={t("prepPage.roleTitle")} hint={t("prepPage.roleHint")}>
           {pack.technical.map((q) => (
-            <Question key={q.question} q={q} />
+            <Question key={q.question} q={q} t={t} />
           ))}
         </Section>
       ) : null}
 
-      <Section title="Questions to ask them">
+      <Section title={t("prepPage.askTitle")}>
         <ul className="list-disc pl-5 text-sm">
           {pack.askThem.map((q) => (
             <li key={q}>{q}</li>
@@ -126,7 +135,7 @@ async function Prep({ params }: Pick<PageProps<"/applications/[id]/prep">, "para
         </ul>
       </Section>
 
-      <Section title="Checklist for the day">
+      <Section title={t("prepPage.checklistTitle")}>
         <ul className="grid gap-1.5 text-sm">
           {pack.checklist.map((c) => (
             <li key={c} className="flex items-start gap-2">
@@ -137,7 +146,7 @@ async function Prep({ params }: Pick<PageProps<"/applications/[id]/prep">, "para
         </ul>
       </Section>
 
-      <Section title="Sources and notes">
+      <Section title={t("prepPage.sourcesTitle")}>
         <ul className="grid gap-1 text-sm">
           {pack.sources.map((s) => (
             <li key={s.href}>
@@ -155,10 +164,10 @@ async function Prep({ params }: Pick<PageProps<"/applications/[id]/prep">, "para
       </Section>
 
       {saved.data?.length ? (
-        <Section title="Saved copies">
+        <Section title={t("prepPage.savedTitle")}>
           <ul className="text-sm text-muted-foreground">
             {saved.data.map((s) => (
-              <li key={s.id}>Saved {formatDateTime(s.created_at, tz)}</li>
+              <li key={s.id}>{t("prepPage.savedOn", { when: formatDateTime(s.created_at, tz, locale) })}</li>
             ))}
           </ul>
         </Section>
@@ -179,7 +188,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   );
 }
 
-function Question({ q }: { q: QuestionPrep }) {
+function Question({ q, t }: { q: QuestionPrep; t: Translator }) {
   return (
     <div className="grid gap-1.5" data-testid="prep-question">
       <h3 className="font-medium">{q.question}</h3>
@@ -189,7 +198,7 @@ function Question({ q }: { q: QuestionPrep }) {
           {q.stories.map((s) => (
             <li key={s.bullet.id} className="rounded-md border bg-muted/30 p-2">
               <span data-testid="prep-story">{s.bullet.text}</span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">From your resume{s.bullet.source ? `: ${s.bullet.source}` : ""}</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">{s.bullet.source ? t("prepPage.fromResumeSource", { source: s.bullet.source }) : t("prepPage.fromResume")}</span>
             </li>
           ))}
         </ul>

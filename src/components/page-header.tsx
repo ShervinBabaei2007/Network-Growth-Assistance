@@ -8,8 +8,9 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
  */
 export function PageHeader({ title, description, actions, back, meta }: { title: ReactNode; description?: ReactNode; actions?: ReactNode; back?: { href: string; label: string }; meta?: ReactNode }) {
   return (
-    <header className="grid gap-4 border-b pb-5 md:flex md:items-end md:justify-between">
-      <div className="grid min-w-0 gap-1.5">
+    <header className="grid gap-4 border-b pb-5 md:flex md:flex-wrap md:items-end md:justify-between">
+      {/* The actions wrap under the title when they do not fit beside it (longer words in some languages). */}
+      <div className="grid min-w-0 gap-1.5 md:flex-1 md:basis-80">
         {back ? (
           <Breadcrumb>
             <BreadcrumbList>

@@ -196,3 +196,16 @@ test("an application's record is in French", async ({ page, context }) => {
   await expect(page.getByRole("button", { name: "Ajouter une entrevue" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Préparation d'entrevue/ })).toBeVisible();
 });
+
+test("the interview prep pack is in French", async ({ page, context }) => {
+  test.setTimeout(120_000);
+  const email = uniqueEmail("fr-prep");
+  await signIn(page, email);
+  const id = await userIdFor(email);
+  const [row] = (await adminRest("POST", "applications", [{ user_id: id, title: "Alpha Role", company: "Co", stage: "interviewing" }])) as { id: string }[];
+  await context.addCookies([{ name: "locale", value: "fr-CA", url: "http://localhost:3000" }]);
+  await page.goto(`/applications/${row.id}/prep`);
+  await expect(page.getByRole("heading", { name: "Préparation d'entrevue", level: 1 })).toBeVisible();
+  await expect(page.getByText("Parlez-moi d'un problème difficile que vous avez résolu.")).toBeVisible();
+  await expect(page.getByText("Liste de vérification pour le jour J")).toBeVisible();
+});
