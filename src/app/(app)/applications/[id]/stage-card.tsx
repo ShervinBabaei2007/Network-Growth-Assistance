@@ -1,6 +1,5 @@
 "use client";
 
-import { useTr } from "@/lib/i18n/client";
 import { useState } from "react";
 import Link from "next/link";
 import { AppSelect } from "@/components/app-select";

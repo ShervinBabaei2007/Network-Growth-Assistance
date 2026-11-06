@@ -69,7 +69,7 @@ export function buildColumn(job: CompareJob, fit: CompareFit, sourceLabel: strin
       workplace: job.workplace_type ? (t ? t(`workplace.${job.workplace_type}` as "workplace.remote") : (WORKPLACE_LABELS[job.workplace_type as Workplace] ?? job.workplace_type)) : job.remote ? (t ? t("workplace.remote") : "Remote") : notStated,
       type: job.employment_type ?? notStated,
       location: placeLabel(job, locale),
-      posted: postedLabel(job, Date.now(), locale),
+      posted: postedLabel(job, undefined, locale),
       source: sourceLabel,
     },
     strong: fit?.strong ?? [],

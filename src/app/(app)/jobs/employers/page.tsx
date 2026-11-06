@@ -100,7 +100,7 @@ async function Directory({ searchParams }: Pick<PageProps<"/jobs/employers">, "s
         <CardHeader>
           <CardTitle>{t("msg.crawler820d")}</CardTitle>
           <CardDescription>
-            {runs?.length ? t("employersPage.lastRun", { ago: timeAgo(runs[0].started_at, Date.now(), locale), boards: runs[0].boards, jobs: runs[0].new_jobs, failed: runs[0].failed }) : t("employersPage.neverRun")}
+            {runs?.length ? t("employersPage.lastRun", { ago: timeAgo(runs[0].started_at, undefined, locale), boards: runs[0].boards, jobs: runs[0].new_jobs, failed: runs[0].failed }) : t("employersPage.neverRun")}
             {t("employersPage.scheduleNote")}
           </CardDescription>
         </CardHeader>
@@ -153,7 +153,7 @@ async function Directory({ searchParams }: Pick<PageProps<"/jobs/employers">, "s
                   </TableCell>
                   <TableCell label={t("msg.board6036")}>{ATS_LABELS[e.ats]}</TableCell>
                   <TableCell label={t("msg.jobsKept7733")} className="text-right">{e.matching_jobs}</TableCell>
-                  <TableCell label={t("msg.lastRead6d73")} className="text-muted-foreground">{e.last_crawled_at ? timeAgo(e.last_crawled_at, Date.now(), locale) : t("msg.notYet9d76")}</TableCell>
+                  <TableCell label={t("msg.lastRead6d73")} className="text-muted-foreground">{e.last_crawled_at ? timeAgo(e.last_crawled_at, undefined, locale) : t("msg.notYet9d76")}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

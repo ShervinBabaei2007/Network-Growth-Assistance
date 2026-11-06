@@ -99,7 +99,7 @@ export async function JobCard({
       <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
         {j.company ? <span className="font-medium text-foreground">{j.company}</span> : null}
         <span>{placeLabel(j, locale)}</span>
-        <span title={formatters(locale).date(j.posted_at, { dateStyle: "medium", timeStyle: "short" })}>{postedLabel(j, Date.now(), locale)}</span>
+        <span title={formatters(locale).date(j.posted_at, { dateStyle: "medium", timeStyle: "short" })}>{postedLabel(j, undefined, locale)}</span>
         {j.salary ? <span className="font-medium text-foreground">{j.salary}</span> : null}
       </p>
       {strong.length || missing.length ? (

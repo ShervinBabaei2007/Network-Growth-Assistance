@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from "react";
 import { DEFAULT_LOCALE, translatorFor, type Locale, type MessageKey, type Messages, type Params, type Translator } from "./core";
 
 type Value = {
@@ -36,11 +36,14 @@ export const useSwitchLocale = () => useContext(LocaleContext).switchLocale;
  */
 export function useTr() {
   const t = useT();
-  return (key: MessageKey, fallback: string, params?: Params) => {
-    const text = t(key, params);
-    if (text !== key) return text;
-    return params ? fallback.replace(/\{(\w+)\}/g, (m, name: string) => (name in params ? String(params[name]) : m)) : fallback;
-  };
+  return useCallback(
+    (key: MessageKey, fallback: string, params?: Params) => {
+      const text = t(key, params);
+      if (text !== key) return text;
+      return params ? fallback.replace(/\{(\w+)\}/g, (m, name: string) => (name in params ? String(params[name]) : m)) : fallback;
+    },
+    [t],
+  );
 }
 
 /** Translates with the provider's messages. Without a provider it returns the key, so a missing one is easy to spot. */

@@ -24,7 +24,7 @@ export function PersonDrawer({ personId, name, searchId }: { personId: string; n
     } catch {
       setError(tr("msg.couldnTLoadThisf5bf", "Couldn't load this person. Try again."));
     }
-  }, [personId]);
+  }, [personId, tr]);
 
   return (
     <Sheet

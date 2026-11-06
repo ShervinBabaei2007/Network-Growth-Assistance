@@ -7,7 +7,6 @@ import { PageSkeleton } from "@/components/page-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/applications/format";
-import { STAGE_LABEL } from "@/lib/applications/stages";
 import { buildPrepPack, packToMarkdown, type PrepBullet, type QuestionPrep } from "@/lib/interview-prep/prep";
 import { loadActiveResume, loadResumeForJob } from "@/lib/job-postings/service";
 import { createClient } from "@/lib/supabase/server";

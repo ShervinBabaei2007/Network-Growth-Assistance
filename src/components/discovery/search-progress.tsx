@@ -56,7 +56,7 @@ export function SearchProgress({ initial }: { initial: SearchView }) {
       stop = true;
       clearTimeout(timer);
     };
-  }, [running, view.id, router]);
+  }, [running, view.id, router, tr]);
 
   const cancel = async () => {
     setCancelling(true);

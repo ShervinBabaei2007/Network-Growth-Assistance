@@ -1,6 +1,5 @@
 import { getT } from "@/lib/i18n/server";
 import { Badge } from "@/components/ui/badge";
-import { PROXIMITY_LABELS } from "@/lib/discovery/labels";
 import type { PersonCard as Card } from "@/lib/discovery/results";
 import { cn } from "@/lib/utils";
 import { CardActions, KnownMatchReview } from "./card-actions";

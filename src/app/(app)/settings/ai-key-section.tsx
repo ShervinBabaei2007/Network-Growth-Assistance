@@ -1,5 +1,4 @@
 import { getT } from "@/lib/i18n/server";
-import { LocaleScope } from "@/components/locale-scope";
 import { saveOwnAiKey } from "@/app/(app)/jobs/actions";
 import { ActionForm } from "@/components/action-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

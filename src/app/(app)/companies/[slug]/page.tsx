@@ -8,7 +8,6 @@ import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDateTime, formatDay } from "@/lib/applications/format";
-import { STAGE_LABEL } from "@/lib/applications/stages";
 import { counts, keyFromSlug, matchCompany } from "@/lib/companies/match";
 import { loadDecisions } from "@/lib/companies/people";
 import { createClient } from "@/lib/supabase/server";

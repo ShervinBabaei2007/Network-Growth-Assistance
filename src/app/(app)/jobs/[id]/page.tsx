@@ -12,7 +12,6 @@ import { ToastOnMount } from "@/components/toast/toast-on-mount";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { STAGE_LABEL } from "@/lib/applications/stages";
 import { companySlug } from "@/lib/companies/match";
 import { aiAccess } from "@/lib/job-postings/ai";
 import { applyState } from "@/lib/job-postings/apply-state";
@@ -22,7 +21,7 @@ import { CoverLetterDoc, TailoredResumeDoc, type GuardIssue } from "@/lib/job-po
 import { explainFit } from "@/lib/job-postings/fit";
 import type { NotesReport } from "@/lib/job-postings/improvement-notes";
 import { DOC_METHOD_LABELS, NOTES_METHOD_LABELS, placeLabel, postedLabel, timeAgo } from "@/lib/job-postings/labels";
-import { LEVEL_LABELS, WORKPLACE_LABELS, type Workplace } from "@/lib/job-postings/levels";
+import { type Workplace } from "@/lib/job-postings/levels";
 import { StoredFit } from "@/lib/job-postings/schemas";
 import { loadTrackResumes, scoreJobs } from "@/lib/job-postings/service";
 import { recommendTrack, requirementCoverage, sameTrack, trackLabel } from "@/lib/job-postings/tracks";
@@ -161,7 +160,7 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
             {job.workplace_type ? <span>{t(`workplace.${job.workplace_type as Workplace}`)}</span> : null}
             <span className="inline-flex items-center gap-1">
               <Clock aria-hidden className="size-4" />
-              {postedLabel(job, Date.now(), locale)}
+              {postedLabel(job, undefined, locale)}
             </span>
             {job.salary ? <span>{job.salary}</span> : null}
             {job.employment_type ? <span>{job.employment_type}</span> : null}
@@ -258,7 +257,7 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
                   dismissed={notes.dismissed}
                   reason={notes.reason}
                   methodLabel={NOTES_METHOD_LABELS[notes.method as keyof typeof NOTES_METHOD_LABELS]}
-                  made={timeAgo(notes.created_at, Date.now(), locale)}
+                  made={timeAgo(notes.created_at, undefined, locale)}
                   stale={Boolean(resume && Date.parse(notes.resume_updated_at) < Date.parse(resume.updatedAt))}
                 />
               </CardContent>
@@ -327,12 +326,12 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
                 <dl className="grid gap-0.5 text-xs text-muted-foreground">
                   <div>
                     <dt className="inline">{t("msg.retrieved345a")}</dt>
-                    <dd className="inline">{timeAgo(job.last_seen_at, Date.now(), locale)}</dd>
+                    <dd className="inline">{timeAgo(job.last_seen_at, undefined, locale)}</dd>
                   </div>
                   {job.verified_at ? (
                     <div>
                       <dt className="inline">{t("msg.linkVerifiede5f9")}</dt>
-                      <dd className="inline">{timeAgo(job.verified_at, Date.now(), locale)}</dd>
+                      <dd className="inline">{timeAgo(job.verified_at, undefined, locale)}</dd>
                     </div>
                   ) : null}
                   <div>
@@ -469,7 +468,7 @@ async function DocCard({ doc, originals }: { doc: DocRow; originals: Record<stri
           {doc.edited ? <Badge variant="secondary">{t("msg.editedByYou6895")}</Badge> : null}
         </CardTitle>
         <CardDescription>
-          {t("jobDetail.made", { ago: timeAgo(doc.created_at, Date.now(), locale) })}{" "}
+          {t("jobDetail.made", { ago: timeAgo(doc.created_at, undefined, locale) })}{" "}
           {doc.method === "template" ? t("jobDetail.templateNote") : t("jobDetail.readThrough")}
         </CardDescription>
       </CardHeader>
