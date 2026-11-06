@@ -6,9 +6,12 @@ import { Popover } from "@base-ui/react/popover";
 import { saveOnboarding } from "@/app/(app)/actions";
 import { Button } from "@/components/ui/button";
 import type { OnboardingState } from "@/lib/onboarding/steps";
+import { useTr } from "@/lib/i18n/client";
+import type { MessageKey } from "@/lib/i18n/core";
 import { TOUR_STEPS } from "@/lib/onboarding/tour-steps";
 
 const TOTAL = TOUR_STEPS.length;
+const camel = (id: string) => id.replace(/-(\w)/g, (_, c: string) => c.toUpperCase());
 /** After this long without a stop's target on screen, the stop is shown anyway, pointing at the page heading. */
 const TARGET_WAIT_MS = 5000;
 /** After this long without a popover, a small "starting" notice makes sure the click visibly did something. */
@@ -36,6 +39,7 @@ type Shown = { id: string; anchored: boolean };
  * at the page heading, and moving to its target if that shows up), and a notice covers the wait.
  */
 export function ProductTour({ initial }: { initial: OnboardingState }) {
+  const tr = useTr();
   const params = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -145,9 +149,9 @@ export function ProductTour({ initial }: { initial: OnboardingState }) {
         role="status"
         className="fixed right-4 bottom-4 z-[70] flex items-center gap-3 rounded-lg bg-popover px-4 py-3 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/15"
       >
-        <span>Starting the tour…</span>
+        <span>{tr("tour.starting", "Starting the tour…")}</span>
         <Button variant="ghost" size="sm" onClick={() => end(true, 0)}>
-          Skip tour
+          {tr("tour.skip", "Skip tour")}
         </Button>
       </div>
     ) : null;
@@ -174,18 +178,18 @@ export function ProductTour({ initial }: { initial: OnboardingState }) {
             <p className="text-xs font-medium text-muted-foreground" aria-live="polite">
               Stop {index + 1} of {TOTAL}
             </p>
-            <Popover.Title className="font-semibold">{step.title}</Popover.Title>
-            <Popover.Description className="text-muted-foreground">{step.body}</Popover.Description>
+            <Popover.Title className="font-semibold">{tr(`tour.${camel(step.id)}Title` as MessageKey, step.title)}</Popover.Title>
+            <Popover.Description className="text-muted-foreground">{tr(`tour.${camel(step.id)}Body` as MessageKey, step.body)}</Popover.Description>
             <div className="flex items-center justify-between gap-2 pt-1">
               <Button variant="ghost" size="sm" onClick={() => end(true, 0)}>
-                Skip tour
+                {tr("tour.skip", "Skip tour")}
               </Button>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" disabled={index === 0} onClick={() => go(index - 1)}>
-                  Back
+                  {tr("tour.back", "Back")}
                 </Button>
                 <Button ref={nextRef} size="sm" onClick={() => go(index + 1)}>
-                  {index === TOTAL - 1 ? "Finish" : "Next"}
+                  {index === TOTAL - 1 ? tr("tour.finish", "Finish") : tr("tour.next", "Next")}
                 </Button>
               </div>
             </div>
