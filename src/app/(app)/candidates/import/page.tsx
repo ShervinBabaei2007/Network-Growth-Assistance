@@ -1,3 +1,5 @@
+import { Tx } from "@/components/tx";
+import { LocaleScope } from "@/components/locale-scope";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,18 +15,15 @@ export default function ImportPage() {
   return (
     <div className="grid gap-6">
       <Link href="/candidates" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" aria-hidden /> Candidates
+        <ArrowLeft className="size-4" aria-hidden /> <Tx k="pages.candidates.title" />
       </Link>
-      <h1 className="text-xl font-semibold">Import</h1>
+      <h1 className="text-xl font-semibold"><Tx k="importPage.title" /></h1>
 
       <Card>
         <CardHeader>
-          <CardTitle>LinkedIn data export</CardTitle>
+          <CardTitle><Tx k="importPage.exportTitle" /></CardTitle>
           <CardDescription>
-            LinkedIn&apos;s official copy of your data: Settings → Data privacy → Get a copy of
-            your data → Connections and Invitations. It updates acceptances, records invitations you
-            sent without logging, and refreshes your network total. Email addresses in the file are
-            ignored and never stored. You see what will change before anything is saved.
+            <Tx k="importPage.exportDesc" />
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -36,15 +35,17 @@ export default function ImportPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Candidate list (CSV)</CardTitle>
+          <CardTitle><Tx k="importPage.csvTitle" /></CardTitle>
           <CardDescription>
-            Lists you put together yourself: a spreadsheet of profiles from LinkedIn search, a club
-            roster, or event attendees who shared their profiles. You see a preview before anything
-            is saved, and profiles already in your list are skipped.
+            <Tx k="importPage.csvDesc" />
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <CsvImport />
+          <Suspense fallback={null}>
+            <LocaleScope groups={["msg", "ui"]}>
+              <CsvImport />
+            </LocaleScope>
+          </Suspense>
         </CardContent>
       </Card>
     </div>
@@ -54,5 +55,9 @@ export default function ImportPage() {
 async function ExportImportForUser() {
   const supabase = await createClient();
   const { data } = await supabase.from("settings").select("timezone").single();
-  return <ExportImport today={localDate(new Date(), data?.timezone ?? "UTC")} />;
+  return (
+    <LocaleScope groups={["msg", "ui"]}>
+      <ExportImport today={localDate(new Date(), data?.timezone ?? "UTC")} />
+    </LocaleScope>
+  );
 }

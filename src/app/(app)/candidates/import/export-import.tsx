@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useStateToast } from "@/components/toast/use-state-toast";
 import { useActionState } from "react";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { importLinkedInExport, type ExportState } from "./export-actions";
 
 export function ExportImport({ today }: { today: string }) {
+  const tr = useTr();
   const [state, action, pending] = useActionState<ExportState, FormData>(importLinkedInExport, { status: "idle" });
   useStateToast(state);
   const s = state.summary;
@@ -19,15 +21,15 @@ export function ExportImport({ today }: { today: string }) {
     <form action={action} onReset={(e) => e.preventDefault()} className="grid gap-4">
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="grid gap-1.5">
-          <Label htmlFor="connectionsFile">Connections.csv</Label>
+          <Label htmlFor="connectionsFile">{tr("msg.connectionsCsvb54e", "Connections.csv")}</Label>
           <Input id="connectionsFile" name="connections" type="file" accept=".csv,text/csv" />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="invitationsFile">Invitations.csv</Label>
+          <Label htmlFor="invitationsFile">{tr("msg.invitationsCsv65c4", "Invitations.csv")}</Label>
           <Input id="invitationsFile" name="invitations" type="file" accept=".csv,text/csv" />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="exportDate">Export downloaded on</Label>
+          <Label htmlFor="exportDate">{tr("msg.exportDownloadedOnd3d9", "Export downloaded on")}</Label>
           <Input id="exportDate" name="exportDate" type="date" max={today} defaultValue={today} required />
         </div>
       </div>
@@ -66,7 +68,7 @@ export function ExportImport({ today }: { today: string }) {
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" name="mode" value="preview" variant={state.status === "preview" ? "outline" : "default"} disabled={pending}>
-          {pending ? "Checking…" : "Preview"}
+          {pending ? tr("msg.checkingcbe7", "Checking…") : tr("msg.preview31fd", "Preview")}
         </Button>
         {state.status === "preview" ? (
           <Button type="submit" name="mode" value="import" disabled={pending}>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { Disclosure } from "@/components/disclosure";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useStateToast } from "@/components/toast/use-state-toast";
@@ -13,6 +14,7 @@ import { CANDIDATE_FIELDS, type CandidateField } from "@/lib/imports/candidate-f
 import { importCandidatesCsv, type CsvPreview } from "../actions";
 
 export function CsvImport() {
+  const tr = useTr();
   const [state, action, pending] = useActionState<CsvPreview, FormData>(importCandidatesCsv, { status: "idle" });
   useStateToast(state);
   const showMapping = state.headers && state.status !== "imported";
@@ -21,22 +23,22 @@ export function CsvImport() {
     // Keep the chosen file after Preview so Import can send it again.
     <form action={action} onReset={(e) => e.preventDefault()} className="grid gap-4">
       <div className="grid gap-1.5">
-        <Label htmlFor="file">CSV file</Label>
+        <Label htmlFor="file">{tr("msg.csvFile0072", "CSV file")}</Label>
         <Input id="file" name="file" type="file" accept=".csv,text/csv" required />
         <p className="text-xs text-muted-foreground">
-          Needs a header row with at least a name and a LinkedIn profile URL. Up to 5,000 rows and 2 MB.
+          {tr("msg.needsAHeaderRow20f5", "Needs a header row with at least a name and a LinkedIn profile URL. Up to 5,000 rows and 2 MB.")}
         </p>
       </div>
 
       {showMapping ? (
         <fieldset className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:grid-cols-4">
-          <legend className="px-1 text-sm font-medium">Columns in your file</legend>
+          <legend className="px-1 text-sm font-medium">{tr("msg.columnsInYourFile23e7", "Columns in your file")}</legend>
           <input type="hidden" name="mapped" value="1" />
           {(Object.keys(CANDIDATE_FIELDS) as CandidateField[]).map((field) => (
             <div key={field} className="grid gap-1.5">
               <Label htmlFor={`map-${field}`}>{CANDIDATE_FIELDS[field]}</Label>
               <AppSelect id={`map-${field}`} name={`map.${field}`} defaultValue={state.mapping?.[field]?.toString() ?? ""} key={`${field}-${state.mapping?.[field]}`}>
-                <option value="">Not in file</option>
+                <option value="">{tr("msg.notInFile1b90", "Not in file")}</option>
                 {state.headers!.map((h, i) => (
                   <option key={i} value={i}>
                     {h || `Column ${i + 1}`}
@@ -68,7 +70,7 @@ export function CsvImport() {
             </ul>
           ) : null}
           {state.issues && state.issues.length > 0 ? (
-            <Disclosure variant="plain" summary="Skipped rows">
+            <Disclosure variant="plain" summary={tr("msg.skippedRows4bde", "Skipped rows")}>
               <ul className="grid gap-1 text-muted-foreground">
                 {state.issues.map((i) => (
                   <li key={`${i.line}-${i.reason}`}>
@@ -85,13 +87,13 @@ export function CsvImport() {
       {state.status === "preview" && (state.newRows ?? 0) > 0 ? (
         <label className="flex items-center gap-2 text-sm">
           <Checkbox name="approveConfirmed" />
-          Approve rows whose school and program are recognized (others go to review)
+          {tr("msg.approveRowsWhoseSchool54a2", "Approve rows whose school and program are recognized (others go to review)")}
         </label>
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" name="mode" value="preview" variant={state.status === "preview" ? "outline" : "default"} disabled={pending}>
-          {pending ? "Checking…" : state.headers ? "Preview again" : "Preview"}
+          {pending ? tr("msg.checkingcbe7", "Checking…") : state.headers ? tr("msg.previewAgaine02a", "Preview again") : tr("msg.preview31fd", "Preview")}
         </Button>
         {state.status === "preview" && (state.newRows ?? 0) > 0 ? (
           <Button type="submit" name="mode" value="import" disabled={pending}>
@@ -102,7 +104,7 @@ export function CsvImport() {
           <p className="text-sm">
             {state.message}{" "}
             <Link href="/candidates?review=1" className="underline underline-offset-4">
-              Review them
+              {tr("msg.reviewThembe63", "Review them")}
             </Link>
           </p>
         ) : null}

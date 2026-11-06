@@ -1,3 +1,5 @@
+import { getT } from "@/lib/i18n/server";
+import { LocaleScope } from "@/components/locale-scope";
 import { saveOwnAiKey } from "@/app/(app)/jobs/actions";
 import { ActionForm } from "@/components/action-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +12,7 @@ import { RemoveAiKeyButton } from "./remove-ai-key";
 
 /** Optional AI for Jobs: the user's own Gemini (or Anthropic) key, or the server's daily allowance. */
 export async function AiKeySection() {
+  const t = await getT();
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
   const [{ data: mine }, { data: usage }] = await Promise.all([
@@ -41,15 +44,15 @@ export async function AiKeySection() {
             <RemoveAiKeyButton />
           </div>
         ) : canStoreKeys() ? (
-          <ActionForm action={saveOwnAiKey} submitLabel="Save key" resetOnSuccess>
+          <ActionForm action={saveOwnAiKey} submitLabel={t("msg.saveKey6d66")} resetOnSuccess>
             <div className="grid gap-1.5">
-              <Label htmlFor="aiKey">Your Gemini API key</Label>
+              <Label htmlFor="aiKey">{t("msg.yourGeminiApiKeyb549")}</Label>
               <Input id="aiKey" name="key" type="password" autoComplete="off" placeholder="AIza… or AQ.…" required />
-              <p className="text-xs text-muted-foreground">Stored encrypted and used only for your requests. Remove it any time.</p>
+              <p className="text-xs text-muted-foreground">{t("msg.storedEncryptedAndUsedb585")}</p>
             </div>
           </ActionForm>
         ) : (
-          <p className="text-sm text-muted-foreground">This server isn&apos;t set up to store personal keys.</p>
+          <p className="text-sm text-muted-foreground">{t("msg.thisServerIsnT176e")}</p>
         )}
       </CardContent>
     </Card>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { useEffect, useId, useRef, useState } from "react";
 import { markApplied } from "@/app/(app)/applications/actions";
 import { setJobStatus } from "@/app/(app)/jobs/actions";
@@ -18,7 +19,7 @@ function today(): string {
 
 /**
  * A verified Apply link. Opening it never counts as applying: afterwards the user is asked
- * "Mark as applied?" and only a confirmation (with the date, and optionally the document
+ * tr("msg.markAsApplied6189", "Mark as applied?") and only a confirmation (with the date, and optionally the document
  * version they sent) records it.
  */
 export function ApplyLink({
@@ -41,6 +42,7 @@ export function ApplyLink({
   /** Show the question in the browser's top layer, positioned from the link. For links inside a clipped container (a job card). */
   floating?: boolean;
 }) {
+  const tr = useTr();
   const [asking, setAsking] = useState(false);
   const [date, setDate] = useState("");
   const [doc, setDoc] = useState("");
@@ -110,18 +112,18 @@ export function ApplyLink({
           className={cn(floating ? "fixed m-0 overflow-visible" : "absolute right-0 top-full z-30 mt-2", "grid w-72 gap-3 rounded-lg border bg-popover p-3 text-sm text-popover-foreground shadow-lg", panelClassName)}
         >
           <p id={`${id}-title`} className="font-medium">
-            Mark as applied?
+            {tr("msg.markAsApplied6189", "Mark as applied?")}
           </p>
-          <p className="text-xs text-muted-foreground">Only if you finished the application on their site. Opening the link alone doesn&apos;t count.</p>
+          <p className="text-xs text-muted-foreground">{tr("msg.onlyIfYouFinisheddb88", "Only if you finished the application on their site. Opening the link alone doesn't count.")}</p>
           <div className="grid gap-1">
-            <Label htmlFor={`${id}-date`}>Date applied</Label>
+            <Label htmlFor={`${id}-date`}>{tr("msg.dateApplied7db1", "Date applied")}</Label>
             <Input id={`${id}-date`} type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} />
           </div>
           {documents.length ? (
             <div className="grid gap-1">
-              <Label htmlFor={`${id}-doc`}>Document you sent (optional)</Label>
+              <Label htmlFor={`${id}-doc`}>{tr("msg.documentYouSentOptional4cab", "Document you sent (optional)")}</Label>
               <AppSelect id={`${id}-doc`} value={doc} onChange={(e) => setDoc(e.target.value)}>
-                <option value="">Not recorded</option>
+                <option value="">{tr("msg.notRecorded683f", "Not recorded")}</option>
                 {documents.map((d) => (
                   <option key={d.value} value={d.value}>
                     {d.label}
@@ -132,7 +134,7 @@ export function ApplyLink({
           ) : null}
           <div className="flex gap-2">
             <Button size="sm" disabled={pending || !date} onClick={confirm}>
-              Mark as applied
+              {tr("msg.markAsApplied3d7f", "Mark as applied")}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setAsking(false)}>
               Not yet
