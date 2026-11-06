@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,16 +26,17 @@ export function TrackCard({
   recommendation: { track: string | null; reason: string } | null;
   coverage: Coverage | null;
 }) {
+  const tr = useTr();
   const { pending, run } = useActionRunner();
   const chosen = options.find((o) => (o.track ?? "").toLowerCase() === (selected ?? "").toLowerCase()) ?? options[0];
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Which resume to use</CardTitle>
-        <CardDescription>{recommendation ? recommendation.reason : "Pick the base resume that suits this job. Fit and tailoring use it."}</CardDescription>
+        <CardTitle className="text-lg">{tr("msg.whichResumeToUse9269", "Which resume to use")}</CardTitle>
+        <CardDescription>{recommendation ? recommendation.reason : tr("msg.pickTheBaseResume48ab", "Pick the base resume that suits this job. Fit and tailoring use it.")}</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <ul className="grid gap-2" aria-label="Resume tracks">
+        <ul className="grid gap-2" aria-label={tr("msg.resumeTracksd0d1", "Resume tracks")}>
           {options.map((o) => {
             const isChosen = o === chosen;
             return (
@@ -45,10 +47,10 @@ export function TrackCard({
                   {recommendation && (recommendation.track ?? "").toLowerCase() === (o.track ?? "").toLowerCase() ? <span className="ml-2 rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">Best fit</span> : null}
                 </span>
                 {isChosen ? (
-                  <span className="text-xs font-medium">In use for this job</span>
+                  <span className="text-xs font-medium">{tr("msg.inUseForThisf1bb", "In use for this job")}</span>
                 ) : (
                   <Button size="sm" variant="outline" disabled={pending} aria-label={`Use ${o.label} for this job`} onClick={() => run(() => setJobTrack(jobId, o.track), { undo: () => setJobTrack(jobId, chosen.track) })}>
-                    Use this one
+                    {tr("msg.useThisOne67eb", "Use this one")}
                   </Button>
                 )}
               </li>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bookmark, CheckCircle2, FileText, ListChecks, Mail, RotateCcw, ScrollText, Sparkles, Wand2, X } from "lucide-react";
@@ -44,10 +45,11 @@ export function StatusActions({ jobId, status }: { jobId: string; status: Status
 }
 
 export function CheckFitButton({ jobId, label = "Check fit" }: { jobId: string; label?: string }) {
+  const tr = useTr();
   const { pending, run } = useActionRunner();
   return (
-    <Button size="sm" variant="outline" className="justify-self-start" disabled={pending} onClick={() => run(() => checkFit(jobId), { progress: "Checking against your resume…" })}>
-      <Sparkles aria-hidden /> {pending ? "Checking…" : label}
+    <Button size="sm" variant="outline" className="justify-self-start" disabled={pending} onClick={() => run(() => checkFit(jobId), { progress: tr("msg.checkingAgainstYourResume9015", "Checking against your resume…") })}>
+      <Sparkles aria-hidden /> {pending ? tr("msg.checkingcbe7", "Checking…") : label}
     </Button>
   );
 }
@@ -56,11 +58,12 @@ export type AiStatus = { available: boolean; note: string };
 
 /**
  * Two ways to work on the resume for this job, plus a CV and a cover letter:
- * "Tailor Resume" (AI writes a new copy; do it for me) and "Get Resume Improvement Notes"
+ * tr("msg.tailorResumeefbc", "Tailor Resume") (AI writes a new copy; do it for me) and tr("msg.getResumeImprovementNotes08ef", "Get Resume Improvement Notes")
  * (nothing changes; tell me what I should change). Without AI, tailoring gives the notes
  * instead and says why.
  */
 export function WorkActions({ jobId, role, excluded, ai }: { jobId: string; role: string; excluded: boolean; ai: AiStatus }) {
+  const tr = useTr();
   const router = useRouter();
   const { pending, run } = useActionRunner();
   const [confirming, setConfirming] = useState(false);
@@ -91,10 +94,10 @@ export function WorkActions({ jobId, role, excluded, ai }: { jobId: string; role
       <div className="grid gap-3">
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" disabled={pending} onClick={() => setConfirming(true)}>
-            <Wand2 aria-hidden /> Tailor anyway
+            <Wand2 aria-hidden /> {tr("msg.tailorAnywayeb22", "Tailor anyway")}
           </Button>
-          <Button variant="outline" disabled={pending} onClick={() => runWork(() => getImprovementNotes(jobId, ai.available), "Analyzing your resume against this job…", "notes")}>
-            <ListChecks aria-hidden /> Get Resume Improvement Notes
+          <Button variant="outline" disabled={pending} onClick={() => runWork(() => getImprovementNotes(jobId, ai.available), tr("msg.analyzingYourResumeAgainst86b4", "Analyzing your resume against this job…"), "notes")}>
+            <ListChecks aria-hidden /> {tr("msg.getResumeImprovementNotes08ef", "Get Resume Improvement Notes")}
           </Button>
         </div>
       </div>
@@ -105,7 +108,7 @@ export function WorkActions({ jobId, role, excluded, ai }: { jobId: string; role
     <div className="grid gap-4">
       {excluded ? (
         <div className="grid gap-1 rounded-lg border border-dashed bg-card p-3 text-sm">
-          <p className="font-medium">Applying anyway</p>
+          <p className="font-medium">{tr("msg.applyingAnyway6f37", "Applying anyway")}</p>
           <p className="text-muted-foreground">
             Your documents will lead with your most related experience, and a cover letter will briefly and honestly name the gap. Nothing you don&apos;t have will be
             added: no skills, years, degrees or licences.
@@ -115,30 +118,30 @@ export function WorkActions({ jobId, role, excluded, ai }: { jobId: string; role
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="grid content-start gap-1.5 rounded-lg border p-3">
           <Button disabled={pending} onClick={() => tailor("resume")}>
-            <Wand2 aria-hidden /> Tailor Resume
+            <Wand2 aria-hidden /> {tr("msg.tailorResumeefbc", "Tailor Resume")}
           </Button>
-          <p className="text-xs text-muted-foreground">Do it for me: AI writes a new copy for this job.</p>
+          <p className="text-xs text-muted-foreground">{tr("msg.doItForMe9b13", "Do it for me: AI writes a new copy for this job.")}</p>
         </div>
         <div className="grid content-start gap-1.5 rounded-lg border p-3">
-          <Button variant="outline" disabled={pending} onClick={() => runWork(() => getImprovementNotes(jobId, ai.available), "Analyzing your resume against this job…", "notes")}>
-            <ListChecks aria-hidden /> Get Resume Improvement Notes
+          <Button variant="outline" disabled={pending} onClick={() => runWork(() => getImprovementNotes(jobId, ai.available), tr("msg.analyzingYourResumeAgainst86b4", "Analyzing your resume against this job…"), "notes")}>
+            <ListChecks aria-hidden /> {tr("msg.getResumeImprovementNotes08ef", "Get Resume Improvement Notes")}
           </Button>
-          <p className="text-xs text-muted-foreground">Tell me what to change: advice by section and priority.</p>
+          <p className="text-xs text-muted-foreground">{tr("msg.tellMeWhatTo6c9e", "Tell me what to change: advice by section and priority.")}</p>
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" variant="outline" disabled={pending} onClick={() => tailor("cv")}>
-          <ScrollText aria-hidden /> Tailor CV
+          <ScrollText aria-hidden /> {tr("msg.tailorCv444a", "Tailor CV")}
         </Button>
         <Button size="sm" variant="outline" disabled={pending || !ai.available} title={ai.available ? undefined : ai.note} onClick={() => runWork(() => generateCoverLetter(jobId, mode, true), `Writing a cover letter for ${role}…`, "documents")}>
-          <Mail aria-hidden /> Generate Cover Letter
+          <Mail aria-hidden /> {tr("msg.generateCoverLettera3d2", "Generate Cover Letter")}
         </Button>
-        <Button size="sm" variant="ghost" disabled={pending} onClick={() => runWork(() => generateCoverLetter(jobId, mode, false), "Filling a cover letter template…", "documents")}>
-          <FileText aria-hidden /> Template letter (no AI)
+        <Button size="sm" variant="ghost" disabled={pending} onClick={() => runWork(() => generateCoverLetter(jobId, mode, false), tr("msg.fillingACoverLetter0c89", "Filling a cover letter template…"), "documents")}>
+          <FileText aria-hidden /> {tr("msg.templateLetterNoAi95a6", "Template letter (no AI)")}
         </Button>
         {excluded ? (
           <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming(false)}>
-            Cancel
+            {tr("msg.cancelea47", "Cancel")}
           </Button>
         ) : null}
       </div>

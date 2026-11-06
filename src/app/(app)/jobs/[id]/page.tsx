@@ -1,3 +1,4 @@
+import { LocaleScope } from "@/components/locale-scope";
 import { Suspense } from "react";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
@@ -137,6 +138,7 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
   const role = `${job.title}${job.company ? ` at ${job.company}` : ""}`;
 
   return (
+    <LocaleScope groups={["msg", "jobDetail", "ui", "tier", "verification"]}>
     <div className="grid gap-6">
       {job.closed_at || job.verification_status === "expired" ? (
         <ToastOnMount specs={[{ key: `expired:${job.id}`, type: "warning", title: t("msg.thisJobPostingAppears1e1e"), description: t("msg.applyIsTurnedOff2f19") }]} />
@@ -374,6 +376,7 @@ async function Job({ params }: Pick<PageProps<"/jobs/[id]">, "params">) {
         </aside>
       </div>
     </div>
+    </LocaleScope>
   );
 }
 

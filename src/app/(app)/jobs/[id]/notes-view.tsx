@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/lib/i18n/client";
 import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, Check, Copy, EyeOff, KeyRound, ListChecks, RotateCcw, ShieldCheck } from "lucide-react";
@@ -46,6 +47,7 @@ export function NotesView({
   made: string;
   stale: boolean;
 }) {
+  const tr = useTr();
   const { pending, run } = useActionRunner();
   const [showBanner, setShowBanner] = useState(reason !== "requested");
   const [showDismissed, setShowDismissed] = useState(false);
@@ -56,9 +58,9 @@ export function NotesView({
   const copy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      toast.success("Suggestion copied.");
+      toast.success(tr("msg.suggestionCopied74af", "Suggestion copied."));
     } catch {
-      toast.warning("Couldn't copy automatically.", "Select the text and copy it.");
+      toast.warning(tr("msg.couldnTCopyAutomatically6d85", "Couldn't copy automatically."), tr("msg.selectTheTextAndae7c", "Select the text and copy it."));
     }
   };
 
@@ -97,7 +99,7 @@ export function NotesView({
                 toast.success("Keeping your original resume.", "Nothing was changed.");
               }}
             >
-              <ShieldCheck aria-hidden /> Keep Original Resume
+              <ShieldCheck aria-hidden /> {tr("msg.keepOriginalResumef52b", "Keep Original Resume")}
             </Button>
           </div>
         </div>
@@ -105,18 +107,18 @@ export function NotesView({
 
       <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <Badge variant="outline">{methodLabel}</Badge>
-        Made {made}. Analysis only: your resume was not changed.
-        {stale ? <span className="text-warning">Your resume has changed since; get new notes to see the latest.</span> : null}
+        {tr("jobDetail.notesMade", "Made {made}. Analysis only: your resume was not changed.", { made })}
+        {stale ? <span className="text-warning">{tr("msg.yourResumeHasChanged4752", "Your resume has changed since; get new notes to see the latest.")}</span> : null}
       </p>
 
       <section aria-labelledby="comparison-heading" className="grid gap-3">
         <h3 id="comparison-heading" className="font-medium">
-          How your resume compares
+          {tr("msg.howYourResumeCompares1076", "How your resume compares")}
         </h3>
         <div className="grid gap-3 md:grid-cols-3">
-          <KeywordColumn title="Strong matches" tone="success" items={report.comparison.strong.map((k) => ({ term: k.term, detail: k.where ? `in ${k.where}` : undefined }))} empty="None of the posting's key terms stand out yet." />
-          <KeywordColumn title="Could be emphasized more" tone="warning" items={report.comparison.couldEmphasize.map((k) => ({ term: k.term, detail: k.where ? `only in ${k.where}` : undefined }))} empty="Nothing buried." />
-          <KeywordColumn title="Not found in resume" tone="danger" items={report.comparison.notFound.map((k) => ({ term: k.term, detail: k.message }))} empty="Every key term appears in your resume." />
+          <KeywordColumn title={tr("msg.strongMatches168f", "Strong matches")} tone="success" items={report.comparison.strong.map((k) => ({ term: k.term, detail: k.where ? `in ${k.where}` : undefined }))} empty="None of the posting's key terms stand out yet." />
+          <KeywordColumn title={tr("msg.couldBeEmphasizedMore36ec", "Could be emphasized more")} tone="warning" items={report.comparison.couldEmphasize.map((k) => ({ term: k.term, detail: k.where ? `only in ${k.where}` : undefined }))} empty={tr("msg.nothingBuriedc5fa", "Nothing buried.")} />
+          <KeywordColumn title={tr("msg.notFoundInResume4d01", "Not found in resume")} tone="danger" items={report.comparison.notFound.map((k) => ({ term: k.term, detail: k.message }))} empty="Every key term appears in your resume." />
         </div>
         {report.comparison.missingQualifications.length ? (
           <ul className="grid gap-1 text-sm">
@@ -143,7 +145,7 @@ export function NotesView({
             </Button>
           ) : null}
         </div>
-        {report.strongMatch ? <p className="text-sm text-success">Your resume is already a strong match for this job. The suggestions below are optional.</p> : null}
+        {report.strongMatch ? <p className="text-sm text-success">{tr("msg.yourResumeIsAlready91ab", "Your resume is already a strong match for this job. The suggestions below are optional.")}</p> : null}
         {NOTE_SECTIONS.map((section) => {
           const items = visible.filter((n) => n.section === section);
           if (!items.length) return null;
@@ -159,11 +161,11 @@ export function NotesView({
                         <Badge variant="outline" className={PRIORITY[n.priority].className}>
                           {PRIORITY[n.priority].label}
                         </Badge>
-                        {n.source === "ai" ? <Badge variant="outline">AI suggestion</Badge> : null}
+                        {n.source === "ai" ? <Badge variant="outline">{tr("msg.aiSuggestion6191", "AI suggestion")}</Badge> : null}
                       </div>
                       <p className="font-medium">{n.recommendation}</p>
                       <p className="text-muted-foreground">
-                        <span className="font-medium text-foreground">Why: </span>
+                        <span className="font-medium text-foreground">{tr("msg.why673d", "Why: ")}</span>
                         {n.why}
                       </p>
                       {n.resumeQuote ? <p className="border-l-2 pl-2 text-xs text-muted-foreground">Your resume: “{n.resumeQuote}”</p> : null}
