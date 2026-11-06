@@ -2,13 +2,14 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useT } from "@/lib/i18n/client";
+import type { Messages } from "@/lib/i18n/core";
 import { DetectedLocaleProvider } from "@/lib/i18n/detected";
 import { ResetForm } from "./reset-form";
 
 /** The new-password card. English at once, then the person's language in place. */
-export function ResetCard() {
+export function ResetCard({ english }: { english: Messages }) {
   return (
-    <DetectedLocaleProvider>
+    <DetectedLocaleProvider english={english}>
       <Card className="w-full max-w-sm">
         <Header />
         <CardContent>

@@ -130,5 +130,5 @@ export async function undoBulkSnoozeReminders(snooze: ReminderSnooze): Promise<A
   }
   refresh();
   if (restored === 0) return err((await getT())("applicationsPage.snoozeUndoFailed"));
-  return ok((await getT())("applicationsPage.remindersBack", { count: restored }));
+  return ok((await getT())(restored === 1 ? "applicationsPage.remindersBackOne" : "applicationsPage.remindersBackMany", { count: restored }));
 }

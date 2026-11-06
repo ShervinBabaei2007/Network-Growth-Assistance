@@ -290,7 +290,6 @@ export async function saveCategory(_: FormState, formData: FormData): Promise<Fo
       ({ error } = await ctx.supabase.from("disciplines").insert({ ...fields, user_id: ctx.userId, position: (last?.position ?? -1) + 1 }));
     }
   }
-  const what = kind === "university" ? "school" : "discipline";
   if (error?.code === "23505") return failed((await getT())("settingsPage.categoryExists", { what: (await getT())(kind === "university" ? "settingsPage.schools" : "settingsPage.disciplines").toLowerCase(), name }));
   if (error) return failed((await getT())("settingsPage.saveFailed"));
 

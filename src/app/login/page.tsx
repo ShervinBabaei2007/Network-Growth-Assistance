@@ -1,7 +1,7 @@
 import { FormError } from "@/components/form-error";
 import { canonicalFor } from "@/lib/site";
 import { Suspense } from "react";
-import { translator } from "@/lib/i18n";
+import { MESSAGES, translator, type Messages } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
 import { LoginCard } from "./login-card";
 
@@ -11,10 +11,17 @@ export const metadata = {
   ...canonicalFor("/login"),
 };
 
+/** Only the English the sign-in card uses, sent with the page rather than bundled into its JavaScript. */
+function signInEnglish(): Messages {
+  const { auth, language, common } = MESSAGES.en;
+  return { auth, language, common } as unknown as Messages;
+}
+
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <main className="flex flex-1 items-center justify-center p-4">
       <LoginCard
+        english={signInEnglish()}
         notice={
           <Suspense fallback={null}>
             <LinkError searchParams={searchParams} />

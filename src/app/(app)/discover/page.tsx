@@ -1,6 +1,9 @@
 import { Suspense } from "react";
 import { Disclosure } from "@/components/disclosure";
 import { PageHeaderT } from "@/components/tx";
+import { LocaleScope } from "@/components/locale-scope";
+import { formatters, type MessageKey } from "@/lib/i18n";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { ActionForm } from "@/components/action-form";
@@ -46,13 +49,14 @@ async function RequestCard({ searchParams }: Pick<PageProps<"/discover">, "searc
     /^[0-9a-f-]{36}$/i.test(from) ? supabase.from("network_searches").select("id, original_query, criteria").eq("id", from).maybeSingle() : Promise.resolve({ data: null }),
   ]);
   const modifyCriteria = modify.data ? NetworkingCriteria.safeParse(modify.data.criteria) : null;
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
 
   return (
     <>
       <Card>
         <CardHeader>
-          <CardTitle>{modify.data ? "Modify search" : "Who would you like to meet?"}</CardTitle>
-          {modify.data ? <CardDescription>Started from “{modify.data.original_query}”. Change any criterion and run it as a new search.</CardDescription> : null}
+          <CardTitle>{modify.data ? t("discoverPage.modifyTitle") : t("discoverPage.whoTitle")}</CardTitle>
+          {modify.data ? <CardDescription>{t("discoverPage.startedFrom", { query: modify.data.original_query })}</CardDescription> : null}
         </CardHeader>
         <CardContent className="grid gap-4">
           {modify.data && modifyCriteria?.success ? (
@@ -62,13 +66,13 @@ async function RequestCard({ searchParams }: Pick<PageProps<"/discover">, "searc
           )}
           <ul className="grid gap-1 text-xs text-muted-foreground">
             {(known ?? 0) > 0 ? (
-              <li>{(known ?? 0).toLocaleString("en-CA")} known connections will be left out of results.</li>
+              <li>{t("discoverPage.knownLeftOut", { count: formatters(locale).number(known ?? 0) })}</li>
             ) : (
               <li>
                 <Link href="/connections" className="underline underline-offset-4">
-                  Import your connections
-                </Link>{" "}
-                first so people you already know are left out.
+                  {t("discoverPage.importFirstA")}
+                </Link>
+                {t("discoverPage.importFirstB")}
               </li>
             )}
           </ul>
@@ -79,14 +83,16 @@ async function RequestCard({ searchParams }: Pick<PageProps<"/discover">, "searc
         </CardContent>
       </Card>
 
-      <Disclosure summary="Your networking goal">
-            <ActionForm action={saveNetworkingGoal} submitLabel="Save">
-              <div className="grid gap-1.5">
-                <Label htmlFor="goal">What are you looking for?</Label>
-                <Input id="goal" name="goal" maxLength={300} defaultValue={settings?.networking_goal ?? ""} placeholder="e.g. what you&apos;re hoping to learn, or the kind of role you&apos;re working toward" />
-                <p className="text-xs text-muted-foreground">Used to rank people and word suggested intros.</p>
-              </div>
-            </ActionForm>
+      <Disclosure summary={t("discoverPage.goalSummary")}>
+        <LocaleScope groups={["ui"]}>
+          <ActionForm action={saveNetworkingGoal} submitLabel={t("discoverPage.save")}>
+            <div className="grid gap-1.5">
+              <Label htmlFor="goal">{t("discoverPage.goalLabel")}</Label>
+              <Input id="goal" name="goal" maxLength={300} defaultValue={settings?.networking_goal ?? ""} placeholder={t("discoverPage.goalPlaceholder")} />
+              <p className="text-xs text-muted-foreground">{t("discoverPage.goalNote")}</p>
+            </div>
+          </ActionForm>
+        </LocaleScope>
       </Disclosure>
     </>
   );
@@ -109,11 +115,12 @@ async function History() {
     .limit(30);
   if (error) return <LoadError what="your searches" />;
   if (!data.length) return null;
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
 
   return (
     <section aria-labelledby="history-heading" className="grid gap-3">
       <h2 id="history-heading" className="text-base font-semibold">
-        Search history
+        {t("discoverPage.historyHeading")}
       </h2>
       <ul className="grid gap-2">
         {data.map((s) => {
@@ -126,32 +133,32 @@ async function History() {
                   {s.original_query}
                 </Link>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(s.created_at).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
+                  {formatters(locale).date(s.created_at, { month: "short", day: "numeric", year: "numeric" })}
                   {criteria.success ? ` · ${describeCriteria(criteria.data)}` : ""}
                   {" · "}
-                  {counters.verified ?? 0} verified, {counters.possible ?? 0} possible of {s.target_count} asked
+                  {t("discoverPage.counts", { verified: counters.verified ?? 0, possible: counters.possible ?? 0, asked: s.target_count })}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={STATUS_BADGE[s.status] ?? "outline"}>{s.status}</Badge>
+                <Badge variant={STATUS_BADGE[s.status] ?? "outline"}>{s.status in STATUS_BADGE ? t(`discoverPage.status_${s.status}` as MessageKey) : s.status}</Badge>
                 <form action={runSearchAgain}>
                   <input type="hidden" name="id" value={s.id} />
                   <Button type="submit" variant="ghost" size="sm">
-                    Run again
+                    {t("discoverPage.runAgain")}
                   </Button>
                 </form>
                 <Link href={`/discover?q=${encodeURIComponent(s.original_query)}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                  Duplicate
+                  {t("discoverPage.duplicate")}
                 </Link>
                 {criteria.success ? (
                   <Link href={`/discover?from=${s.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                    Modify
+                    {t("discoverPage.modify")}
                   </Link>
                 ) : null}
                 <form action={deleteSearch}>
                   <input type="hidden" name="id" value={s.id} />
-                  <Button type="submit" variant="ghost" size="sm" aria-label={`Delete search “${s.original_query}”`} title={`Delete search “${s.original_query}”`}>
-                    Delete
+                  <Button type="submit" variant="ghost" size="sm" aria-label={t("discoverPage.deleteSearch", { query: s.original_query })} title={t("discoverPage.deleteSearch", { query: s.original_query })}>
+                    {t("discoverPage.delete")}
                   </Button>
                 </form>
               </div>

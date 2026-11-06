@@ -20,7 +20,7 @@ Found and fixed by these scans so far:
 - the toast dismiss button was hidden from assistive technology while still tabbable;
 - the header **Search** button's visible text did not match its accessible name (axe `label-content-name-mismatch`).
 
-**Not scanned automatically:** the signed-in app in French, the welcome dialog and tour popovers while open, the search palette while open, toasts, and pages reached only through a specific record state (for example a person's detail page, a job's detail page with its resume-track card, the compare-jobs page, and a finished Discover result with its evidence drawer).
+**Not scanned automatically:** the signed-in app in French beyond the page titles, the welcome dialog and tour popovers while open, the search palette while open, toasts, and pages reached only through a specific record state (for example a person's detail page, a job's detail page with its resume-track card, the compare-jobs page, and a finished Discover result with its evidence drawer).
 
 ## Language
 

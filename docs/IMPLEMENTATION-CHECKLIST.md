@@ -272,7 +272,7 @@ Built in order, each on its own branch with small commits, then merged. Every br
 | **Bulk actions and saved views** on Candidates, with Undo; 25/50/100 per page; last filters remembered per device | implemented, pgTAP + unit + e2e | `20261032000000_saved_views.sql`, `src/app/(app)/candidates/bulk-actions.ts`, `e2e/bulk-and-views.spec.ts` |
 | **Monitoring** kept in our own database: page speed and errors with no personal data, operator report, Privacy Policy section | implemented, pgTAP + unit + e2e | `20261033000000_monitoring.sql`, `src/lib/monitoring/`, `src/instrumentation.ts`, `e2e/monitoring.spec.ts` |
 | **Interview prep** per application (rules only, no AI, no company facts), Markdown export, saved copies | implemented, pgTAP + unit + e2e | `20261034000000_interview_prep.sql`, `src/lib/interview-prep/`, `e2e/interview-prep.spec.ts` |
-| **Canadian French and an i18n base** for the shell, sign-in, welcome, banners and palette; account-saved language | implemented, unit + e2e | `20261035000000_locale.sql`, `src/lib/i18n/`, `e2e/i18n.spec.ts` |
+| **Canadian French and an i18n base** for the shell, sign-in, welcome, banners and palette, and the everyday pages (Overview, Queue, Analytics, Follow-ups, Candidates, People, Applications, Jobs, Connections, Discover, Notifications, Settings, Help, Schools, Disciplines), glossary popovers, error pages and the alert email; account-saved language | implemented, unit + e2e | `20261035000000_locale.sql`, `src/lib/i18n/`, `e2e/i18n.spec.ts` |
 
 **Verification (2026-10-18, local):**
 
@@ -347,5 +347,5 @@ Built in order, each on its own branch with small commits, then merged. Every br
 3. Do the manual screen-reader pass from `docs/ACCESSIBILITY.md`.
 4. Keep an eye on `.github/workflows/ci.yml` runs on GitHub (the first completed run passed).
 5. Re-measure Lighthouse on the newest pages.
-6. Translate the remaining pages into French, and extend bulk actions to People and Applications.
+6. Translate the single-record and secondary pages into French (a candidate, person, application or job; resume; saved searches; employers; compare; paste a posting; company; research results; candidate import). The pattern is `Tx`, `PageHeaderT`, `LocaleScope` and `useTr` in `src/components`, with strings in `src/lib/i18n/messages`. Extend bulk actions to People and Applications is done; `j`/`k` shortcuts remain.
 7. Improvement-plan phases 4 onward, starting with the remaining polish items above (compare jobs, `j`/`k` shortcuts).
