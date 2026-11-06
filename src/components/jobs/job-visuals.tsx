@@ -1,5 +1,6 @@
 import { ClipboardPaste, Globe } from "lucide-react";
 import type { JobSource } from "@/lib/job-postings/source";
+import { getT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 
 export type TierKey = "strong" | "good" | "stretch" | "excluded" | "unchecked";
@@ -14,14 +15,15 @@ export const TIER_STYLE: Record<TierKey, { soft: string; text: string; border: s
 };
 
 /** The fit at a glance: the score large, the tier underneath, in the tier's colour. */
-export function FitScore({ tier, score, size = "md" }: { tier: TierKey; score: number | null; size?: "md" | "lg" }) {
-  const s = TIER_STYLE[tier];
+export async function FitScore({ tier, score, size = "md" }: { tier: TierKey; score: number | null; size?: "md" | "lg" }) {
+  const t = await getT();
+  const s = { ...TIER_STYLE[tier], label: t(`tier.${tier}`) };
   const showScore = score !== null && tier !== "excluded" && tier !== "unchecked";
   return (
     <div
       role="img"
       className={cn("flex flex-col items-center justify-center rounded-lg text-center", s.soft, s.text, size === "lg" ? "size-24 gap-0.5" : "h-16 w-full gap-0")}
-      aria-label={`${s.label}${showScore ? `, ${score} out of 100` : ""}`}
+      aria-label={`${s.label}${showScore ? t("tier.outOf100", { score: score! }) : ""}`}
     >
       <span aria-hidden className={cn("leading-none font-semibold tabular-nums", size === "lg" ? "text-3xl" : "text-xl")}>
         {showScore ? score : tier === "excluded" ? "✕" : "–"}
@@ -34,13 +36,14 @@ export function FitScore({ tier, score, size = "md" }: { tier: TierKey; score: n
 }
 
 /** The fit as a small pill for list rows: "Strong match 86". The full block (FitScore) is for the detail page. */
-export function FitChip({ tier, score }: { tier: TierKey; score: number | null }) {
-  const s = TIER_STYLE[tier];
+export async function FitChip({ tier, score }: { tier: TierKey; score: number | null }) {
+  const t = await getT();
+  const s = { ...TIER_STYLE[tier], label: t(`tier.${tier}`) };
   const showScore = score !== null && tier !== "excluded" && tier !== "unchecked";
   return (
     <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap", s.soft, s.text)}>
       {/* A label on a bare span isn't allowed; the spoken text lives here and the visible pill is hidden from readers. */}
-      <span className="sr-only">{`${s.label}${showScore ? `, ${score} out of 100` : ""}`}</span>
+      <span className="sr-only">{`${s.label}${showScore ? t("tier.outOf100", { score: score! }) : ""}`}</span>
       <span aria-hidden className={cn("size-1.5 rounded-full", s.dot)} />
       <span aria-hidden>{s.label}</span>
       {showScore ? (
@@ -74,11 +77,13 @@ const VERIFICATION_STYLE: Record<string, { label: string; className: string; tit
 };
 
 /** Whether a listing's link was verified, said plainly; never "verified" without evidence. */
-export function VerificationBadge({ status, className }: { status: string; className?: string }) {
-  const s = VERIFICATION_STYLE[status] ?? VERIFICATION_STYLE.pending_validation;
+export async function VerificationBadge({ status, className }: { status: string; className?: string }) {
+  const t = await getT();
+  const key = (status in VERIFICATION_STYLE ? status : "pending_validation") as keyof typeof VERIFICATION_STYLE;
+  const s = VERIFICATION_STYLE[key];
   return (
-    <span title={s.title} className={cn("inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", s.className, className)}>
-      {s.label}
+    <span title={t(`verification.${key}_title` as "verification.verified_title")} className={cn("inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", s.className, className)}>
+      {t(`verification.${key}` as "verification.verified")}
     </span>
   );
 }

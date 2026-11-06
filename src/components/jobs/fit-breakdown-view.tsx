@@ -1,5 +1,7 @@
 import { TIER_STYLE, type TierKey } from "@/components/jobs/job-visuals";
 import type { BreakdownRow, PayBar } from "@/lib/job-postings/fit-breakdown";
+import { formatters } from "@/lib/i18n";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 
 /**
@@ -7,29 +9,30 @@ import { cn } from "@/lib/utils";
  * Matches / Missing lists come from the same requirement results as the score, and every bar has the same
  * information as words beside it, so nothing depends on colour or on seeing the bar.
  */
-export function FitBreakdown({ rows, tier }: { rows: BreakdownRow[]; tier: TierKey }) {
+export async function FitBreakdown({ rows, tier }: { rows: BreakdownRow[]; tier: TierKey }) {
   if (rows.length === 0) return null;
+  const t = await getT();
   const fill = TIER_STYLE[tier].dot;
   return (
-    <section aria-label="Why this fit" className="grid gap-2 rounded-lg border bg-muted/40 p-3">
-      <h3 className="text-xs font-semibold text-foreground">Why this fit</h3>
+    <section aria-label={t("jobsPage.whyFit")} className="grid gap-2 rounded-lg border bg-muted/40 p-3">
+      <h3 className="text-xs font-semibold text-foreground">{t("jobsPage.whyFit")}</h3>
       <ul className="grid gap-2.5">
         {rows.map((r) => (
           <li key={r.key} className="grid gap-1">
             <div className="flex items-baseline justify-between gap-3 text-xs">
               <span className="font-medium text-foreground">{r.label}</span>
               <span className="tabular-nums text-muted-foreground">
-                {r.met} of {r.total} met{r.partial ? `, ${r.partial} partly` : ""}
+                {r.partial ? t("jobsPage.metOfPartly", { met: r.met, total: r.total, partly: r.partial }) : t("jobsPage.metOf", { met: r.met, total: r.total })}
               </span>
             </div>
-            <div role="meter" aria-label={r.label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={r.percent} aria-valuetext={`${r.met} of ${r.total} met`} className="h-1.5 overflow-hidden rounded-full bg-muted">
+            <div role="meter" aria-label={r.label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={r.percent} aria-valuetext={t("jobsPage.metOf", { met: r.met, total: r.total })} className="h-1.5 overflow-hidden rounded-full bg-muted">
               <div className={cn("h-full rounded-full", fill)} style={{ width: `${Math.max(r.percent, r.percent > 0 ? 4 : 0)}%` }} />
             </div>
             {r.strong.length || r.missing.length || r.preferredNotFound.length ? (
               <p className="text-xs text-muted-foreground">
-                {r.strong.length ? <>Matches: {r.strong.slice(0, 4).join(", ")}. </> : null}
-                {r.missing.length ? <>Missing: {r.missing.slice(0, 3).join(", ")}. </> : null}
-                {r.preferredNotFound.length ? <>Preferred not found: {r.preferredNotFound.slice(0, 2).join(", ")}.</> : null}
+                {r.strong.length ? <>{t("jobsPage.cardMatches")}{r.strong.slice(0, 4).join(", ")}. </> : null}
+                {r.missing.length ? <>{t("jobsPage.cardMissing")}{r.missing.slice(0, 3).join(", ")}. </> : null}
+                {r.preferredNotFound.length ? <>{t("jobsPage.cardPreferredNotFound", { list: r.preferredNotFound.slice(0, 2).join(", ") })}.</> : null}
               </p>
             ) : null}
           </li>
@@ -39,16 +42,18 @@ export function FitBreakdown({ rows, tier }: { rows: BreakdownRow[]; tier: TierK
   );
 }
 
-const money = (n: number, currency: string | null) => `${currency ? `${currency} ` : ""}${Math.round(n).toLocaleString("en-CA")}`;
+const money = (n: number, currency: string | null, number: (n: number) => string) => `${currency ? `${currency} ` : ""}${number(Math.round(n))}`;
 
 /** The stated pay as a range against your own minimum. Nothing is estimated; the pay is shown per year for comparison. */
-export function PayRange({ bar }: { bar: PayBar }) {
-  const range = bar.low === bar.high ? money(bar.high, bar.currency) : `${money(bar.low, bar.currency)} to ${money(bar.high, bar.currency)}`;
-  const verdict = bar.meetsMinimum === null ? null : bar.meetsMinimum ? "reaches your minimum" : "is below your minimum";
+export async function PayRange({ bar }: { bar: PayBar }) {
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  const num = (n: number) => formatters(locale).number(n);
+  const range = bar.low === bar.high ? money(bar.high, bar.currency, num) : t("jobsPage.payTo", { low: money(bar.low, bar.currency, num), high: money(bar.high, bar.currency, num) });
+  const verdict = bar.meetsMinimum === null ? null : bar.meetsMinimum ? t("jobsPage.reachesMin") : t("jobsPage.belowMin");
   return (
     <div className="grid gap-1" data-testid="pay-range">
       <div className="flex items-baseline justify-between gap-3 text-xs">
-        <span className="font-medium text-foreground">Pay, per year</span>
+        <span className="font-medium text-foreground">{t("jobsPage.payPerYear")}</span>
         <span className="tabular-nums text-muted-foreground">
           {range}
           {verdict ? ` · ${verdict}` : ""}
@@ -58,7 +63,7 @@ export function PayRange({ bar }: { bar: PayBar }) {
         <div className="absolute inset-y-0 rounded-full bg-primary" style={{ left: `${bar.from}%`, width: `${bar.to - bar.from}%` }} />
         {bar.minMarker !== null ? <div className="absolute -top-1 h-3.5 w-0.5 rounded bg-foreground" style={{ left: `${bar.minMarker}%` }} /> : null}
       </div>
-      {bar.minMarker !== null ? <p className="text-xs text-muted-foreground">The dark mark is your minimum pay.</p> : null}
+      {bar.minMarker !== null ? <p className="text-xs text-muted-foreground">{t("jobsPage.darkMark")}</p> : null}
     </div>
   );
 }

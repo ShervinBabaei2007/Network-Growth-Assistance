@@ -172,3 +172,13 @@ test("Settings, Connections and Help are in French", async ({ page, context }) =
   await page.goto("/help");
   await expect(page.getByText("À quoi sert chaque page?")).toBeVisible();
 });
+
+test("the Jobs page is in French", async ({ page, context }) => {
+  test.setTimeout(120_000);
+  await signIn(page, uniqueEmail("fr-jobs"));
+  await context.addCookies([{ name: "locale", value: "fr-CA", url: "http://localhost:3000" }]);
+  await page.goto("/jobs");
+  await expect(page.getByRole("search", { name: "Rechercher des emplois" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Correspondance" })).toBeVisible();
+  await expect(page.getByText("Commencez par votre CV")).toBeVisible();
+});

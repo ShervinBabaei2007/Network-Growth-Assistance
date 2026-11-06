@@ -8,7 +8,9 @@ import { applyState } from "@/lib/job-postings/apply-state";
 import type { FitExplanation } from "@/lib/job-postings/fit";
 import type { BreakdownRow, PayBar } from "@/lib/job-postings/fit-breakdown";
 import { placeLabel, postedLabel } from "@/lib/job-postings/labels";
-import { LEVEL_LABELS, WORKPLACE_LABELS, type Workplace } from "@/lib/job-postings/levels";
+import { type Workplace } from "@/lib/job-postings/levels";
+import { formatters } from "@/lib/i18n";
+import { getLocale, getT } from "@/lib/i18n/server";
 import type { JobSource } from "@/lib/job-postings/source";
 import { cn } from "@/lib/utils";
 import { ApplyLink } from "./apply-link";
@@ -45,7 +47,7 @@ export type CardJob = {
  * well it fits and why, where it came from, and whether its link is verified. Apply works
  * only for a verified link.
  */
-export function JobCard({
+export async function JobCard({
   job: j,
   fit,
   explanation,
@@ -71,6 +73,7 @@ export function JobCard({
   /** The stated pay as a range against the person's own minimum; null when the posting states none. */
   pay?: PayBar | null;
 }) {
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   const tier: TierKey = fit?.tier ?? "unchecked";
   const apply = applyState(j);
   const status_ = j.closed_at ? "expired" : j.verification_status;
@@ -86,7 +89,7 @@ export function JobCard({
           </Link>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          {status === "applied" ? <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">Applied</span> : null}
+          {status === "applied" ? <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">{t("jobsPage.cardApplied")}</span> : null}
           {/* Verified is the normal case and the page says so once; only call out listings that are not. */}
           {status_ !== "verified" ? <VerificationBadge status={status_} /> : null}
           <FitChip tier={tier} score={fit?.score ?? null} />
@@ -96,21 +99,21 @@ export function JobCard({
       <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
         {j.company ? <span className="font-medium text-foreground">{j.company}</span> : null}
         <span>{placeLabel(j)}</span>
-        <span title={new Date(j.posted_at).toLocaleString("en-CA")}>{postedLabel(j)}</span>
+        <span title={formatters(locale).date(j.posted_at, { dateStyle: "medium", timeStyle: "short" })}>{postedLabel(j)}</span>
         {j.salary ? <span className="font-medium text-foreground">{j.salary}</span> : null}
       </p>
       {strong.length || missing.length ? (
         <p className="line-clamp-1 text-sm">
           {strong.length ? (
             <>
-              <span className="text-muted-foreground">Matches: </span>
+              <span className="text-muted-foreground">{t("jobsPage.cardMatches")}</span>
               {strong.join(", ")}
             </>
           ) : null}
           {missing.length ? (
             <>
               {strong.length ? " · " : ""}
-              <span className="text-muted-foreground">Missing: </span>
+              <span className="text-muted-foreground">{t("jobsPage.cardMissing")}</span>
               {missing.join(", ")}
             </>
           ) : null}
@@ -121,29 +124,29 @@ export function JobCard({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <details className="group min-w-0 flex-1 basis-48 text-sm">
           <summary className="inline-flex w-fit cursor-pointer list-none items-center gap-1 rounded-md py-1 text-xs text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none [&::-webkit-details-marker]:hidden">
-            Details <ChevronDown aria-hidden className="size-3.5 transition-transform group-open:rotate-180" />
+            {t("jobsPage.cardDetails")} <ChevronDown aria-hidden className="size-3.5 transition-transform group-open:rotate-180" />
           </summary>
           <div className="mt-2 grid gap-1.5 text-xs text-muted-foreground">
             <FitBreakdown rows={breakdown} tier={tier} />
             {pay ? <PayRange bar={pay} /> : null}
             <p className="flex flex-wrap gap-x-3 gap-y-0.5">
-              {j.workplace_type ? <span>{WORKPLACE_LABELS[j.workplace_type as Workplace]}</span> : null}
+              {j.workplace_type ? <span>{t(`workplace.${j.workplace_type as Workplace}`)}</span> : null}
               {j.employment_type ? <span>{j.employment_type}</span> : null}
               {j.experience_level ? (
                 <span>
-                  {LEVEL_LABELS[j.experience_level as keyof typeof LEVEL_LABELS]}
-                  {j.level_source === "title" ? " (from title)" : ""}
+                  {t(`level.${j.experience_level as "junior"}`)}
+                  {j.level_source === "title" ? t("jobsPage.cardFromTitle") : ""}
                 </span>
               ) : null}
             </p>
-            {explanation?.preferredNotFound.length ? <p>Preferred not found: {explanation.preferredNotFound.slice(0, 2).join(", ")}</p> : null}
-            {skills.length ? <p>Skills mentioned: {skills.slice(0, 8).join(", ")}</p> : null}
+            {explanation?.preferredNotFound.length ? <p>{t("jobsPage.cardPreferredNotFound", { list: explanation.preferredNotFound.slice(0, 2).join(", ") })}</p> : null}
+            {skills.length ? <p>{t("jobsPage.cardSkills", { list: skills.slice(0, 8).join(", ") })}</p> : null}
             {!apply.enabled ? <p>{apply.reason}</p> : null}
             <span className="flex flex-wrap items-center gap-2">
               {status_ === "verified" ? <VerificationBadge status={status_} /> : null}
               <SourceTag source={source} />
             </span>
-            {alsoOn.length ? <p>Also listed on {alsoOn.join(", ")}</p> : null}
+            {alsoOn.length ? <p>{t("jobsPage.cardAlsoOn", { list: alsoOn.join(", ") })}</p> : null}
           </div>
         </details>
         <div className="flex flex-wrap items-center gap-1">
@@ -152,11 +155,11 @@ export function JobCard({
           <JobMoreMenu jobId={j.id} company={j.company} />
           {apply.enabled ? (
             <ApplyLink jobId={j.id} href={apply.href} status={status} floating className={buttonVariants({ size: "sm" })}>
-              Apply <ArrowUpRight aria-hidden />
+              {t("jobsPage.cardApply")} <ArrowUpRight aria-hidden />
             </ApplyLink>
           ) : (
             <span role="link" aria-disabled="true" title={apply.reason} className={cn(buttonVariants({ size: "sm" }), "pointer-events-none opacity-50")}>
-              {apply.label === "Expired" ? "Expired" : "Apply"}
+              {apply.label === "Expired" ? t("jobsPage.cardExpired") : t("jobsPage.cardApply")}
             </span>
           )}
         </div>
