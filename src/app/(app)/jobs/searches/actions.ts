@@ -9,6 +9,7 @@ import { emailConfigured } from "@/lib/email/mailer";
 import { FeedQuery, FEED_QUERY_VERSION, searchOnly } from "@/lib/job-postings/feed-query";
 import { failed, saved, type FormState } from "@/lib/form-state";
 import { actionContext, logActivity } from "@/lib/server/action-context";
+import { getT } from "@/lib/i18n/server";
 import { allow, LIMITS } from "@/lib/server/rate-limit";
 import type { Json } from "@/lib/supabase/database.types";
 
@@ -115,20 +116,22 @@ export async function restoreSearch(snapshot: unknown): Promise<ActionResult> {
 // ------------------------------------------------------------ notifications
 
 export async function setNotificationRead(id: string, read: boolean): Promise<ActionResult> {
-  if (!uuid.safeParse(id).success) return err("We couldn't find that notification. Reload the page and try again.");
+  if (!uuid.safeParse(id).success) return err((await getT())("notificationsPage.notFound"));
   const ctx = await actionContext();
+  const t = await getT();
   const { error } = await ctx.supabase.from("notifications").update({ read_at: read ? new Date().toISOString() : null }).eq("id", id);
-  if (error) return err("Couldn't update it. Try again.");
+  if (error) return err(t("notificationsPage.updateFailed"));
   refresh();
-  return ok(read ? "Marked as read." : "Marked as unread.");
+  return ok(read ? t("notificationsPage.markedRead") : t("notificationsPage.markedUnread"));
 }
 
 export async function markAllRead(): Promise<ActionResult<{ ids: string[] }>> {
   const ctx = await actionContext();
+  const t = await getT();
   const { data, error } = await ctx.supabase.from("notifications").update({ read_at: new Date().toISOString() }).is("read_at", null).select("id");
-  if (error) return err("Couldn't update them. Try again.");
+  if (error) return err(t("notificationsPage.updateManyFailed"));
   refresh();
-  return ok(data.length ? `Marked ${data.length} as read.` : "Nothing unread.", { data: { ids: data.map((d) => d.id) } });
+  return ok(data.length ? t("notificationsPage.markedManyRead", { count: data.length }) : t("notificationsPage.nothingUnread"), { data: { ids: data.map((d) => d.id) } });
 }
 
 /** Undo for "mark all read". */
@@ -136,9 +139,9 @@ export async function markUnread(ids: string[]): Promise<ActionResult> {
   const valid = ids.filter((i) => uuid.safeParse(i).success).slice(0, 500);
   const ctx = await actionContext();
   const { error } = await ctx.supabase.from("notifications").update({ read_at: null }).in("id", valid);
-  if (error) return err("Couldn't undo. Try again.");
+  if (error) return err((await getT())("notificationsPage.undoFailed"));
   refresh();
-  return ok("Marked as unread again.");
+  return ok((await getT())("notificationsPage.markedUnreadAgain"));
 }
 
 const NotificationSettings = z.object({

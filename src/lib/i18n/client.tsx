@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
-import { DEFAULT_LOCALE, translatorFor, type Locale, type Messages, type Translator } from "./core";
+import { DEFAULT_LOCALE, translatorFor, type Locale, type MessageKey, type Messages, type Params, type Translator } from "./core";
 
 type Value = {
   locale: Locale;
@@ -29,6 +29,19 @@ export const useLocale = () => useContext(LocaleContext).locale;
 
 /** For a language picker: switches the page in place when the language is detected in the browser; otherwise the server re-renders. */
 export const useSwitchLocale = () => useContext(LocaleContext).switchLocale;
+
+/**
+ * Like useT, but where the language provider may be absent (a component used on pages that have not been given one):
+ * a missing key falls back to the English text passed in, instead of showing the key.
+ */
+export function useTr() {
+  const t = useT();
+  return (key: MessageKey, fallback: string, params?: Params) => {
+    const text = t(key, params);
+    if (text !== key) return text;
+    return params ? fallback.replace(/\{(\w+)\}/g, (m, name: string) => (name in params ? String(params[name]) : m)) : fallback;
+  };
+}
 
 /** Translates with the provider's messages. Without a provider it returns the key, so a missing one is easy to spot. */
 export function useT(): Translator {

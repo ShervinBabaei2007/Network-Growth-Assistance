@@ -3,7 +3,8 @@ import { PageNav } from "@/components/page-nav";
 import { FiltersToggle } from "@/components/jobs/filters-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState as EmptyPanel } from "@/components/empty-state";
-import { ViewsMenu, type SavedView } from "@/components/views-menu";
+import { type SavedView } from "@/components/views-menu";
+import { SavedViews } from "@/components/saved-views";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Disclosure } from "@/components/disclosure";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -205,7 +206,7 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
       <aside className="grid gap-4" aria-label="Filters and preferences">
         <FiltersPanel sp={sp} filters={filters} provinces={inCanada ? provinces : []} provFilter={provFilter} hrefBase={href} explicitRange={explicitRange} showAdzuna={providerNames.includes("adzuna")} showUsajobs={providerNames.includes("usajobs")} showCareerjet={providerNames.includes("careerjet")} currency={currency} />
         <Disclosure id="views" summary={`Saved views${views.length ? ` (${views.length})` : ""}`}>
-          <ViewsMenu page="jobs" views={views} />
+          <SavedViews page="jobs" views={views} />
         </Disclosure>
         <PreferencesCard settings={settings} resumeTitles={feed.resolved.titlesFromResume ? searched : []} />
         <Disclosure variant="plain" summary="About these results" className="px-1 text-xs">

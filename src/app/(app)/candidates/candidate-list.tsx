@@ -18,9 +18,13 @@ import { STATUS_LABELS, type CandidateStatus, type Discipline, type University }
 import { loadCatalog } from "@/lib/data/catalog";
 import { createClient } from "@/lib/supabase/server";
 import { PAGE_SIZES, parsePageSize } from "@/lib/views";
+import { LocaleScope } from "@/components/locale-scope";
+import { formatters } from "@/lib/i18n";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { RowSelect, SelectAll } from "@/components/bulk/bulk-select";
 import { BulkBar } from "./bulk-select";
-import { ViewsMenu, type SavedView } from "@/components/views-menu";
+import { type SavedView } from "@/components/views-menu";
+import { SavedViews } from "@/components/saved-views";
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
@@ -72,7 +76,9 @@ export async function CandidateList({ searchParams }: Pick<PageProps<"/candidate
   const { data, count, error } = await query;
   if (error) return <LoadError what="candidates" />;
 
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   const total = count ?? 0;
+  const statusOptions = Object.fromEntries(Object.keys(STATUS_LABELS).map((s) => [s, t(`status.${s as CandidateStatus}`)]));
   const pages = Math.max(1, Math.ceil(total / pageSize));
   const pageHref = (p: number) => {
     const sp = new URLSearchParams();
@@ -82,21 +88,22 @@ export async function CandidateList({ searchParams }: Pick<PageProps<"/candidate
   };
 
   return (
+    <LocaleScope groups={["list", "candidatesPage"]}>
     <section aria-labelledby="list-heading" className="grid gap-3">
       <h2 id="list-heading" className="sr-only">
-        Candidate list
+        {t("candidatesPage.listHeading")}
       </h2>
       <div className="@container">
       <form key={`${q}|${status}|${discipline}|${university}|${review}|${pageSize}`} className="grid gap-3 rounded-lg border bg-card p-3 @lg:grid-cols-2 @3xl:grid-cols-4 @5xl:grid-cols-7" role="search">
         <div className="grid gap-1.5 @3xl:col-span-2">
-          <Label htmlFor="q">Search</Label>
-          <Input id="q" name="q" defaultValue={q} placeholder="Name, school, program, role" />
+          <Label htmlFor="q">{t("candidatesPage.searchLabel")}</Label>
+          <Input id="q" name="q" defaultValue={q} placeholder={t("candidatesPage.searchPlaceholder")} />
         </div>
-        <Filter id="status" label="Status" value={status} options={STATUS_LABELS} />
-        <Filter id="discipline" label="Discipline" value={discipline} options={disciplineOptions} />
-        <Filter id="university" label="School" value={university} options={universityOptions} />
+        <Filter id="status" label={t("list.status")} all={t("list.all")} value={status} options={statusOptions} />
+        <Filter id="discipline" label={t("list.discipline")} all={t("list.all")} value={discipline} options={disciplineOptions} />
+        <Filter id="university" label={t("list.school")} all={t("list.all")} value={university} options={universityOptions} />
         <div className="grid gap-1.5">
-          <Label htmlFor="size">Per page</Label>
+          <Label htmlFor="size">{t("list.perPage")}</Label>
           <AppSelect id="size" name="size" defaultValue={String(pageSize)}>
             {PAGE_SIZES.map((n) => (
               <option key={n} value={n}>
@@ -108,43 +115,43 @@ export async function CandidateList({ searchParams }: Pick<PageProps<"/candidate
         <div className="flex flex-wrap items-end gap-x-3 gap-y-2 @lg:col-span-2 @3xl:col-span-2 @5xl:col-span-1">
           <label className="flex h-8 items-center gap-2 text-sm whitespace-nowrap">
             <Checkbox name="review" value="1" defaultChecked={review} />
-            Needs review
+            {t("list.needsReview")}
           </label>
           <Button type="submit" size="sm">
-            Filter
+            {t("list.filter")}
           </Button>
           <Link href="/candidates?clear=1" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-            Clear
+            {t("list.clear")}
           </Link>
         </div>
       </form>
       </div>
 
-      <Disclosure id="views" summary={`Saved views${views.length ? ` (${views.length})` : ""}`}>
-        <ViewsMenu page="candidates" views={views} />
+      <Disclosure id="views" summary={views.length ? t("list.savedViewsCount", { count: views.length }) : t("list.savedViews")}>
+        <SavedViews page="candidates" views={views} />
       </Disclosure>
 
       <p className="text-sm text-muted-foreground" aria-live="polite">
-        {total.toLocaleString("en-CA")} candidate{total === 1 ? "" : "s"}
-        {total > pageSize ? ` · page ${page} of ${pages}` : ""}
+        {total === 1 ? t("candidatesPage.countOne") : t("candidatesPage.countMany", { count: formatters(locale).number(total) })}
+        {total > pageSize ? t("list.pageOf", { page, pages }) : ""}
       </p>
 
       {data.length === 0 ? (
         q || status || discipline || university || review ? (
-          <EmptyState icon={<SearchX aria-hidden />} title="No candidates match these filters" description="Try removing a filter or searching for something else.">
+          <EmptyState icon={<SearchX aria-hidden />} title={t("candidatesPage.noMatchTitle")} description={t("candidatesPage.noMatchDesc")}>
             <Link href="/candidates?clear=1" className={buttonVariants({ size: "sm", variant: "outline" })}>
-              Clear filters
+              {t("list.clearFilters")}
             </Link>
           </EmptyState>
         ) : (
           <EmptyState
             icon={<Users aria-hidden />}
-            title="No candidates yet"
-            description="Paste profile links from your own LinkedIn searches, or import a list. Each person is sorted by school and program so you can approve them for your queue."
+            title={t("candidatesPage.emptyTitle")}
+            description={t("candidatesPage.emptyDesc")}
           >
             <div className="flex flex-wrap justify-center gap-2">
               <Link href="/candidates/import" className={buttonVariants({ size: "sm" })}>
-                Import a list
+                {t("candidatesPage.importList")}
               </Link>
               <Suspense fallback={null}>
                 <LoadExample />
@@ -158,14 +165,14 @@ export async function CandidateList({ searchParams }: Pick<PageProps<"/candidate
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">
-                <SelectAll scope="candidates" ids={data.map((c) => c.id)} label="Select everyone on this page" />
+                <SelectAll scope="candidates" ids={data.map((c) => c.id)} label={t("list.selectEveryone")} />
               </TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>School · program</TableHead>
-              <TableHead className="hidden md:table-cell">Role</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t("list.name")}</TableHead>
+              <TableHead>{t("candidatesPage.schoolProgram")}</TableHead>
+              <TableHead className="hidden md:table-cell">{t("list.role")}</TableHead>
+              <TableHead>{t("list.status")}</TableHead>
               <TableHead className="w-10">
-                <span className="sr-only">LinkedIn</span>
+                <span className="sr-only">{t("list.linkedIn")}</span>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -180,7 +187,7 @@ export async function CandidateList({ searchParams }: Pick<PageProps<"/candidate
                     {c.full_name}
                   </Link>
                 </TableCell>
-                <TableCell label="School · program" className="whitespace-normal">
+                <TableCell label={t("candidatesPage.schoolProgram")} className="whitespace-normal">
                   <CategoryLabel
                     university={c.university}
                     discipline={c.discipline}
@@ -188,8 +195,8 @@ export async function CandidateList({ searchParams }: Pick<PageProps<"/candidate
                     catalog={catalog}
                   />
                 </TableCell>
-                <TableCell label="Role" className="hidden max-w-64 truncate text-muted-foreground md:table-cell">{c.role}</TableCell>
-                <TableCell label="Status">
+                <TableCell label={t("list.role")} className="hidden max-w-64 truncate text-muted-foreground md:table-cell">{c.role}</TableCell>
+                <TableCell label={t("list.status")}>
                   <StatusBadge status={c.status} />
                 </TableCell>
                 <TableCell>
@@ -197,7 +204,7 @@ export async function CandidateList({ searchParams }: Pick<PageProps<"/candidate
                     href={c.profile_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={`Open ${c.full_name} on LinkedIn`} title={`Open ${c.full_name} on LinkedIn`}
+                    aria-label={t("list.openOnLinkedIn", { name: c.full_name })} title={t("list.openOnLinkedIn", { name: c.full_name })}
                     className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
                   >
                     <ExternalLink />
@@ -213,17 +220,20 @@ export async function CandidateList({ searchParams }: Pick<PageProps<"/candidate
       <PageNav current={page} pages={pages} href={pageHref} />
       <BulkBar />
     </section>
+    </LocaleScope>
   );
 }
 
 function Filter({
   id,
   label,
+  all,
   value,
   options,
 }: {
   id: string;
   label: string;
+  all: string;
   value: string;
   options: Record<string, string>;
 }) {
@@ -231,7 +241,7 @@ function Filter({
     <div className="grid gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       <AppSelect id={id} name={id} defaultValue={value}>
-        <option value="">All</option>
+        <option value="">{all}</option>
         {Object.entries(options).map(([v, l]) => (
           <option key={v} value={v}>
             {l}

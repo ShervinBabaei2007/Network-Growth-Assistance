@@ -1,3 +1,4 @@
+import { getT } from "@/lib/i18n/server";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
 /** Pages near the current one, plus the first and last, with gaps marked. */
@@ -7,14 +8,15 @@ function windowOf(current: number, pages: number): (number | "gap")[] {
 }
 
 /** Previous / numbered pages / Next, on the shadcn Pagination. `href` builds the address of a page number. */
-export function PageNav({ current, pages, href, label = "Pages" }: { current: number; pages: number; href: (page: number) => string; label?: string }) {
+export async function PageNav({ current, pages, href, label }: { current: number; pages: number; href: (page: number) => string; label?: string }) {
   if (pages <= 1) return null;
+  const t = await getT();
   return (
-    <Pagination aria-label={label}>
+    <Pagination aria-label={label ?? t("list.pages")}>
       <PaginationContent>
         {current > 1 ? (
           <PaginationItem>
-            <PaginationPrevious href={href(current - 1)} />
+            <PaginationPrevious href={href(current - 1)} text={t("list.previous")} aria-label={t("list.previous")} />
           </PaginationItem>
         ) : null}
         {windowOf(current, pages).map((n, i) =>
@@ -24,7 +26,7 @@ export function PageNav({ current, pages, href, label = "Pages" }: { current: nu
             </PaginationItem>
           ) : (
             <PaginationItem key={n}>
-              <PaginationLink href={href(n)} isActive={n === current} aria-label={`Page ${n}`}>
+              <PaginationLink href={href(n)} isActive={n === current} aria-label={t("list.page", { n })}>
                 {n}
               </PaginationLink>
             </PaginationItem>
@@ -32,7 +34,7 @@ export function PageNav({ current, pages, href, label = "Pages" }: { current: nu
         )}
         {current < pages ? (
           <PaginationItem>
-            <PaginationNext href={href(current + 1)} />
+            <PaginationNext href={href(current + 1)} text={t("list.next")} aria-label={t("list.next")} />
           </PaginationItem>
         ) : null}
       </PaginationContent>

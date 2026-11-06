@@ -16,6 +16,7 @@ import { CandidateList } from "./candidate-list";
 import { QuickAddForm } from "./quick-add";
 import { QuickCapture } from "./quick-capture";
 import { RememberLastView } from "@/components/views-menu";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Candidates · Network Growth" };
 
@@ -30,13 +31,13 @@ export default function CandidatesPage({ searchParams }: PageProps<"/candidates"
           </p>
         </div>
         <Link href="/candidates/import" className={buttonVariants({ variant: "outline", size: "sm" })}>
-          <Upload aria-hidden /> Import
+          <Upload aria-hidden /> <Tx k="candidatesPage.import" />
         </Link>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Quick capture from LinkedIn search</CardTitle>
+          <CardTitle><Tx k="candidatesPage.quickCapture" /></CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <Suspense fallback={null}>
@@ -46,8 +47,10 @@ export default function CandidatesPage({ searchParams }: PageProps<"/candidates"
         </CardContent>
       </Card>
 
-      <Disclosure id="add" summary="Add one person by hand">
-            <QuickAddForm />
+      <Disclosure id="add" summary={<Tx k="candidatesPage.addByHand" />}>
+        <Suspense fallback={null}>
+          <QuickAddForm />
+        </Suspense>
       </Disclosure>
 
       <Suspense fallback={null}>
@@ -78,10 +81,11 @@ async function SearchShortcuts() {
     return null; // shortcuts are a convenience; the paste box still works without them
   }
   if (links.length === 0) return null;
+  const t = await getT();
 
   return (
-    <nav aria-label="LinkedIn search shortcuts" className="grid gap-2">
-      <p className="text-sm font-medium">1. Open a search on LinkedIn</p>
+    <nav aria-label={t("candidatesPage.shortcutsAria")} className="grid gap-2">
+      <p className="text-sm font-medium">{t("candidatesPage.step1")}</p>
       <ul className="flex flex-wrap gap-2">
         {links.map((l) => (
           <li key={`${l.discipline}-${l.university}`}>
@@ -93,13 +97,13 @@ async function SearchShortcuts() {
               className={cn(buttonVariants({ variant: l.isAlternate ? "ghost" : "outline", size: "sm" }), "h-auto min-h-8 max-w-full py-1.5 text-left whitespace-normal")}
             >
               {l.label}
-              {l.remaining !== null ? <span className="text-muted-foreground">· {l.remaining} to go</span> : <span className="text-muted-foreground">· extra</span>}
+              {l.remaining !== null ? <span className="text-muted-foreground">{t("candidatesPage.toGo", { count: l.remaining })}</span> : <span className="text-muted-foreground">{t("candidatesPage.extra")}</span>}
               <ExternalLink aria-hidden />
             </a>
           </li>
         ))}
       </ul>
-      <p className="text-sm font-medium">2. Press Ctrl+A, Ctrl+C there, then paste below</p>
+      <p className="text-sm font-medium">{t("candidatesPage.step2")}</p>
     </nav>
   );
 }

@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
-import { disciplineName, STATUS_LABELS, universityName, type CandidateStatus, type Catalog, type Discipline, type University } from "@/lib/domain";
+import { getT } from "@/lib/i18n/server";
+import { disciplineName, universityName, type CandidateStatus, type Catalog, type Discipline, type University } from "@/lib/domain";
 
 const STATUS_VARIANT: Partial<Record<CandidateStatus, "default" | "secondary" | "outline" | "destructive">> = {
   approved: "default",
@@ -8,12 +9,13 @@ const STATUS_VARIANT: Partial<Record<CandidateStatus, "default" | "secondary" | 
   do_not_contact: "destructive",
 };
 
-export function StatusBadge({ status }: { status: CandidateStatus }) {
-  return <Badge variant={STATUS_VARIANT[status] ?? "outline"}>{STATUS_LABELS[status]}</Badge>;
+export async function StatusBadge({ status }: { status: CandidateStatus }) {
+  const t = await getT();
+  return <Badge variant={STATUS_VARIANT[status] ?? "outline"}>{t(`status.${status}`)}</Badge>;
 }
 
 /** School and program, with "?" and a review hint when either is unconfirmed. */
-export function CategoryLabel({
+export async function CategoryLabel({
   university,
   discipline,
   confirmed,
@@ -25,12 +27,13 @@ export function CategoryLabel({
   /** The user's own schools and disciplines, for their names. */
   catalog: Catalog;
 }) {
+  const t = await getT();
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
       <span>
         {university ? universityName(catalog, university) : "?"} · {discipline ? disciplineName(catalog, discipline) : "?"}
       </span>
-      {confirmed ? null : <Badge variant="outline">Needs review</Badge>}
+      {confirmed ? null : <Badge variant="outline">{t("list.needsReview")}</Badge>}
     </span>
   );
 }

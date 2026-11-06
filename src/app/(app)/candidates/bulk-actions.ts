@@ -1,5 +1,6 @@
 "use server";
 
+import { getT } from "@/lib/i18n/server";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { err, ok, type ActionResult } from "@/lib/action-result";
@@ -25,15 +26,16 @@ export type BulkStatusChange = { changed: { id: string; previous: (typeof ANY_ST
  */
 export async function bulkSetStatus(rawIds: string[], status: ReviewStatus): Promise<ActionResult<BulkStatusChange>> {
   const parsed = ids.safeParse(rawIds);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Select at least one person.");
-  if (!REVIEW_STATUSES.includes(status)) return err("Unknown status.");
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? (await getT())("candidatesPage.bulkSelectEmpty"));
+  if (!REVIEW_STATUSES.includes(status)) return err((await getT())("candidatesPage.bulkUnknownStatus"));
   const ctx = await actionContext();
+  const t = await getT();
 
   const { data: rows, error } = await ctx.supabase
     .from("candidates")
     .select("id, status, university_confidence, discipline_confidence, invitations(id)")
     .in("id", parsed.data);
-  if (error) return err("Couldn't update the people you selected. Try again.");
+  if (error) return err(t("candidatesPage.bulkUpdateFailed"));
 
   const eligible = rows.filter((c) => {
     if (c.status === status) return false;
@@ -42,16 +44,16 @@ export async function bulkSetStatus(rawIds: string[], status: ReviewStatus): Pro
     return true;
   });
   const skipped = parsed.data.length - eligible.length;
-  if (eligible.length === 0) return err("None of these people can be changed that way. Approving needs the school and program confirmed, and people with an invitation keep their status.");
+  if (eligible.length === 0) return err(t("candidatesPage.bulkNoneEligible"));
 
   const { error: updateError } = await ctx.supabase.from("candidates").update({ status }).in("id", eligible.map((c) => c.id));
-  if (updateError) return err("Couldn't update the people you selected. Try again.");
+  if (updateError) return err(t("candidatesPage.bulkUpdateFailed"));
 
   await logActivity(ctx, "candidate.bulk_status", { count: eligible.length, status });
   refresh();
   const changed = eligible.map((c) => ({ id: c.id, previous: c.status as (typeof ANY_STATUS)[number] }));
-  const label = status.replace(/_/g, " ");
-  return ok(`${eligible.length} marked ${label}${skipped ? `. ${skipped} skipped.` : "."}`, { data: { changed, skipped, status } });
+  const label = t(`bulkLabel.${status}`);
+  return ok(`${t("candidatesPage.bulkDone", { count: eligible.length, label })}${skipped ? t("candidatesPage.bulkSkipped", { count: skipped }) : "."}`, { data: { changed, skipped, status } });
 }
 
 /** Puts people back to the status they had, but only if nothing has changed them since. */
@@ -62,7 +64,7 @@ export async function undoBulkStatus(change: BulkStatusChange): Promise<ActionRe
       changed: z.array(z.object({ id: z.uuid(), previous: z.enum(ANY_STATUS) })).min(1).max(MAX_SELECTION),
     })
     .safeParse(change);
-  if (!parsed.success) return err("Couldn't undo that. It may already have changed; reload the page to see where things stand.");
+  if (!parsed.success) return err((await getT())("candidatesPage.bulkUndoFailed"));
   const ctx = await actionContext();
   const byPrevious = new Map<string, string[]>();
   for (const c of parsed.data.changed) byPrevious.set(c.previous, [...(byPrevious.get(c.previous) ?? []), c.id]);
@@ -72,20 +74,20 @@ export async function undoBulkStatus(change: BulkStatusChange): Promise<ActionRe
       .update({ status: previous as (typeof ANY_STATUS)[number] })
       .in("id", group)
       .eq("status", parsed.data.status);
-    if (error) return err("Couldn't undo that. Try again.");
+    if (error) return err((await getT())("candidatesPage.bulkUndoRetry"));
   }
   refresh();
-  return ok(`${parsed.data.changed.length} restored.`);
+  return ok((await getT())("candidatesPage.bulkRestored", { count: parsed.data.changed.length }));
 }
 
 /** Permanently deletes people and their invitation records. The caller asks for confirmation first; there is no undo. */
 export async function bulkDeleteCandidates(rawIds: string[]): Promise<ActionResult> {
   const parsed = ids.safeParse(rawIds);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Select at least one person.");
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? (await getT())("candidatesPage.bulkSelectEmpty"));
   const ctx = await actionContext();
   const { error, count } = await ctx.supabase.from("candidates").delete({ count: "exact" }).in("id", parsed.data);
-  if (error) return err("Couldn't delete the people you selected. Try again.");
+  if (error) return err((await getT())("candidatesPage.bulkDeleteFailed"));
   await logActivity(ctx, "candidate.bulk_deleted", { count: count ?? 0 });
   refresh();
-  return ok(`${count ?? 0} deleted.`);
+  return ok((await getT())("candidatesPage.bulkDeleted", { count: count ?? 0 }));
 }

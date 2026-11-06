@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { activeFilterCount, normalizeViewQuery, viewHref, type ViewPage } from "@/lib/views";
+import { useTr } from "@/lib/i18n/client";
 
 export type SavedView = { id: string; name: string; query: string };
 
@@ -48,6 +49,7 @@ export function ViewsMenu({ page, views }: { page: ViewPage; views: SavedView[] 
   const search = useSearchParams();
   const pathname = usePathname();
   const { pending, run } = useActionRunner();
+  const tr = useTr();
   const [name, setName] = useState("");
   const current = normalizeViewQuery(page, search);
   const count = activeFilterCount(page, search);
@@ -55,7 +57,7 @@ export function ViewsMenu({ page, views }: { page: ViewPage; views: SavedView[] 
   return (
     <div className="grid gap-3" data-testid="views-menu">
       <p className="text-sm text-muted-foreground" aria-live="polite">
-        {count === 0 ? "No filters applied." : `${count} filter${count === 1 ? "" : "s"} applied.`}
+        {count === 0 ? tr("views.noFilters", "No filters applied.") : count === 1 ? tr("views.filtersOne", "1 filter applied.") : tr("views.filtersMany", "{count} filters applied.", { count })}
       </p>
       {views.length > 0 ? (
         <ul className="grid gap-1">
@@ -68,14 +70,14 @@ export function ViewsMenu({ page, views }: { page: ViewPage; views: SavedView[] 
               >
                 {v.name}
               </Link>
-              <Button size="icon-sm" variant="ghost" disabled={pending} aria-label={`Delete view ${v.name}`} onClick={() => run(() => deleteView(v.id))}>
+              <Button size="icon-sm" variant="ghost" disabled={pending} aria-label={tr("views.deleteView", "Delete view {name}", { name: v.name })} onClick={() => run(() => deleteView(v.id))}>
                 <Trash2 aria-hidden />
               </Button>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground">No saved views yet. Choose some filters, then save them here.</p>
+        <p className="text-sm text-muted-foreground">{tr("views.none", "No saved views yet. Choose some filters, then save them here.")}</p>
       )}
       <form
         className="flex flex-wrap items-end gap-2"
@@ -85,11 +87,11 @@ export function ViewsMenu({ page, views }: { page: ViewPage; views: SavedView[] 
         }}
       >
         <div className="grid gap-1.5">
-          <Label htmlFor="view-name">Save these filters as</Label>
-          <Input id="view-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="Needs review · my school" />
+          <Label htmlFor="view-name">{tr("views.saveAs", "Save these filters as")}</Label>
+          <Input id="view-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder={tr("views.placeholder", "Needs review · my school")} />
         </div>
         <Button type="submit" size="sm" disabled={pending || !name.trim() || !current}>
-          Save view
+          {tr("views.save", "Save view")}
         </Button>
       </form>
     </div>

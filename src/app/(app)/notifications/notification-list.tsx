@@ -5,6 +5,7 @@ import { AlarmClock, BellRing, Briefcase, CalendarClock, CheckCheck, MessageCirc
 import { markAllRead, markUnread, setNotificationRead } from "@/app/(app)/jobs/searches/actions";
 import { useActionRunner } from "@/components/toast/use-action-runner";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 export type NotificationItem = {
@@ -23,13 +24,14 @@ const ICON: Record<string, typeof BellRing> = { alert: Briefcase, reminder: Alar
 
 export function NotificationList({ items, truncated }: { items: NotificationItem[]; truncated: boolean }) {
   const { pending, run } = useActionRunner();
+  const t = useT();
   const unread = items.filter((i) => !i.read).length;
   const days = [...new Set(items.map((i) => i.day))];
   return (
     <div className="grid gap-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground" aria-live="polite">
-          {unread ? `${unread} unread` : "All read"}
+          {unread ? t("notificationsPage.unread", { count: unread }) : t("notificationsPage.allRead")}
         </p>
         <Button
           size="sm"
@@ -47,7 +49,7 @@ export function NotificationList({ items, truncated }: { items: NotificationItem
             );
           }}
         >
-          <CheckCheck aria-hidden /> Mark all read
+          <CheckCheck aria-hidden /> {t("notificationsPage.markAllRead")}
         </Button>
       </div>
       {days.map((day) => (
@@ -66,7 +68,7 @@ export function NotificationList({ items, truncated }: { items: NotificationItem
                       <Icon aria-hidden className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                       <div className="grid min-w-0 flex-1 gap-0.5">
                         <p className="font-medium break-words">
-                          {!n.read ? <span className="sr-only">Unread: </span> : null}
+                          {!n.read ? <span className="sr-only">{t("notificationsPage.unreadPrefix")}</span> : null}
                           {n.href ? (
                             <Link href={n.href} className="hover:underline" onClick={() => !n.read && run(() => setNotificationRead(n.id, true), { quiet: true })}>
                               {n.title}
@@ -79,7 +81,7 @@ export function NotificationList({ items, truncated }: { items: NotificationItem
                         <p className="text-xs text-muted-foreground">{n.when}</p>
                       </div>
                       <Button size="xs" variant="ghost" disabled={pending} onClick={() => run(() => setNotificationRead(n.id, !n.read), { quiet: true })}>
-                        {n.read ? "Mark unread" : "Mark read"}
+                        {n.read ? t("notificationsPage.markUnread") : t("notificationsPage.markRead")}
                       </Button>
                     </div>
                     {n.jobs.length ? (
@@ -100,7 +102,7 @@ export function NotificationList({ items, truncated }: { items: NotificationItem
           </ul>
         </section>
       ))}
-      {truncated ? <p className="text-xs text-muted-foreground">Showing the 100 most recent.</p> : null}
+      {truncated ? <p className="text-xs text-muted-foreground">{t("notificationsPage.truncated")}</p> : null}
     </div>
   );
 }

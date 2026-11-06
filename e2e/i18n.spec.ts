@@ -128,3 +128,18 @@ test("the Queue and Analytics bodies are in French", async ({ page, context }) =
   await expect(page.getByText("Taux d'acceptation")).toBeVisible();
   await expect(page.getByText("Weekly activity")).toHaveCount(0);
 });
+
+test("the Candidates list and its shared pieces are in French", async ({ page, context }) => {
+  test.setTimeout(120_000);
+  await signIn(page, uniqueEmail("fr-cands"));
+  await context.addCookies([{ name: "locale", value: "fr-CA", url: "http://localhost:3000" }]);
+  await page.goto("/candidates");
+  await expect(page.getByRole("heading", { name: "Aucun candidat pour l'instant" })).toBeVisible();
+  await expect(page.getByText("Ajouter une personne à la main")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Filtrer" })).toBeVisible();
+  await expect(page.getByText("Vues enregistrées")).toBeVisible();
+  await page.goto("/notifications");
+  await expect(page.getByText("Rien pour l'instant")).toBeVisible();
+  await page.goto("/follow-ups");
+  await expect(page.getByRole("heading", { name: "Aucun suivi en attente" })).toBeVisible();
+});

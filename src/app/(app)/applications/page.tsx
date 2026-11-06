@@ -6,7 +6,8 @@ import Link from "next/link";
 import { LoadError } from "@/components/load-error";
 import { Disclosure } from "@/components/disclosure";
 import { PageHeaderT } from "@/components/tx";
-import { RememberLastView, ViewsMenu, type SavedView } from "@/components/views-menu";
+import { RememberLastView, type SavedView } from "@/components/views-menu";
+import { SavedViews } from "@/components/saved-views";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDateOnly, formatDay, formatDateTime } from "@/lib/applications/format";
 import { LIST_LIMIT, loadApplications } from "@/lib/applications/load";
@@ -87,7 +88,7 @@ async function ApplicationsView({ searchParams }: Pick<PageProps<"/applications"
       ) : null}
       <Tracker apps={apps} view={view} sort={sort} quiet={quiet} afterDays={afterDays} />
       <Disclosure id="views" summary={`Saved views${views.length ? ` (${views.length})` : ""}`}>
-        <ViewsMenu page="applications" views={views} />
+        <SavedViews page="applications" views={views} />
       </Disclosure>
     </>
   );

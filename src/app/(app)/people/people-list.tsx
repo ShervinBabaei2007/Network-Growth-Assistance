@@ -7,7 +7,8 @@ import Link from "next/link";
 import { Disclosure } from "@/components/disclosure";
 import { ListKeyNav } from "@/components/list-key-nav";
 import { LoadError } from "@/components/load-error";
-import { ViewsMenu, type SavedView } from "@/components/views-menu";
+import { type SavedView } from "@/components/views-menu";
+import { SavedViews } from "@/components/saved-views";
 import { PAGE_SIZES, parsePageSize } from "@/lib/views";
 import { LoadExample } from "@/components/load-example";
 import { RowSelect, SelectAll } from "@/components/bulk/bulk-select";
@@ -115,7 +116,7 @@ export async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "s
       </div>
 
       <Disclosure id="views" summary={`Saved views${views.length ? ` (${views.length})` : ""}`}>
-        <ViewsMenu page="people" views={views} />
+        <SavedViews page="people" views={views} />
       </Disclosure>
 
       <p className="text-sm text-muted-foreground" aria-live="polite">

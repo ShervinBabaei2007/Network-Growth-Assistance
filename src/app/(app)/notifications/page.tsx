@@ -8,6 +8,8 @@ import { formatDateTime, formatDay } from "@/lib/applications/format";
 import { localDate } from "@/lib/dates";
 import { chunk } from "@/lib/job-postings/service";
 import { createClient } from "@/lib/supabase/server";
+import { LocaleScope } from "@/components/locale-scope";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { NotificationList, type NotificationItem } from "./notification-list";
 
 export const metadata = { title: "Notifications · Network Growth" };
@@ -36,12 +38,13 @@ async function Notifications() {
   ]);
   if (error) return <LoadError what="your notifications" />;
   const tz = settings?.timezone ?? "UTC";
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   if (!data.length) {
     return (
       <EmptyState
         icon={<Bell aria-hidden />}
-        title="Nothing yet"
-        description="Save a search on the Jobs page with alerts on, and new matching jobs show up here. Reminders and interviews from your applications appear here too."
+        title={t("notificationsPage.emptyTitle")}
+        description={t("notificationsPage.emptyDesc")}
       />
     );
   }
@@ -68,11 +71,15 @@ async function Notifications() {
       title: n.title,
       body: n.body,
       href: n.href,
-      when: formatDateTime(n.created_at, tz),
-      day: day === today ? "Today" : formatDay(n.created_at, tz),
+      when: formatDateTime(n.created_at, tz, locale),
+      day: day === today ? t("notificationsPage.today") : formatDay(n.created_at, tz, locale),
       read: Boolean(n.read_at),
       jobs: jobsBy.get(n.id) ?? [],
     };
   });
-  return <NotificationList items={items} truncated={data.length === LIMIT} />;
+  return (
+    <LocaleScope groups={["notificationsPage"]}>
+      <NotificationList items={items} truncated={data.length === LIMIT} />
+    </LocaleScope>
+  );
 }
