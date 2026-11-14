@@ -14,6 +14,9 @@ const VIEW_KEYS: Record<ViewPage, readonly string[]> = {
   jobs: ["q", "where", "country", "range", "tab", "prov", "all", "level", "wp", "wpu", "type", "pay", "minpay", "company", "src", "unchecked"],
 };
 
+/** The search parameters that make up a view of this page, in their fixed order. */
+export const viewKeys = (page: ViewPage): readonly string[] => VIEW_KEYS[page];
+
 /** Keys that change how a list looks, not which rows it shows, so they are not counted as filters. */
 const NOT_FILTERS: readonly string[] = ["size", "view", "sort", "dir"];
 

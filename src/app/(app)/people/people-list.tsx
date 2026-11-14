@@ -7,9 +7,10 @@ import Link from "next/link";
 import { Disclosure } from "@/components/disclosure";
 import { ListKeyNav } from "@/components/list-key-nav";
 import { LoadError } from "@/components/load-error";
-import { type SavedView } from "@/components/views-menu";
 import { SavedViews } from "@/components/saved-views";
-import { PAGE_SIZES, parsePageSize } from "@/lib/views";
+import { PAGE_SIZES } from "@/lib/views";
+import { listHref, one, pageCount, pageRange, pagingFrom, searchFilter } from "@/lib/list-view";
+import { loadSavedViews } from "@/lib/data/saved-views";
 import { LoadExample } from "@/components/load-example";
 import { RowSelect, SelectAll } from "@/components/bulk/bulk-select";
 import { PeopleBulkBar } from "./bulk-bar";
@@ -26,8 +27,6 @@ import { LocaleScope } from "@/components/locale-scope";
 import { formatters } from "@/lib/i18n";
 import { getLocale, getT } from "@/lib/i18n/server";
 
-const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
-
 /** The saved-people list with its filters, saved views and bulk bar. Used by the list page and beside a record. */
 export async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "searchParams">) {
   const sp = await searchParams;
@@ -35,15 +34,10 @@ export async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "s
   const status = one(sp.status);
   const tag = one(sp.tag).trim();
   const due = one(sp.due) === "1";
-  const page = Math.max(1, Number(one(sp.page)) || 1);
-  const PAGE_SIZE = parsePageSize(one(sp.size));
+  const { page, pageSize: PAGE_SIZE } = pagingFrom(sp);
 
   const supabase = await createClient();
-  const [{ data: settings }, { data: viewRows }] = await Promise.all([
-    supabase.from("settings").select("timezone").single(),
-    supabase.from("saved_views").select("id, name, query").eq("page", "people").order("created_at"),
-  ]);
-  const views: SavedView[] = viewRows ?? [];
+  const [{ data: settings }, views] = await Promise.all([supabase.from("settings").select("timezone").single(), loadSavedViews(supabase, "people")]);
   const today = localDate(new Date(), settings?.timezone ?? "UTC");
 
   let query = supabase
@@ -52,24 +46,19 @@ export async function PeopleList({ searchParams }: Pick<PageProps<"/people">, "s
     .eq("saved", true)
     .order("reminder_at", { ascending: true, nullsFirst: false })
     .order("relevance_score", { ascending: false, nullsFirst: false })
-    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+    .range(...pageRange(page, PAGE_SIZE));
   if (status && status in CRM_STATUS_LABELS) query = query.eq("crm_status", status as keyof typeof CRM_STATUS_LABELS);
   if (tag) query = query.contains("tags", [tag]);
   if (due) query = query.lte("reminder_at", today);
-  const term = q.replace(/[,()*%\\"':.]/g, " ").trim();
-  if (term) query = query.or(["full_name", "current_company", "current_title", "notes"].map((c) => `${c}.ilike.*${term}*`).join(","));
+  const match = searchFilter(q, ["full_name", "current_company", "current_title", "notes"]);
+  if (match) query = query.or(match);
 
   const { data, count, error } = await query;
   if (error) return <LoadError what="people" />;
   const [t, locale] = await Promise.all([getT(), getLocale()]);
   const total = count ?? 0;
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const href = (p: number) => {
-    const s = new URLSearchParams();
-    for (const [k, v] of Object.entries({ q, status, tag, due: due ? "1" : "", size: PAGE_SIZE === 50 ? "" : String(PAGE_SIZE) })) if (v) s.set(k, v);
-    if (p > 1) s.set("page", String(p));
-    return `/people${s.size ? `?${s}` : ""}`;
-  };
+  const pages = pageCount(total, PAGE_SIZE);
+  const href = (p: number) => listHref("people", { q, status, tag, due, size: PAGE_SIZE }, p);
 
   return (
     <LocaleScope groups={["list", "peoplePage"]}>

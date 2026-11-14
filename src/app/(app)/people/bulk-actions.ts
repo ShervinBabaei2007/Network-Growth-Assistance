@@ -1,14 +1,13 @@
 "use server";
 
-import { refresh } from "next/cache";
 import { z } from "zod";
-import { err, ok, type ActionResult } from "@/lib/action-result";
-import { cleanTag, groupBy, withoutTag, withTag } from "@/lib/bulk";
+import type { ActionResult } from "@/lib/action-result";
+import { cleanTag, withoutTag, withTag } from "@/lib/bulk";
 import { addDays, localDate } from "@/lib/dates";
+import { CONNECTED_PATCH, PERSON_STATUSES, savesPerson, statusInteractionKind, type PersonStatus } from "@/lib/people/crm";
 import { MAX_SELECTION } from "@/lib/selection";
-import { actionContext, logActivity } from "@/lib/server/action-context";
-import type { Database } from "@/lib/supabase/database.types";
-import { getT } from "@/lib/i18n/server";
+import { restoreByPrevious, selectedIds, withSkipped } from "@/lib/server/bulk-change";
+import { done, fail, mutate } from "@/lib/server/mutation";
 
 /**
  * Bulk changes to saved people. Each action applies the same rule as the single-person one, returns what it
@@ -16,146 +15,130 @@ import { getT } from "@/lib/i18n/server";
  * Everything runs under the user's own row-level security.
  */
 
-type Status = Database["public"]["Enums"]["network_person_status"];
-const STATUSES = ["discovered", "shortlisted", "ready_to_connect", "connection_sent_manually", "connected", "replied", "follow_up", "archived", "not_relevant"] as const;
-const ids = z.array(z.uuid()).min(1, "Select at least one person.").max(MAX_SELECTION, `Select up to ${MAX_SELECTION} people at a time.`);
+const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
-export type PersonStatusChange = { status: Status; changed: { id: string; previous: Status }[] };
+export type PersonStatusChange = { status: PersonStatus; changed: { id: string; previous: PersonStatus }[] };
 export type PersonTagChange = { tag: string; changed: string[] };
 export type PersonSnoozeChange = { until: string; changed: { id: string; previous: string | null }[] };
 
 /** Sets a CRM status on many people ("mark sent" is `connection_sent_manually`). */
 export async function bulkSetPersonStatus(rawIds: string[], status: string): Promise<ActionResult<PersonStatusChange>> {
-  const parsedIds = ids.safeParse(rawIds);
-  const parsedStatus = z.enum(STATUSES).safeParse(status);
-  if (!parsedIds.success) return err(parsedIds.error.issues[0]?.message ?? (await getT())("candidatesPage.bulkSelectEmpty"));
-  if (!parsedStatus.success) return err((await getT())("candidatesPage.bulkUnknownStatus"));
-  const ctx = await actionContext();
+  return mutate<PersonStatusChange>({}, async ({ ctx }) => {
+    const picked = selectedIds(rawIds, "people");
+    if (!Array.isArray(picked)) return picked;
+    const parsedStatus = z.enum(PERSON_STATUSES).safeParse(status);
+    if (!parsedStatus.success) return fail("candidatesPage.bulkUnknownStatus");
 
-  const { data: rows, error } = await ctx.supabase.from("network_people").select("id, crm_status").in("id", parsedIds.data);
-  if (error) return err((await getT())("candidatesPage.bulkUpdateFailed"));
-  const eligible = rows.filter((p) => p.crm_status !== parsedStatus.data);
-  if (eligible.length === 0) return err((await getT())("peoplePage.alreadyStatus"));
+    const { data: rows, error } = await ctx.supabase.from("network_people").select("id, crm_status").in("id", picked);
+    if (error) return fail("candidatesPage.bulkUpdateFailed");
+    const eligible = rows.filter((p) => p.crm_status !== parsedStatus.data);
+    if (eligible.length === 0) return fail("peoplePage.alreadyStatus");
+    const eligibleIds = eligible.map((p) => p.id);
 
-  const { error: updateError } = await ctx.supabase
-    .from("network_people")
-    .update({ crm_status: parsedStatus.data, saved: parsedStatus.data !== "not_relevant" ? true : undefined })
-    .in("id", eligible.map((p) => p.id));
-  if (updateError) return err((await getT())("candidatesPage.bulkUpdateFailed"));
+    const { error: updateError } = await ctx.supabase.from("network_people").update({ crm_status: parsedStatus.data, saved: savesPerson(parsedStatus.data) }).in("id", eligibleIds);
+    if (updateError) return fail("candidatesPage.bulkUpdateFailed");
 
-  const kind = parsedStatus.data === "connection_sent_manually" ? "marked_sent" : parsedStatus.data === "replied" ? "replied" : "status_change";
-  await ctx.supabase.from("network_interactions").insert(eligible.map((p) => ({ user_id: ctx.userId, person_id: p.id, kind, body: parsedStatus.data })));
-  // Same rule as the single-person action: "connected" is the user's own statement, so they count as a known connection.
-  if (parsedStatus.data === "connected") {
-    await ctx.supabase.from("network_people").update({ proximity: "connected", known_match_state: "confirmed_same" }).in("id", eligible.map((p) => p.id));
-  }
+    const kind = statusInteractionKind(parsedStatus.data);
+    await ctx.supabase.from("network_interactions").insert(eligible.map((p) => ({ user_id: ctx.userId, person_id: p.id, kind, body: parsedStatus.data })));
+    if (parsedStatus.data === "connected") await ctx.supabase.from("network_people").update(CONNECTED_PATCH).in("id", eligibleIds);
 
-  await logActivity(ctx, "network.bulk_status", { count: eligible.length, status: parsedStatus.data });
-  refresh();
-  const skipped = parsedIds.data.length - eligible.length;
-  const t = await getT();
-  return ok(`${t("peoplePage.bulkMarked", { count: eligible.length, label: t(`crmBulk.${parsedStatus.data}`) })}${skipped ? t("peoplePage.bulkAlreadyHad", { count: skipped }) : "."}`, {
-    data: { status: parsedStatus.data, changed: eligible.map((p) => ({ id: p.id, previous: p.crm_status })) },
+    const skipped = picked.length - eligible.length;
+    return done((t) => withSkipped(t, t("peoplePage.bulkMarked", { count: eligible.length, label: t(`crmBulk.${parsedStatus.data}`) }), skipped, "peoplePage.bulkAlreadyHad"), {
+      data: { status: parsedStatus.data, changed: eligible.map((p) => ({ id: p.id, previous: p.crm_status })) },
+      log: ["network.bulk_status", { count: eligible.length, status: parsedStatus.data }],
+    });
   });
 }
 
 /** Puts people back to the status they had, but only where nothing has changed it since. */
 export async function undoBulkPersonStatus(change: PersonStatusChange): Promise<ActionResult> {
-  const parsed = z
-    .object({ status: z.enum(STATUSES), changed: z.array(z.object({ id: z.uuid(), previous: z.enum(STATUSES) })).min(1).max(MAX_SELECTION) })
-    .safeParse(change);
-  if (!parsed.success) return err((await getT())("candidatesPage.bulkUndoFailed"));
-  const ctx = await actionContext();
-  for (const [previous, group] of groupBy(parsed.data.changed, (c) => c.previous, (c) => c.id)) {
-    const { error } = await ctx.supabase.from("network_people").update({ crm_status: previous }).in("id", group).eq("crm_status", parsed.data.status);
-    if (error) return err((await getT())("candidatesPage.bulkUndoRetry"));
-  }
-  refresh();
-  return ok((await getT())("candidatesPage.bulkRestored", { count: parsed.data.changed.length }));
+  return mutate({}, async ({ ctx }) => {
+    const parsed = z.object({ status: z.enum(PERSON_STATUSES), changed: z.array(z.object({ id: z.uuid(), previous: z.enum(PERSON_STATUSES) })).min(1).max(MAX_SELECTION) }).safeParse(change);
+    if (!parsed.success) return fail("candidatesPage.bulkUndoFailed");
+    const restored = await restoreByPrevious(parsed.data.changed, (previous, ids) => ctx.supabase.from("network_people").update({ crm_status: previous }).in("id", ids).eq("crm_status", parsed.data.status));
+    if (!restored) return fail("candidatesPage.bulkUndoRetry");
+    return done("candidatesPage.bulkRestored", { params: { count: parsed.data.changed.length } });
+  });
 }
 
 /** Adds one tag to many people (skipping anyone who has it or has hit the 20-tag limit). */
 export async function bulkAddPersonTag(rawIds: string[], rawTag: string): Promise<ActionResult<PersonTagChange>> {
-  const parsedIds = ids.safeParse(rawIds);
-  if (!parsedIds.success) return err(parsedIds.error.issues[0]?.message ?? (await getT())("candidatesPage.bulkSelectEmpty"));
-  const tag = cleanTag(rawTag);
-  if (!tag || /[,]/.test(tag)) return err((await getT())("peoplePage.tagOne"));
-  const ctx = await actionContext();
+  return mutate<PersonTagChange>({}, async ({ ctx }) => {
+    const picked = selectedIds(rawIds, "people");
+    if (!Array.isArray(picked)) return picked;
+    const tag = cleanTag(rawTag);
+    if (!tag || /[,]/.test(tag)) return fail("peoplePage.tagOne");
 
-  const { data: rows, error } = await ctx.supabase.from("network_people").select("id, tags").in("id", parsedIds.data);
-  if (error) return err((await getT())("peoplePage.tagFailed"));
-  const changed: string[] = [];
-  for (const p of rows) {
-    const next = withTag(p.tags, tag);
-    if (next === p.tags) continue;
-    const { error: e } = await ctx.supabase.from("network_people").update({ tags: [...next] }).eq("id", p.id);
-    if (e) return err((await getT())("peoplePage.tagEveryoneFailed"));
-    changed.push(p.id);
-  }
-  if (changed.length === 0) return err((await getT())("peoplePage.tagNone"));
-  await logActivity(ctx, "network.bulk_tag", { count: changed.length });
-  refresh();
-  const skipped = parsedIds.data.length - changed.length;
-  const tt = await getT();
-  return ok(`${tt("peoplePage.tagged", { count: changed.length, tag })}${skipped ? tt("peoplePage.taggedSkipped", { count: skipped }) : "."}`, { data: { tag, changed } });
+    const { data: rows, error } = await ctx.supabase.from("network_people").select("id, tags").in("id", picked);
+    if (error) return fail("peoplePage.tagFailed");
+    const changed: string[] = [];
+    for (const p of rows) {
+      const next = withTag(p.tags, tag);
+      if (next === p.tags) continue;
+      const { error: e } = await ctx.supabase.from("network_people").update({ tags: [...next] }).eq("id", p.id);
+      if (e) return fail("peoplePage.tagEveryoneFailed");
+      changed.push(p.id);
+    }
+    if (changed.length === 0) return fail("peoplePage.tagNone");
+    const skipped = picked.length - changed.length;
+    return done((t) => withSkipped(t, t("peoplePage.tagged", { count: changed.length, tag }), skipped, "peoplePage.taggedSkipped"), { data: { tag, changed }, log: ["network.bulk_tag", { count: changed.length }] });
+  });
 }
 
 export async function undoBulkPersonTag(change: PersonTagChange): Promise<ActionResult> {
-  const parsed = z.object({ tag: z.string().min(1).max(40), changed: z.array(z.uuid()).min(1).max(MAX_SELECTION) }).safeParse(change);
-  if (!parsed.success) return err((await getT())("candidatesPage.bulkUndoFailed"));
-  const ctx = await actionContext();
-  const { data: rows, error } = await ctx.supabase.from("network_people").select("id, tags").in("id", parsed.data.changed);
-  if (error) return err((await getT())("candidatesPage.bulkUndoRetry"));
-  for (const p of rows) {
-    const next = withoutTag(p.tags, parsed.data.tag);
-    if (next === p.tags) continue;
-    const { error: e } = await ctx.supabase.from("network_people").update({ tags: [...next] }).eq("id", p.id);
-    if (e) return err((await getT())("candidatesPage.bulkUndoRetry"));
-  }
-  refresh();
-  return ok((await getT())("peoplePage.tagRemoved", { tag: parsed.data.tag, count: rows.length }));
+  return mutate({}, async ({ ctx }) => {
+    const parsed = z.object({ tag: z.string().min(1).max(40), changed: z.array(z.uuid()).min(1).max(MAX_SELECTION) }).safeParse(change);
+    if (!parsed.success) return fail("candidatesPage.bulkUndoFailed");
+    const { data: rows, error } = await ctx.supabase.from("network_people").select("id, tags").in("id", parsed.data.changed);
+    if (error) return fail("candidatesPage.bulkUndoRetry");
+    for (const p of rows) {
+      const next = withoutTag(p.tags, parsed.data.tag);
+      if (next === p.tags) continue;
+      const { error: e } = await ctx.supabase.from("network_people").update({ tags: [...next] }).eq("id", p.id);
+      if (e) return fail("candidatesPage.bulkUndoRetry");
+    }
+    return done("peoplePage.tagRemoved", { params: { tag: parsed.data.tag, count: rows.length } });
+  });
 }
 
 /** Moves the reminder of many people to a later day (in the user's time zone). */
 export async function bulkSnoozePeople(rawIds: string[], days: number): Promise<ActionResult<PersonSnoozeChange>> {
-  const parsedIds = ids.safeParse(rawIds);
-  const parsedDays = z.number().int().min(1).max(90).safeParse(days);
-  if (!parsedIds.success) return err(parsedIds.error.issues[0]?.message ?? (await getT())("candidatesPage.bulkSelectEmpty"));
-  if (!parsedDays.success) return err((await getT())("peoplePage.daysRange"));
-  const ctx = await actionContext();
-  const until = addDays(localDate(new Date(), ctx.settings.timezone), parsedDays.data);
+  return mutate<PersonSnoozeChange>({}, async ({ ctx }) => {
+    const picked = selectedIds(rawIds, "people");
+    if (!Array.isArray(picked)) return picked;
+    const parsedDays = z.number().int().min(1).max(90).safeParse(days);
+    if (!parsedDays.success) return fail("peoplePage.daysRange");
+    const until = addDays(localDate(new Date(), ctx.settings.timezone), parsedDays.data);
 
-  const { data: rows, error } = await ctx.supabase.from("network_people").select("id, reminder_at").in("id", parsedIds.data);
-  if (error) return err((await getT())("peoplePage.snoozeFailed"));
-  const { error: updateError } = await ctx.supabase.from("network_people").update({ reminder_at: until }).in("id", rows.map((p) => p.id));
-  if (updateError) return err((await getT())("peoplePage.snoozeFailed"));
-  await logActivity(ctx, "network.bulk_snooze", { count: rows.length, days: parsedDays.data });
-  refresh();
-  return ok((await getT())("peoplePage.remindersMoved", { count: rows.length, until }), { data: { until, changed: rows.map((p) => ({ id: p.id, previous: p.reminder_at })) } });
+    const { data: rows, error } = await ctx.supabase.from("network_people").select("id, reminder_at").in("id", picked);
+    if (error) return fail("peoplePage.snoozeFailed");
+    const { error: updateError } = await ctx.supabase.from("network_people").update({ reminder_at: until }).in("id", rows.map((p) => p.id));
+    if (updateError) return fail("peoplePage.snoozeFailed");
+    return done("peoplePage.remindersMoved", {
+      params: { count: rows.length, until },
+      data: { until, changed: rows.map((p) => ({ id: p.id, previous: p.reminder_at })) },
+      log: ["network.bulk_snooze", { count: rows.length, days: parsedDays.data }],
+    });
+  });
 }
 
 export async function undoBulkSnoozePeople(change: PersonSnoozeChange): Promise<ActionResult> {
-  const parsed = z
-    .object({ until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), changed: z.array(z.object({ id: z.uuid(), previous: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable() })).min(1).max(MAX_SELECTION) })
-    .safeParse(change);
-  if (!parsed.success) return err((await getT())("candidatesPage.bulkUndoFailed"));
-  const ctx = await actionContext();
-  for (const [previous, group] of groupBy(parsed.data.changed, (c) => c.previous, (c) => c.id)) {
-    const { error } = await ctx.supabase.from("network_people").update({ reminder_at: previous }).in("id", group).eq("reminder_at", parsed.data.until);
-    if (error) return err((await getT())("candidatesPage.bulkUndoRetry"));
-  }
-  refresh();
-  return ok((await getT())("peoplePage.remindersRestored", { count: parsed.data.changed.length }));
+  return mutate({}, async ({ ctx }) => {
+    const parsed = z.object({ until: date, changed: z.array(z.object({ id: z.uuid(), previous: date.nullable() })).min(1).max(MAX_SELECTION) }).safeParse(change);
+    if (!parsed.success) return fail("candidatesPage.bulkUndoFailed");
+    const restored = await restoreByPrevious(parsed.data.changed, (previous, ids) => ctx.supabase.from("network_people").update({ reminder_at: previous }).in("id", ids).eq("reminder_at", parsed.data.until));
+    if (!restored) return fail("candidatesPage.bulkUndoRetry");
+    return done("peoplePage.remindersRestored", { params: { count: parsed.data.changed.length } });
+  });
 }
 
 /** Removes people from the saved list and deletes them. The caller confirms first; there is no undo. */
 export async function bulkDeletePeople(rawIds: string[]): Promise<ActionResult> {
-  const parsed = ids.safeParse(rawIds);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? (await getT())("candidatesPage.bulkSelectEmpty"));
-  const ctx = await actionContext();
-  const { error, count } = await ctx.supabase.from("network_people").delete({ count: "exact" }).in("id", parsed.data);
-  if (error) return err((await getT())("candidatesPage.bulkDeleteFailed"));
-  await logActivity(ctx, "network.bulk_deleted", { count: count ?? 0 });
-  refresh();
-  return ok((await getT())("candidatesPage.bulkDeleted", { count: count ?? 0 }));
+  return mutate({}, async ({ ctx }) => {
+    const picked = selectedIds(rawIds, "people");
+    if (!Array.isArray(picked)) return picked;
+    const { error, count } = await ctx.supabase.from("network_people").delete({ count: "exact" }).in("id", picked);
+    if (error) return fail("candidatesPage.bulkDeleteFailed");
+    return done("candidatesPage.bulkDeleted", { params: { count: count ?? 0 }, log: ["network.bulk_deleted", { count: count ?? 0 }] });
+  });
 }

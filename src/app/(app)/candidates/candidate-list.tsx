@@ -17,16 +17,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { STATUS_LABELS, type CandidateStatus, type Discipline, type University } from "@/lib/domain";
 import { loadCatalog } from "@/lib/data/catalog";
 import { createClient } from "@/lib/supabase/server";
-import { PAGE_SIZES, parsePageSize } from "@/lib/views";
+import { PAGE_SIZES } from "@/lib/views";
+import { listHref, one, pageCount, pageRange, pagingFrom, searchFilter } from "@/lib/list-view";
+import { loadSavedViews } from "@/lib/data/saved-views";
 import { LocaleScope } from "@/components/locale-scope";
 import { formatters } from "@/lib/i18n";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { RowSelect, SelectAll } from "@/components/bulk/bulk-select";
 import { BulkBar } from "./bulk-select";
-import { type SavedView } from "@/components/views-menu";
 import { SavedViews } from "@/components/saved-views";
-
-const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
 /** The candidate list with its filters, saved views and bulk bar. Used by the list page and beside a record. */
 export async function CandidateList({ searchParams }: Pick<PageProps<"/candidates">, "searchParams">) {
@@ -36,15 +35,10 @@ export async function CandidateList({ searchParams }: Pick<PageProps<"/candidate
   const discipline = one(params.discipline) as Discipline | "";
   const university = one(params.university) as University | "";
   const review = one(params.review) === "1";
-  const page = Math.max(1, Number(one(params.page)) || 1);
-  const pageSize = parsePageSize(one(params.size));
+  const { page, pageSize } = pagingFrom(params);
 
   const supabase = await createClient();
-  const [catalog, { data: viewRows }] = await Promise.all([
-    loadCatalog(supabase),
-    supabase.from("saved_views").select("id, name, query").eq("page", "candidates").order("created_at"),
-  ]);
-  const views: SavedView[] = viewRows ?? [];
+  const [catalog, views] = await Promise.all([loadCatalog(supabase), loadSavedViews(supabase, "candidates")]);
   // Filters list the user's own schools and disciplines.
   const disciplineOptions = Object.fromEntries(catalog.disciplines.map((d) => [d.id, d.name]));
   const universityOptions = Object.fromEntries(catalog.universities.map((u) => [u.id, u.name]));
@@ -55,23 +49,14 @@ export async function CandidateList({ searchParams }: Pick<PageProps<"/candidate
       { count: "exact" },
     )
     .order("discovered_at", { ascending: false })
-    .range((page - 1) * pageSize, page * pageSize - 1);
+    .range(...pageRange(page, pageSize));
 
   if (status && status in STATUS_LABELS) query = query.eq("status", status);
   if (discipline && discipline in disciplineOptions) query = query.eq("discipline", discipline);
   if (university && university in universityOptions) query = query.eq("university", university);
   if (review) query = query.or("university_confidence.eq.needs_review,discipline_confidence.eq.needs_review");
-  if (q) {
-    // Strip characters that have meaning in PostgREST filter syntax.
-    const term = q.replace(/[,()*%\\"':.]/g, " ").trim();
-    if (term) {
-      query = query.or(
-        ["full_name", "raw_school_text", "raw_program_text", "role", "profile_key"]
-          .map((col) => `${col}.ilike.*${term}*`)
-          .join(","),
-      );
-    }
-  }
+  const match = searchFilter(q, ["full_name", "raw_school_text", "raw_program_text", "role", "profile_key"]);
+  if (match) query = query.or(match);
 
   const { data, count, error } = await query;
   if (error) return <LoadError what="candidates" />;
@@ -79,13 +64,8 @@ export async function CandidateList({ searchParams }: Pick<PageProps<"/candidate
   const [t, locale] = await Promise.all([getT(), getLocale()]);
   const total = count ?? 0;
   const statusOptions = Object.fromEntries(Object.keys(STATUS_LABELS).map((s) => [s, t(`status.${s as CandidateStatus}`)]));
-  const pages = Math.max(1, Math.ceil(total / pageSize));
-  const pageHref = (p: number) => {
-    const sp = new URLSearchParams();
-    for (const [k, v] of Object.entries({ q, status, discipline, university, review: review ? "1" : "", size: pageSize === 50 ? "" : String(pageSize) })) if (v) sp.set(k, v);
-    if (p > 1) sp.set("page", String(p));
-    return `/candidates${sp.size ? `?${sp}` : ""}`;
-  };
+  const pages = pageCount(total, pageSize);
+  const pageHref = (p: number) => listHref("candidates", { q, status, discipline, university, review, size: pageSize }, p);
 
   return (
     <LocaleScope groups={["list", "candidatesPage"]}>

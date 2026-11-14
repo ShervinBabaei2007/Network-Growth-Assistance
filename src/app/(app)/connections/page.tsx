@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { createClient } from "@/lib/supabase/server";
+import { one, pageCount, pageRange, searchFilter } from "@/lib/list-view";
 import { LocaleScope } from "@/components/locale-scope";
 import { formatters } from "@/lib/i18n";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -98,8 +99,6 @@ function ConnectionFields({ t, values, idPrefix = "new" }: { t: Translator; valu
   );
 }
 
-const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
-
 async function ConnectionList({ searchParams }: Pick<PageProps<"/connections">, "searchParams">) {
   const params = await searchParams;
   const q = one(params.q).trim();
@@ -109,14 +108,14 @@ async function ConnectionList({ searchParams }: Pick<PageProps<"/connections">, 
     .from("known_connections")
     .select("id, full_name, company, position, linkedin_url, connected_on, source", { count: "exact" })
     .order("full_name")
-    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-  const term = q.replace(/[,()*%\\"':.]/g, " ").trim();
-  if (term) query = query.or(["full_name", "company", "position"].map((c) => `${c}.ilike.*${term}*`).join(","));
+    .range(...pageRange(page, PAGE_SIZE));
+  const match = searchFilter(q, ["full_name", "company", "position"]);
+  if (match) query = query.or(match);
   const { data, count, error } = await query;
   if (error) return <LoadError what="connections" />;
   const [t, locale] = await Promise.all([getT(), getLocale()]);
   const total = count ?? 0;
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pages = pageCount(total, PAGE_SIZE);
   const href = (p: number) => `/connections?${new URLSearchParams({ ...(q ? { q } : {}), ...(p > 1 ? { page: String(p) } : {}) })}`;
 
   return (

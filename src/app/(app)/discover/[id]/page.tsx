@@ -17,13 +17,12 @@ import { PROXIMITY_LABELS } from "@/lib/discovery/labels";
 import { loadSearchResults, type PersonCard as Card, type ResultFilters, type SearchResults } from "@/lib/discovery/results";
 import { loadSearchView, type SearchView } from "@/lib/discovery/service";
 import { createClient } from "@/lib/supabase/server";
+import { one } from "@/lib/list-view";
 import { Tx } from "@/components/tx";
 import { getT } from "@/lib/i18n/server";
 import { runSearchAgain } from "../../people/actions";
 
 export const metadata = { title: "Research results · Network Growth" };
-
-const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
 export default function SearchPage({ params, searchParams }: PageProps<"/discover/[id]">) {
   return (
