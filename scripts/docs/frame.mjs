@@ -82,19 +82,23 @@ export async function phoned(buf, { scale = 3, margin = 28 } = {}) {
   const sr = 46 * s; // screen corner
   const br = sr + bezel; // body corner
   const m = margin * s;
+  // The status bar takes the colour of the page’s own top bar (its top-left pixel), so a dark page gets a dark bar.
+  const [pr, pg, pb] = await sharp(buf).extract({ left: 2, top: 2, width: 1, height: 1 }).removeAlpha().raw().toBuffer();
+  const barFill = `rgb(${pr},${pg},${pb})`;
+  const ink = (pr * 299 + pg * 587 + pb * 114) / 1000 < 128 ? "#f1f5f9" : "#0f172a";
   const sw = w;
   const sh = h + status;
   const BW = sw + 2 * bezel;
   const BH = sh + 2 * bezel;
   const W = BW + 2 * m;
   const H = BH + 2 * m;
-  const icons = `<g fill="#0f172a" transform="translate(${sw - 92 * s} ${17 * s}) scale(${s})">
+  const icons = `<g fill="${ink}" transform="translate(${sw - 92 * s} ${17 * s}) scale(${s})">
 <rect x="0" y="7" width="3" height="4" rx="0.8"/><rect x="5" y="5" width="3" height="6" rx="0.8"/><rect x="10" y="3" width="3" height="8" rx="0.8"/><rect x="15" y="1" width="3" height="10" rx="0.8"/>
 <path d="M30 3.2a10 10 0 0 1 13 0l-1.6 1.7a7.6 7.6 0 0 0-9.8 0zM32.9 6.3a5.6 5.6 0 0 1 7.2 0l-3.6 4z"/>
-<rect x="52" y="0.5" width="23" height="11" rx="3.2" fill="none" stroke="#0f172a" stroke-opacity="0.45" stroke-width="1"/><rect x="54" y="2.5" width="17" height="7" rx="1.8"/><rect x="76.2" y="4" width="1.6" height="4" rx="0.8" fill-opacity="0.45"/></g>`;
+<rect x="52" y="0.5" width="23" height="11" rx="3.2" fill="none" stroke="${ink}" stroke-opacity="0.45" stroke-width="1"/><rect x="54" y="2.5" width="17" height="7" rx="1.8"/><rect x="76.2" y="4" width="1.6" height="4" rx="0.8" fill-opacity="0.45"/></g>`;
   const screenTop = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${sw}" height="${status}">
-<rect width="${sw}" height="${status}" fill="#ffffff"/>
-<text x="${46 * s}" y="${29 * s}" text-anchor="middle" font-size="${15.5 * s}" font-weight="600" fill="#0f172a" font-family="${FONT}">9:41</text>
+<rect width="${sw}" height="${status}" fill="${barFill}"/>
+<text x="${46 * s}" y="${29 * s}" text-anchor="middle" font-size="${15.5 * s}" font-weight="600" fill="${ink}" font-family="${FONT}">9:41</text>
 <rect x="${sw / 2 - 58 * s}" y="${10 * s}" width="${116 * s}" height="${32 * s}" rx="${16 * s}" fill="#05070c"/>
 ${icons}</svg>`);
   const screen = await sharp({ create: { width: sw, height: sh, channels: 4, background: "#ffffff" } })

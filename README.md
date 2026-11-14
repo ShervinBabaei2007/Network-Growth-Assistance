@@ -8,9 +8,9 @@ Know who to contact next. Find real, recent jobs from employers' own career page
 
 [![Live app](https://img.shields.io/badge/live%20app-open-1f66c1?style=for-the-badge&logo=vercel&logoColor=white)](https://linkedin-network-growth-assistance.vercel.app)
 [![CI](https://img.shields.io/github/actions/workflow/status/ShervinBabaei2007/Network-Growth-Assistance/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/ShervinBabaei2007/Network-Growth-Assistance/actions/workflows/ci.yml)
-![Unit tests](https://img.shields.io/badge/unit%20tests-1523%20passing-2da44e?style=flat-square)
+![Unit tests](https://img.shields.io/badge/unit%20tests-1564%20passing-2da44e?style=flat-square)
 ![Database tests](https://img.shields.io/badge/pgTAP-305%20passing-2da44e?style=flat-square)
-![End to end](https://img.shields.io/badge/e2e-118%20tests-2da44e?style=flat-square)
+![End to end](https://img.shields.io/badge/e2e-133%20tests-2da44e?style=flat-square)
 
 <br />
 
@@ -107,6 +107,32 @@ Set your own goal, schools, disciplines and targets. The Overview shows where yo
 
 <sub>Fictional data. Every picture here is generated from the app with <code>npm run docs:screenshots</code>.</sub>
 
+### On a wide screen
+
+<table>
+  <tr>
+    <td width="50%"><a href="docs/images/gallery-overview.png"><img src="docs/images/gallery-overview.png" alt="Overview: the goal as a ring and a bar, then the pipeline and the week's activity" /></a><br /><sub><b>Overview</b>: the goal as a ring and a bar, then the pipeline and this week's activity. Pending invitations are shown apart and never counted.</sub></td>
+    <td width="50%"><a href="docs/images/gallery-jobs.png"><img src="docs/images/gallery-jobs.png" alt="Jobs: postings scored against your resume, with what matches and what is missing" /></a><br /><sub><b>Jobs</b>: every posting scored against your resume, with what matches and what is missing on each card.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/images/gallery-list.png"><img src="docs/images/gallery-list.png" alt="Candidates list with a record open beside it and three people ticked, with the bulk action bar" /></a><br /><sub><b>Lists</b>: open a record without leaving the list, tick several people and change them together, with Undo.</sub></td>
+    <td width="50%"><a href="docs/images/gallery-board-dark.png"><img src="docs/images/gallery-board-dark.png" alt="Applications board in the dark theme" /></a><br /><sub><b>Applications board</b> in the dark theme: every job from saved to offer.</sub></td>
+  </tr>
+</table>
+
+### On a phone
+
+<table>
+  <tr>
+    <td width="25%"><a href="docs/images/gallery-mobile-overview.png"><img src="docs/images/gallery-mobile-overview.png" alt="Overview on a phone with the bottom tab bar" /></a><br /><sub><b>Overview</b> with the bottom tab bar.</sub></td>
+    <td width="25%"><a href="docs/images/gallery-mobile-jobs.png"><img src="docs/images/gallery-mobile-jobs.png" alt="Jobs on a phone: postings as cards with a fit score" /></a><br /><sub><b>Jobs</b> as cards, each with its fit.</sub></td>
+    <td width="25%"><a href="docs/images/gallery-mobile-discover.png"><img src="docs/images/gallery-mobile-discover.png" alt="Discover on a phone: a person with the reasons they match and their public sources" /></a><br /><sub><b>Discover</b>: why each person matches, and where it was found.</sub></td>
+    <td width="25%"><a href="docs/images/gallery-mobile-board-fr-dark.png"><img src="docs/images/gallery-mobile-board-fr-dark.png" alt="Applications on a phone in Canadian French and the dark theme" /></a><br /><sub><b>Applications</b> in Canadian French and the dark theme.</sub></td>
+  </tr>
+</table>
+
+### More pages
+
 <table>
   <tr>
     <td width="50%"><a href="docs/images/applications.png"><img src="docs/images/applications.png" alt="Applications board from saved to offer" /></a><br /><sub><b>Applications board</b>: every job from saved to offer, each move kept on a timeline.</sub></td>
@@ -129,19 +155,6 @@ Set your own goal, schools, disciplines and targets. The Overview shows where yo
     <td width="50%"><a href="docs/images/login.png"><img src="docs/images/login.png" alt="Sign in and sign up tabs with Google, password and emailed link" /></a><br /><sub><b>Sign in</b>: Google, email and password, or an emailed link.</sub></td>
   </tr>
 </table>
-
-<div align="center">
-
-### On a phone
-
-<img src="docs/images/mobile-overview.png" alt="Overview on a phone" width="22%" />
-<img src="docs/images/mobile-candidates.png" alt="Candidates as cards on a phone" width="22%" />
-<img src="docs/images/mobile-jobs.png" alt="Jobs on a phone" width="22%" />
-<img src="docs/images/mobile-menu.png" alt="The navigation menu on a phone" width="22%" />
-
-<sub>Overview · Candidates as cards · Jobs · Menu</sub>
-
-</div>
 
 ---
 
@@ -454,7 +467,7 @@ npm run check:bundle  # confirms no AI key reaches the browser (run after build)
 npm run check:budget  # first-load JavaScript per route stays within budget (run after build)
 ```
 
-The suites are **1,523 unit tests, 305 database tests and 133 end-to-end tests** (desktop and phone), and the last full local run passed all of them, plus the production build, the bundle check and the route budget (on Next.js 16.4.3). `.github/workflows/ci.yml` runs the same checks on every pull request and push to `main`; it has run on GitHub and the badge above shows its latest result. `npm run docs:check` keeps these numbers, the links and the environment variables in this README and `docs/` honest.
+The suites are **1,564 unit tests, 305 database tests and 133 end-to-end tests** (desktop and phone), and the last full local run passed all of them, plus the production build, the bundle check and the route budget (on Next.js 16.4.3). `.github/workflows/ci.yml` runs the same checks on every pull request and push to `main`; it has run on GitHub and the badge above shows its latest result. `npm run docs:check` keeps these numbers, the links and the environment variables in this README and `docs/` honest.
 
 - **Run the end-to-end tests with a fresh build folder.** Running `npm run build` and then Playwright straight away can break the dev server, because both use `.next`. Run the tests first, or delete `.next` in between.
 - **Wait for hydration in new sign-in tests.** The sign-in page is plain HTML until its JavaScript loads, and a click before then does nothing, so tests wait for the page to settle.
