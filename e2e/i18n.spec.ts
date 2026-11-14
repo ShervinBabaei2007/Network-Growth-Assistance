@@ -156,7 +156,7 @@ test("People and Applications lists are in French", async ({ page, context }) =>
   await page.goto("/applications");
   await expect(page.getByRole("heading", { name: "Postulée", level: 2 })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Affichage" }).getByText("1 candidature, 1 ouvertes")).toBeVisible();
-  await expect(page.getByLabel("Étape de Alpha Role")).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Étape de Alpha Role" })).toBeVisible();
 });
 
 test("Settings, Connections and Help are in French", async ({ page, context }) => {
