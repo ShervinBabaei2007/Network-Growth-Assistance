@@ -6,7 +6,7 @@ import Link from "next/link";
 import { LoadError } from "@/components/load-error";
 import { Disclosure } from "@/components/disclosure";
 import { PageHeaderT, Tx } from "@/components/tx";
-import { RememberLastView, type SavedView } from "@/components/views-menu";
+import { RememberLastView } from "@/components/views-menu";
 import { SavedViews } from "@/components/saved-views";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDateOnly, formatDay, formatDateTime } from "@/lib/applications/format";
@@ -14,13 +14,13 @@ import { LIST_LIMIT, loadApplications } from "@/lib/applications/load";
 import { suggestNoResponse } from "@/lib/applications/no-response";
 import { parseSort, sortApplications } from "@/lib/applications/sort";
 import { createClient } from "@/lib/supabase/server";
+import { one } from "@/lib/list-view";
+import { loadSavedViews } from "@/lib/data/saved-views";
 import { LocaleScope } from "@/components/locale-scope";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { Tracker, type TrackerApp } from "./tracker";
 
 export const metadata = { title: "Applications · Network Growth" };
-
-const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
 export default function ApplicationsPage({ searchParams }: PageProps<"/applications">) {
   return (
@@ -47,12 +47,11 @@ async function ApplicationsView({ searchParams }: Pick<PageProps<"/applications"
   const sort = parseSort(one(sp.sort) || undefined, one(sp.dir) || undefined);
 
   const supabase = await createClient();
-  const [loaded, { data: settings }, { data: viewRows }] = await Promise.all([
+  const [loaded, { data: settings }, views] = await Promise.all([
     loadApplications(supabase),
     supabase.from("settings").select("timezone, no_response_days").single(),
-    supabase.from("saved_views").select("id, name, query").eq("page", "applications").order("created_at"),
+    loadSavedViews(supabase, "applications"),
   ]);
-  const views: SavedView[] = viewRows ?? [];
   if (!loaded) return <LoadError what="your applications" />;
   const [t, locale] = await Promise.all([getT(), getLocale()]);
   const tz = settings?.timezone ?? "UTC";

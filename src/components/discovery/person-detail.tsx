@@ -18,8 +18,8 @@ import {
   setProximity,
   undoPersonFeedback,
   updatePersonCrm,
-  type ActionResult,
 } from "@/app/(app)/people/actions";
+import type { ActionResult } from "@/lib/action-result";
 import { ActionForm } from "@/components/action-form";
 import { draftKey } from "@/lib/drafts";
 import { AppSelect } from "@/components/app-select";
@@ -361,7 +361,8 @@ function IntroAssistant({ personId, initial }: { personId: string; initial: stri
     run(() => generateIntro(personId, true), {
       progress: tr("msg.polishingYourIntrodaab", "Polishing your intro…"),
       onSuccess: (r) => {
-        if ("text" in r && typeof r.text === "string" && r.text) setText(r.text);
+        const text = (r as { data?: { text?: string } }).data?.text;
+        if (text) setText(text);
       },
     });
 

@@ -126,7 +126,7 @@ async function OverviewContent() {
           <CardContent className="grid gap-4">
             {overall.additionalSinceStart !== null && overall.growthGoal !== null ? (
               <div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
-                {overall.growthGoal > 0 ? <GoalRing accepted={Math.max(0, overall.additionalSinceStart)} pending={overall.pending} target={overall.growthGoal} label={t("overview.ringLabel")} /> : null}
+                {overall.growthGoal > 0 ? <GoalRing accepted={Math.max(0, overall.additionalSinceStart)} pending={overall.pending} target={overall.growthGoal} label={t("overview.ringLabel")} ofGoal={t("visuals.ofTheGoal")} valueText={`${t("visuals.ringAccepted", { accepted: fmt.number(Math.max(0, overall.additionalSinceStart)), target: fmt.number(overall.growthGoal) })}${overall.pending ? t("visuals.ringPending", { pending: fmt.number(overall.pending) }) : ""}`} /> : null}
                 <div className="grid gap-1.5">
                 <ProgressMeter
                   label={t("overview.meterLabel")}

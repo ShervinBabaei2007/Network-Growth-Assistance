@@ -1,11 +1,10 @@
 "use server";
 
-import { getT } from "@/lib/i18n/server";
-import { refresh } from "next/cache";
 import { z } from "zod";
-import { err, ok, type ActionResult } from "@/lib/action-result";
+import type { ActionResult } from "@/lib/action-result";
 import { MAX_SELECTION } from "@/lib/selection";
-import { actionContext, logActivity } from "@/lib/server/action-context";
+import { restoreByPrevious, selectedIds, withSkipped } from "@/lib/server/bulk-change";
+import { done, fail, mutate } from "@/lib/server/mutation";
 
 /**
  * Bulk changes to candidates. Each bulk action applies the same rules as the single-row one,
@@ -13,7 +12,6 @@ import { actionContext, logActivity } from "@/lib/server/action-context";
  * Everything runs under the user's own row-level security.
  */
 
-const ids = z.array(z.uuid()).min(1, "Select at least one person.").max(MAX_SELECTION, `Select up to ${MAX_SELECTION} people at a time.`);
 const REVIEW_STATUSES = ["awaiting_review", "approved", "not_a_match", "do_not_contact"] as const;
 type ReviewStatus = (typeof REVIEW_STATUSES)[number];
 const ANY_STATUS = ["new", ...REVIEW_STATUSES] as const;
@@ -25,69 +23,60 @@ export type BulkStatusChange = { changed: { id: string; previous: (typeof ANY_ST
  * the invitation) unless the decision is "do not contact", and approving needs the school and program confirmed.
  */
 export async function bulkSetStatus(rawIds: string[], status: ReviewStatus): Promise<ActionResult<BulkStatusChange>> {
-  const parsed = ids.safeParse(rawIds);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? (await getT())("candidatesPage.bulkSelectEmpty"));
-  if (!REVIEW_STATUSES.includes(status)) return err((await getT())("candidatesPage.bulkUnknownStatus"));
-  const ctx = await actionContext();
-  const t = await getT();
+  return mutate<BulkStatusChange>({}, async ({ ctx }) => {
+    const picked = selectedIds(rawIds, "people");
+    if (!Array.isArray(picked)) return picked;
+    if (!REVIEW_STATUSES.includes(status)) return fail("candidatesPage.bulkUnknownStatus");
 
-  const { data: rows, error } = await ctx.supabase
-    .from("candidates")
-    .select("id, status, university_confidence, discipline_confidence, invitations(id)")
-    .in("id", parsed.data);
-  if (error) return err(t("candidatesPage.bulkUpdateFailed"));
+    const { data: rows, error } = await ctx.supabase
+      .from("candidates")
+      .select("id, status, university_confidence, discipline_confidence, invitations(id)")
+      .in("id", picked);
+    if (error) return fail("candidatesPage.bulkUpdateFailed");
 
-  const eligible = rows.filter((c) => {
-    if (c.status === status) return false;
-    if (c.invitations.length > 0 && status !== "do_not_contact") return false;
-    if (status === "approved" && (c.university_confidence !== "confirmed" || c.discipline_confidence !== "confirmed")) return false;
-    return true;
+    const eligible = rows.filter((c) => {
+      if (c.status === status) return false;
+      if (c.invitations.length > 0 && status !== "do_not_contact") return false;
+      if (status === "approved" && (c.university_confidence !== "confirmed" || c.discipline_confidence !== "confirmed")) return false;
+      return true;
+    });
+    const skipped = picked.length - eligible.length;
+    if (eligible.length === 0) return fail("candidatesPage.bulkNoneEligible");
+
+    const { error: updateError } = await ctx.supabase.from("candidates").update({ status }).in("id", eligible.map((c) => c.id));
+    if (updateError) return fail("candidatesPage.bulkUpdateFailed");
+
+    const changed = eligible.map((c) => ({ id: c.id, previous: c.status as (typeof ANY_STATUS)[number] }));
+    return done((t) => withSkipped(t, t("candidatesPage.bulkDone", { count: eligible.length, label: t(`bulkLabel.${status}`) }), skipped, "candidatesPage.bulkSkipped"), {
+      data: { changed, skipped, status },
+      log: ["candidate.bulk_status", { count: eligible.length, status }],
+    });
   });
-  const skipped = parsed.data.length - eligible.length;
-  if (eligible.length === 0) return err(t("candidatesPage.bulkNoneEligible"));
-
-  const { error: updateError } = await ctx.supabase.from("candidates").update({ status }).in("id", eligible.map((c) => c.id));
-  if (updateError) return err(t("candidatesPage.bulkUpdateFailed"));
-
-  await logActivity(ctx, "candidate.bulk_status", { count: eligible.length, status });
-  refresh();
-  const changed = eligible.map((c) => ({ id: c.id, previous: c.status as (typeof ANY_STATUS)[number] }));
-  const label = t(`bulkLabel.${status}`);
-  return ok(`${t("candidatesPage.bulkDone", { count: eligible.length, label })}${skipped ? t("candidatesPage.bulkSkipped", { count: skipped }) : "."}`, { data: { changed, skipped, status } });
 }
 
 /** Puts people back to the status they had, but only if nothing has changed them since. */
 export async function undoBulkStatus(change: BulkStatusChange): Promise<ActionResult> {
-  const parsed = z
-    .object({
-      status: z.enum(REVIEW_STATUSES),
-      changed: z.array(z.object({ id: z.uuid(), previous: z.enum(ANY_STATUS) })).min(1).max(MAX_SELECTION),
-    })
-    .safeParse(change);
-  if (!parsed.success) return err((await getT())("candidatesPage.bulkUndoFailed"));
-  const ctx = await actionContext();
-  const byPrevious = new Map<string, string[]>();
-  for (const c of parsed.data.changed) byPrevious.set(c.previous, [...(byPrevious.get(c.previous) ?? []), c.id]);
-  for (const [previous, group] of byPrevious) {
-    const { error } = await ctx.supabase
-      .from("candidates")
-      .update({ status: previous as (typeof ANY_STATUS)[number] })
-      .in("id", group)
-      .eq("status", parsed.data.status);
-    if (error) return err((await getT())("candidatesPage.bulkUndoRetry"));
-  }
-  refresh();
-  return ok((await getT())("candidatesPage.bulkRestored", { count: parsed.data.changed.length }));
+  return mutate({}, async ({ ctx }) => {
+    const parsed = z
+      .object({
+        status: z.enum(REVIEW_STATUSES),
+        changed: z.array(z.object({ id: z.uuid(), previous: z.enum(ANY_STATUS) })).min(1).max(MAX_SELECTION),
+      })
+      .safeParse(change);
+    if (!parsed.success) return fail("candidatesPage.bulkUndoFailed");
+    const restored = await restoreByPrevious(parsed.data.changed, (previous, ids) => ctx.supabase.from("candidates").update({ status: previous }).in("id", ids).eq("status", parsed.data.status));
+    if (!restored) return fail("candidatesPage.bulkUndoRetry");
+    return done("candidatesPage.bulkRestored", { params: { count: parsed.data.changed.length } });
+  });
 }
 
 /** Permanently deletes people and their invitation records. The caller asks for confirmation first; there is no undo. */
 export async function bulkDeleteCandidates(rawIds: string[]): Promise<ActionResult> {
-  const parsed = ids.safeParse(rawIds);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? (await getT())("candidatesPage.bulkSelectEmpty"));
-  const ctx = await actionContext();
-  const { error, count } = await ctx.supabase.from("candidates").delete({ count: "exact" }).in("id", parsed.data);
-  if (error) return err((await getT())("candidatesPage.bulkDeleteFailed"));
-  await logActivity(ctx, "candidate.bulk_deleted", { count: count ?? 0 });
-  refresh();
-  return ok((await getT())("candidatesPage.bulkDeleted", { count: count ?? 0 }));
+  return mutate({}, async ({ ctx }) => {
+    const picked = selectedIds(rawIds, "people");
+    if (!Array.isArray(picked)) return picked;
+    const { error, count } = await ctx.supabase.from("candidates").delete({ count: "exact" }).in("id", picked);
+    if (error) return fail("candidatesPage.bulkDeleteFailed");
+    return done("candidatesPage.bulkDeleted", { params: { count: count ?? 0 }, log: ["candidate.bulk_deleted", { count: count ?? 0 }] });
+  });
 }

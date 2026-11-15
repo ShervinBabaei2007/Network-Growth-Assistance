@@ -16,12 +16,11 @@ import { Label } from "@/components/ui/label";
 import { describeCriteria, NetworkingCriteria } from "@/lib/discovery/criteria";
 import { discoveryStatus } from "@/lib/discovery/providers/registry";
 import { createClient } from "@/lib/supabase/server";
+import { one } from "@/lib/list-view";
 import { deleteSearch, runSearchAgain, saveNetworkingGoal } from "../people/actions";
 import { CriteriaEditor, DiscoverForm } from "./discover-form";
 
 export const metadata = { title: "Discover · Network Growth" };
-
-const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
 export default function DiscoverPage({ searchParams }: PageProps<"/discover">) {
   return (

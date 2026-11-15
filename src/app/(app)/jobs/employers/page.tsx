@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ATS_LABELS } from "@/lib/job-postings/ats";
 import { timeAgo } from "@/lib/job-postings/labels";
 import { createClient } from "@/lib/supabase/server";
+import { one, searchTerm } from "@/lib/list-view";
 import { LocaleScope } from "@/components/locale-scope";
 import { formatters } from "@/lib/i18n";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -23,8 +24,6 @@ export const metadata = { title: "Employers · Jobs · Network Growth" };
 export const maxDuration = 60;
 
 const PAGE = 50;
-const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
-
 export default function EmployersPage({ searchParams }: PageProps<"/jobs/employers">) {
   return (
     <div className="grid gap-6">
@@ -78,7 +77,7 @@ async function AddEmployerCard() {
 
 async function Directory({ searchParams }: Pick<PageProps<"/jobs/employers">, "searchParams">) {
   const sp = await searchParams;
-  const q = one(sp.q).trim().replace(/[,()*%\\"':.]/g, " ").trim();
+  const q = searchTerm(one(sp.q).trim());
   const page = Math.max(1, Number(one(sp.page)) || 1);
   const supabase = await createClient();
   let query = supabase

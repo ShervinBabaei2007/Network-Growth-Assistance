@@ -3,7 +3,7 @@ import { PageNav } from "@/components/page-nav";
 import { FiltersToggle } from "@/components/jobs/filters-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState as EmptyPanel } from "@/components/empty-state";
-import { type SavedView } from "@/components/views-menu";
+import { loadSavedViews } from "@/lib/data/saved-views";
 import { SavedViews } from "@/components/saved-views";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Disclosure } from "@/components/disclosure";
@@ -126,14 +126,14 @@ async function Feed({ searchParams }: Pick<PageProps<"/jobs">, "searchParams">) 
   if (!userId) return <LoadError what="postings" />;
 
   const query = fromSearchParams(raw);
-  const [feed, { data: lastRun }, { count: employerCount }, { data: me }, { data: viewRows }] = await Promise.all([
+  const [feed, { data: lastRun }, { count: employerCount }, { data: me }, views] = await Promise.all([
+
     loadFeed(supabase, userId, query, { refresh: true, client: await searchingClient(), background: (work) => after(work) }),
     supabase.from("job_crawl_runs").select("finished_at").not("finished_at", "is", null).order("started_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("employers").select("id", { count: "exact", head: true }).neq("status", "disabled").neq("ats", "fixture"),
     supabase.from("settings").select("timezone").eq("user_id", userId).single(),
-    supabase.from("saved_views").select("id, name, query").eq("page", "jobs").order("created_at"),
+    loadSavedViews(supabase, "jobs"),
   ]);
-  const views: SavedView[] = viewRows ?? [];
   if ("error" in feed) return <LoadError what="postings" />;
 
   const { settings, resume, notices, newlyFetched, range, expandedFrom, firstCount, duplicatesOf, matches: matchBy, states: stateBy, employers: employerBy, excludedCount, tabs: inTab } = feed;

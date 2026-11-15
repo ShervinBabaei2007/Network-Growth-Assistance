@@ -103,7 +103,7 @@ const R = 50;
 const C = 2 * Math.PI * R;
 
 /** The goal as a ring: accepted in solid colour, pending after it hatched (so it reads as "not yet"). */
-export function GoalRing({ accepted, pending = 0, target, label, className }: { accepted: number; pending?: number; target: number; label: string; className?: string }) {
+export function GoalRing({ accepted, pending = 0, target, label, ofGoal, valueText, className }: { accepted: number; pending?: number; target: number; label: string; ofGoal: string; valueText: string; className?: string }) {
   const arcs = ringArcs(accepted, pending, target);
   const hatchId = useId();
   if (!arcs) return null;
@@ -114,7 +114,7 @@ export function GoalRing({ accepted, pending = 0, target, label, className }: { 
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={arcs.percent}
-      aria-valuetext={`${accepted.toLocaleString("en-CA")} of ${target.toLocaleString("en-CA")} accepted${pending ? `, ${pending.toLocaleString("en-CA")} pending` : ""}`}
+      aria-valuetext={valueText}
       className={cn("relative size-36 shrink-0", className)}
       data-testid="goal-ring"
     >
@@ -131,7 +131,7 @@ export function GoalRing({ accepted, pending = 0, target, label, className }: { 
       </svg>
       <div aria-hidden className="absolute inset-0 flex flex-col items-center justify-center text-center">
         <span className="text-3xl leading-none font-semibold tabular-nums">{arcs.percent}%</span>
-        <span className="mt-1 text-xs text-muted-foreground">of the goal</span>
+        <span className="mt-1 text-xs text-muted-foreground">{ofGoal}</span>
       </div>
     </div>
   );
