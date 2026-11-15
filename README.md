@@ -10,7 +10,7 @@ Know who to contact next. Find real, recent jobs from employers' own career page
 [![CI](https://img.shields.io/github/actions/workflow/status/ShervinBabaei2007/Network-Growth-Assistance/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/ShervinBabaei2007/Network-Growth-Assistance/actions/workflows/ci.yml)
 ![Unit tests](https://img.shields.io/badge/unit%20tests-1564%20passing-2da44e?style=flat-square)
 ![Database tests](https://img.shields.io/badge/pgTAP-305%20passing-2da44e?style=flat-square)
-![End to end](https://img.shields.io/badge/e2e-133%20tests-2da44e?style=flat-square)
+![End to end](https://img.shields.io/badge/e2e-134%20tests-2da44e?style=flat-square)
 
 <br />
 
@@ -467,7 +467,7 @@ npm run check:bundle  # confirms no AI key reaches the browser (run after build)
 npm run check:budget  # first-load JavaScript per route stays within budget (run after build)
 ```
 
-The suites are **1,564 unit tests, 305 database tests and 133 end-to-end tests** (desktop and phone), and the last full local run passed all of them, plus the production build, the bundle check and the route budget (on Next.js 16.4.3). `.github/workflows/ci.yml` runs the same checks on every pull request and push to `main`; it has run on GitHub and the badge above shows its latest result. `npm run docs:check` keeps these numbers, the links and the environment variables in this README and `docs/` honest.
+The suites are **1,564 unit tests, 305 database tests and 134 end-to-end tests** (desktop and phone), and the last full local run passed all of them, plus the production build, the bundle check and the route budget (on Next.js 16.4.3). `.github/workflows/ci.yml` runs the same checks on every pull request and push to `main`; it has run on GitHub and the badge above shows its latest result. `npm run docs:check` keeps these numbers, the links and the environment variables in this README and `docs/` honest.
 
 - **Run the end-to-end tests with a fresh build folder.** Running `npm run build` and then Playwright straight away can break the dev server, because both use `.next`. Run the tests first, or delete `.next` in between.
 - **Wait for hydration in new sign-in tests.** The sign-in page is plain HTML until its JavaScript loads, and a click before then does nothing, so tests wait for the page to settle.

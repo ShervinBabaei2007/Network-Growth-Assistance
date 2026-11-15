@@ -535,6 +535,14 @@ export const frCA: Messages = {
     sun: "dim",
     less: "Moins",
     moreBusiest: "Plus · journée la plus chargée : {max}",
+    ofTheGoal: "de l'objectif",
+    ringAccepted: "{accepted} sur {target} acceptées",
+    ringPending: ", {pending} en attente",
+  },
+  jobSearchSummary: {
+    openOne: "1 candidature ouverte",
+    openMany: "{count} candidatures ouvertes",
+    quiet: "{count} sans réponse depuis un moment",
   },
   analytics: {
     acceptance: "Acceptation",

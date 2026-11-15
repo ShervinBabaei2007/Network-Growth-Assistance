@@ -40,8 +40,8 @@ export async function JobSearchSummary() {
       <CardHeader>
         <CardTitle>{t("msg.jobSearch69a8")}</CardTitle>
         <CardDescription>
-          {open} open application{open === 1 ? "" : "s"}
-          {quiet ? ` · ${quiet} with no reply for a while` : ""}
+          {open === 1 ? t("jobSearchSummary.openOne") : t("jobSearchSummary.openMany", { count: open })}
+          {quiet ? ` · ${t("jobSearchSummary.quiet", { count: quiet })}` : ""}
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4 md:grid-cols-2">

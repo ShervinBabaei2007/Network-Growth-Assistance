@@ -537,6 +537,14 @@ export const en = {
     sun: "Sun",
     less: "Less",
     moreBusiest: "More · busiest day {max}",
+    ofTheGoal: "of the goal",
+    ringAccepted: "{accepted} of {target} accepted",
+    ringPending: ", {pending} pending",
+  },
+  jobSearchSummary: {
+    openOne: "1 open application",
+    openMany: "{count} open applications",
+    quiet: "{count} with no reply for a while",
   },
   analytics: {
     acceptance: "Acceptance",

@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { adminRest, signIn, uniqueEmail, userIdFor } from "./helpers";
+import { adminRest, setUpPlan, signIn, uniqueEmail, userIdFor } from "./helpers";
 
 test.describe("browser set to Canadian French", () => {
   test.use({ locale: "fr-CA" });
@@ -115,6 +115,28 @@ test("the Overview body is in French, and the starting-count form saves in Frenc
   await expect(page.getByText("Prochaine action recommandée")).toBeVisible();
   await expect(page.getByText("Next recommended action")).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Configurer mon plan/ })).toBeVisible();
+});
+
+test("the goal ring and the job-search summary on Overview are in French", async ({ page, context }) => {
+  test.setTimeout(120_000);
+  const email = uniqueEmail("fr-ring");
+  await signIn(page, email);
+  await setUpPlan(page, { goal: 100, schools: [{ name: "Test University" }], disciplines: [{ name: "Test Field" }] });
+  const user_id = await userIdFor(email);
+  // The ring needs a starting count and a recorded total to measure growth from.
+  await adminRest("PATCH", `settings?user_id=eq.${user_id}`, { baseline_connections: 10, project_start_date: new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10) });
+  await adminRest("POST", "connection_snapshots", [
+    { user_id, total_connections: 10, recorded_at: new Date(Date.now() - 29 * 86_400_000).toISOString() },
+    { user_id, total_connections: 25, recorded_at: new Date().toISOString() },
+  ]);
+  await adminRest("POST", "applications", [{ user_id, title: "Alpha Role", company: "Co", stage: "applied" }]);
+  await context.addCookies([{ name: "locale", value: "fr-CA", url: "http://localhost:3000" }]);
+  await page.goto("/overview");
+  await expect(page.getByText("de l'objectif")).toBeVisible();
+  await expect(page.getByTestId("goal-ring")).toHaveAttribute("aria-valuetext", "15 sur 90 acceptées");
+  await expect(page.getByText("1 candidature ouverte")).toBeVisible();
+  await expect(page.getByText("of the goal")).toHaveCount(0);
+  await expect(page.getByText(/open application/)).toHaveCount(0);
 });
 
 test("the Queue and Analytics bodies are in French", async ({ page, context }) => {
