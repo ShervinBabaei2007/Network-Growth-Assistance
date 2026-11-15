@@ -31,6 +31,9 @@ test("hide a company, undo it, write a note and compare two jobs", async ({ page
   // Hide it again; the Hidden page lists it and "Show again" restores it.
   await results.getByRole("listitem").filter({ hasText: "Northwind Labs" }).first().getByRole("button", { name: "More" }).click();
   await page.getByRole("menuitem", { name: "Hide jobs from Northwind Labs" }).click();
+  // Wait for the hide to finish before leaving the page, or the navigation can cancel it.
+  await expect(toast(page, "Hiding jobs from northwind labs.")).toBeVisible();
+  await expect(results.getByText("Northwind Labs", { exact: true })).toHaveCount(0);
   await page.goto("/jobs/hidden");
   const row = page.getByRole("listitem").filter({ hasText: "northwind labs" });
   await expect(row).toBeVisible();
