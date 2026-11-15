@@ -6,8 +6,8 @@
  *   npm run docs:screenshots   (the pictures it uses: docs/images/discover.png and mobile-jobs.png)
  *   npm run docs:banner
  *
- * To change the technologies shown, edit STACK below. It should list what the repository really uses; `package.json`,
- * `supabase/` and `.github/` are the places to check.
+ * To change the technologies shown, edit STACK below. It should list what the repository really uses; `package.json`
+ * and `supabase/` are the places to check.
  */
 import sharp from "sharp";
 import { FONT } from "./frame.mjs";
@@ -21,7 +21,7 @@ const STACK = [
   ["Frontend", "#60a5fa", ["Next.js 16", "React 19", "TypeScript", "Tailwind CSS 4", "shadcn/ui"]],
   ["Backend", "#34d399", ["Supabase", "PostgreSQL", "pgvector", "Zod"]],
   ["AI", "#c084fc", ["Gemini", "Groq", "Mistral", "Claude"]],
-  ["Testing and DevOps", "#fb923c", ["Vitest", "Playwright", "pgTAP", "GitHub Actions", "Docker", "Vercel"]],
+  ["Testing and DevOps", "#fb923c", ["Vitest", "Playwright", "pgTAP", "Docker", "Vercel"]],
 ];
 
 const FEATURES = ["People worth meeting, every fact quoted from a public source", "Real jobs from employers' own boards, with fit explained", "Honest progress: a pending invitation never counts"];

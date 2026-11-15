@@ -278,7 +278,7 @@ Both are flat monthly fees, not per-user costs. The crawler, the job table and t
 
 ## Staging
 
-Use a **separate** Supabase project and a separate Vercel project (or a Vercel preview with its own environment variables) for staging, deployed from a branch other than `main`. Never point staging at production data. Then: deploy, run `npm run smoke -- https://<staging>`, run the Playwright suite against it, and only then promote the same commit to production. `.github/workflows/ci.yml` runs the same checks on every pull request against a local Supabase.
+Use a **separate** Supabase project and a separate Vercel project (or a Vercel preview with its own environment variables) for staging, deployed from a branch other than `main`. Never point staging at production data. Then: deploy, run `npm run smoke -- https://<staging>`, run the Playwright suite against it, and only then promote the same commit to production.
 
 ## Speed and quality checks
 
@@ -298,7 +298,7 @@ To repeat it:
 2. Signed in: Lighthouse has no login, so send your session cookie. Sign in, copy the cookie whose name starts with `sb-` and ends with `-auth-token` (two cookies, `.0` and `.1`, when it is long) from your browser's developer tools, put them in a JSON file as `{"Cookie":"<name>.0=<value>; <name>.1=<value>"}`, and pass it with `--extra-headers=./headers.json`. Treat that file like a password, delete it afterwards and sign out to revoke the session.
 3. Expect run-to-run differences of a few points. Repeat a page three times before reading anything into a change.
 
-Quality gates that run on every change (see the README and `.github/workflows/ci.yml`): type-check, lint, unit tests, pgTAP, Playwright on desktop and a phone (including an axe accessibility scan), `npm run check:bundle`, and `npm run check:budget`.
+Quality gates to run before every deploy (there is no hosted CI; see the README): type-check, lint, unit tests, pgTAP, Playwright on desktop and a phone (including an axe accessibility scan), `npm run check:bundle`, and `npm run check:budget`.
 
 **Route budget.** `npm run check:budget` (after a build) fails if any route's first-load JavaScript grew more than 5% (and 8 KB) over `scripts/route-budgets.json`. If you add JavaScript on purpose, run `npm run check:budget -- --update` in the same commit and say why. The table above is from the original measurement; the budget file is the current truth.
 

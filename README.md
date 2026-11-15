@@ -1,13 +1,12 @@
 <div align="center">
 
-<img src="docs/images/banner.png" alt="Network Growth Assistant: Discover and Jobs shown in a browser and on a phone. Built with Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, Supabase, PostgreSQL, pgvector, Zod, Gemini, Groq, Mistral, Claude, Vitest, Playwright, pgTAP, GitHub Actions, Docker and Vercel." width="100%" />
+<img src="docs/images/banner.png" alt="Network Growth Assistant: Discover and Jobs shown in a browser and on a phone. Built with Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, Supabase, PostgreSQL, pgvector, Zod, Gemini, Groq, Mistral, Claude, Vitest, Playwright, pgTAP, Docker and Vercel." width="100%" />
 
 **Grow your professional network and run your job search from one calm, honest workspace.**
 
 Know who to contact next. Find real, recent jobs from employers' own career pages. Track every application, and every follow-up.
 
 [![Live app](https://img.shields.io/badge/live%20app-open-1f66c1?style=for-the-badge&logo=vercel&logoColor=white)](https://linkedin-network-growth-assistance.vercel.app)
-[![CI](https://img.shields.io/github/actions/workflow/status/ShervinBabaei2007/Network-Growth-Assistance/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/ShervinBabaei2007/Network-Growth-Assistance/actions/workflows/ci.yml)
 ![Unit tests](https://img.shields.io/badge/unit%20tests-1564%20passing-2da44e?style=flat-square)
 ![Database tests](https://img.shields.io/badge/pgTAP-305%20passing-2da44e?style=flat-square)
 ![End to end](https://img.shields.io/badge/e2e-134%20tests-2da44e?style=flat-square)
@@ -379,7 +378,7 @@ The app serves `robots.txt` (crawling allowed), a sitemap and `llms.txt` for its
 | Frontend | Next.js 16 (App Router, streaming, partial prerendering), React 19, TypeScript, Tailwind CSS 4, shadcn/ui |
 | Backend | Supabase (PostgreSQL with row-level security, Auth, Storage, pg_cron, an Edge Function), pgvector for matching by meaning, Zod for validation |
 | AI | A chain of free services (Gemini, then Groq and Mistral), with Claude as an optional last step |
-| Testing and DevOps | Vitest, Playwright with axe-core, pgTAP, GitHub Actions, Docker (local Supabase), Vercel |
+| Testing and DevOps | Vitest, Playwright with axe-core, pgTAP, Docker (local Supabase), Vercel |
 
 ```mermaid
 flowchart TB
@@ -467,7 +466,7 @@ npm run check:bundle  # confirms no AI key reaches the browser (run after build)
 npm run check:budget  # first-load JavaScript per route stays within budget (run after build)
 ```
 
-The suites are **1,564 unit tests, 305 database tests and 134 end-to-end tests** (desktop and phone), and the last full local run passed all of them, plus the production build, the bundle check and the route budget (on Next.js 16.4.3). `.github/workflows/ci.yml` runs the same checks on every pull request and push to `main`; it has run on GitHub and the badge above shows its latest result. `npm run docs:check` keeps these numbers, the links and the environment variables in this README and `docs/` honest.
+The suites are **1,564 unit tests, 305 database tests and 134 end-to-end tests** (desktop and phone), and the last full local run passed all of them, plus the production build, the bundle check and the route budget (on Next.js 16.4.3). There is no hosted CI: run the same checks yourself before merging (`npm run lint`, `npm run typecheck`, `npm test`, `npm run test:db`, `npm run test:e2e`, `npm run build`, `npm run check:bundle`, `npm run check:budget`). `npm run docs:check` keeps these numbers, the links and the environment variables in this README and `docs/` honest.
 
 - **Run the end-to-end tests with a fresh build folder.** Running `npm run build` and then Playwright straight away can break the dev server, because both use `.next`. Run the tests first, or delete `.next` in between.
 - **Wait for hydration in new sign-in tests.** The sign-in page is plain HTML until its JavaScript loads, and a click before then does nothing, so tests wait for the page to settle.

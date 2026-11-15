@@ -88,7 +88,7 @@ function walk(dir, out = []) {
   return out;
 }
 const usedInRepo = new Set();
-for (const p of [...walk(join(ROOT, "src")), ...walk(join(ROOT, "scripts")), ...walk(join(ROOT, "supabase")), ...walk(join(ROOT, "e2e")), join(ROOT, ".env.example"), join(ROOT, "playwright.config.ts"), join(ROOT, "vercel.json"), join(ROOT, ".github/workflows/ci.yml")]) {
+for (const p of [...walk(join(ROOT, "src")), ...walk(join(ROOT, "scripts")), ...walk(join(ROOT, "supabase")), ...walk(join(ROOT, "e2e")), join(ROOT, ".env.example"), join(ROOT, "playwright.config.ts"), join(ROOT, "vercel.json")]) {
   if (!existsSync(p)) continue;
   for (const m of readFileSync(p, "utf8").matchAll(/\b([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)\b/g)) usedInRepo.add(m[1]);
 }
